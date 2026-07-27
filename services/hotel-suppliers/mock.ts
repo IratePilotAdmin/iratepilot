@@ -1,0 +1,1 @@
+import { hotels } from '@/data/hotels'; export const mockSupplier={async search(){return hotels;},async book(){return {status:'confirmed',supplierReference:'MOCK-1'};},async cancel(){return {status:'cancelled'};}};

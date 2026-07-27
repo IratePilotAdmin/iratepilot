@@ -1,0 +1,1 @@
+export function recommendRate(base:number,occupancy:number,demand:number){return Math.round(base*(1+occupancy*.2+demand*.15));}

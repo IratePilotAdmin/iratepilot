@@ -1,0 +1,1 @@
+export type AppUser={id:string;email:string;role:'customer'|'partner'|'admin'};

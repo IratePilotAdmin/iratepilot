@@ -1,0 +1,1 @@
+import type {MetadataRoute} from 'next'; export default function manifest():MetadataRoute.Manifest{return {name:'iRatePilot',short_name:'iRatePilot',start_url:'/',display:'standalone',background_color:'#f8fafc',theme_color:'#096fd1',icons:[]}}

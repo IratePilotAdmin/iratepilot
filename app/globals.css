@@ -1,0 +1,240 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+html { scroll-behavior: smooth; }
+body { @apply bg-slate-50 text-slate-900 antialiased; }
+.container-page { @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8; }
+.card { @apply rounded-2xl border border-slate-200 bg-white shadow-sm; }
+.btn-primary { @apply inline-flex items-center justify-center rounded-xl bg-brand-600 px-5 py-3 font-semibold text-white transition hover:bg-brand-700; }
+.btn-secondary { @apply inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-800 transition hover:bg-slate-50; }
+.input { @apply w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none ring-brand-500 transition focus:ring-2; }
+.badge { @apply inline-flex items-center rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700; }
+
+.hero-grid {
+  background:
+    radial-gradient(circle at 82% 20%, rgb(221 214 254 / 70%), transparent 30%),
+    radial-gradient(circle at 12% 8%, rgb(237 233 254 / 85%), transparent 24%),
+    linear-gradient(180deg, #fff 0%, #faf8ff 100%);
+}
+.hero-grid::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: .28;
+  background-image: linear-gradient(rgb(124 58 237 / .08) 1px, transparent 1px), linear-gradient(90deg, rgb(124 58 237 / .08) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(to bottom, black, transparent 85%);
+}
+.eyebrow-pill { @apply inline-flex items-center gap-2 rounded-full border border-violet-200 bg-white/80 px-4 py-2 text-sm font-bold text-violet-700 shadow-sm backdrop-blur; }
+.gradient-text { @apply bg-gradient-to-r from-violet-700 via-fuchsia-600 to-indigo-600 bg-clip-text text-transparent; }
+.trust-chip { @apply inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-2 shadow-sm ring-1 ring-slate-200; }
+.trust-chip svg { @apply h-4 w-4 text-emerald-600; }
+.journey-panel { @apply relative mx-auto w-full max-w-xl p-3; }
+.journey-glow { @apply absolute inset-8 rounded-full bg-violet-500/30 blur-3xl; }
+.floating-card { @apply absolute hidden items-center gap-3 rounded-2xl border border-white/70 bg-white/95 p-4 text-slate-900 shadow-xl backdrop-blur sm:flex; }
+.floating-card span { @apply flex flex-col; }
+.floating-card strong { @apply text-sm; }
+.floating-card small { @apply mt-0.5 text-xs text-slate-500; }
+
+.search-shell { @apply grid gap-3 rounded-[28px] border border-violet-100 bg-white p-4 shadow-2xl shadow-violet-200/50 md:grid-cols-[1.4fr_1fr_1fr_1fr_auto] md:items-end md:p-5; }
+.search-shell label { @apply block text-xs font-bold uppercase tracking-wider text-slate-500; }
+.search-shell input,
+.search-shell select { @apply mt-2 w-full rounded-xl border-0 bg-slate-50 px-4 py-3.5 text-sm font-semibold text-slate-900 outline-none ring-1 ring-slate-200 transition focus:ring-2 focus:ring-violet-500; }
+.search-shell button { @apply inline-flex h-[50px] items-center justify-center gap-2 rounded-xl bg-violet-600 px-6 font-bold text-white transition hover:bg-violet-700; }
+
+.section-title-row { @apply flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between; }
+.section-title-row h2 { @apply mt-2 max-w-3xl text-3xl font-black tracking-tight text-slate-950 sm:text-4xl; }
+.section-title-row p { @apply mt-3 max-w-2xl leading-7 text-slate-600; }
+.section-title-row > a { @apply inline-flex shrink-0 items-center gap-2 font-bold text-violet-700 hover:text-violet-900; }
+.section-title-row > a svg { @apply h-4 w-4; }
+.section-kicker { @apply text-sm font-black uppercase tracking-[.18em] text-violet-600; }
+.destination-card { @apply relative overflow-hidden rounded-[26px] bg-slate-900 shadow-lg; }
+.destination-card strong { @apply block text-xl font-extrabold; }
+.destination-card span { @apply mt-1 block text-sm text-white/75; }
+
+.premium-card { @apply overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl; }
+.premium-card .mini-chip { @apply inline-flex rounded-full bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-700; }
+.mini-chip { @apply inline-flex rounded-full bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-700; }
+
+.membership-shell { @apply overflow-hidden rounded-[32px] bg-slate-950 text-white shadow-2xl; }
+.member-tier { @apply rounded-[26px] border border-white/10 bg-white/[.07] p-7 backdrop-blur; }
+.member-tier h3 { @apply text-2xl font-extrabold; }
+.member-tier ul { @apply mt-5 space-y-3 text-sm text-slate-200; }
+.member-tier li { @apply flex gap-2; }
+.member-tier li svg { @apply mt-0.5 h-4 w-4 shrink-0 text-violet-300; }
+.dark-feature { @apply rounded-2xl border border-white/10 bg-white/[.06] p-5; }
+.dark-feature svg { @apply h-6 w-6 text-violet-300; }
+.dark-feature strong { @apply mt-4 block; }
+.dark-feature span { @apply mt-1 block text-sm leading-6 text-slate-400; }
+.partner-cta { @apply relative overflow-hidden rounded-[32px] bg-gradient-to-br from-violet-700 via-violet-600 to-indigo-700 p-8 text-white shadow-xl sm:p-12; }
+
+.search-hero { @apply border-b border-violet-100; background: radial-gradient(circle at 85% 0%, rgb(221 214 254 / 75%), transparent 32%), linear-gradient(180deg, #fff, #faf8ff); }
+.ai-match-note { @apply flex items-center gap-3 rounded-2xl border border-violet-100 bg-white/90 px-4 py-3 shadow-sm; }
+.ai-match-note > svg { @apply h-6 w-6 text-violet-600; }
+.ai-match-note span { @apply flex flex-col; }
+.ai-match-note strong { @apply text-sm; }
+.ai-match-note small { @apply text-xs text-slate-500; }
+.result-control { @apply inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm transition hover:border-violet-300 hover:text-violet-700; }
+.result-control svg { @apply h-4 w-4; }
+.smart-result-banner { @apply flex flex-col gap-3 rounded-2xl border border-violet-100 bg-violet-50/70 p-5 sm:flex-row sm:items-center; }
+.smart-result-banner > svg { @apply h-6 w-6 shrink-0 text-violet-600; }
+.smart-result-banner strong { @apply text-sm font-extrabold; }
+.smart-result-banner p { @apply text-sm text-slate-600; }
+.smart-result-banner a { @apply inline-flex shrink-0 items-center gap-1 text-sm font-bold text-violet-700 sm:ml-auto; }
+.smart-result-banner a svg { @apply h-4 w-4; }
+.result-card { @apply overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-xl; }
+
+.property-gallery { @apply grid h-[430px] gap-2 md:grid-cols-[1.6fr_.8fr]; }
+.rating-box { @apply rounded-xl bg-violet-700 px-3 py-2 text-xl font-black text-white; }
+.amenity-row { @apply flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700; }
+.amenity-row svg { @apply h-4 w-4 text-emerald-600; }
+.ai-property-note { @apply flex gap-4 rounded-2xl border border-violet-100 bg-violet-50 p-5; }
+.ai-property-note > svg { @apply h-6 w-6 shrink-0 text-violet-600; }
+.ai-property-note strong { @apply font-extrabold text-slate-950; }
+.ai-property-note p { @apply mt-1 text-sm leading-6 text-slate-600; }
+.booking-summary { @apply h-fit rounded-[24px] border border-slate-200 bg-white p-6 shadow-xl lg:sticky lg:top-24; }
+.booking-summary p strong { @apply text-3xl text-slate-950; }
+.booking-dates { @apply my-5 grid grid-cols-2 overflow-hidden rounded-xl border border-slate-200; }
+.booking-dates span { @apply flex flex-col border-b border-r border-slate-200 px-3 py-2 text-[11px] font-black uppercase tracking-wide text-slate-500; }
+.booking-dates span:nth-child(2) { @apply border-r-0; }
+.booking-dates span:last-child { @apply border-b-0 border-r-0; }
+.booking-dates small { @apply mt-1 text-sm font-semibold normal-case tracking-normal text-slate-800; }
+.trust-booking { @apply mb-12 flex gap-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-5; }
+.trust-booking > svg { @apply h-6 w-6 shrink-0 text-emerald-700; }
+.trust-booking strong { @apply font-extrabold text-slate-950; }
+.trust-booking p { @apply mt-1 text-sm leading-6 text-slate-600; }
+
+/* Editorial visual system — aligned with the established iRatePilot.com style. */
+body { @apply bg-white text-neutral-950; font-family: Arial, Helvetica, sans-serif; }
+h1, h2 { font-family: Georgia, "Times New Roman", serif; font-weight: 400 !important; letter-spacing: -.035em !important; }
+.editorial-header { @apply sticky top-0 z-50 border-b border-black/10 bg-white/95 backdrop-blur; }
+.editorial-logo { @apply inline-flex items-center gap-2 text-2xl font-medium tracking-[-.04em] text-black; font-family: Georgia, "Times New Roman", serif; }
+.editorial-nav-link { @apply text-xs font-semibold uppercase tracking-[.12em] text-neutral-700 transition hover:text-black; }
+.editorial-signin { @apply border-b border-black pb-1 text-xs font-semibold uppercase tracking-[.12em] text-black; }
+.btn-primary { @apply rounded-none bg-black px-6 py-3 text-xs font-semibold uppercase tracking-[.12em] text-white hover:bg-neutral-800; }
+.btn-secondary { @apply rounded-none border-black bg-white px-6 py-3 text-xs font-semibold uppercase tracking-[.12em] text-black hover:bg-neutral-100; }
+.badge, .mini-chip, .premium-card .mini-chip { @apply rounded-none border border-neutral-300 bg-white text-neutral-700; }
+
+.hero-grid { background: white; }
+.hero-grid::before, .journey-glow { display: none; }
+.eyebrow-pill { @apply rounded-none border-0 border-b border-black bg-transparent px-0 pb-2 text-xs uppercase tracking-[.16em] text-black shadow-none; }
+.gradient-text { @apply bg-none text-black; }
+.trust-chip { @apply rounded-none bg-transparent px-0 shadow-none ring-0; }
+.trust-chip svg { @apply text-black; }
+.journey-panel { @apply max-w-2xl p-0; }
+.journey-panel > div:nth-child(2) { @apply rounded-none shadow-none; }
+.floating-card { @apply rounded-none border-black/10 shadow-lg; }
+
+.search-shell { @apply rounded-none border border-black bg-white p-3 shadow-none; }
+.search-shell label { @apply text-[10px] font-semibold tracking-[.16em] text-neutral-500; }
+.search-shell input, .search-shell select { @apply rounded-none bg-white px-3 py-3 ring-0 border-r border-neutral-200 focus:ring-0; }
+.search-shell button { @apply rounded-none bg-black px-6 text-xs uppercase tracking-[.12em] hover:bg-neutral-800; }
+
+.section-kicker { @apply text-[11px] font-semibold uppercase tracking-[.2em] text-neutral-500; }
+.section-title-row h2 { @apply text-neutral-950; }
+.section-title-row > a { @apply border-b border-black pb-1 text-xs uppercase tracking-[.12em] text-black hover:text-neutral-600; }
+.destination-card, .premium-card { @apply rounded-none shadow-none; }
+.premium-card { @apply border-neutral-200 hover:translate-y-0 hover:shadow-none; }
+
+.membership-shell { @apply rounded-none bg-neutral-950 shadow-none; }
+.member-tier { @apply rounded-none border-white/30 bg-transparent; }
+.dark-feature { @apply rounded-none border-white/20 bg-transparent; }
+.dark-feature svg { @apply text-white; }
+.partner-cta { @apply rounded-none bg-black shadow-none; }
+
+.search-hero { @apply border-neutral-200; background: #f7f6f3; }
+.ai-match-note, .smart-result-banner, .ai-property-note { @apply rounded-none border-neutral-300 bg-white shadow-none; }
+.ai-match-note > svg, .smart-result-banner > svg, .ai-property-note > svg { @apply text-black; }
+.result-control { @apply rounded-none border-neutral-300 shadow-none hover:border-black hover:text-black; }
+.result-card { @apply rounded-none border-neutral-200 shadow-none hover:translate-y-0 hover:shadow-none; }
+.rating-box, .booking-summary [class*="bg-violet"] { @apply rounded-none bg-black; }
+.property-gallery > div { border-radius: 0 !important; }
+.amenity-row { @apply rounded-none bg-neutral-50; }
+.amenity-row svg { @apply text-black; }
+.booking-summary { @apply rounded-none border-black shadow-none; }
+.booking-dates { @apply rounded-none; }
+.trust-booking { @apply rounded-none border-neutral-300 bg-neutral-50; }
+.trust-booking > svg { @apply text-black; }
+
+.revenue-ai-section { @apply bg-[#10110f] text-white; }
+.revenue-signal { @apply flex items-center gap-2 text-sm text-neutral-300; }
+.revenue-signal svg { @apply h-4 w-4 text-white; }
+.revenue-primary { @apply inline-flex items-center gap-2 bg-white px-6 py-3 text-xs font-semibold uppercase tracking-[.12em] text-black; }
+.revenue-primary svg { @apply h-4 w-4; }
+.revenue-secondary { @apply inline-flex items-center border border-white/40 px-6 py-3 text-xs font-semibold uppercase tracking-[.12em] text-white; }
+.revenue-dashboard { @apply border border-white/20 bg-[#181a17] p-5 shadow-2xl sm:p-7; }
+.revenue-dashboard-top { @apply flex flex-col gap-4 border-b border-white/10 pb-5 sm:flex-row sm:items-center sm:justify-between; }
+.revenue-dashboard-top div { @apply flex flex-col; }
+.revenue-dashboard-top span { @apply text-[10px] font-semibold uppercase tracking-[.16em] text-neutral-500; }
+.revenue-dashboard-top strong { @apply mt-1 text-lg; }
+.revenue-live { @apply inline-flex items-center gap-2 self-start border border-emerald-800 bg-emerald-950/50 px-3 py-2 text-emerald-300; }
+.revenue-live svg { @apply h-3.5 w-3.5; }
+.revenue-kpis { @apply my-5 grid grid-cols-2 gap-px bg-white/10 lg:grid-cols-4; }
+.revenue-kpis div { @apply flex flex-col bg-[#181a17] p-4; }
+.revenue-kpis span { @apply text-[10px] uppercase tracking-[.14em] text-neutral-500; }
+.revenue-kpis strong { @apply mt-2 text-2xl; }
+.revenue-kpis small { @apply mt-1 text-xs text-emerald-400; }
+.revenue-action { @apply mb-5 grid gap-4 border border-amber-400/30 bg-amber-400/[.07] p-5 sm:grid-cols-[auto_1fr_auto] sm:items-center; }
+.revenue-action-icon { @apply grid h-10 w-10 place-items-center bg-amber-300 text-black; }
+.revenue-action-icon svg { @apply h-5 w-5; }
+.revenue-action span { @apply text-[10px] font-semibold uppercase tracking-[.14em] text-amber-300; }
+.revenue-action strong { @apply mt-1 block; }
+.revenue-action p { @apply mt-1 text-sm leading-6 text-neutral-400; }
+.revenue-action button { @apply border border-white/30 px-4 py-2 text-xs font-semibold uppercase tracking-wider; }
+.revenue-chart-card { @apply border border-white/10 bg-black/20 p-5; }
+.revenue-chart-card > div > span { @apply text-[10px] uppercase tracking-wider text-neutral-500; }
+.forecast-bars { @apply mt-8 flex h-32 items-end gap-2 border-b border-white/20; }
+.forecast-bars i { @apply flex-1 bg-gradient-to-t from-neutral-500 to-white; }
+.revenue-chart-card ul { @apply mt-5 space-y-4 text-sm text-neutral-300; }
+.revenue-chart-card li { @apply flex items-center gap-2; }
+.revenue-chart-card li svg { @apply h-4 w-4 text-white; }
+.revenue-title-row h2 { @apply text-white; }
+.revenue-title-row > p { @apply max-w-xl text-neutral-400; }
+.revenue-feature { @apply bg-[#10110f] p-7; }
+.revenue-feature > svg { @apply h-6 w-6; }
+.revenue-feature h3 { @apply mt-7 text-lg font-semibold; }
+.revenue-feature p { @apply mt-3 text-sm leading-6 text-neutral-400; }
+.revenue-control-panel, .revenue-launch-panel { @apply border border-white/20 p-8 sm:p-10; }
+.revenue-control-panel h2 { @apply mt-4 text-4xl text-white; }
+.revenue-control-panel span:not(.section-kicker) { @apply flex items-center gap-2 border-b border-white/10 pb-3 text-sm text-neutral-300; }
+.revenue-control-panel svg { @apply h-4 w-4 text-white; }
+.revenue-launch-panel { @apply bg-white text-black; }
+.revenue-launch-panel h3 { @apply mt-4 text-3xl; font-family: Georgia, "Times New Roman", serif; }
+.revenue-launch-panel > p { @apply mt-5 leading-7 text-neutral-600; }
+.revenue-launch-panel > div > svg { @apply mt-1 h-5 w-5 shrink-0; }
+.revenue-launch-panel > div p { @apply text-sm leading-6 text-neutral-600; }
+.revenue-launch-panel > div strong { @apply text-black; }
+.revenue-price { @apply border border-white/20 p-7; }
+.revenue-price.featured { @apply border-white bg-white text-black; }
+.revenue-price > span { @apply text-xs font-semibold uppercase tracking-[.16em]; }
+.revenue-price > strong { @apply my-5 block text-4xl; font-family: Georgia, "Times New Roman", serif; }
+.revenue-price > strong small { @apply ml-1 text-sm font-normal; }
+.revenue-price > p { @apply text-sm leading-6 text-neutral-400; }
+.revenue-price.featured > p { @apply text-neutral-600; }
+
+.partner-hero { @apply bg-[#10110f] text-white; }
+.partner-benefit { @apply flex gap-4 border-t border-neutral-200 py-4; }
+.partner-benefit > svg { @apply mt-1 h-5 w-5 shrink-0; }
+.partner-benefit strong { @apply text-sm; }
+.partner-benefit p { @apply mt-1 text-sm leading-6 text-neutral-500; }
+.management-plans { @apply grid gap-px border border-neutral-300 bg-neutral-300 sm:grid-cols-2; }
+.management-plan { @apply relative flex min-h-[300px] flex-col bg-white p-7; }
+.management-plan.popular { @apply bg-black text-white; }
+.plan-popular { @apply absolute right-0 top-0 bg-white px-3 py-2 text-[10px] font-semibold uppercase tracking-[.14em] text-black; }
+.plan-name { @apply text-xs font-semibold uppercase tracking-[.16em]; }
+.management-plan > strong { @apply mt-8 text-5xl; font-family: Georgia, "Times New Roman", serif; }
+.management-plan > strong small { @apply ml-1 text-sm font-normal text-neutral-500; }
+.management-plan > p { @apply mt-5 flex-1 text-sm leading-6 text-neutral-600; }
+.management-plan.popular > p, .management-plan.popular > strong small { @apply text-neutral-300; }
+.management-plan > a { @apply mt-7 inline-flex items-center gap-2 border-b border-black pb-1 text-xs font-semibold uppercase tracking-[.11em] self-start; }
+.management-plan.popular > a { @apply border-white; }
+.management-plan > a svg { @apply h-4 w-4; }
+.management-disclosure { @apply mt-6 border-l-2 border-black pl-5 text-sm leading-6 text-neutral-600; }
+.partner-step { @apply relative border-t border-neutral-400 pt-6; }
+.partner-step > span { @apply absolute right-0 top-6 text-xs text-neutral-500; }
+.partner-step > svg { @apply h-6 w-6; }
+.partner-step h3 { @apply mt-10 text-xl font-semibold; }
+.partner-step p { @apply mt-3 text-sm leading-6 text-neutral-600; }
+.partner-join { @apply flex flex-col gap-9 bg-black p-8 text-white sm:p-12 lg:flex-row lg:items-end lg:justify-between; }

@@ -1,0 +1,1 @@
+export type Property={id:string;name:string;slug:string;stars:4|5;active:boolean};

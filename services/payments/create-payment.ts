@@ -1,0 +1,1 @@
+import type { PaymentRequest } from './types'; export async function createPayment(input:PaymentRequest){return {status:'requires_configuration',input};}

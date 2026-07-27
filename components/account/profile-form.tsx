@@ -1,0 +1,10 @@
+"use client";
+import { FormEvent,useEffect,useState } from "react";
+type Profile={full_name:string|null;phone:string|null;email?:string;membership_tier:string;reward_points:number};
+export function ProfileForm(){
+  const [profile,setProfile]=useState<Profile|null>(null);const [message,setMessage]=useState("Loading profile…");const [busy,setBusy]=useState(false);
+  useEffect(()=>{fetch("/api/profile").then(async(response)=>{const body=await response.json();if(!response.ok)throw new Error(body.error);setProfile(body.data);setMessage("");}).catch((error:Error)=>setMessage(error.message));},[]);
+  async function submit(event:FormEvent<HTMLFormElement>){event.preventDefault();setBusy(true);const form=new FormData(event.currentTarget);const response=await fetch("/api/profile",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({fullName:form.get("fullName"),phone:form.get("phone")})});const body=await response.json();setMessage(response.ok?body.message:body.error);setBusy(false);}
+  if(!profile)return <p role="status" className="card mt-8 p-6">{message}</p>;
+  return <form onSubmit={submit} className="card mt-8 grid max-w-2xl gap-5 p-7"><label className="text-sm font-medium">Email<input className="input mt-2 bg-slate-50" value={profile.email||""} disabled /></label><label className="text-sm font-medium">Full name<input name="fullName" className="input mt-2" defaultValue={profile.full_name||""} required /></label><label className="text-sm font-medium">Phone<input name="phone" className="input mt-2" type="tel" defaultValue={profile.phone||""} /></label><div className="grid grid-cols-2 gap-4 text-sm"><div><span className="text-slate-500">Membership</span><strong className="mt-1 block capitalize">{profile.membership_tier}</strong></div><div><span className="text-slate-500">Reward points</span><strong className="mt-1 block">{profile.reward_points}</strong></div></div>{message&&<p role="status" className="text-sm">{message}</p>}<button disabled={busy} className="btn-primary">{busy?"Saving…":"Save profile"}</button></form>;
+}

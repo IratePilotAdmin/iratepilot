@@ -1,0 +1,61 @@
+import { NextResponse } from "next/server";
+import { requireRole } from "@/lib/auth/require-role";
+import { propertySchema } from "@/lib/validation";
+
+export async function GET() {
+  try {
+    const auth = await requireRole(["partner", "admin"]);
+    if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    let query = auth.supabase.from("properties").select("id,name,slug,type,star_rating,city,country,active,image_url,amenities,created_at").order("created_at", { ascending: false });
+    if (auth.profile.role !== "admin") {
+      const { data: partner } = await auth.supabase.from("partners").select("id").eq("owner_id", auth.user.id).maybeSingle();
+      if (!partner) return NextResponse.json({ data: [] });
+      query = query.eq("partner_id", partner.id);
+    }
+    const { data, error } = await query;
+    if (error) throw error;
+    return NextResponse.json({ data });
+  } catch {
+    return NextResponse.json({ error: "Property records are not configured." }, { status: 503 });
+  }
+}
+
+export async function POST(request: Request) {
+  const parsed = propertySchema.safeParse(await request.json());
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+
+  try {
+    const auth = await requireRole(["partner", "admin"]);
+    if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    let { data: partner } = await auth.supabase.from("partners").select("id").eq("owner_id", auth.user.id).maybeSingle();
+    if (!partner) {
+      const { data, error } = await auth.supabase.from("partners").insert({
+        owner_id: auth.user.id,
+        business_name: parsed.data.name,
+        status: "pending"
+      }).select("id").single();
+      if (error) throw error;
+      partner = data;
+    }
+
+    const { data, error } = await auth.supabase.from("properties").insert({
+      partner_id: partner.id,
+      name: parsed.data.name,
+      slug: parsed.data.slug,
+      type: parsed.data.type,
+      star_rating: parsed.data.starRating,
+      description: parsed.data.description,
+      city: parsed.data.city,
+      region: parsed.data.region || null,
+      country: parsed.data.country,
+      active: false
+    }).select("id,name,slug,type,star_rating,city,country,active,image_url,amenities,created_at").single();
+    if (error?.code === "23505") return NextResponse.json({ error: "That property URL is already in use." }, { status: 409 });
+    if (error) throw error;
+    return NextResponse.json({ data, message: "Property submitted for administrator review." }, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: "The property could not be submitted." }, { status: 503 });
+  }
+}

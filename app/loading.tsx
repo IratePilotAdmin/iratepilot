@@ -1,0 +1,1 @@
+export default function Loading(){return <div className='container-page py-20 text-center'>Loading iRatePilot…</div>}

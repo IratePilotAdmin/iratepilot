@@ -1,0 +1,2 @@
+-- Replace UUIDs with real profile and partner IDs after authentication setup.
+-- Seed records are intentionally minimal to avoid invalid foreign-key references.

@@ -1,0 +1,1 @@
+export type SupplierHotel={id:string;name:string;currency:string}; export interface HotelSupplier{search(input:unknown):Promise<SupplierHotel[]>;book(input:unknown):Promise<unknown>;cancel(id:string):Promise<unknown>;}

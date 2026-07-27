@@ -1,0 +1,1 @@
+import type { EmailMessage } from './types'; export async function sendEmail(message:EmailMessage){console.log('Email stub',message);return {id:'demo-email'};}

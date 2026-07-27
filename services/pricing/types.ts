@@ -1,0 +1,1 @@
+export type PricingSignal={occupancy:number;demand:number;competitorMedian:number};

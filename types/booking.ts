@@ -1,0 +1,1 @@
+export type Booking={id:string;confirmationCode:string;status:'pending'|'confirmed'|'cancelled'|'refunded';total:number};

@@ -1,0 +1,1 @@
+export function trackEvent(name:string,payload:Record<string,unknown>={}){console.log('[analytics]',name,payload);}

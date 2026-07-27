@@ -1,0 +1,1 @@
+"use client"; export default function ErrorPage({reset}:{reset:()=>void}){return <div className='container-page py-20 text-center'><h1 className='text-2xl font-bold'>Something went wrong</h1><button className='btn-primary mt-6' onClick={reset}>Try again</button></div>}
