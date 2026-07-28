@@ -49,9 +49,7 @@ function PaymentForm({ breakdown }: { breakdown: Breakdown }) {
   );
 }
 
-export function CheckoutForm() {
-  const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-  const enabled = process.env.NEXT_PUBLIC_ENABLE_TEST_CHECKOUT === "true";
+export function CheckoutForm({ publishableKey, enabled }: { publishableKey?: string; enabled: boolean }) {
   const stripePromise = useMemo(() => publishableKey?.startsWith("pk_test_") ? loadStripe(publishableKey) : null, [publishableKey]);
   const [clientSecret, setClientSecret] = useState("");
   const [breakdown, setBreakdown] = useState<Breakdown | null>(null);
