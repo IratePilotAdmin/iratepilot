@@ -27,17 +27,27 @@ export function RatesInventoryManager() {
 
   async function send(event: FormEvent<HTMLFormElement>, action: "create_room" | "set_inventory") {
     event.preventDefault();
+    const form = event.currentTarget;
     setBusy(true);
     setMessage("");
-    const fields = Object.fromEntries(new FormData(event.currentTarget));
-    const response = await fetch("/api/partner/rates", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, ...fields })
-    });
-    const body = await response.json();
-    setMessage(response.ok ? body.message : body.error);
-    if (response.ok) { event.currentTarget.reset(); await load(); }
-    setBusy(false);
+    const fields = Object.fromEntries(new FormData(form));
+
+    try {
+      const response = await fetch("/api/partner/rates", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, ...fields })
+      });
+      const body = await response.json();
+      setMessage(response.ok ? body.message : body.error);
+      if (response.ok) {
+        form.reset();
+        await load();
+      }
+    } catch {
+      setMessage("The update could not be completed. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return <div className="mt-8 grid gap-8">
