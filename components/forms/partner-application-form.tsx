@@ -8,18 +8,24 @@ export function PartnerApplicationForm() {
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formElement = event.currentTarget;
     setLoading(true);
     setMessage("");
-    const form = new FormData(event.currentTarget);
-    const response = await fetch("/api/partners/apply", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(Object.fromEntries(form))
-    });
-    const result = await response.json();
-    setMessage(response.ok ? "Application received. We will contact you after review." : result.error || "Unable to submit.");
-    if (response.ok) event.currentTarget.reset();
-    setLoading(false);
+    try {
+      const form = new FormData(formElement);
+      const response = await fetch("/api/partners/apply", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(Object.fromEntries(form))
+      });
+      const result = await response.json();
+      setMessage(response.ok ? "Application received. We will contact you after review." : result.error || "Unable to submit.");
+      if (response.ok) formElement.reset();
+    } catch {
+      setMessage("Unable to submit. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
