@@ -20,6 +20,7 @@ export const adminNavigation = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/properties", label: "Properties" },
   { href: "/admin/bookings", label: "Bookings" },
+  { href: "/admin/cancellations", label: "Cancellations" },
   { href: "/admin/partners", label: "Partners" },
   { href: "/admin/customers", label: "Customers" },
   { href: "/admin/finance", label: "Finance" },
