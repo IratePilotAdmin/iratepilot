@@ -24,45 +24,60 @@ export function PartnerProperties() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formElement = event.currentTarget;
     setBusy(true);
     setMessage("");
-    const form = new FormData(event.currentTarget);
-    const response = await fetch("/api/partner/properties", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: form.get("name"), slug: form.get("slug"), type: form.get("type"),
-        starRating: form.get("starRating"), description: form.get("description"),
-        city: form.get("city"), region: form.get("region"), country: form.get("country")
-      })
-    });
-    const body = await response.json();
-    setMessage(response.ok ? body.message : typeof body.error === "string" ? body.error : "Check all property fields.");
-    if (response.ok) {
-      event.currentTarget.reset();
-      await load();
+    try {
+      const form = new FormData(formElement);
+      const response = await fetch("/api/partner/properties", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.get("name"), slug: form.get("slug"), type: form.get("type"),
+          starRating: form.get("starRating"), description: form.get("description"),
+          city: form.get("city"), region: form.get("region"), country: form.get("country")
+        })
+      });
+      const body = await response.json();
+      setMessage(response.ok ? body.message : typeof body.error === "string" ? body.error : "Check all property fields.");
+      if (response.ok) {
+        formElement.reset();
+        await load();
+      }
+    } catch {
+      setMessage("The property could not be submitted. Please try again.");
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   async function updateContent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formElement = event.currentTarget;
     setBusy(true);
     setMessage("");
-    const form = new FormData(event.currentTarget);
-    const propertyId = String(form.get("propertyId"));
-    const response = await fetch(`/api/partner/properties/${propertyId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        imageUrl: form.get("imageUrl"),
-        amenities: String(form.get("amenities")).split(",").map((item) => item.trim()).filter(Boolean)
-      })
-    });
-    const body = await response.json();
-    setMessage(response.ok ? body.message : body.error);
-    if (response.ok) { event.currentTarget.reset(); await load(); }
-    setBusy(false);
+    try {
+      const form = new FormData(formElement);
+      const propertyId = String(form.get("propertyId"));
+      const response = await fetch(`/api/partner/properties/${propertyId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageUrl: form.get("imageUrl"),
+          amenities: String(form.get("amenities")).split(",").map((item) => item.trim()).filter(Boolean)
+        })
+      });
+      const body = await response.json();
+      setMessage(response.ok ? body.message : body.error);
+      if (response.ok) {
+        formElement.reset();
+        await load();
+      }
+    } catch {
+      setMessage("Property content could not be saved. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
