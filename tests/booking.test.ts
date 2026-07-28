@@ -13,7 +13,7 @@ describe("booking safeguards", () => {
     const valid = { hotelSlug: "azure-grand-miami", roomId: "2f21f7c5-d841-46c6-9162-a1530510e56b", checkIn: "2026-08-10", checkOut: "2026-08-13", guests: 2 };
     expect(bookingSchema.safeParse(valid).success).toBe(true);
     expect(bookingSchema.safeParse({ ...valid, roomId: "invalid" }).success).toBe(false);
-    expect(checkoutSchema.safeParse({ hotelSlug: valid.hotelSlug, roomName: "Deluxe King", nights: 3, guests: 2 }).success).toBe(true);
+    expect(checkoutSchema.safeParse(valid).success).toBe(true);
   });
 
   it("awards standard Basic points and double Business points", () => {

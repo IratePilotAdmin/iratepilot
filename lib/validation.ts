@@ -24,8 +24,9 @@ export const partnerApplicationSchema = z.object({
 
 export const checkoutSchema = z.object({
   hotelSlug: z.string().min(1),
-  roomName: z.string().min(2),
-  nights: z.coerce.number().int().min(1).max(30),
+  roomId: z.string().uuid(),
+  checkIn: z.string().date(),
+  checkOut: z.string().date(),
   guests: z.coerce.number().int().min(1).max(20)
 });
 
