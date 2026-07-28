@@ -17,7 +17,22 @@ export async function GET() {
       .select("id,confirmation_code,check_in,check_out,guests,subtotal,fees,total,status,created_at,properties(name),rooms(name),profiles(full_name)")
       .in("property_id", ids).order("created_at", { ascending: false });
     if (error) throw error;
-    return NextResponse.json({ data });
+    const bookingIds = (data || []).map((booking) => booking.id);
+    const { data: financials, error: financialError } = bookingIds.length
+      ? await auth.supabase.from("booking_financials")
+          .select("booking_id,partner_commission,partner_net,status")
+          .in("booking_id", bookingIds)
+      : { data: [], error: null };
+    if (financialError) throw financialError;
+    const financialByBooking = new Map(
+      (financials || []).map((financial) => [financial.booking_id, financial])
+    );
+    return NextResponse.json({
+      data: (data || []).map((booking) => ({
+        ...booking,
+        financial: financialByBooking.get(booking.id) || null
+      }))
+    });
   } catch {
     return NextResponse.json({ error: "Partner reservations are not configured." }, { status: 503 });
   }
