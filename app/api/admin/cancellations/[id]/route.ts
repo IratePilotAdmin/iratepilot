@@ -55,6 +55,25 @@ export async function PATCH(
     if (intent.status !== "succeeded") {
       return NextResponse.json({ error: "The Stripe payment is not eligible for refund." }, { status: 409 });
     }
+
+    const { data: financial } = await admin
+      .from("booking_financials")
+      .select("id,stripe_transfer_id,stripe_transfer_status")
+      .eq("booking_id", booking.id)
+      .maybeSingle();
+
+    if (financial?.stripe_transfer_id && financial.stripe_transfer_status === "paid") {
+      await stripe.transfers.createReversal(
+        financial.stripe_transfer_id,
+        {},
+        { idempotencyKey: `booking-transfer-reversal-${booking.id}` }
+      );
+      await admin.from("booking_financials").update({
+        stripe_transfer_status: "reversed",
+        stripe_reversed_at: new Date().toISOString()
+      }).eq("id", financial.id);
+    }
+
     const refund = await stripe.refunds.create(
       { payment_intent: intent.id },
       { idempotencyKey: `booking-cancellation-${id}` }
@@ -71,9 +90,10 @@ export async function PATCH(
     if (finalizeError) throw finalizeError;
     return NextResponse.json({
       data: refundedBooking,
-      message: "Test refund completed, inventory restored, and finance reversed."
+      message: "Test refund completed, partner transfer reversed, inventory restored, and finance voided."
     });
-  } catch {
+  } catch (error) {
+    console.error("Cancellation and refund failed", error);
     return NextResponse.json({ error: "The cancellation decision could not be completed." }, { status: 503 });
   }
 }

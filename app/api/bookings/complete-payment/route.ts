@@ -21,7 +21,8 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
 
   try {
-    const intent = await getStripe().paymentIntents.retrieve(parsed.data.paymentIntentId);
+    const stripe = getStripe();
+    const intent = await stripe.paymentIntents.retrieve(parsed.data.paymentIntentId);
     const metadata = intent.metadata;
     if (intent.status !== "succeeded" || metadata.mode !== "booking_test" || metadata.userId !== user.id) {
       return NextResponse.json({ error: "The test payment has not been verified." }, { status: 409 });
@@ -41,11 +42,61 @@ export async function POST(request: Request) {
     });
     if (error) throw error;
 
+    const booking = data as { id: string; confirmation_code: string };
+    const { data: financial } = await admin
+      .from("booking_financials")
+      .select("id,partner_net,stripe_transfer_id,partners(stripe_connect_account_id,stripe_connect_payouts_enabled)")
+      .eq("booking_id", booking.id)
+      .single();
+
+    if (financial && !financial.stripe_transfer_id) {
+      const partner = financial.partners as unknown as {
+        stripe_connect_account_id: string | null;
+        stripe_connect_payouts_enabled: boolean;
+      };
+
+      if (partner?.stripe_connect_account_id && partner.stripe_connect_payouts_enabled) {
+        try {
+          const transfer = await stripe.transfers.create(
+            {
+              amount: Math.round(Number(financial.partner_net) * 100),
+              currency: "usd",
+              destination: partner.stripe_connect_account_id,
+              transfer_group: `booking_${booking.id}`,
+              metadata: {
+                booking_id: booking.id,
+                confirmation_code: booking.confirmation_code,
+                environment: "private_pilot"
+              }
+            },
+            { idempotencyKey: `booking-transfer-${booking.id}` }
+          );
+
+          await admin.from("booking_financials").update({
+            stripe_transfer_id: transfer.id,
+            stripe_transfer_status: "paid",
+            stripe_transfer_error: null,
+            stripe_transferred_at: new Date().toISOString(),
+            status: "paid"
+          }).eq("id", financial.id);
+        } catch (transferError) {
+          console.error("Stripe test transfer failed", transferError);
+          await admin.from("booking_financials").update({
+            stripe_transfer_status: "failed",
+            stripe_transfer_error: transferError instanceof Error
+              ? transferError.message.slice(0, 500)
+              : "Stripe transfer failed"
+          }).eq("id", financial.id);
+        }
+      }
+    }
+
     return NextResponse.json({
       data,
       message: "Test payment verified and booking confirmed."
     });
-  } catch {
+  } catch (error) {
+    console.error("Paid booking completion failed", error);
     return NextResponse.json({ error: "Payment succeeded, but the booking could not be finalized." }, { status: 503 });
   }
 }
