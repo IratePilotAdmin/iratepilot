@@ -16,7 +16,7 @@ export async function GET() {
     const { data, error } = await admin
       .from("booking_financials")
       .select(
-        "id,gross_room_revenue,partner_commission,partner_net,status,created_at,stripe_transfer_id,stripe_transfer_status,stripe_transfer_error,stripe_transferred_at,stripe_reversed_at,partners(business_name),bookings(confirmation_code,status,stripe_refund_id)"
+        "id,gross_room_revenue,partner_commission,partner_net,status,created_at,stripe_transfer_id,stripe_transfer_status,stripe_transfer_error,stripe_transferred_at,stripe_reversed_at,partners(business_name),bookings(confirmation_code,status)"
       )
       .order("created_at", { ascending: false });
 
@@ -58,3 +58,4 @@ export async function GET() {
     );
   }
 }
+
