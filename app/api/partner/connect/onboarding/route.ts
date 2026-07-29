@@ -50,7 +50,9 @@ export async function POST(request: Request) {
       return_url: `${origin}/partner/payouts?connect=returned`
     });
     return NextResponse.json({ url: link.url });
-  } catch {
+  } catch (error) {
+    console.error("Stripe Connect onboarding failed", error);
     return NextResponse.json({ error: "Stripe Connect onboarding could not be started." }, { status: 503 });
   }
 }
+
