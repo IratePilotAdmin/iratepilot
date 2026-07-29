@@ -27,7 +27,6 @@ export async function POST(request: Request) {
           url: "https://www.iratepilot.com"
         },
         capabilities: {
-          card_payments: { requested: true },
           transfers: { requested: true }
         },
         metadata: {
