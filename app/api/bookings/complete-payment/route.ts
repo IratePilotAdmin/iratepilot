@@ -57,11 +57,20 @@ export async function POST(request: Request) {
 
       if (partner?.stripe_connect_account_id && partner.stripe_connect_payouts_enabled) {
         try {
+          const sourceTransaction = typeof intent.latest_charge === "string"
+            ? intent.latest_charge
+            : intent.latest_charge?.id;
+
+          if (!sourceTransaction) {
+            throw new Error("The successful Stripe payment does not have a charge available for transfer.");
+          }
+
           const transfer = await stripe.transfers.create(
             {
               amount: Math.round(Number(financial.partner_net) * 100),
               currency: "usd",
               destination: partner.stripe_connect_account_id,
+              source_transaction: sourceTransaction,
               transfer_group: `booking_${booking.id}`,
               metadata: {
                 booking_id: booking.id,
