@@ -6,3 +6,7 @@ node_modules
 dist
 coverage
 .DS_Store
+
+*.zip
+iratepilot-partner-admin-review/
+iratepilot-webhook-reliability/
