@@ -17,8 +17,16 @@ type Row = {
   bookings: { confirmation_code: string; status: string; stripe_refund_id: string | null } | null;
 };
 type Summary = { gross: number; commission: number; partnerNet: number; paidTransfers: number; reversedTransfers: number; failedTransfers: number };
+type FinanceResponse = { data?: Row[]; summary: Summary; error?: string };
 const money = (value: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
 const shortId = (value: string | null) => value ? `${value.slice(0, 10)}…` : "—";
+
+async function fetchFinance() {
+  const response = await fetch("/api/admin/finance", { cache: "no-store" });
+  const body = await response.json() as FinanceResponse;
+  if (!response.ok) throw new Error(body.error || "Financial report could not be loaded.");
+  return body;
+}
 
 export function AdminFinance() {
   const [rows, setRows] = useState<Row[]>([]);
@@ -27,14 +35,20 @@ export function AdminFinance() {
   const [retrying, setRetrying] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const response = await fetch("/api/admin/finance", { cache: "no-store" });
-    const body = await response.json();
-    if (!response.ok) throw new Error(body.error);
+    const body = await fetchFinance();
     setRows(body.data || []);
     setSummary(body.summary);
     setMessage("");
   }, []);
-  useEffect(() => { load().catch((error: Error) => setMessage(error.message)); }, [load]);
+  useEffect(() => {
+    fetchFinance()
+      .then((body) => {
+        setRows(body.data || []);
+        setSummary(body.summary);
+        setMessage("");
+      })
+      .catch((error: Error) => setMessage(error.message));
+  }, []);
 
   const retry = async (id: string) => {
     setRetrying(id);
