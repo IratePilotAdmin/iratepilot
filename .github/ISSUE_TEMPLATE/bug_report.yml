@@ -1,0 +1,92 @@
+name: Bug report
+description: Report a reproducible problem with iRatePilot
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve iRatePilot. Do not include passwords, API keys, personal data, or payment details.
+
+        If this report describes a security vulnerability, stop here and use the private **Report a vulnerability** link in the issue picker instead.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Customer website
+        - Search or property pages
+        - Authentication or account
+        - Checkout or payments
+        - Partner dashboard
+        - Admin dashboard
+        - API
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: URL, route, or component
+      description: Identify where the problem occurs without including private query parameters or tokens.
+      placeholder: /checkout or app/api/search/route.ts
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe the problem and its user impact.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Provide the smallest reliable sequence that reproduces the problem using test data.
+      placeholder: |
+        1. Sign in with a test account
+        2. Open ...
+        3. Select ...
+        4. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include sanitized errors, screenshots, or logs when useful.
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include browser, device, operating system, and whether this occurred on production or a preview.
+      placeholder: Chrome 140, Windows 11, production
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: I removed secrets, payment details, and personal data from this report.
+          required: true
+        - label: This is a product bug, not an unpatched security vulnerability.
+          required: true
