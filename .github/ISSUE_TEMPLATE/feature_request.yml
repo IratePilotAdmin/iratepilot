@@ -1,0 +1,88 @@
+name: Feature request
+description: Propose an improvement or new capability for iRatePilot
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing an improvement. Describe the user problem and desired outcome before prescribing an implementation.
+
+        Do not include passwords, API keys, personal data, payment details, supplier credentials, or confidential business information.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Product area
+      options:
+        - Customer website
+        - Search or property pages
+        - Authentication or account
+        - Checkout or payments
+        - AI travel planner
+        - Partner dashboard
+        - Admin dashboard
+        - Revenue tools
+        - API or integrations
+        - Developer experience
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or opportunity
+      description: Explain who is affected, what they are trying to accomplish, and why the current experience is insufficient.
+      placeholder: As a ..., I need ..., because ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe the observable user or business result that would make this successful.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach
+      description: Outline a possible solution, workflow, or interface. Implementation details are optional.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Note current workarounds or other approaches you evaluated.
+
+  - type: textarea
+    id: considerations
+    attributes:
+      label: Delivery considerations
+      description: Identify relevant authentication, data, privacy, payment, supplier, accessibility, environment-variable, migration, or deployment concerns. Write "None identified" when not applicable.
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add sanitized mockups, examples, or related issue links when useful.
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: I searched existing issues and did not find an equivalent request.
+          required: true
+        - label: I removed secrets, payment details, personal data, and confidential information from this request.
+          required: true
+        - label: This request does not disclose an unpatched security vulnerability.
+          required: true
