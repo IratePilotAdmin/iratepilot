@@ -14,7 +14,7 @@
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
     "@stripe/react-stripe-js": "^3.7.0",
-    "@stripe/stripe-js": "^7.9.0",
+    "@stripe/stripe-js": "^9.12.1",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.111.0",
     "class-variance-authority": "^0.7.0",
