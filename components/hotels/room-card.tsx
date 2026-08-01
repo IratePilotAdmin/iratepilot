@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 
 export function RoomCard({ name, price, perks }: { name: string; price: number; perks: string[] }) {
@@ -13,7 +12,7 @@ export function RoomCard({ name, price, perks }: { name: string; price: number; 
       <div className="text-right">
         <div className="text-2xl font-bold">{formatCurrency(price)}</div>
         <div className="text-xs text-slate-500">per night, taxes extra</div>
-        <Link href="/checkout" className="btn-primary mt-4">Reserve</Link>
+        <a href="#booking-request" className="btn-primary mt-4">Check availability</a>
       </div>
     </div>
   );

@@ -8,10 +8,20 @@ import { RoomCard } from "@/components/hotels/room-card";
 import { BookingRequestForm } from "@/components/bookings/booking-request-form";
 import { getMarketplaceHotel } from "@/lib/data/marketplace";
 
-export default async function HotelPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export default async function HotelPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: SearchParams }) {
+  const [{ slug }, query] = await Promise.all([params, searchParams]);
   const { hotel, source, rooms } = await getMarketplaceHotel(slug);
   if (!hotel) notFound();
+  const stringParam = (name: string) => typeof query[name] === "string" ? query[name] : undefined;
+  const initialSelection = {
+    roomId: stringParam("roomId"),
+    checkIn: stringParam("checkIn"),
+    checkOut: stringParam("checkOut"),
+    guests: stringParam("guests")
+  };
+  const testCheckoutEnabled = process.env.ENABLE_TEST_CHECKOUT === "true" && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.startsWith("pk_test_") === true;
 
   return (
     <>
@@ -57,9 +67,9 @@ export default async function HotelPage({ params }: { params: Promise<{ slug: st
           <section id="rooms" className="border-t border-slate-200 py-12">
             <span className="section-kicker">Flexible options</span><h2 className="mt-3 text-3xl font-black tracking-tight">Choose your room</h2><p className="mt-2 text-slate-600">Select rates and cancellation terms before checkout.</p>
             <div className="mt-7 grid gap-4"><RoomCard name="Deluxe King" price={hotel.price} perks={["King bed", "Free Wi-Fi", "Pay later option"]}/><RoomCard name="Premium Suite" price={hotel.price + 140} perks={["Separate living area", "Breakfast included", "Priority support"]}/></div>
-            <div className="mt-8"><BookingRequestForm hotelSlug={hotel.slug} rooms={rooms} /></div>
+            <div className="mt-8"><BookingRequestForm hotelSlug={hotel.slug} rooms={rooms} testCheckoutEnabled={testCheckoutEnabled} initialSelection={initialSelection} /></div>
           </section>
-          <div className="trust-booking"><ShieldCheck /><div><strong>Book with clear policies</strong><p>Review the full room, cancellation, tax, and fee details before confirming. Payments remain in test mode during development.</p></div></div>
+          <div className="trust-booking"><ShieldCheck /><div><strong>Book with clear policies</strong><p>Review the full room, cancellation, tax, and fee details before confirming. {testCheckoutEnabled ? "Payments remain in test mode during development." : "Private booking requests are reviewed by the property before payment."}</p></div></div>
         </section>
       </main>
       <SiteFooter />
