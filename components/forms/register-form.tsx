@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export function RegisterForm({ configured }: { configured: boolean }) {
+export function RegisterForm({ configured, nextPath }: { configured: boolean; nextPath: string }) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const callbackPath = `/auth/callback?next=${encodeURIComponent(nextPath)}`;
 
   async function signUpWithGoogle() {
     if (!configured) return;
@@ -15,7 +18,7 @@ export function RegisterForm({ configured }: { configured: boolean }) {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/auth/callback?next=/account` }
+        options: { redirectTo: `${window.location.origin}${callbackPath}` }
       });
       if (error) throw error;
     } catch (error) {
@@ -32,12 +35,20 @@ export function RegisterForm({ configured }: { configured: boolean }) {
     const form = new FormData(event.currentTarget);
     try {
       const supabase = createClient();
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: String(form.get("email")),
         password: String(form.get("password")),
-        options: { data: { full_name: `${form.get("firstName")} ${form.get("lastName")}`.trim() } }
+        options: {
+          data: { full_name: `${form.get("firstName")} ${form.get("lastName")}`.trim() },
+          emailRedirectTo: `${window.location.origin}${callbackPath}`
+        }
       });
       if (error) throw error;
+      if (data.session) {
+        router.replace(nextPath);
+        router.refresh();
+        return;
+      }
       setMessage("Check your email to confirm your account.");
       event.currentTarget.reset();
     } catch (error) {
