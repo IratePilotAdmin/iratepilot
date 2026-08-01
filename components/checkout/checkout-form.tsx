@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 
@@ -84,6 +85,7 @@ function PaymentForm({ breakdown }: { breakdown: Breakdown }) {
 }
 
 export function CheckoutForm({ publishableKey, enabled, selection }: { publishableKey?: string; enabled: boolean; selection: Selection }) {
+  const router = useRouter();
   const selectionComplete = Boolean(selection.hotelSlug && selection.roomId && selection.checkIn && selection.checkOut && selection.guests);
   const stripePromise = useMemo(() => publishableKey?.startsWith("pk_test_") ? loadStripe(publishableKey) : null, [publishableKey]);
   const [clientSecret, setClientSecret] = useState("");
@@ -99,12 +101,17 @@ export function CheckoutForm({ publishableKey, enabled, selection }: { publishab
     })
       .then(async (response) => {
         const body = await response.json();
+        if (response.status === 401) {
+          const nextPath = `${window.location.pathname}${window.location.search}`;
+          router.replace(`/login?next=${encodeURIComponent(nextPath)}`);
+          return;
+        }
         if (!response.ok) throw new Error(body.error || "Checkout could not start.");
         setClientSecret(body.clientSecret);
         setBreakdown(body.breakdown);
       })
       .catch((reason: Error) => setError(reason.message));
-  }, [enabled, selection, selectionComplete, stripePromise]);
+  }, [enabled, router, selection, selectionComplete, stripePromise]);
 
   if (!enabled || !stripePromise) {
     return <div className="card p-8"><h2 className="text-xl font-semibold">Checkout is not available</h2><p className="mt-3 text-slate-600">iRatePilot is in a private pilot. Test checkout requires explicit Stripe test-mode configuration.</p></div>;
