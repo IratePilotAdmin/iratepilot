@@ -81,7 +81,8 @@ begin
 end;
 $$;
 
-revoke all on function public.review_partner_application(uuid, text) from public;
+revoke all on function public.review_partner_application(uuid, text)
+  from public, anon, service_role;
 grant execute on function public.review_partner_application(uuid, text) to authenticated;
 
 commit;
