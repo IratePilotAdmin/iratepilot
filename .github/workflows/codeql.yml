@@ -15,6 +15,10 @@ permissions:
   packages: read
   security-events: write
 
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   analyze:
     name: Analyze JavaScript and TypeScript
