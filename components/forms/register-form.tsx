@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export function RegisterForm({ configured, nextPath }: { configured: boolean; nextPath: string }) {
+export function RegisterForm({ configured, nextPath, initialEmail = "" }: { configured: boolean; nextPath: string; initialEmail?: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -69,7 +69,7 @@ export function RegisterForm({ configured, nextPath }: { configured: boolean; ne
         <div><label className="mb-2 block text-sm font-medium" htmlFor="last-name">Last name</label><input id="last-name" name="lastName" className="input" autoComplete="family-name" disabled={!configured} required /></div>
       </div>
       <label className="grid gap-2 text-sm font-medium" htmlFor="register-email">Email address</label>
-      <input id="register-email" name="email" className="input" type="email" autoComplete="email" disabled={!configured} required />
+      <input id="register-email" name="email" className="input" type="email" autoComplete="email" defaultValue={initialEmail} disabled={!configured} required />
       <label className="grid gap-2 text-sm font-medium" htmlFor="register-password">Create password</label>
       <input id="register-password" name="password" className="input" type="password" autoComplete="new-password" minLength={8} disabled={!configured} required />
       {message && <p role="status" className="text-sm text-slate-700">{message}</p>}
