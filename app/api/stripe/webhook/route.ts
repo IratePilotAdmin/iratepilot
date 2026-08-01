@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { completePaidTestBooking, isCompletableBookingIntent } from "@/lib/bookings/complete-paid-test-booking";
 
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
@@ -117,6 +118,16 @@ export async function POST(request: Request) {
           stripe_subscription_id: null, subscription_renews_at: null
         }).eq("id", subscription.metadata.partnerId);
         if (error) throw error;
+      }
+    }
+
+    if (event.type === "payment_intent.succeeded") {
+      const intent = event.data.object as Stripe.PaymentIntent;
+      objectId = intent.id;
+      if (intent.metadata?.mode === "booking_test") {
+        if (!isCompletableBookingIntent(intent)) throw new Error("Stripe test booking metadata is incomplete.");
+        const completion = await completePaidTestBooking(intent);
+        financialId = completion.financialId;
       }
     }
 
