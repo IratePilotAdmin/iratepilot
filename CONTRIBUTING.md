@@ -11,7 +11,7 @@ Thank you for helping improve iRatePilot. Keep changes focused, document their i
 
 ## Local setup
 
-The project requires a current Node.js release compatible with Next.js 16 and npm.
+The project requires Node.js 24.x and npm. If you use `nvm`, run `nvm use` from the repository root before installing dependencies.
 
 ```bash
 npm ci

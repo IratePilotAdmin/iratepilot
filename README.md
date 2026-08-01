@@ -27,7 +27,7 @@ The repository includes mock and integration-ready flows. It is not connected to
 
 ## Local development
 
-Use a current Node.js release compatible with Next.js 16 and npm.
+Use Node.js 24.x and npm. If you use `nvm`, run `nvm use` from the repository root to select the version in [`.nvmrc`](.nvmrc).
 
 ```bash
 npm ci
