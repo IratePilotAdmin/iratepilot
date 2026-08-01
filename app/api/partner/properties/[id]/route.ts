@@ -11,6 +11,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   try {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+    let propertyQuery = auth.supabase.from("properties").select("id").eq("id", id);
+    if (auth.profile.role !== "admin") {
+      const { data: partner } = await auth.supabase.from("partners").select("id").eq("owner_id", auth.user.id).maybeSingle();
+      if (!partner) return NextResponse.json({ error: "Property not found." }, { status: 404 });
+      propertyQuery = propertyQuery.eq("partner_id", partner.id);
+    }
+    const { data: property } = await propertyQuery.maybeSingle();
+    if (!property) return NextResponse.json({ error: "Property not found." }, { status: 404 });
+
     const { data, error } = await auth.supabase.from("properties").update({
       image_url: parsed.data.imageUrl, amenities: parsed.data.amenities, active: false
     }).eq("id", id).select("id,name,active").single();
