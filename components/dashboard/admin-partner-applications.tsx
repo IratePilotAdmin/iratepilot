@@ -56,8 +56,9 @@ export function AdminPartnerApplications() {
       <div className="border-b border-slate-200 p-6">
         <h2 className="text-xl font-semibold">Application review queue</h2>
         <p className="mt-1 text-sm text-slate-500">
-          Approval records the review decision. Partner access and property
-          activation remain separate controlled steps.
+          Approval grants partner access and creates the partner business record.
+          The applicant must register with the same email address first. Property
+          publication remains a separate review step.
         </p>
         {message && <p role="status" className="mt-3 text-sm">{message}</p>}
       </div>
@@ -86,21 +87,29 @@ export function AdminPartnerApplications() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <button
-                className="btn-primary"
-                disabled={busy === application.id || application.status === "approved"}
-                onClick={() => decide(application.id, "approved")}
-              >
-                {application.status === "approved" ? "Approved" : "Approve"}
-              </button>
-              <button
-                className="btn-secondary"
-                disabled={busy === application.id || application.status === "declined"}
-                onClick={() => decide(application.id, "declined")}
-              >
-                Decline
-              </button>
-              {application.status !== "pending" && (
+              {application.status === "approved" ? (
+                <button className="btn-primary" disabled>
+                  Approved &amp; provisioned
+                </button>
+              ) : (
+                <button
+                  className="btn-primary"
+                  disabled={busy === application.id}
+                  onClick={() => decide(application.id, "approved")}
+                >
+                  Approve &amp; grant access
+                </button>
+              )}
+              {application.status === "pending" && (
+                <button
+                  className="btn-secondary"
+                  disabled={busy === application.id}
+                  onClick={() => decide(application.id, "declined")}
+                >
+                  Decline
+                </button>
+              )}
+              {application.status === "declined" && (
                 <button
                   className="btn-secondary"
                   disabled={busy === application.id}

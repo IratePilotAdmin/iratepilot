@@ -19,7 +19,7 @@ export function PartnerApplicationForm() {
         body: JSON.stringify(Object.fromEntries(form))
       });
       const result = await response.json();
-      setMessage(response.ok ? "Application received. We will contact you after review." : result.error || "Unable to submit.");
+      setMessage(response.ok ? "Application received. Register with this email before review if you do not already have an account." : result.error || "Unable to submit.");
       if (response.ok) formElement.reset();
     } catch {
       setMessage("Unable to submit. Please try again.");
@@ -31,6 +31,10 @@ export function PartnerApplicationForm() {
   return (
     <form className="card grid gap-4 p-6 text-slate-950" onSubmit={submit}>
       <h2 className="text-xl font-bold">Start your property application</h2>
+      <p className="text-sm text-slate-600">
+        Use the same email address for your iRatePilot account. You must register
+        before an approved application can receive partner access.
+      </p>
       <label htmlFor="property-name" className="text-sm font-medium">Property name</label>
       <input id="property-name" name="propertyName" className="input" required minLength={2} />
       <label htmlFor="contact-name" className="text-sm font-medium">Contact name</label>

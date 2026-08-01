@@ -50,6 +50,8 @@ create table partners (
   created_at timestamptz not null default now()
 );
 
+create unique index partners_owner_id_key on partners (owner_id);
+
 create table properties (
   id uuid primary key default uuid_generate_v4(),
   partner_id uuid not null references partners(id),
@@ -383,6 +385,61 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
+create or replace function public.review_partner_application(
+  p_application_id uuid,
+  p_status text
+)
+returns partner_applications
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_application partner_applications;
+  v_user_id uuid;
+begin
+  if not exists (
+    select 1 from profiles where id = auth.uid() and role = 'admin'
+  ) then
+    raise exception 'Not authorized' using errcode = '42501';
+  end if;
+  if p_status not in ('pending', 'approved', 'declined') then
+    raise exception 'Invalid review decision' using errcode = '22023';
+  end if;
+
+  select * into v_application from partner_applications
+    where id = p_application_id for update;
+  if not found then
+    raise exception 'Partner application not found' using errcode = 'P0002';
+  end if;
+  if v_application.status = 'approved' and p_status <> 'approved' then
+    raise exception 'Approved partner access must be managed separately' using errcode = 'P0001';
+  end if;
+
+  if p_status = 'approved' then
+    select id into v_user_id from auth.users
+      where lower(email) = lower(v_application.email)
+      order by created_at limit 1;
+    if v_user_id is null then
+      raise exception 'Applicant must register with the application email before approval' using errcode = 'P0002';
+    end if;
+    update profiles
+      set role = case when role = 'admin' then role else 'partner'::user_role end
+      where id = v_user_id;
+    if not found then
+      raise exception 'The registered applicant profile could not be found' using errcode = 'P0002';
+    end if;
+    insert into partners (owner_id, business_name, status)
+      values (v_user_id, v_application.property_name, 'approved')
+      on conflict (owner_id) do update
+        set business_name = excluded.business_name, status = 'approved';
+  end if;
+
+  update partner_applications set status = p_status
+    where id = p_application_id returning * into v_application;
+  return v_application;
+end;
+$$;
+
 create or replace function public.record_booking_status()
 returns trigger
 language plpgsql
@@ -540,6 +597,8 @@ $$;
 
 revoke all on function public.review_revenue_recommendation(uuid, text) from public;
 grant execute on function public.review_revenue_recommendation(uuid, text) to authenticated;
+revoke all on function public.review_partner_application(uuid, text) from public;
+grant execute on function public.review_partner_application(uuid, text) to authenticated;
 revoke all on function public.review_booking(uuid, text, text) from public;
 grant execute on function public.review_booking(uuid, text, text) to authenticated;
 revoke all on function public.cancel_pending_booking(uuid, text) from public;
