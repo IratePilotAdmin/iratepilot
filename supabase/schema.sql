@@ -597,7 +597,8 @@ $$;
 
 revoke all on function public.review_revenue_recommendation(uuid, text) from public;
 grant execute on function public.review_revenue_recommendation(uuid, text) to authenticated;
-revoke all on function public.review_partner_application(uuid, text) from public;
+revoke all on function public.review_partner_application(uuid, text)
+  from public, anon, service_role;
 grant execute on function public.review_partner_application(uuid, text) to authenticated;
 revoke all on function public.review_booking(uuid, text, text) from public;
 grant execute on function public.review_booking(uuid, text, text) to authenticated;
