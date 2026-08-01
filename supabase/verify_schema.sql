@@ -24,4 +24,5 @@ order by relname;
 select
   to_regprocedure('public.review_booking(uuid,text,text)') is not null as booking_review_ready,
   to_regprocedure('public.cancel_pending_booking(uuid,text)') is not null as cancellation_ready,
-  to_regprocedure('public.review_revenue_recommendation(uuid,text)') is not null as revenue_approval_ready;
+  to_regprocedure('public.review_revenue_recommendation(uuid,text)') is not null as revenue_approval_ready,
+  to_regprocedure('public.review_partner_application(uuid,text)') is not null as partner_provisioning_ready;

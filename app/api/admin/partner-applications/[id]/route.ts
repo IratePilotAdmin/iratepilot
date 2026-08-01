@@ -26,14 +26,20 @@ export async function PATCH(
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const { data, error } = await auth.supabase
-      .from("partner_applications")
-      .update({ status: parsed.data.status })
-      .eq("id", id)
-      .select("id,property_name,status")
-      .single();
+    const { data, error } = await auth.supabase.rpc(
+      "review_partner_application",
+      { p_application_id: id, p_status: parsed.data.status }
+    );
 
-    if (error) throw error;
+    if (error) {
+      if (error.message.includes("must register with the application email")) {
+        return NextResponse.json({ error: error.message }, { status: 409 });
+      }
+      if (error.message.includes("Approved partner access must be managed separately")) {
+        return NextResponse.json({ error: error.message }, { status: 409 });
+      }
+      throw error;
+    }
     return NextResponse.json({ data });
   } catch {
     return NextResponse.json(
