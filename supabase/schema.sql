@@ -129,6 +129,18 @@ create table notifications (
   created_at timestamptz not null default now()
 );
 
+create table property_review_history (
+  id uuid primary key default uuid_generate_v4(),
+  property_id uuid not null references properties(id) on delete cascade,
+  reviewer_id uuid not null references profiles(id),
+  active boolean not null,
+  note text not null check (char_length(note) between 5 and 1000),
+  created_at timestamptz not null default now()
+);
+
+create index property_review_history_property_created_idx
+  on property_review_history (property_id, created_at desc);
+
 create table email_outbox (
   id uuid primary key default uuid_generate_v4(),
   recipient_email text not null,
@@ -254,6 +266,7 @@ alter table partner_applications enable row level security;
 alter table contact_messages enable row level security;
 alter table booking_status_history enable row level security;
 alter table notifications enable row level security;
+alter table property_review_history enable row level security;
 alter table email_outbox enable row level security;
 alter table reward_ledger enable row level security;
 alter table booking_financials enable row level security;
@@ -288,6 +301,15 @@ create policy "Partners can view own booking history" on booking_status_history 
 );
 create policy "Users can view own notifications" on notifications for select using (user_id = auth.uid());
 create policy "Users can update own notifications" on notifications for update using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy "Partners can view own property reviews" on property_review_history for select using (
+  exists (
+    select 1 from properties join partners on partners.id = properties.partner_id
+    where properties.id = property_review_history.property_id and partners.owner_id = auth.uid()
+  )
+);
+create policy "Admins can view property reviews" on property_review_history for select using (
+  exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin')
+);
 create policy "Users can view own reward ledger" on reward_ledger for select using (user_id = auth.uid());
 create policy "Admins can manage reward ledger" on reward_ledger for all using (
   exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin')
@@ -487,44 +509,53 @@ create trigger on_partner_application_approved
   after update of status on partner_applications
   for each row execute procedure public.notify_approved_partner_application();
 
-create or replace function public.notify_property_review_change()
-returns trigger
+create or replace function public.queue_property_review_notification(
+  p_property_id uuid,
+  p_active boolean,
+  p_note text
+)
+returns void
 language plpgsql
 security definer set search_path = public
 as $$
 declare
+  v_property_name text;
   v_owner_id uuid;
   v_owner_email text;
   v_owner_name text;
   v_title text;
   v_message text;
 begin
-  if new.active is not distinct from old.active then
-    return new;
-  end if;
-
   select
+    property.name,
     partner.owner_id,
     owner_user.email,
     coalesce(nullif(owner_profile.full_name, ''), 'Partner')
-  into v_owner_id, v_owner_email, v_owner_name
-  from public.partners as partner
+  into v_property_name, v_owner_id, v_owner_email, v_owner_name
+  from public.properties as property
+  join public.partners as partner on partner.id = property.partner_id
   join auth.users as owner_user on owner_user.id = partner.owner_id
   left join public.profiles as owner_profile on owner_profile.id = partner.owner_id
-  where partner.id = new.partner_id;
+  where property.id = p_property_id;
 
   -- Partner edits can return a listing to review. The dashboard already explains
   -- that transition, so only administrator or service-role decisions notify them.
   if v_owner_id is null or auth.uid() is not distinct from v_owner_id then
-    return new;
+    return;
   end if;
 
-  if new.active then
+  if p_active then
     v_title := 'Property published';
-    v_message := new.name || ' is now published in the iRatePilot marketplace.';
+    v_message := v_property_name || ' is now published in the iRatePilot marketplace.';
   else
-    v_title := 'Property listing paused';
-    v_message := new.name || ' was returned to review. Check your listing details or contact iRatePilot support.';
+    v_title := 'Property changes requested';
+    v_message := v_property_name || ' needs changes before marketplace publication.';
+  end if;
+
+  if nullif(btrim(coalesce(p_note, '')), '') is not null then
+    v_message := v_message || ' Review note: ' || btrim(p_note);
+  elsif not p_active then
+    v_message := v_message || ' Check your listing details or contact iRatePilot support.';
   end if;
 
   insert into public.notifications (user_id, title, body)
@@ -539,8 +570,8 @@ begin
     )
     values (
       v_owner_email,
-      v_title || ': ' || new.name,
-      case when new.active then 'property_published' else 'property_paused' end,
+      v_title || ': ' || v_property_name,
+      case when p_active then 'property_published' else 'property_changes_requested' end,
       jsonb_build_object(
         'recipient_name', v_owner_name,
         'message', v_message,
@@ -548,6 +579,32 @@ begin
       )
     );
   end if;
+
+end;
+$$;
+
+create or replace function public.notify_property_review_change()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_review_note text;
+begin
+  if new.active is not distinct from old.active then
+    return new;
+  end if;
+
+  select review.note
+  into v_review_note
+  from public.property_review_history as review
+  where review.property_id = new.id
+    and review.active = new.active
+    and review.created_at = transaction_timestamp()
+  order by review.id desc
+  limit 1;
+
+  perform public.queue_property_review_notification(new.id, new.active, v_review_note);
 
   return new;
 end;
@@ -557,6 +614,58 @@ drop trigger if exists on_property_review_changed on properties;
 create trigger on_property_review_changed
   after update of active on properties
   for each row execute procedure public.notify_property_review_change();
+
+create or replace function public.review_property(
+  p_property_id uuid,
+  p_active boolean,
+  p_note text
+)
+returns properties
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_property properties;
+  v_note text;
+begin
+  if not exists (
+    select 1 from profiles where id = auth.uid() and role = 'admin'
+  ) then
+    raise exception 'Not authorized' using errcode = '42501';
+  end if;
+
+  v_note := btrim(coalesce(p_note, ''));
+  if char_length(v_note) < 5 or char_length(v_note) > 1000 then
+    raise exception 'Review note must be between 5 and 1000 characters'
+      using errcode = '22023';
+  end if;
+
+  select * into v_property from properties
+    where id = p_property_id for update;
+  if not found then
+    raise exception 'Property not found' using errcode = 'P0002';
+  end if;
+  if v_property.active and p_active then
+    raise exception 'Property already has that review status'
+      using errcode = '22023';
+  end if;
+
+  insert into property_review_history (property_id, reviewer_id, active, note)
+    values (p_property_id, auth.uid(), p_active, v_note);
+
+  if v_property.active is distinct from p_active then
+    update properties set active = p_active
+      where id = p_property_id returning * into v_property;
+  else
+    perform public.queue_property_review_notification(
+      p_property_id,
+      p_active,
+      v_note
+    );
+  end if;
+  return v_property;
+end;
+$$;
 
 create or replace function public.review_partner_application(
   p_application_id uuid,
@@ -779,6 +888,11 @@ revoke all on function public.notify_approved_partner_application()
   from public, anon, authenticated;
 revoke all on function public.notify_property_review_change()
   from public, anon, authenticated;
+revoke all on function public.queue_property_review_notification(uuid, boolean, text)
+  from public, anon, authenticated;
+revoke all on function public.review_property(uuid, boolean, text)
+  from public, anon, service_role;
+grant execute on function public.review_property(uuid, boolean, text) to authenticated;
 revoke all on function public.review_partner_application(uuid, text)
   from public, anon, service_role;
 grant execute on function public.review_partner_application(uuid, text) to authenticated;

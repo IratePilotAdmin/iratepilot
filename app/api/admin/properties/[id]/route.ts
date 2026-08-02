@@ -2,14 +2,13 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/require-role";
 import { getPropertyReadiness, type PropertyReadinessInput } from "@/lib/property-readiness";
-
-const decisionSchema = z.object({ active: z.boolean() });
+import { propertyReviewSchema } from "@/lib/validation";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!z.string().uuid().safeParse(id).success) return NextResponse.json({ error: "Invalid property ID." }, { status: 400 });
-  const parsed = decisionSchema.safeParse(await request.json());
-  if (!parsed.success) return NextResponse.json({ error: "Invalid review decision." }, { status: 400 });
+  const parsed = propertyReviewSchema.safeParse(await request.json());
+  if (!parsed.success) return NextResponse.json({ error: "Add a review note between 5 and 1000 characters." }, { status: 400 });
 
   try {
     const auth = await requireRole(["admin"]);
@@ -28,8 +27,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         }, { status: 409 });
       }
     }
-    const { data, error } = await auth.supabase.from("properties").update({ active: parsed.data.active }).eq("id", id)
-      .select("id,name,active").single();
+    const { data, error } = await auth.supabase.rpc("review_property", {
+      p_property_id: id,
+      p_active: parsed.data.active,
+      p_note: parsed.data.note,
+    });
+    if (error?.code === "22023") return NextResponse.json({ error: error.message }, { status: 409 });
     if (error) throw error;
     return NextResponse.json({ data });
   } catch {
