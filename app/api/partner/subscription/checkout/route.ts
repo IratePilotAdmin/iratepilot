@@ -27,8 +27,21 @@ export async function POST(request: Request) {
     if (!partner) return NextResponse.json({ error: "Create a partner property record first." }, { status: 409 });
     const idempotency = getStripeIdempotencyContext(request, "partner-subscription", auth.user.id);
     if (!idempotency) return NextResponse.json({ error: "A valid checkout attempt ID is required." }, { status: 400 });
+    const stripe = getStripe();
+    const expectedAmount = partnerPlans[parsed.data.plan].monthlyPrice * 100;
+    const price = await stripe.prices.retrieve(priceId);
+    if (
+      !price.active ||
+      price.unit_amount !== expectedAmount ||
+      price.currency !== "usd" ||
+      price.recurring?.interval !== "month"
+    ) {
+      return NextResponse.json({
+        error: `Stripe must use an active $${partnerPlans[parsed.data.plan].monthlyPrice}/month USD recurring price for this plan.`
+      }, { status: 503 });
+    }
     const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const session = await getStripe().checkout.sessions.create({
+    const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer_email: auth.user.email,
       line_items: [{ price: priceId, quantity: 1 }],
