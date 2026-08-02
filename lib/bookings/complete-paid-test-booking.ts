@@ -4,6 +4,17 @@ import { createAdminClient } from "../supabase/admin";
 
 type Booking = { id: string; confirmation_code: string };
 
+export class PaidBookingFinalizationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PaidBookingFinalizationError";
+  }
+}
+
+export function getBookingFinalizationRefundKey(paymentIntentId: string) {
+  return `booking-finalization-refund-${paymentIntentId}`;
+}
+
 export function isCompletableBookingIntent(intent: Stripe.PaymentIntent, expectedUserId?: string) {
   const metadata = intent.metadata;
   const guests = Number(metadata.guests);
@@ -34,18 +45,17 @@ export async function completePaidTestBooking(intent: Stripe.PaymentIntent) {
     p_amount_total_cents: intent.amount_received
   });
   let booking = data as Booking | null;
-  if (error?.code === "23505") {
+  if (error) {
     const { data: existingBooking, error: existingError } = await admin
       .from("bookings")
       .select("id,confirmation_code")
       .eq("stripe_payment_intent_id", intent.id)
       .maybeSingle();
-    if (existingError || !existingBooking) throw error;
+    if (existingError) throw existingError;
+    if (!existingBooking) throw new PaidBookingFinalizationError(error.message);
     booking = existingBooking;
-  } else if (error) {
-    throw error;
   }
-  if (!booking) throw new Error("The paid booking was not returned.");
+  if (!booking) throw new PaidBookingFinalizationError("The paid booking was not returned.");
 
   const { data: financial, error: financialError } = await admin
     .from("booking_financials")

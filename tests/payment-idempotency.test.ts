@@ -19,8 +19,9 @@ describe("paid booking idempotency", () => {
   });
 
   it("recovers the winning booking when concurrent completion hits the unique index", () => {
-    expect(completion).toContain('error?.code === "23505"');
+    expect(completion).toContain("if (error) {");
     expect(completion).toContain('.eq("stripe_payment_intent_id", intent.id)');
-    expect(completion).toContain("if (existingError || !existingBooking) throw error");
+    expect(completion).toContain("if (existingError) throw existingError");
+    expect(completion).toContain("booking = existingBooking");
   });
 });
