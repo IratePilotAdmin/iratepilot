@@ -3,6 +3,7 @@ import { differenceInCalendarDays, parseISO, startOfDay } from "date-fns";
 import { fees } from "@/config/fees";
 import { createClient } from "@/lib/supabase/server";
 import { bookingSchema } from "@/lib/validation";
+import { calculateVerifiedStayPricing } from "@/lib/bookings/stay-pricing";
 
 export async function GET() {
   try {
@@ -67,15 +68,14 @@ export async function POST(request: Request) {
       .eq("room_id", parsed.data.roomId).gte("stay_date", parsed.data.checkIn).lt("stay_date", parsed.data.checkOut).order("stay_date");
     if (inventoryResult.error) throw inventoryResult.error;
     const inventory = inventoryResult.data || [];
-    if (inventory.length !== nights || inventory.some((day) => day.available_units < 1)) {
+    const { data: profile } = await supabase.from("profiles").select("membership_tier").eq("id", user.id).single();
+    const memberFeeExempt = profile?.membership_tier === "basic" || profile?.membership_tier === "business";
+    const pricing = calculateVerifiedStayPricing(inventory, nights, memberFeeExempt ? 0 : fees.serviceFeeRate);
+    if (!pricing.ok && pricing.reason === "availability") {
       return NextResponse.json({ error: "This room is not available for every selected night." }, { status: 409 });
     }
-
-    const { data: profile } = await supabase.from("profiles").select("membership_tier").eq("id", user.id).single();
-    const subtotal = inventory.reduce((sum, day) => sum + Number(day.rate), 0);
-    const memberFeeExempt = profile?.membership_tier === "basic" || profile?.membership_tier === "business";
-    const serviceFee = memberFeeExempt ? 0 : Math.round(subtotal * fees.serviceFeeRate * 100) / 100;
-    const total = subtotal + serviceFee;
+    if (!pricing.ok) return NextResponse.json({ error: "Pricing could not be verified for this stay." }, { status: 503 });
+    const { subtotal, serviceFee, total } = pricing;
     const property = roomResult.data.properties as unknown as { id: string; name: string };
     const confirmationCode = `IRP-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
 
