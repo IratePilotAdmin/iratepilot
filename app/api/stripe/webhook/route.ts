@@ -11,6 +11,7 @@ import {
 import { getSubscriptionAccessStatus, getSubscriptionRenewsAt } from "@/lib/stripe/subscription-lifecycle";
 import { isRetryableStripeWebhookClaim } from "@/lib/stripe/webhook-retry";
 import { getVerifiedPartnerSubscriptionPlan } from "@/lib/stripe/partner-subscription-pricing";
+import { getVerifiedMembershipSubscriptionTier } from "@/lib/stripe/membership-subscription-pricing";
 
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
@@ -111,7 +112,6 @@ export async function POST(request: Request) {
         const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
         const subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
         const { error } = await admin.from("profiles").update({
-          membership_tier: session.metadata.plan,
           stripe_customer_id: customerId || null,
           stripe_subscription_id: subscriptionId || null
         }).eq("id", session.metadata.userId)
@@ -136,10 +136,12 @@ export async function POST(request: Request) {
       const accessStatus = getSubscriptionAccessStatus(subscription.status);
       const renewsAt = getSubscriptionRenewsAt(subscription);
       const subscriptionId = event.type === "customer.subscription.deleted" ? null : subscription.id;
-      if (subscription.metadata?.mode === "pilot_test" && subscription.metadata.userId && (subscription.metadata.plan === "basic" || subscription.metadata.plan === "business")) {
+      if (subscription.metadata?.mode === "pilot_test" && subscription.metadata.userId) {
+        const verifiedTier = getVerifiedMembershipSubscriptionTier(subscription);
+        if (!verifiedTier) throw new Error("Membership subscription price does not match a configured iRatePilot tier.");
         const customerId = typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
         const update = admin.from("profiles").update({
-          membership_tier: subscription.metadata.plan,
+          membership_tier: verifiedTier,
           membership_status: accessStatus,
           stripe_customer_id: customerId,
           stripe_subscription_id: subscriptionId,

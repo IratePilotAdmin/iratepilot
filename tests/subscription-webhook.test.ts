@@ -34,4 +34,16 @@ describe("subscription webhook coverage", () => {
     );
     expect(checkoutBlock).not.toContain("software_plan:");
   });
+
+  it("uses verified subscription items as the traveler tier source of truth", () => {
+    expect(webhook).toContain("getVerifiedMembershipSubscriptionTier(subscription)");
+    expect(webhook).toContain("membership_tier: verifiedTier");
+    expect(webhook).toContain("Membership subscription price does not match a configured iRatePilot tier.");
+
+    const checkoutBlock = webhook.slice(
+      webhook.indexOf('session.metadata?.mode === "pilot_test"'),
+      webhook.indexOf('session.metadata?.mode === "partner_subscription_test"'),
+    );
+    expect(checkoutBlock).not.toContain("membership_tier:");
+  });
 });

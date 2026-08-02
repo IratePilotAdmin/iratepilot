@@ -4,6 +4,7 @@ import { memberships } from "@/config/memberships";
 import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe";
 import { getStripeIdempotencyContext } from "@/lib/stripe-idempotency";
+import { getMembershipStripePriceId, isExpectedMembershipStripePrice } from "@/lib/stripe/membership-subscription-pricing";
 
 const schema = z.object({ plan: z.enum(["basic", "business"]) });
 
@@ -13,18 +14,17 @@ export async function POST(request: Request) {
   }
   const parsed = schema.safeParse(await request.json());
   if (!parsed.success) return NextResponse.json({ error: "Choose a valid membership plan." }, { status: 400 });
-  const priceId = parsed.data.plan === "basic" ? process.env.STRIPE_BASIC_PRICE_ID : process.env.STRIPE_BUSINESS_PRICE_ID;
-  if (!priceId?.startsWith("price_")) return NextResponse.json({ error: "The selected Stripe test price is not configured." }, { status: 503 });
   try {
-    const expectedAmount = memberships[parsed.data.plan].annualPrice * 100;
-    const stripe = getStripe();
-    const price = await stripe.prices.retrieve(priceId);
-    if (price.unit_amount !== expectedAmount || price.currency !== "usd" || price.recurring?.interval !== "year") {
-      return NextResponse.json({ error: `Stripe must use a $${memberships[parsed.data.plan].annualPrice}/year USD recurring price for this plan.` }, { status: 503 });
-    }
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user?.email) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+    const priceId = getMembershipStripePriceId(parsed.data.plan);
+    if (!priceId?.startsWith("price_")) return NextResponse.json({ error: "The selected Stripe test price is not configured." }, { status: 503 });
+    const stripe = getStripe();
+    const price = await stripe.prices.retrieve(priceId);
+    if (!isExpectedMembershipStripePrice(price, parsed.data.plan)) {
+      return NextResponse.json({ error: `Stripe must use an active $${memberships[parsed.data.plan].annualPrice}/year USD recurring price for this plan.` }, { status: 503 });
+    }
     const idempotency = getStripeIdempotencyContext(request, "membership", user.id);
     if (!idempotency) return NextResponse.json({ error: "A valid checkout attempt ID is required." }, { status: 400 });
     const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
