@@ -1,5 +1,6 @@
 import { hotels as demoHotels, type Hotel } from "@/data/hotels";
 import { createClient } from "@/lib/supabase/server";
+import { getSafePropertyImageUrl } from "@/lib/property-images";
 
 type PropertyRow = {
   slug: string;
@@ -14,8 +15,6 @@ type PropertyRow = {
   review_count: number | null;
   rooms: Array<{ base_rate: number }> | null;
 };
-
-const fallbackImage = "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80";
 
 export async function getMarketplaceHotels(): Promise<{ hotels: Hotel[]; source: "database" | "demo" }> {
   try {
@@ -40,7 +39,7 @@ export async function getMarketplaceHotels(): Promise<{ hotels: Hotel[]; source:
         rating: Number(property.guest_rating || 0),
         reviews: property.review_count || 0,
         price: Math.min(...rates),
-        image: property.image_url || fallbackImage,
+        image: getSafePropertyImageUrl(property.image_url),
         amenities: property.amenities || [],
         description: property.description || "A verified premium property in the iRatePilot marketplace."
       }];

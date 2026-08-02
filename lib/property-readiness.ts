@@ -1,3 +1,5 @@
+import { isSafeRemoteImageUrl } from "./property-images";
+
 export type PropertyReadinessInput = {
   image_url?: string | null;
   amenities?: unknown;
@@ -28,7 +30,7 @@ export function getPropertyReadiness(
   const rooms = property.rooms ?? [];
   const activeRooms = rooms.filter((room) => room.active === true);
   const requirements = {
-    primaryPhoto: Boolean(property.image_url?.trim()),
+    primaryPhoto: isSafeRemoteImageUrl(property.image_url),
     amenities: Array.isArray(property.amenities) && property.amenities.length > 0,
     activeRoom: activeRooms.length > 0,
     futureInventory: activeRooms.some((room) =>

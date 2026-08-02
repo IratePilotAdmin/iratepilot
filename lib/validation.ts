@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isSafeRemoteImageUrl } from "./property-images";
 
 export const searchSchema = z.object({
   destination: z.string().min(2),
@@ -48,7 +49,10 @@ export const propertySchema = z.object({
 });
 
 export const propertyContentSchema = z.object({
-  imageUrl: z.string().url().max(2000),
+  imageUrl: z.string().url().max(2000).refine(
+    isSafeRemoteImageUrl,
+    "Use a public HTTPS image URL without credentials, custom ports, or IP addresses."
+  ),
   amenities: z.array(z.string().trim().min(2).max(80)).min(1).max(20)
 });
 

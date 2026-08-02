@@ -1,15 +1,15 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Check, Heart, Sparkles, Star } from "lucide-react";
 import { Hotel } from "@/data/hotels";
 import { formatCurrency } from "@/lib/utils";
+import { PropertyImage } from "@/components/hotels/property-image";
 
 export function HotelCard({ hotel, variant = "list", rank }: { hotel: Hotel; variant?: "list" | "grid"; rank?: number }) {
   if (variant === "grid") return (
     <article className="premium-card group">
       <Link href={`/hotels/${hotel.slug}`} className="block">
         <div className="relative h-64 overflow-hidden">
-          <Image src={hotel.image} alt={hotel.name} fill className="object-cover transition duration-500 group-hover:scale-105" />
+          <PropertyImage src={hotel.image} alt={hotel.name} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition duration-500 group-hover:scale-105" />
           <span className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1 text-xs font-extrabold text-slate-800 shadow">{hotel.stars}-star verified</span>
           <span className="absolute right-4 top-4 rounded-full bg-slate-950/80 px-3 py-1 text-xs font-bold text-white backdrop-blur">★ {hotel.rating}</span>
         </div>
@@ -27,7 +27,7 @@ export function HotelCard({ hotel, variant = "list", rank }: { hotel: Hotel; var
     <article className="result-card group">
       <div className="grid md:grid-cols-[280px_1fr_210px]">
         <div className="relative min-h-64 overflow-hidden">
-          <Image src={hotel.image} alt={hotel.name} fill className="object-cover" />
+          <PropertyImage src={hotel.image} alt={hotel.name} fill sizes="(max-width: 768px) 100vw, 280px" className="object-cover" />
           {rank && <span className="absolute left-4 top-4 rounded-full bg-slate-950/80 px-3 py-1.5 text-xs font-bold text-white backdrop-blur">#{rank} Smart Match</span>}
           <button aria-label={`Save ${hotel.name}`} className="absolute right-4 top-4 rounded-full bg-white/95 p-2.5 text-slate-700 shadow"><Heart className="h-4 w-4" /></button>
         </div>

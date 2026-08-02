@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Bot, Check, ChevronRight, Heart, MapPin, ShieldCheck, Sparkles, Star } from "lucide-react";
@@ -6,6 +5,7 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { RoomCard } from "@/components/hotels/room-card";
 import { BookingRequestForm } from "@/components/bookings/booking-request-form";
+import { PropertyImage } from "@/components/hotels/property-image";
 import { getMarketplaceHotel } from "@/lib/data/marketplace";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -39,10 +39,10 @@ export default async function HotelPage({ params, searchParams }: { params: Prom
           </div>
 
           <div className="property-gallery mt-7">
-            <div className="relative min-h-[430px] overflow-hidden rounded-l-[28px]"><Image src={hotel.image} alt={hotel.name} fill priority className="object-cover" /></div>
+            <div className="relative min-h-[430px] overflow-hidden rounded-l-[28px]"><PropertyImage src={hotel.image} alt={hotel.name} fill sizes="(max-width: 1024px) 100vw, 70vw" priority className="object-cover" /></div>
             <div className="grid gap-2">
-              <div className="relative overflow-hidden rounded-tr-[28px]"><Image src={hotel.image} alt={`${hotel.name} property view`} fill className="object-cover" /></div>
-              <div className="relative overflow-hidden rounded-br-[28px]"><Image src={hotel.image} alt={`${hotel.name} guest experience`} fill className="object-cover" /></div>
+              <div className="relative overflow-hidden rounded-tr-[28px]"><PropertyImage src={hotel.image} alt={`${hotel.name} property view`} fill sizes="(max-width: 1024px) 100vw, 30vw" className="object-cover" /></div>
+              <div className="relative overflow-hidden rounded-br-[28px]"><PropertyImage src={hotel.image} alt={`${hotel.name} guest experience`} fill sizes="(max-width: 1024px) 100vw, 30vw" className="object-cover" /></div>
             </div>
           </div>
 
