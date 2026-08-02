@@ -119,7 +119,7 @@ export function getAvailableRoomRates(
 export function getAvailableRooms<T extends SearchableRoom>(
   rooms: T[] | null,
   criteria: StayCriteria,
-): Array<T & { averageNightlyRate: number }> {
+): Array<T & { averageNightlyRate: number; staySubtotal: number }> {
   const nights = differenceInCalendarDays(parseISO(criteria.checkOut), parseISO(criteria.checkIn));
   const requiredDates = Array.from({ length: nights }, (_, index) =>
     format(addDays(parseISO(criteria.checkIn), index), "yyyy-MM-dd"),
@@ -131,8 +131,12 @@ export function getAvailableRooms<T extends SearchableRoom>(
     const stayInventory = requiredDates.map((date) => inventoryByDate.get(date));
     if (stayInventory.some((day) => !day || day.available_units < 1 || Number(day.rate) <= 0)) return [];
 
-    const total = stayInventory.reduce((sum, day) => sum + Number(day!.rate), 0);
-    return [{ ...room, averageNightlyRate: Math.round((total / nights) * 100) / 100 }];
+    const staySubtotal = Math.round(stayInventory.reduce((sum, day) => sum + Number(day!.rate), 0) * 100) / 100;
+    return [{
+      ...room,
+      averageNightlyRate: Math.round((staySubtotal / nights) * 100) / 100,
+      staySubtotal,
+    }];
   });
 }
 

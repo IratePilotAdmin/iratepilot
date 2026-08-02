@@ -44,6 +44,7 @@ describe("marketplace search", () => {
     expect(getAvailableRooms([{ ...availableRoom, id: "room-1" }], criteria)).toMatchObject([{
       id: "room-1",
       averageNightlyRate: 350,
+      staySubtotal: 700,
     }]);
     expect(getAvailableRoomRates([{ ...availableRoom, max_guests: 1 }], criteria)).toEqual([]);
     expect(getAvailableRoomRates([{ ...availableRoom, inventory: availableRoom.inventory.slice(0, 1) }], criteria)).toEqual([]);

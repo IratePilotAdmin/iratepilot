@@ -1,4 +1,5 @@
 import { hotels as demoHotels, type Hotel } from "@/data/hotels";
+import { fees } from "@/config/fees";
 import { createClient } from "@/lib/supabase/server";
 import {
   getAvailableRoomRates,
@@ -82,6 +83,7 @@ export async function getMarketplaceHotel(slug: string, stay: StayCriteria | nul
         : roomRows.filter((room) => room.active).map((room) => ({
           ...room,
           averageNightlyRate: Number(room.base_rate),
+          staySubtotal: null,
         }));
       const rooms = availableRooms.map((room) => ({
         id: room.id,
@@ -89,9 +91,28 @@ export async function getMarketplaceHotel(slug: string, stay: StayCriteria | nul
         baseRate: room.averageNightlyRate,
         maxGuests: room.max_guests,
         availabilityVerified: Boolean(stay),
+        staySubtotal: room.staySubtotal,
       }));
       return { hotel: marketplace.hotels.find((item) => item.slug === slug), source: marketplace.source, rooms };
     } catch {}
   }
   return { hotel: marketplace.hotels.find((item) => item.slug === slug), source: marketplace.source, rooms: [] };
+}
+
+export async function getTravelerServiceFeeRate() {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return fees.serviceFeeRate;
+    const { data, error } = await supabase.from("profiles")
+      .select("membership_tier")
+      .eq("id", user.id)
+      .single();
+    if (error) throw error;
+    return data.membership_tier === "basic" || data.membership_tier === "business"
+      ? 0
+      : fees.serviceFeeRate;
+  } catch {
+    return fees.serviceFeeRate;
+  }
 }

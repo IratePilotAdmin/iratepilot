@@ -4,6 +4,7 @@ export type MarketplaceRoom = {
   baseRate: number;
   maxGuests: number;
   availabilityVerified?: boolean;
+  staySubtotal?: number | null;
 };
 
 export type PresentedRoom = {
