@@ -59,6 +59,11 @@ export const roomSchema = z.object({
   baseRate: z.coerce.number().min(25).max(25000)
 });
 
+export const roomUpdateSchema = roomSchema.omit({ propertyId: true }).extend({
+  roomId: z.string().uuid(),
+  active: z.boolean()
+});
+
 export const inventorySchema = z.object({
   roomId: z.string().uuid(),
   startDate: z.string().date(),

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { eachDayOfInterval, parseISO, differenceInCalendarDays, format } from "date-fns";
 import { requireRole } from "@/lib/auth/require-role";
-import { inventorySchema, roomSchema } from "@/lib/validation";
+import { inventorySchema, roomSchema, roomUpdateSchema } from "@/lib/validation";
 
 export async function GET() {
   try {
@@ -26,7 +26,17 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const body = await request.json();
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
+
+  if (typeof body !== "object" || body === null || !("action" in body)) {
+    return NextResponse.json({ error: "Unknown inventory action." }, { status: 400 });
+  }
+
   try {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -43,12 +53,43 @@ export async function POST(request: Request) {
       if (partner) propertyQuery = propertyQuery.eq("partner_id", partner.id);
       const { data: property } = await propertyQuery.maybeSingle();
       if (!property) return NextResponse.json({ error: "Property not found." }, { status: 404 });
+      const reviewResult = await auth.supabase.from("properties")
+        .update({ active: false }).eq("id", parsed.data.propertyId);
+      if (reviewResult.error) throw reviewResult.error;
       const result = await auth.supabase.from("rooms").insert({
         property_id: parsed.data.propertyId, name: parsed.data.name,
         max_guests: parsed.data.maxGuests, base_rate: parsed.data.baseRate, active: true
       }).select("id,name").single();
       if (result.error) throw result.error;
-      return NextResponse.json({ data: result.data, message: "Room type created." }, { status: 201 });
+      return NextResponse.json({
+        data: result.data,
+        message: "Room type created. The property was returned to review."
+      }, { status: 201 });
+    }
+    if (body.action === "update_room") {
+      const parsed = roomUpdateSchema.safeParse(body);
+      if (!parsed.success) return NextResponse.json({ error: "Check the room name, guests, base rate, and status." }, { status: 400 });
+      let roomQuery = auth.supabase.from("rooms")
+        .select("id,property_id,properties!inner(partner_id)")
+        .eq("id", parsed.data.roomId);
+      if (partner) roomQuery = roomQuery.eq("properties.partner_id", partner.id);
+      const { data: room } = await roomQuery.maybeSingle();
+      if (!room) return NextResponse.json({ error: "Room type not found." }, { status: 404 });
+
+      const reviewResult = await auth.supabase.from("properties")
+        .update({ active: false }).eq("id", room.property_id);
+      if (reviewResult.error) throw reviewResult.error;
+      const result = await auth.supabase.from("rooms").update({
+        name: parsed.data.name,
+        max_guests: parsed.data.maxGuests,
+        base_rate: parsed.data.baseRate,
+        active: parsed.data.active
+      }).eq("id", parsed.data.roomId).select("id,name,active").single();
+      if (result.error) throw result.error;
+      return NextResponse.json({
+        data: result.data,
+        message: "Room type saved. The property was returned to review."
+      });
     }
     if (body.action === "set_inventory") {
       const parsed = inventorySchema.safeParse(body);
