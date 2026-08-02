@@ -15,6 +15,13 @@ export function getBookingFinalizationRefundKey(paymentIntentId: string) {
   return `booking-finalization-refund-${paymentIntentId}`;
 }
 
+export function refundUnfinalizedTestBooking(paymentIntentId: string) {
+  return getStripe().refunds.create(
+    { payment_intent: paymentIntentId },
+    { idempotencyKey: getBookingFinalizationRefundKey(paymentIntentId) },
+  );
+}
+
 export function isCompletableBookingIntent(intent: Stripe.PaymentIntent, expectedUserId?: string) {
   const metadata = intent.metadata;
   const guests = Number(metadata.guests);

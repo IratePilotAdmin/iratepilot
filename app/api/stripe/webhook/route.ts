@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { completePaidTestBooking, isCompletableBookingIntent } from "@/lib/bookings/complete-paid-test-booking";
+import {
+  completePaidTestBooking,
+  isCompletableBookingIntent,
+  PaidBookingFinalizationError,
+  refundUnfinalizedTestBooking,
+} from "@/lib/bookings/complete-paid-test-booking";
 import { getSubscriptionAccessStatus, getSubscriptionRenewsAt } from "@/lib/stripe/subscription-lifecycle";
 
 export async function POST(request: Request) {
@@ -25,6 +30,7 @@ export async function POST(request: Request) {
   const eventCreatedAt = new Date(event.created * 1000).toISOString();
   let financialId: string | null = null;
   let objectId: string | null = null;
+  let bookingRefund: { id: string; status: string | null } | null = null;
 
   const { data: claimed, error: claimError } = await admin
     .from("stripe_financial_events")
@@ -149,8 +155,14 @@ export async function POST(request: Request) {
       objectId = intent.id;
       if (intent.metadata?.mode === "booking_test") {
         if (!isCompletableBookingIntent(intent)) throw new Error("Stripe test booking metadata is incomplete.");
-        const completion = await completePaidTestBooking(intent);
-        financialId = completion.financialId;
+        try {
+          const completion = await completePaidTestBooking(intent);
+          financialId = completion.financialId;
+        } catch (error) {
+          if (!(error instanceof PaidBookingFinalizationError)) throw error;
+          const refund = await refundUnfinalizedTestBooking(intent.id);
+          bookingRefund = { id: refund.id, status: refund.status };
+        }
       }
     }
 
@@ -187,7 +199,12 @@ export async function POST(request: Request) {
       .eq("stripe_event_id", event.id);
     if (completeError) throw completeError;
 
-    return NextResponse.json({ received: true, eventType: event.type, mode: "pilot_test" });
+    return NextResponse.json({
+      received: true,
+      eventType: event.type,
+      mode: "pilot_test",
+      ...(bookingRefund ? { bookingRefund } : {}),
+    });
   } catch (error) {
     console.error("Stripe webhook processing failed", error);
     const { error: failureWriteError } = await admin

@@ -4,9 +4,9 @@ import { getStripe } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 import {
   completePaidTestBooking,
-  getBookingFinalizationRefundKey,
   isCompletableBookingIntent,
   PaidBookingFinalizationError,
+  refundUnfinalizedTestBooking,
 } from "@/lib/bookings/complete-paid-test-booking";
 
 const requestSchema = z.object({
@@ -43,10 +43,7 @@ export async function POST(request: Request) {
     console.error("Paid booking completion failed", error);
     if (paidIntentId && error instanceof PaidBookingFinalizationError) {
       try {
-        const refund = await getStripe().refunds.create(
-          { payment_intent: paidIntentId },
-          { idempotencyKey: getBookingFinalizationRefundKey(paidIntentId) },
-        );
+        const refund = await refundUnfinalizedTestBooking(paidIntentId);
         return NextResponse.json({
           error: "The room became unavailable before confirmation. Your test payment was automatically refunded.",
           refund: { id: refund.id, status: refund.status },

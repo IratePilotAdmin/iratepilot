@@ -19,7 +19,7 @@ describe("unfinalized paid booking refunds", () => {
 
   it("automatically refunds only classified finalization failures with an idempotency key", () => {
     expect(route).toContain("error instanceof PaidBookingFinalizationError");
-    expect(route).toContain("getBookingFinalizationRefundKey(paidIntentId)");
+    expect(route).toContain("refundUnfinalizedTestBooking(paidIntentId)");
     expect(route).toContain("Your test payment was automatically refunded");
   });
 });
