@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getSafeNextPath } from "@/lib/auth/safe-next-path";
 
 export function RegisterForm({ configured, nextPath }: { configured: boolean; nextPath: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const callbackPath = `/auth/callback?next=${encodeURIComponent(nextPath)}`;
+  const safeNextPath = getSafeNextPath(nextPath) || "/account";
+  const callbackPath = `/auth/callback?next=${encodeURIComponent(safeNextPath)}`;
 
   async function signUpWithGoogle() {
     if (!configured) return;
@@ -45,7 +47,7 @@ export function RegisterForm({ configured, nextPath }: { configured: boolean; ne
       });
       if (error) throw error;
       if (data.session) {
-        router.replace(nextPath);
+        router.replace(safeNextPath);
         router.refresh();
         return;
       }
