@@ -1,9 +1,9 @@
 import { z } from "zod";
 
 export const searchSchema = z.object({
-  destination: z.string().min(2),
-  checkIn: z.string().min(1),
-  checkOut: z.string().min(1),
+  destination: z.string().trim().min(2).max(160),
+  checkIn: z.string().date(),
+  checkOut: z.string().date(),
   guests: z.coerce.number().int().min(1).max(20)
 });
 

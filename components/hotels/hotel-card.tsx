@@ -5,11 +5,12 @@ import { Hotel } from "@/data/hotels";
 import { getReviewPresentation } from "@/lib/marketplace-presentation";
 import { formatCurrency } from "@/lib/utils";
 
-export function HotelCard({ hotel, variant = "list", rank, source = "demo" }: { hotel: Hotel; variant?: "list" | "grid"; rank?: number; source?: "database" | "demo" }) {
+export function HotelCard({ hotel, variant = "list", rank, source = "demo", hotelHref }: { hotel: Hotel; variant?: "list" | "grid"; rank?: number; source?: "database" | "demo"; hotelHref?: string }) {
   const review = getReviewPresentation(hotel.rating, hotel.reviews);
+  const href = hotelHref || `/hotels/${hotel.slug}`;
   if (variant === "grid") return (
     <article className="premium-card group">
-      <Link href={`/hotels/${hotel.slug}`} className="block">
+      <Link href={href} className="block">
         <div className="relative h-64 overflow-hidden">
           <Image src={hotel.image} alt={hotel.name} fill className="object-cover transition duration-500 group-hover:scale-105" />
           <span className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1 text-xs font-extrabold text-slate-800 shadow">{hotel.stars}-star verified</span>
@@ -55,7 +56,7 @@ export function HotelCard({ hotel, variant = "list", rank, source = "demo" }: { 
             <div className="text-2xl font-bold">{formatCurrency(hotel.price)}</div>
             <div className="text-xs text-slate-500">per night</div>
             <div className="mt-3 flex items-center gap-1 text-xs font-bold text-violet-700"><Sparkles className="h-3.5 w-3.5" /> Member value available</div>
-            <Link href={`/hotels/${hotel.slug}`} className="btn-primary mt-4 w-full">View rooms</Link>
+            <Link href={href} className="btn-primary mt-4 w-full">View rooms</Link>
           </div>
         </div>
       </div>

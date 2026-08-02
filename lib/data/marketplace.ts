@@ -1,5 +1,12 @@
 import { hotels as demoHotels, type Hotel } from "@/data/hotels";
 import { createClient } from "@/lib/supabase/server";
+import {
+  getAvailableRoomRates,
+  hasStayCriteria,
+  matchesMarketplaceDestination,
+  type MarketplaceSearchCriteria,
+  type SearchableRoom,
+} from "@/lib/marketplace-search";
 
 type PropertyRow = {
   slug: string;
@@ -12,16 +19,18 @@ type PropertyRow = {
   amenities: string[] | null;
   guest_rating: number | null;
   review_count: number | null;
-  rooms: Array<{ base_rate: number }> | null;
+  rooms: Array<SearchableRoom & { id: string }> | null;
 };
 
 const fallbackImage = "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80";
 
-export async function getMarketplaceHotels(): Promise<{ hotels: Hotel[]; source: "database" | "demo" }> {
+export async function getMarketplaceHotels(
+  criteria: MarketplaceSearchCriteria | null = null,
+): Promise<{ hotels: Hotel[]; source: "database" | "demo" }> {
   try {
     const supabase = await createClient();
     const { data, error } = await supabase.from("properties")
-      .select("slug,name,city,country,star_rating,description,image_url,amenities,guest_rating,review_count,rooms(base_rate)")
+      .select("slug,name,city,country,star_rating,description,image_url,amenities,guest_rating,review_count,rooms(id,active,base_rate,max_guests,inventory(stay_date,available_units,rate))")
       .eq("active", true)
       .in("star_rating", [4, 5])
       .eq("rooms.active", true);
@@ -29,7 +38,10 @@ export async function getMarketplaceHotels(): Promise<{ hotels: Hotel[]; source:
 
     const rows = (data || []) as PropertyRow[];
     const mapped = rows.flatMap((property): Hotel[] => {
-      const rates = property.rooms?.map((room) => Number(room.base_rate)).filter((rate) => rate > 0) || [];
+      if (criteria && !matchesMarketplaceDestination(property, criteria.destination)) return [];
+      const rates = hasStayCriteria(criteria)
+        ? getAvailableRoomRates(property.rooms, criteria)
+        : property.rooms?.filter((room) => room.active).map((room) => Number(room.base_rate)).filter((rate) => rate > 0) || [];
       if (rates.length === 0) return [];
       return [{
         slug: property.slug,
@@ -47,7 +59,10 @@ export async function getMarketplaceHotels(): Promise<{ hotels: Hotel[]; source:
     });
     return { hotels: mapped, source: "database" };
   } catch {
-    return { hotels: demoHotels, source: "demo" };
+    const hotels = criteria
+      ? demoHotels.filter((hotel) => matchesMarketplaceDestination(hotel, criteria.destination))
+      : demoHotels;
+    return { hotels, source: "demo" };
   }
 }
 
