@@ -544,7 +544,8 @@ begin
         and stay_date >= v_booking.check_in and stay_date < v_booking.check_out;
     update bookings set status = 'confirmed', cancellation_reason = null, updated_at = now()
       where id = p_booking_id returning * into v_booking;
-    select membership_tier into v_tier from profiles where id = v_booking.customer_id;
+    select case when membership_status = 'active' then membership_tier else 'none' end
+      into v_tier from profiles where id = v_booking.customer_id;
     v_points := case when v_tier = 'business' then floor(v_booking.subtotal)::integer * 2
                      when v_tier = 'basic' then floor(v_booking.subtotal)::integer
                      else 0 end;

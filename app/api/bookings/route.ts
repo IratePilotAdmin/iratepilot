@@ -4,6 +4,7 @@ import { fees } from "@/config/fees";
 import { createClient } from "@/lib/supabase/server";
 import { bookingSchema } from "@/lib/validation";
 import { calculateVerifiedStayPricing } from "@/lib/bookings/stay-pricing";
+import { hasActiveMembership } from "@/lib/memberships/eligibility";
 
 export async function GET() {
   try {
@@ -68,8 +69,8 @@ export async function POST(request: Request) {
       .eq("room_id", parsed.data.roomId).gte("stay_date", parsed.data.checkIn).lt("stay_date", parsed.data.checkOut).order("stay_date");
     if (inventoryResult.error) throw inventoryResult.error;
     const inventory = inventoryResult.data || [];
-    const { data: profile } = await supabase.from("profiles").select("membership_tier").eq("id", user.id).single();
-    const memberFeeExempt = profile?.membership_tier === "basic" || profile?.membership_tier === "business";
+    const { data: profile } = await supabase.from("profiles").select("membership_tier,membership_status").eq("id", user.id).single();
+    const memberFeeExempt = hasActiveMembership(profile);
     const pricing = calculateVerifiedStayPricing(inventory, nights, memberFeeExempt ? 0 : fees.serviceFeeRate);
     if (!pricing.ok && pricing.reason === "availability") {
       return NextResponse.json({ error: "This room is not available for every selected night." }, { status: 409 });

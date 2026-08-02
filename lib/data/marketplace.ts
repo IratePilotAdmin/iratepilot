@@ -1,6 +1,7 @@
 import { hotels as demoHotels, type Hotel } from "@/data/hotels";
 import { fees } from "@/config/fees";
 import { createClient } from "@/lib/supabase/server";
+import { hasActiveMembership } from "@/lib/memberships/eligibility";
 import {
   getAvailableRoomRates,
   getAvailableRooms,
@@ -105,13 +106,11 @@ export async function getTravelerServiceFeeRate() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return fees.serviceFeeRate;
     const { data, error } = await supabase.from("profiles")
-      .select("membership_tier")
+      .select("membership_tier,membership_status")
       .eq("id", user.id)
       .single();
     if (error) throw error;
-    return data.membership_tier === "basic" || data.membership_tier === "business"
-      ? 0
-      : fees.serviceFeeRate;
+    return hasActiveMembership(data) ? 0 : fees.serviceFeeRate;
   } catch {
     return fees.serviceFeeRate;
   }
