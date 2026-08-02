@@ -49,7 +49,7 @@ describe("secure transactional email worker", () => {
   it("schedules only the authenticated email endpoint", () => {
     expect(vercel.crons).toEqual([{
       path: "/api/email/process",
-      schedule: "*/5 * * * *",
+      schedule: "0 8 * * *",
     }]);
   });
 });
