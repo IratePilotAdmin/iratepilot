@@ -1,6 +1,7 @@
 import { hotels as demoHotels, type Hotel } from "@/data/hotels";
 import { fees } from "@/config/fees";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { hasActiveMembership } from "@/lib/memberships/eligibility";
 import { inventoryLimits } from "@/lib/inventory-limits";
 import {
@@ -33,10 +34,11 @@ export async function getMarketplaceHotels(
   criteria: MarketplaceSearchCriteria | null = null,
 ): Promise<{ hotels: Hotel[]; source: "database" | "demo" }> {
   try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.from("properties")
-      .select("slug,name,city,country,star_rating,description,image_url,amenities,guest_rating,review_count,rooms(id,active,base_rate,max_guests,inventory(stay_date,available_units,rate))")
+    const admin = createAdminClient();
+    const { data, error } = await admin.from("properties")
+      .select("slug,name,city,country,star_rating,description,image_url,amenities,guest_rating,review_count,partners!inner(status),rooms(id,active,base_rate,max_guests,inventory(stay_date,available_units,rate))")
       .eq("active", true)
+      .eq("partners.status", "approved")
       .in("star_rating", [4, 5])
       .eq("rooms.active", true);
     if (error) throw error;
@@ -80,10 +82,10 @@ export async function getMarketplaceHotel(slug: string, stay: StayCriteria | nul
   const marketplace = await getMarketplaceHotels();
   if (marketplace.source === "database") {
     try {
-      const supabase = await createClient();
-      const { data } = await supabase.from("properties")
-        .select("rooms(id,name,active,base_rate,max_guests,inventory(stay_date,available_units,rate))")
-        .eq("slug", slug).eq("active", true).eq("rooms.active", true).single();
+      const admin = createAdminClient();
+      const { data } = await admin.from("properties")
+        .select("partners!inner(status),rooms(id,name,active,base_rate,max_guests,inventory(stay_date,available_units,rate))")
+        .eq("slug", slug).eq("active", true).eq("partners.status", "approved").eq("rooms.active", true).single();
       const roomRows = (data?.rooms || []) as Array<SearchableRoom & { id: string; name: string }>;
       const availableRooms = stay
         ? getAvailableRooms(roomRows, stay)

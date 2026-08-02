@@ -257,9 +257,44 @@ alter table revenue_recommendations enable row level security;
 alter table revenue_audit_log enable row level security;
 alter table revenue_daily_reports enable row level security;
 
-create policy "Public can view active properties" on properties for select using (active = true);
-create policy "Public can view active rooms" on rooms for select using (active = true);
-create policy "Public can view inventory" on inventory for select using (true);
+create or replace function public.is_approved_marketplace_property(p_property_id uuid)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select exists (
+    select 1 from public.properties
+    join public.partners on partners.id = properties.partner_id
+    where properties.id = p_property_id
+      and properties.active = true
+      and partners.status = 'approved'
+  );
+$$;
+
+create or replace function public.is_approved_marketplace_room(p_room_id uuid)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select exists (
+    select 1 from public.rooms
+    join public.properties on properties.id = rooms.property_id
+    join public.partners on partners.id = properties.partner_id
+    where rooms.id = p_room_id
+      and rooms.active = true
+      and properties.active = true
+      and partners.status = 'approved'
+  );
+$$;
+
+revoke all on function public.is_approved_marketplace_property(uuid) from public;
+revoke all on function public.is_approved_marketplace_room(uuid) from public;
+grant execute on function public.is_approved_marketplace_property(uuid) to anon, authenticated;
+grant execute on function public.is_approved_marketplace_room(uuid) to anon, authenticated;
+
+create policy "Public can view active properties" on properties for select using (
+  active = true and public.is_approved_marketplace_property(id)
+);
+create policy "Public can view active rooms" on rooms for select using (
+  active = true and public.is_approved_marketplace_property(property_id)
+);
+create policy "Public can view inventory" on inventory for select using (
+  public.is_approved_marketplace_room(room_id)
+);
 create policy "Users can view own profile" on profiles for select using (auth.uid() = id);
 create policy "Customers can view own bookings" on bookings for select using (auth.uid() = customer_id);
 create policy "Partners can view own property bookings" on bookings for select using (
@@ -375,6 +410,37 @@ create policy "Admins can manage properties" on properties for all using (
 ) with check (
   exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin')
 );
+
+create or replace function public.enforce_approved_partner_booking()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not exists (
+    select 1
+    from public.rooms
+    join public.properties on properties.id = rooms.property_id
+    join public.partners on partners.id = properties.partner_id
+    where rooms.id = new.room_id
+      and properties.id = new.property_id
+      and rooms.active = true
+      and properties.active = true
+      and partners.status = 'approved'
+  ) then
+    raise exception 'Bookings require an active room from an approved partner'
+      using errcode = '23514';
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.enforce_approved_partner_booking() from public;
+
+create trigger enforce_approved_partner_booking
+before insert or update of property_id, room_id on public.bookings
+for each row execute function public.enforce_approved_partner_booking();
 
 create or replace function public.handle_new_user()
 returns trigger

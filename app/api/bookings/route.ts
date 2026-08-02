@@ -39,9 +39,11 @@ export async function POST(request: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
 
-    const roomResult = await supabase.from("rooms")
-      .select("id,name,property_id,max_guests,properties!inner(id,name,slug,active)")
-      .eq("id", parsed.data.roomId).eq("active", true).eq("properties.slug", parsed.data.hotelSlug).eq("properties.active", true).single();
+    const admin = createAdminClient();
+    const roomResult = await admin.from("rooms")
+      .select("id,name,property_id,max_guests,properties!inner(id,name,slug,active,partners!inner(status))")
+      .eq("id", parsed.data.roomId).eq("active", true).eq("properties.slug", parsed.data.hotelSlug)
+      .eq("properties.active", true).eq("properties.partners.status", "approved").single();
     if (roomResult.error || !roomResult.data) return NextResponse.json({ error: "The selected approved room was not found." }, { status: 404 });
     if (parsed.data.guests > Number(roomResult.data.max_guests)) return NextResponse.json({ error: "Guest count exceeds this room’s capacity." }, { status: 400 });
 
@@ -81,7 +83,6 @@ export async function POST(request: Request) {
     const property = roomResult.data.properties as unknown as { id: string; name: string };
     const confirmationCode = `IRP-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
 
-    const admin = createAdminClient();
     const { data, error } = await admin.from("bookings").insert({
       confirmation_code: confirmationCode,
       customer_id: user.id,

@@ -3,6 +3,7 @@ import { differenceInCalendarDays, parseISO, startOfDay } from "date-fns";
 import { fees } from "@/config/fees";
 import { getStripe } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { checkoutSchema } from "@/lib/validation";
 import { calculateVerifiedStayPricing } from "@/lib/bookings/stay-pricing";
 import { hasActiveMembership } from "@/lib/memberships/eligibility";
@@ -24,10 +25,12 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Sign in before checkout." }, { status: 401 });
 
-  const { data: room, error: roomError } = await supabase.from("rooms")
-    .select("id,name,property_id,max_guests,properties!inner(id,name,slug,active)")
+  const admin = createAdminClient();
+  const { data: room, error: roomError } = await admin.from("rooms")
+    .select("id,name,property_id,max_guests,properties!inner(id,name,slug,active,partners!inner(status))")
     .eq("id", parsed.data.roomId).eq("active", true)
-    .eq("properties.slug", parsed.data.hotelSlug).eq("properties.active", true).single();
+    .eq("properties.slug", parsed.data.hotelSlug).eq("properties.active", true)
+    .eq("properties.partners.status", "approved").single();
   if (roomError || !room) return NextResponse.json({ error: "The selected approved room was not found." }, { status: 404 });
   if (parsed.data.guests > Number(room.max_guests)) return NextResponse.json({ error: "Guest count exceeds this room’s capacity." }, { status: 400 });
 
