@@ -253,9 +253,6 @@ create policy "Public can view active rooms" on rooms for select using (active =
 create policy "Public can view inventory" on inventory for select using (true);
 create policy "Users can view own profile" on profiles for select using (auth.uid() = id);
 create policy "Customers can view own bookings" on bookings for select using (auth.uid() = customer_id);
-create policy "Customers can create own pending bookings" on bookings for insert with check (
-  auth.uid() = customer_id and status = 'pending' and stripe_payment_intent_id is null
-);
 create policy "Partners can view own property bookings" on bookings for select using (
   exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = bookings.property_id and partners.owner_id = auth.uid())
 );

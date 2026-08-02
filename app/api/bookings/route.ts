@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { differenceInCalendarDays, parseISO, startOfDay } from "date-fns";
 import { fees } from "@/config/fees";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { bookingSchema } from "@/lib/validation";
 import { calculateVerifiedStayPricing } from "@/lib/bookings/stay-pricing";
 import { hasActiveMembership } from "@/lib/memberships/eligibility";
@@ -80,7 +81,8 @@ export async function POST(request: Request) {
     const property = roomResult.data.properties as unknown as { id: string; name: string };
     const confirmationCode = `IRP-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
 
-    const { data, error } = await supabase.from("bookings").insert({
+    const admin = createAdminClient();
+    const { data, error } = await admin.from("bookings").insert({
       confirmation_code: confirmationCode,
       customer_id: user.id,
       property_id: property.id,
