@@ -8,7 +8,7 @@ export async function GET() {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-    let query = auth.supabase.from("properties").select("id,name,slug,type,star_rating,city,country,active,image_url,amenities,created_at,rooms(active,inventory(stay_date,available_units))").order("created_at", { ascending: false });
+    let query = auth.supabase.from("properties").select("id,name,slug,type,star_rating,description,city,region,country,active,image_url,amenities,created_at,rooms(active,inventory(stay_date,available_units))").order("created_at", { ascending: false });
     if (auth.profile.role !== "admin") {
       const { data: partner } = await auth.supabase.from("partners").select("id").eq("owner_id", auth.user.id).maybeSingle();
       if (!partner) return NextResponse.json({ data: [] });
@@ -23,7 +23,9 @@ export async function GET() {
         slug: property.slug,
         type: property.type,
         star_rating: property.star_rating,
+        description: property.description,
         city: property.city,
+        region: property.region,
         country: property.country,
         active: property.active,
         image_url: property.image_url,
