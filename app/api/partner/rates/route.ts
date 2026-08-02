@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { eachDayOfInterval, parseISO, differenceInCalendarDays, format } from "date-fns";
+import { eachDayOfInterval, parseISO, format } from "date-fns";
 import { requireRole } from "@/lib/auth/require-role";
 import { inventorySchema, roomSchema } from "@/lib/validation";
+import { getInventoryDateRangeError, getUpcomingInventory } from "@/lib/inventory-dates";
 
 export async function GET() {
   try {
@@ -22,7 +23,13 @@ export async function GET() {
       .select("id,property_id,name,max_guests,base_rate,active,inventory(stay_date,available_units,rate)")
       .in("property_id", ids).order("name");
     if (roomsResult.error) throw roomsResult.error;
-    return NextResponse.json({ properties, rooms: roomsResult.data });
+    return NextResponse.json({
+      properties,
+      rooms: (roomsResult.data ?? []).map((room) => ({
+        ...room,
+        inventory: getUpcomingInventory(room.inventory),
+      })),
+    });
   } catch {
     return NextResponse.json({ error: "Rates and inventory are not configured." }, { status: 503 });
   }
@@ -64,8 +71,8 @@ export async function POST(request: Request) {
       if (!room) return NextResponse.json({ error: "Room type not found." }, { status: 404 });
       const start = parseISO(parsed.data.startDate);
       const end = parseISO(parsed.data.endDate);
-      const days = differenceInCalendarDays(end, start);
-      if (days < 0 || days > 365) return NextResponse.json({ error: "Inventory ranges must be between 1 and 366 days." }, { status: 400 });
+      const dateError = getInventoryDateRangeError(parsed.data.startDate, parsed.data.endDate);
+      if (dateError) return NextResponse.json({ error: dateError }, { status: 400 });
       const rows = eachDayOfInterval({ start, end }).map((date) => ({
         room_id: parsed.data.roomId, stay_date: format(date, "yyyy-MM-dd"),
         available_units: parsed.data.availableUnits, rate: parsed.data.rate

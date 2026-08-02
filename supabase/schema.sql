@@ -409,7 +409,7 @@ create policy "Partners can manage own rooms" on rooms for all using (
 create policy "Partners can manage own inventory" on inventory for all using (
   exists (select 1 from rooms join properties on properties.id = rooms.property_id join partners on partners.id = properties.partner_id where rooms.id = inventory.room_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 ) with check (
-  exists (select 1 from rooms join properties on properties.id = rooms.property_id join partners on partners.id = properties.partner_id where rooms.id = inventory.room_id and partners.owner_id = auth.uid() and partners.status = 'approved')
+  inventory.stay_date >= current_date and exists (select 1 from rooms join properties on properties.id = rooms.property_id join partners on partners.id = properties.partner_id where rooms.id = inventory.room_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Admins can manage rooms" on rooms for all using (
   exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin')

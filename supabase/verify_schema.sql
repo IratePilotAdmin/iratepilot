@@ -25,6 +25,14 @@ where relnamespace = 'public'::regnamespace
 order by relname;
 
 select
+  position('stay_date >= CURRENT_DATE' in with_check) > 0
+    as future_partner_inventory_writes_ready
+from pg_policies
+where schemaname = 'public'
+  and tablename = 'inventory'
+  and policyname = 'Partners can manage own inventory';
+
+select
   to_regprocedure('public.review_booking(uuid,text,text)') is not null as booking_review_ready,
   to_regprocedure('public.cancel_pending_booking(uuid,text)') is not null as cancellation_ready,
   to_regprocedure('public.review_revenue_recommendation(uuid,text)') is not null as revenue_approval_ready,

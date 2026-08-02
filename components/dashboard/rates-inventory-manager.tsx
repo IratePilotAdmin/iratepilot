@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { getTodayIsoDate, getUpcomingInventory } from "@/lib/inventory-dates";
 
 type Property = { id: string; name: string; active: boolean };
 type Inventory = { stay_date: string; available_units: number; rate: number };
@@ -11,6 +12,7 @@ export function RatesInventoryManager() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const today = useMemo(() => getTodayIsoDate(), []);
   const propertyNames = useMemo(() => new Map(properties.map((property) => [property.id, property.name])), [properties]);
 
   const load = useCallback(async () => {
@@ -56,7 +58,7 @@ export function RatesInventoryManager() {
       <div className="divide-y">
         {!rooms.length && <p className="p-6 text-sm text-slate-500">Add a property, then create its first room type.</p>}
         {rooms.map((room) => {
-          const next = room.inventory?.slice().sort((a, b) => a.stay_date.localeCompare(b.stay_date))[0];
+          const next = getUpcomingInventory(room.inventory, today)[0];
           return <article key={room.id} className="grid gap-3 p-6 sm:grid-cols-[1fr_auto] sm:items-center"><div><strong>{room.name}</strong><p className="mt-1 text-sm text-slate-500">{propertyNames.get(room.property_id)} · Up to {room.max_guests} guests</p></div><div className="sm:text-right"><strong>${Number(next?.rate || room.base_rate).toFixed(2)}</strong><p className="text-xs text-slate-500">{next ? `${next.available_units} units on ${next.stay_date}` : "Base rate · no dated inventory"}</p></div></article>;
         })}
       </div>
@@ -72,7 +74,7 @@ export function RatesInventoryManager() {
       <form onSubmit={(event) => send(event, "set_inventory")} className="card grid gap-4 p-6">
         <div><h2 className="text-xl font-semibold">Set dated inventory</h2><p className="mt-1 text-sm text-slate-500">Update up to 366 consecutive dates.</p></div>
         <label className="text-sm font-medium">Room type<select name="roomId" className="input mt-2" required><option value="">Select room</option>{rooms.map((room) => <option key={room.id} value={room.id}>{propertyNames.get(room.property_id)} — {room.name}</option>)}</select></label>
-        <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Start date<input name="startDate" type="date" className="input mt-2" required /></label><label className="text-sm font-medium">End date<input name="endDate" type="date" className="input mt-2" required /></label></div>
+        <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Start date<input name="startDate" type="date" min={today} className="input mt-2" required /></label><label className="text-sm font-medium">End date<input name="endDate" type="date" min={today} className="input mt-2" required /></label></div>
         <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Available units<input name="availableUnits" type="number" min="0" max="500" className="input mt-2" required /></label><label className="text-sm font-medium">Nightly rate<input name="rate" type="number" min="25" step="0.01" className="input mt-2" required /></label></div>
         <button disabled={busy || !rooms.length} className="btn-primary">Update inventory</button>
       </form>
