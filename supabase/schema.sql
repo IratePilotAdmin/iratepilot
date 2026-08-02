@@ -459,6 +459,32 @@ create trigger on_booking_status_changed
   after insert or update of status on bookings
   for each row execute procedure public.record_booking_status();
 
+create or replace function public.return_room_property_to_review()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  update public.properties
+  set active = false
+  where id = new.property_id;
+
+  if tg_op = 'UPDATE' and old.property_id is distinct from new.property_id then
+    update public.properties
+    set active = false
+    where id = old.property_id;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists on_room_type_changed on rooms;
+create trigger on_room_type_changed
+  after insert or update of property_id, name, max_guests, base_rate, active
+  on rooms
+  for each row execute procedure public.return_room_property_to_review();
+
 create or replace function public.review_revenue_recommendation(p_recommendation_id uuid, p_decision text)
 returns revenue_recommendations
 language plpgsql
@@ -597,6 +623,8 @@ $$;
 
 revoke all on function public.review_revenue_recommendation(uuid, text) from public;
 grant execute on function public.review_revenue_recommendation(uuid, text) to authenticated;
+revoke all on function public.return_room_property_to_review()
+  from public, anon, authenticated;
 revoke all on function public.review_partner_application(uuid, text)
   from public, anon, service_role;
 grant execute on function public.review_partner_application(uuid, text) to authenticated;
