@@ -1,10 +1,13 @@
 import { z } from "zod";
 
-export const searchSchema = z.object({
-  destination: z.string().trim().min(2).max(160),
+export const staySchema = z.object({
   checkIn: z.string().date(),
   checkOut: z.string().date(),
   guests: z.coerce.number().int().min(1).max(20)
+});
+
+export const searchSchema = staySchema.extend({
+  destination: z.string().trim().min(2).max(160)
 });
 
 export const bookingSchema = z.object({

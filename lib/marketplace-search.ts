@@ -1,15 +1,17 @@
 import { addDays, differenceInCalendarDays, format, parseISO, startOfDay } from "date-fns";
-import { searchSchema } from "./validation";
+import { searchSchema, staySchema } from "./validation";
 
 export type MarketplaceDestinationCriteria = {
   destination: string;
 };
 
-export type MarketplaceStayCriteria = MarketplaceDestinationCriteria & {
+export type StayCriteria = {
   checkIn: string;
   checkOut: string;
   guests: number;
 };
+
+export type MarketplaceStayCriteria = MarketplaceDestinationCriteria & StayCriteria;
 
 export type MarketplaceSearchCriteria = MarketplaceDestinationCriteria | MarketplaceStayCriteria;
 
@@ -37,6 +39,34 @@ function singleValue(value: string | string[] | undefined) {
   return typeof value === "string" ? value : "";
 }
 
+function validateStay<T extends StayCriteria>(
+  parsed: { success: true; data: T } | { success: false },
+  today: Date,
+) {
+  if (!parsed.success) return { criteria: null, error: "Enter valid stay dates and a guest count." };
+  const nights = differenceInCalendarDays(parseISO(parsed.data.checkOut), parseISO(parsed.data.checkIn));
+  if (parsed.data.checkIn < format(startOfDay(today), "yyyy-MM-dd")) {
+    return { criteria: null, error: "Check-in cannot be in the past." };
+  }
+  if (nights < 1 || nights > 30) {
+    return { criteria: null, error: "Choose a stay between 1 and 30 nights." };
+  }
+  return { criteria: parsed.data, error: null };
+}
+
+export function parseHotelStay(
+  query: SearchParamsRecord,
+  today = new Date(),
+): { criteria: StayCriteria | null; error: string | null } {
+  const values = {
+    checkIn: singleValue(query.checkIn),
+    checkOut: singleValue(query.checkOut),
+    guests: singleValue(query.guests),
+  };
+  if (!Object.values(values).some(Boolean)) return { criteria: null, error: null };
+  return validateStay(staySchema.safeParse(values), today);
+}
+
 export function parseMarketplaceSearch(
   query: SearchParamsRecord,
   today = new Date(),
@@ -60,15 +90,8 @@ export function parseMarketplaceSearch(
     return { criteria: null, error: "Enter a destination, valid stay dates, and a guest count.", values };
   }
 
-  const nights = differenceInCalendarDays(parseISO(parsed.data.checkOut), parseISO(parsed.data.checkIn));
-  if (parsed.data.checkIn < format(startOfDay(today), "yyyy-MM-dd")) {
-    return { criteria: null, error: "Check-in cannot be in the past.", values };
-  }
-  if (nights < 1 || nights > 30) {
-    return { criteria: null, error: "Choose a stay between 1 and 30 nights.", values };
-  }
-
-  return { criteria: parsed.data, error: null, values };
+  const stay = validateStay(parsed, today);
+  return { ...stay, values };
 }
 
 export function hasStayCriteria(
@@ -88,8 +111,15 @@ export function matchesMarketplaceDestination(
 
 export function getAvailableRoomRates(
   rooms: SearchableRoom[] | null,
-  criteria: MarketplaceStayCriteria,
+  criteria: StayCriteria,
 ) {
+  return getAvailableRooms(rooms, criteria).map((room) => room.averageNightlyRate);
+}
+
+export function getAvailableRooms<T extends SearchableRoom>(
+  rooms: T[] | null,
+  criteria: StayCriteria,
+): Array<T & { averageNightlyRate: number }> {
   const nights = differenceInCalendarDays(parseISO(criteria.checkOut), parseISO(criteria.checkIn));
   const requiredDates = Array.from({ length: nights }, (_, index) =>
     format(addDays(parseISO(criteria.checkIn), index), "yyyy-MM-dd"),
@@ -102,7 +132,7 @@ export function getAvailableRoomRates(
     if (stayInventory.some((day) => !day || day.available_units < 1 || Number(day.rate) <= 0)) return [];
 
     const total = stayInventory.reduce((sum, day) => sum + Number(day!.rate), 0);
-    return [Math.round((total / nights) * 100) / 100];
+    return [{ ...room, averageNightlyRate: Math.round((total / nights) * 100) / 100 }];
   });
 }
 

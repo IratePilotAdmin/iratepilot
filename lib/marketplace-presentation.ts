@@ -3,6 +3,7 @@ export type MarketplaceRoom = {
   name: string;
   baseRate: number;
   maxGuests: number;
+  availabilityVerified?: boolean;
 };
 
 export type PresentedRoom = {
@@ -25,7 +26,9 @@ export function getPresentedRooms(
       price: room.baseRate,
       notes: [
         `Up to ${room.maxGuests} ${room.maxGuests === 1 ? "guest" : "guests"}`,
-        "Availability verified for your selected dates"
+        room.availabilityVerified
+          ? "Available for every selected night"
+          : "Select dates to verify availability"
       ],
       bookable: true
     }));

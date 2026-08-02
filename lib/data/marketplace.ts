@@ -2,10 +2,12 @@ import { hotels as demoHotels, type Hotel } from "@/data/hotels";
 import { createClient } from "@/lib/supabase/server";
 import {
   getAvailableRoomRates,
+  getAvailableRooms,
   hasStayCriteria,
   matchesMarketplaceDestination,
   type MarketplaceSearchCriteria,
   type SearchableRoom,
+  type StayCriteria,
 } from "@/lib/marketplace-search";
 
 type PropertyRow = {
@@ -66,16 +68,27 @@ export async function getMarketplaceHotels(
   }
 }
 
-export async function getMarketplaceHotel(slug: string) {
+export async function getMarketplaceHotel(slug: string, stay: StayCriteria | null = null) {
   const marketplace = await getMarketplaceHotels();
   if (marketplace.source === "database") {
     try {
       const supabase = await createClient();
       const { data } = await supabase.from("properties")
-        .select("rooms(id,name,base_rate,max_guests)")
+        .select("rooms(id,name,active,base_rate,max_guests,inventory(stay_date,available_units,rate))")
         .eq("slug", slug).eq("active", true).eq("rooms.active", true).single();
-      const rooms = ((data?.rooms || []) as Array<{ id: string; name: string; base_rate: number; max_guests: number }>).map((room) => ({
-        id: room.id, name: room.name, baseRate: Number(room.base_rate), maxGuests: room.max_guests
+      const roomRows = (data?.rooms || []) as Array<SearchableRoom & { id: string; name: string }>;
+      const availableRooms = stay
+        ? getAvailableRooms(roomRows, stay)
+        : roomRows.filter((room) => room.active).map((room) => ({
+          ...room,
+          averageNightlyRate: Number(room.base_rate),
+        }));
+      const rooms = availableRooms.map((room) => ({
+        id: room.id,
+        name: room.name,
+        baseRate: room.averageNightlyRate,
+        maxGuests: room.max_guests,
+        availabilityVerified: Boolean(stay),
       }));
       return { hotel: marketplace.hotels.find((item) => item.slug === slug), source: marketplace.source, rooms };
     } catch {}

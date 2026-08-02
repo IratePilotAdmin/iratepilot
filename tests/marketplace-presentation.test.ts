@@ -7,13 +7,14 @@ describe("marketplace presentation", () => {
       id: "room-1",
       name: "Ocean View King",
       baseRate: 425,
-      maxGuests: 3
+      maxGuests: 3,
+      availabilityVerified: true
     }], 999);
     expect(rooms).toEqual([{
       id: "room-1",
       name: "Ocean View King",
       price: 425,
-      notes: ["Up to 3 guests", "Availability verified for your selected dates"],
+      notes: ["Up to 3 guests", "Available for every selected night"],
       bookable: true
     }]);
   });

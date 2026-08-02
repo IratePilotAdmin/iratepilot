@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   getAvailableRoomRates,
+  getAvailableRooms,
   getHotelSearchHref,
   matchesMarketplaceDestination,
   parseMarketplaceSearch,
+  parseHotelStay,
 } from "../lib/marketplace-search";
 
 const criteria = {
@@ -24,6 +26,8 @@ describe("marketplace search", () => {
       .toBe("Choose a stay between 1 and 30 nights.");
     expect(parseMarketplaceSearch({ destination: "Charleston" }, new Date("2026-08-02T12:00:00Z")).criteria)
       .toEqual({ destination: "Charleston" });
+    expect(parseHotelStay({ checkIn: "2026-08-10", checkOut: "2026-08-12", guests: "2" }, new Date("2026-08-02T12:00:00Z")).criteria)
+      .toEqual({ checkIn: "2026-08-10", checkOut: "2026-08-12", guests: 2 });
   });
 
   it("requires every night and sufficient room capacity", () => {
@@ -37,6 +41,10 @@ describe("marketplace search", () => {
       ],
     };
     expect(getAvailableRoomRates([availableRoom], criteria)).toEqual([350]);
+    expect(getAvailableRooms([{ ...availableRoom, id: "room-1" }], criteria)).toMatchObject([{
+      id: "room-1",
+      averageNightlyRate: 350,
+    }]);
     expect(getAvailableRoomRates([{ ...availableRoom, max_guests: 1 }], criteria)).toEqual([]);
     expect(getAvailableRoomRates([{ ...availableRoom, inventory: availableRoom.inventory.slice(0, 1) }], criteria)).toEqual([]);
   });

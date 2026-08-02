@@ -8,12 +8,14 @@ import { RoomCard } from "@/components/hotels/room-card";
 import { BookingRequestForm } from "@/components/bookings/booking-request-form";
 import { getMarketplaceHotel } from "@/lib/data/marketplace";
 import { getPresentedRooms, getReviewPresentation } from "@/lib/marketplace-presentation";
+import { parseHotelStay } from "@/lib/marketplace-search";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function HotelPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: SearchParams }) {
   const [{ slug }, query] = await Promise.all([params, searchParams]);
-  const { hotel, source, rooms } = await getMarketplaceHotel(slug);
+  const stay = parseHotelStay(query);
+  const { hotel, source, rooms } = await getMarketplaceHotel(slug, stay.criteria);
   if (!hotel) notFound();
   const stringParam = (name: string) => typeof query[name] === "string" ? query[name] : undefined;
   const initialSelection = {
@@ -68,9 +70,11 @@ export default async function HotelPage({ params, searchParams }: { params: Prom
           </div>
 
           <section id="rooms" className="border-t border-slate-200 py-12">
-            <span className="section-kicker">Room options</span><h2 className="mt-3 text-3xl font-black tracking-tight">Choose your room</h2><p className="mt-2 text-slate-600">{source === "database" ? "These room types and base rates are configured by the approved property partner." : "These sample room types demonstrate the listing layout; live availability is not connected."}</p>
+            <span className="section-kicker">Room options</span><h2 className="mt-3 text-3xl font-black tracking-tight">Choose your room</h2><p className="mt-2 text-slate-600">{source === "database" ? (stay.criteria ? "Showing rooms available for every selected night, with the average nightly rate for your stay." : "Select dates to verify live room availability and nightly rates.") : "These sample room types demonstrate the listing layout; live availability is not connected."}</p>
+            {stay.error && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-4 text-sm font-medium text-red-700">{stay.error} Update the dates and guest count below to request this stay.</p>}
+            {source === "database" && stay.criteria && rooms.length === 0 && <p className="mt-4 rounded-xl bg-amber-50 p-4 text-sm font-medium text-amber-800">No rooms fit these dates and guest count. Change your stay details to check other options.</p>}
             <div className="mt-7 grid gap-4">{presentedRooms.map((room) => <RoomCard key={room.id} name={room.name} price={room.price} notes={room.notes} bookable={room.bookable} />)}</div>
-            <div className="mt-8"><BookingRequestForm hotelSlug={hotel.slug} rooms={rooms} testCheckoutEnabled={testCheckoutEnabled} initialSelection={initialSelection} /></div>
+            <div className="mt-8"><BookingRequestForm hotelSlug={hotel.slug} rooms={rooms} testCheckoutEnabled={testCheckoutEnabled} initialSelection={initialSelection} emptyMessage={source === "database" && stay.criteria ? "No available room can be requested for this stay. Change the dates or guest count and try again." : undefined} /></div>
           </section>
           <div className="trust-booking"><ShieldCheck /><div><strong>Book with verified availability</strong><p>Room availability, nightly pricing, and the trip total are verified before confirmation. {testCheckoutEnabled ? "Payments remain in test mode during development." : "Private booking requests are reviewed by the property before payment."}</p></div></div>
         </section>

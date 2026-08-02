@@ -10,12 +10,14 @@ export function BookingRequestForm({
   hotelSlug,
   rooms,
   testCheckoutEnabled,
-  initialSelection = {}
+  initialSelection = {},
+  emptyMessage = "Live booking requests are unavailable for this demonstration property."
 }: {
   hotelSlug: string;
   rooms: Room[];
   testCheckoutEnabled: boolean;
   initialSelection?: Selection;
+  emptyMessage?: string;
 }) {
   const router = useRouter();
   const [message, setMessage] = useState("");
@@ -62,7 +64,7 @@ export function BookingRequestForm({
     }
   }
 
-  if (!rooms.length) return <div className="card p-6 text-sm text-slate-600">Live booking requests are unavailable for this demonstration property.</div>;
+  if (!rooms.length) return <div className="card p-6 text-sm text-slate-600">{emptyMessage}</div>;
 
   return <form id="booking-request" onSubmit={submit} className="card grid gap-4 p-6">
     <div><h3 className="text-xl font-semibold">Book this stay</h3><p className="mt-1 text-sm text-slate-500">{testCheckoutEnabled ? "Availability and the final nightly total are verified securely before test payment." : "Availability and the final nightly total are verified before your request is sent to the property. No payment is collected."}</p></div>
