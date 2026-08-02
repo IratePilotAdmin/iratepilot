@@ -9,6 +9,7 @@ import {
   refundUnfinalizedTestBooking,
 } from "@/lib/bookings/complete-paid-test-booking";
 import { getSubscriptionAccessStatus, getSubscriptionRenewsAt } from "@/lib/stripe/subscription-lifecycle";
+import { isRetryableStripeWebhookClaim } from "@/lib/stripe/webhook-retry";
 
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
@@ -52,7 +53,7 @@ export async function POST(request: Request) {
   if (!claimed) {
     const { data: existing, error: existingError } = await admin
       .from("stripe_financial_events")
-      .select("processing_status, attempt_count")
+      .select("processing_status,attempt_count,updated_at")
       .eq("stripe_event_id", event.id)
       .single();
 
@@ -61,24 +62,41 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Webhook event lookup failed." }, { status: 500 });
     }
 
-    if (existing.processing_status !== "failed") {
+    if (existing.processing_status === "processed" || existing.processing_status === "ignored") {
       return NextResponse.json({ received: true, duplicate: true, eventType: event.type });
     }
 
-    const { error: retryError } = await admin
+    if (!isRetryableStripeWebhookClaim(existing.processing_status, existing.updated_at)) {
+      return NextResponse.json({
+        error: "Webhook event is already processing.",
+        retry: true,
+      }, { status: 409 });
+    }
+
+    const retryClaimedAt = new Date().toISOString();
+    const { data: retryClaim, error: retryError } = await admin
       .from("stripe_financial_events")
       .update({
         processing_status: "processing",
         attempt_count: existing.attempt_count + 1,
         error_message: null,
-        updated_at: new Date().toISOString()
+        updated_at: retryClaimedAt
       })
       .eq("stripe_event_id", event.id)
-      .eq("processing_status", "failed");
+      .eq("processing_status", existing.processing_status)
+      .eq("updated_at", existing.updated_at)
+      .select("id")
+      .maybeSingle();
 
     if (retryError) {
       console.error("Stripe webhook retry claim failed", retryError);
       return NextResponse.json({ error: "Webhook retry could not be claimed." }, { status: 500 });
+    }
+    if (!retryClaim) {
+      return NextResponse.json({
+        error: "Webhook retry was claimed by another worker.",
+        retry: true,
+      }, { status: 409 });
     }
   }
 
