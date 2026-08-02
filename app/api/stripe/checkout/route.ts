@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { differenceInCalendarDays, parseISO, startOfDay } from "date-fns";
 import { fees } from "@/config/fees";
 import { getStripe } from "@/lib/stripe";
+import { getStripeIdempotencyContext } from "@/lib/stripe-idempotency";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkoutSchema } from "@/lib/validation";
@@ -24,6 +25,8 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Sign in before checkout." }, { status: 401 });
+  const idempotency = getStripeIdempotencyContext(request, "booking", user.id);
+  if (!idempotency) return NextResponse.json({ error: "A valid checkout attempt ID is required." }, { status: 400 });
 
   const admin = createAdminClient();
   const { data: room, error: roomError } = await admin.from("rooms")
@@ -47,7 +50,8 @@ export async function POST(request: Request) {
   if (!pricing.ok) return NextResponse.json({ error: "Pricing could not be verified for this stay." }, { status: 503 });
   const { subtotal, serviceFee, total } = pricing;
   const property = room.properties as unknown as { id: string; name: string };
-  const confirmationCode = `IRP-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
+  const confirmationToken = idempotency.attemptId.replaceAll("-", "").slice(0, 16).toUpperCase();
+  const confirmationCode = `IRP-${confirmationToken.slice(0, 8)}-${confirmationToken.slice(8)}`;
   const intent = await getStripe().paymentIntents.create({
     amount: Math.round(total * 100),
     currency: "usd",
@@ -65,7 +69,7 @@ export async function POST(request: Request) {
       guests: String(parsed.data.guests),
       confirmationCode
     }
-  });
+  }, { idempotencyKey: idempotency.idempotencyKey });
   return NextResponse.json({
     clientSecret: intent.client_secret,
     breakdown: {

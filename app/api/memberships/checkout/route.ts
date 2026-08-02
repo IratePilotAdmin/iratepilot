@@ -3,6 +3,7 @@ import { z } from "zod";
 import { memberships } from "@/config/memberships";
 import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe";
+import { getStripeIdempotencyContext } from "@/lib/stripe-idempotency";
 
 const schema = z.object({ plan: z.enum(["basic", "business"]) });
 
@@ -24,6 +25,8 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user?.email) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+    const idempotency = getStripeIdempotencyContext(request, "membership", user.id);
+    if (!idempotency) return NextResponse.json({ error: "A valid checkout attempt ID is required." }, { status: 400 });
     const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -33,7 +36,7 @@ export async function POST(request: Request) {
       cancel_url: `${base}/account/rewards?membership=cancelled`,
       metadata: { userId: user.id, plan: parsed.data.plan, mode: "pilot_test" },
       subscription_data: { metadata: { userId: user.id, plan: parsed.data.plan, mode: "pilot_test" } }
-    });
+    }, { idempotencyKey: idempotency.idempotencyKey });
     return NextResponse.json({ url: session.url, plan: memberships[parsed.data.plan] });
   } catch {
     return NextResponse.json({ error: "Membership checkout could not be created." }, { status: 503 });

@@ -14,6 +14,11 @@ export function PartnerSubscriptionCenter() {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [message, setMessage] = useState("Loading subscription…");
   const [busy, setBusy] = useState("");
+  const [checkoutAttemptIds] = useState<Record<PartnerPlan, string>>(() => ({
+    starter: crypto.randomUUID(),
+    professional: crypto.randomUUID(),
+    premium: crypto.randomUUID(),
+  }));
 
   useEffect(() => {
     fetch("/api/partner/subscription").then(async response => {
@@ -27,7 +32,7 @@ export function PartnerSubscriptionCenter() {
   async function checkout(plan: PartnerPlan) {
     setBusy(plan);
     const response = await fetch("/api/partner/subscription/checkout", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ plan })
+      method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": checkoutAttemptIds[plan] }, body: JSON.stringify({ plan })
     });
     const body = await response.json();
     if (response.ok && body.url) window.location.assign(body.url);
