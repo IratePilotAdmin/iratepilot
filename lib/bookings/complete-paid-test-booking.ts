@@ -33,9 +33,20 @@ export async function completePaidTestBooking(intent: Stripe.PaymentIntent) {
     p_confirmation_code: metadata.confirmationCode,
     p_amount_total_cents: intent.amount_received
   });
-  if (error) throw error;
+  let booking = data as Booking | null;
+  if (error?.code === "23505") {
+    const { data: existingBooking, error: existingError } = await admin
+      .from("bookings")
+      .select("id,confirmation_code")
+      .eq("stripe_payment_intent_id", intent.id)
+      .maybeSingle();
+    if (existingError || !existingBooking) throw error;
+    booking = existingBooking;
+  } else if (error) {
+    throw error;
+  }
+  if (!booking) throw new Error("The paid booking was not returned.");
 
-  const booking = data as Booking;
   const { data: financial, error: financialError } = await admin
     .from("booking_financials")
     .select("id,partner_net,stripe_transfer_id,partners(stripe_connect_account_id,stripe_connect_payouts_enabled)")
