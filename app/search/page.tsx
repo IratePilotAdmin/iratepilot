@@ -49,7 +49,7 @@ export default async function SearchPage() {
                 <div><strong>Smart Match is on</strong><p>Results prioritize premium quality and total value—not paid placement.</p></div>
                 <Link href="/ai-planner">Refine with AI <ArrowRight /></Link>
               </div>
-              <div className="mt-5 grid gap-5">{hotels.map((hotel, index) => <HotelCard key={hotel.slug} hotel={hotel} rank={index + 1} />)}</div>
+              <div className="mt-5 grid gap-5">{hotels.map((hotel, index) => <HotelCard key={hotel.slug} hotel={hotel} rank={index + 1} source={source} />)}</div>
             </div>
           </div>
         </section>
