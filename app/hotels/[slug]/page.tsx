@@ -25,6 +25,7 @@ export default async function HotelPage({ params, searchParams }: { params: Prom
     guests: stringParam("guests")
   };
   const testCheckoutEnabled = process.env.ENABLE_TEST_CHECKOUT === "true" && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.startsWith("pk_test_") === true;
+  const availabilityState = source === "demo" ? "demo" : stay.criteria ? "verified" : "unverified";
   const presentedRooms = getPresentedRooms(source, rooms, hotel.price);
   const review = getReviewPresentation(hotel.rating, hotel.reviews);
 
@@ -62,7 +63,7 @@ export default async function HotelPage({ params, searchParams }: { params: Prom
             </div>
             <aside className="booking-summary">
               <div className="flex items-end justify-between"><div><span className="text-sm text-slate-500">From</span><p><strong>${hotel.price}</strong> / night</p></div><span className="rounded-lg bg-violet-700 px-2.5 py-1.5 text-sm font-black text-white">{review.score}</span></div>
-              <div className="booking-dates"><span>Check in<small>Add date</small></span><span>Check out<small>Add date</small></span><span className="col-span-2">Travelers<small>2 guests · 1 room</small></span></div>
+              <div className="booking-dates"><span>Check in<small>{stay.criteria?.checkIn || "Add date"}</small></span><span>Check out<small>{stay.criteria?.checkOut || "Add date"}</small></span><span className="col-span-2">Travelers<small>{stay.criteria ? `${stay.criteria.guests} ${stay.criteria.guests === 1 ? "guest" : "guests"} · 1 room` : "Add guests"}</small></span></div>
               <a href="#rooms" className="btn-primary w-full">Choose a room</a>
               <p className="mt-3 text-center text-xs text-slate-500">You will not be charged yet</p>
               <div className="mt-5 border-t border-slate-200 pt-5 text-sm"><p className="flex justify-between"><span>Traveler service fee</span><strong>5%</strong></p><p className="mt-2 flex items-center gap-2 font-bold text-violet-700"><Sparkles className="h-4 w-4" /> Basic & Business members pay 0%</p></div>
@@ -74,7 +75,7 @@ export default async function HotelPage({ params, searchParams }: { params: Prom
             {stay.error && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-4 text-sm font-medium text-red-700">{stay.error} Update the dates and guest count below to request this stay.</p>}
             {source === "database" && stay.criteria && rooms.length === 0 && <p className="mt-4 rounded-xl bg-amber-50 p-4 text-sm font-medium text-amber-800">No rooms fit these dates and guest count. Change your stay details to check other options.</p>}
             <div className="mt-7 grid gap-4">{presentedRooms.map((room) => <RoomCard key={room.id} name={room.name} price={room.price} notes={room.notes} bookable={room.bookable} />)}</div>
-            <div className="mt-8"><BookingRequestForm hotelSlug={hotel.slug} rooms={rooms} testCheckoutEnabled={testCheckoutEnabled} initialSelection={initialSelection} emptyMessage={source === "database" && stay.criteria ? "No available room can be requested for this stay. Change the dates or guest count and try again." : undefined} /></div>
+            <div className="mt-8"><BookingRequestForm hotelSlug={hotel.slug} rooms={rooms} testCheckoutEnabled={testCheckoutEnabled} initialSelection={initialSelection} availabilityState={availabilityState} /></div>
           </section>
           <div className="trust-booking"><ShieldCheck /><div><strong>Book with verified availability</strong><p>Room availability, nightly pricing, and the trip total are verified before confirmation. {testCheckoutEnabled ? "Payments remain in test mode during development." : "Private booking requests are reviewed by the property before payment."}</p></div></div>
         </section>
