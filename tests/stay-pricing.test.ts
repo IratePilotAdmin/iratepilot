@@ -26,10 +26,12 @@ describe("authoritative stay pricing", () => {
     expect(calculateVerifiedStayPricing(available.slice(0, 1), 2, 0.05)).toEqual({ ok: false, reason: "availability" });
     expect(calculateVerifiedStayPricing([available[0], available[0]], 2, 0.05)).toEqual({ ok: false, reason: "availability" });
     expect(calculateVerifiedStayPricing([{ ...available[0], available_units: 0 }, available[1]], 2, 0.05)).toEqual({ ok: false, reason: "availability" });
+    expect(calculateVerifiedStayPricing([{ ...available[0], available_units: 501 }, available[1]], 2, 0.05)).toEqual({ ok: false, reason: "availability" });
   });
 
   it("rejects invalid authoritative nightly rates", () => {
     expect(calculateVerifiedStayPricing([{ ...available[0], rate: 0 }, available[1]], 2, 0.05)).toEqual({ ok: false, reason: "pricing" });
     expect(calculateVerifiedStayPricing([{ ...available[0], rate: Number.NaN }, available[1]], 2, 0.05)).toEqual({ ok: false, reason: "pricing" });
+    expect(calculateVerifiedStayPricing([{ ...available[0], rate: 25_000.01 }, available[1]], 2, 0.05)).toEqual({ ok: false, reason: "pricing" });
   });
 });

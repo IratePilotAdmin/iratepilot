@@ -1,4 +1,5 @@
 import { calculateBookingQuote } from "../booking-quote";
+import { inventoryLimits } from "../inventory-limits";
 
 type InventoryDay = {
   stay_date: string;
@@ -19,12 +20,19 @@ export function calculateVerifiedStayPricing(
   if (inventory.length !== nights || uniqueDates.size !== nights) {
     return { ok: false, reason: "availability" };
   }
-  if (inventory.some((day) => !Number.isFinite(Number(day.available_units)) || Number(day.available_units) < 1)) {
+  if (inventory.some((day) => {
+    const units = Number(day.available_units);
+    return !Number.isFinite(units) || units < 1 || units > inventoryLimits.maxAvailableUnits;
+  })) {
     return { ok: false, reason: "availability" };
   }
 
   const rates = inventory.map((day) => Number(day.rate));
-  if (rates.some((rate) => !Number.isFinite(rate) || rate <= 0)) {
+  if (rates.some((rate) =>
+    !Number.isFinite(rate)
+    || rate < inventoryLimits.minNightlyRate
+    || rate > inventoryLimits.maxNightlyRate
+  )) {
     return { ok: false, reason: "pricing" };
   }
 

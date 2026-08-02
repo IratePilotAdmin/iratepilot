@@ -79,8 +79,8 @@ create table rooms (
   id uuid primary key default uuid_generate_v4(),
   property_id uuid not null references properties(id) on delete cascade,
   name text not null,
-  max_guests integer not null default 2,
-  base_rate numeric(12,2) not null,
+  max_guests integer not null default 2 constraint rooms_max_guests_bounds check (max_guests between 1 and 30),
+  base_rate numeric(12,2) not null constraint rooms_base_rate_bounds check (base_rate between 25 and 25000),
   active boolean not null default true
 );
 
@@ -88,8 +88,8 @@ create table inventory (
   id uuid primary key default uuid_generate_v4(),
   room_id uuid not null references rooms(id) on delete cascade,
   stay_date date not null,
-  available_units integer not null default 0,
-  rate numeric(12,2) not null,
+  available_units integer not null default 0 constraint inventory_available_units_bounds check (available_units between 0 and 500),
+  rate numeric(12,2) not null constraint inventory_rate_bounds check (rate between 25 and 25000),
   unique(room_id, stay_date)
 );
 

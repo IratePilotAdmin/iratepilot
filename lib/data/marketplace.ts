@@ -2,6 +2,7 @@ import { hotels as demoHotels, type Hotel } from "@/data/hotels";
 import { fees } from "@/config/fees";
 import { createClient } from "@/lib/supabase/server";
 import { hasActiveMembership } from "@/lib/memberships/eligibility";
+import { inventoryLimits } from "@/lib/inventory-limits";
 import {
   getAvailableRoomRates,
   getAvailableRooms,
@@ -45,7 +46,12 @@ export async function getMarketplaceHotels(
       if (criteria && !matchesMarketplaceDestination(property, criteria.destination)) return [];
       const rates = hasStayCriteria(criteria)
         ? getAvailableRoomRates(property.rooms, criteria)
-        : property.rooms?.filter((room) => room.active).map((room) => Number(room.base_rate)).filter((rate) => rate > 0) || [];
+        : property.rooms
+          ?.filter((room) => room.active)
+          .map((room) => Number(room.base_rate))
+          .filter((rate) => Number.isFinite(rate)
+            && rate >= inventoryLimits.minNightlyRate
+            && rate <= inventoryLimits.maxNightlyRate) || [];
       if (rates.length === 0) return [];
       return [{
         slug: property.slug,
@@ -81,7 +87,17 @@ export async function getMarketplaceHotel(slug: string, stay: StayCriteria | nul
       const roomRows = (data?.rooms || []) as Array<SearchableRoom & { id: string; name: string }>;
       const availableRooms = stay
         ? getAvailableRooms(roomRows, stay)
-        : roomRows.filter((room) => room.active).map((room) => ({
+        : roomRows.filter((room) => {
+          const rate = Number(room.base_rate);
+          const maxGuests = Number(room.max_guests);
+          return room.active
+            && Number.isFinite(rate)
+            && rate >= inventoryLimits.minNightlyRate
+            && rate <= inventoryLimits.maxNightlyRate
+            && Number.isFinite(maxGuests)
+            && maxGuests >= inventoryLimits.minGuests
+            && maxGuests <= inventoryLimits.maxGuests;
+        }).map((room) => ({
           ...room,
           averageNightlyRate: Number(room.base_rate),
           staySubtotal: null,

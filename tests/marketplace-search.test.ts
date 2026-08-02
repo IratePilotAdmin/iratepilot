@@ -48,6 +48,14 @@ describe("marketplace search", () => {
     }]);
     expect(getAvailableRoomRates([{ ...availableRoom, max_guests: 1 }], criteria)).toEqual([]);
     expect(getAvailableRoomRates([{ ...availableRoom, inventory: availableRoom.inventory.slice(0, 1) }], criteria)).toEqual([]);
+    expect(getAvailableRoomRates([{ ...availableRoom, inventory: [
+      { ...availableRoom.inventory[0], available_units: 501 },
+      availableRoom.inventory[1],
+    ] }], criteria)).toEqual([]);
+    expect(getAvailableRoomRates([{ ...availableRoom, inventory: [
+      { ...availableRoom.inventory[0], rate: 25_000.01 },
+      availableRoom.inventory[1],
+    ] }], criteria)).toEqual([]);
   });
 
   it("matches destinations and forwards stay details to the hotel page", () => {

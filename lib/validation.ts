@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { inventoryLimits } from "./inventory-limits";
 
 export const staySchema = z.object({
   checkIn: z.string().date(),
@@ -58,14 +59,14 @@ export const propertyContentSchema = z.object({
 export const roomSchema = z.object({
   propertyId: z.string().uuid(),
   name: z.string().trim().min(2).max(120),
-  maxGuests: z.coerce.number().int().min(1).max(30),
-  baseRate: z.coerce.number().min(25).max(25000)
+  maxGuests: z.coerce.number().int().min(inventoryLimits.minGuests).max(inventoryLimits.maxGuests),
+  baseRate: z.coerce.number().min(inventoryLimits.minNightlyRate).max(inventoryLimits.maxNightlyRate)
 });
 
 export const inventorySchema = z.object({
   roomId: z.string().uuid(),
   startDate: z.string().date(),
   endDate: z.string().date(),
-  availableUnits: z.coerce.number().int().min(0).max(500),
-  rate: z.coerce.number().min(25).max(25000)
+  availableUnits: z.coerce.number().int().min(inventoryLimits.minAvailableUnits).max(inventoryLimits.maxAvailableUnits),
+  rate: z.coerce.number().min(inventoryLimits.minNightlyRate).max(inventoryLimits.maxNightlyRate)
 });

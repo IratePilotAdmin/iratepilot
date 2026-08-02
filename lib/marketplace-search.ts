@@ -1,4 +1,5 @@
 import { addDays, differenceInCalendarDays, format, parseISO, startOfDay } from "date-fns";
+import { inventoryLimits } from "./inventory-limits";
 import { searchSchema, staySchema } from "./validation";
 
 export type MarketplaceDestinationCriteria = {
@@ -126,10 +127,27 @@ export function getAvailableRooms<T extends SearchableRoom>(
   );
 
   return (rooms ?? []).flatMap((room) => {
-    if (!room.active || room.max_guests < criteria.guests) return [];
+    const maxGuests = Number(room.max_guests);
+    if (
+      !room.active
+      || !Number.isFinite(maxGuests)
+      || maxGuests < inventoryLimits.minGuests
+      || maxGuests > inventoryLimits.maxGuests
+      || maxGuests < criteria.guests
+    ) return [];
     const inventoryByDate = new Map((room.inventory ?? []).map((day) => [day.stay_date, day]));
     const stayInventory = requiredDates.map((date) => inventoryByDate.get(date));
-    if (stayInventory.some((day) => !day || day.available_units < 1 || Number(day.rate) <= 0)) return [];
+    if (stayInventory.some((day) => {
+      if (!day) return true;
+      const units = Number(day.available_units);
+      const rate = Number(day.rate);
+      return !Number.isFinite(units)
+        || units < 1
+        || units > inventoryLimits.maxAvailableUnits
+        || !Number.isFinite(rate)
+        || rate < inventoryLimits.minNightlyRate
+        || rate > inventoryLimits.maxNightlyRate;
+    })) return [];
 
     const staySubtotal = Math.round(stayInventory.reduce((sum, day) => sum + Number(day!.rate), 0) * 100) / 100;
     return [{
