@@ -301,25 +301,25 @@ create policy "Admins can manage partner payouts" on partner_payouts for all usi
   exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin')
 );
 create policy "Partners can manage own revenue inputs" on revenue_daily_inputs for all using (
-  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid())
+  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 ) with check (
-  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid())
+  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Partners can manage own revenue recommendations" on revenue_recommendations for all using (
-  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid())
+  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 ) with check (
-  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid())
+  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Partners can view own revenue audit" on revenue_audit_log for select using (
-  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid())
+  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Partners can create own revenue audit" on revenue_audit_log for insert with check (
-  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid())
+  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Partners can manage own revenue reports" on revenue_daily_reports for all using (
-  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid())
+  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 ) with check (
-  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid())
+  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Admins can manage revenue inputs" on revenue_daily_inputs for all using (
   exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin')
@@ -518,7 +518,7 @@ begin
     select 1 from profiles where id = auth.uid() and role = 'admin'
     union all
     select 1 from properties p join partners pa on pa.id = p.partner_id
-      where p.id = v_recommendation.property_id and pa.owner_id = auth.uid()
+      where p.id = v_recommendation.property_id and pa.owner_id = auth.uid() and pa.status = 'approved'
   ) into v_authorized;
   if not v_authorized then raise exception 'Not authorized'; end if;
   if v_recommendation.status <> 'pending' then raise exception 'Recommendation already reviewed'; end if;

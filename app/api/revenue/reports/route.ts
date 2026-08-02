@@ -11,9 +11,10 @@ export async function POST(request: Request) {
   try {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-    const { data: property } = await auth.supabase.from("properties").select("id,name,partners(owner_id)").eq("id", parsed.data.propertyId).single();
+    const { data: property } = await auth.supabase.from("properties").select("id,name,partners(owner_id,status)").eq("id", parsed.data.propertyId).single();
     const owner = property?.partners?.[0]?.owner_id;
-    if (!property || (auth.profile.role !== "admin" && owner !== auth.user.id)) return NextResponse.json({ error: "Property access denied." }, { status: 403 });
+    const partnerStatus = property?.partners?.[0]?.status;
+    if (!property || (auth.profile.role !== "admin" && (owner !== auth.user.id || partnerStatus !== "approved"))) return NextResponse.json({ error: "Approved property access is required." }, { status: 403 });
     const today = format(new Date(), "yyyy-MM-dd");
     const end = format(addDays(new Date(), 89), "yyyy-MM-dd");
     const [{ data: inputs }, { count: pending }] = await Promise.all([

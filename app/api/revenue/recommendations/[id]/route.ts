@@ -11,10 +11,11 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
     const { id } = await context.params;
-    const { data: recommendation } = await auth.supabase.from("revenue_recommendations").select("*,properties(partner_id,partners(owner_id))").eq("id", id).single();
+    const { data: recommendation } = await auth.supabase.from("revenue_recommendations").select("*,properties(partner_id,partners(owner_id,status))").eq("id", id).single();
     const partners = recommendation?.properties?.partners;
     const owner = Array.isArray(partners) ? partners[0]?.owner_id : partners?.owner_id;
-    if (!recommendation || (auth.profile.role !== "admin" && owner !== auth.user.id)) return NextResponse.json({ error: "Recommendation access denied." }, { status: 403 });
+    const partnerStatus = Array.isArray(partners) ? partners[0]?.status : partners?.status;
+    if (!recommendation || (auth.profile.role !== "admin" && (owner !== auth.user.id || partnerStatus !== "approved"))) return NextResponse.json({ error: "Approved recommendation access is required." }, { status: 403 });
     if (recommendation.status !== "pending") return NextResponse.json({ error: "This recommendation has already been reviewed." }, { status: 409 });
     const result = await auth.supabase.rpc("review_revenue_recommendation", { p_recommendation_id: id, p_decision: parsed.data.decision });
     if (result.error) throw result.error;
