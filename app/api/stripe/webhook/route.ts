@@ -32,6 +32,7 @@ export async function POST(request: Request) {
   let financialId: string | null = null;
   let objectId: string | null = null;
   let bookingRefund: { id: string; status: string | null } | null = null;
+  let claimUpdatedAt = new Date().toISOString();
 
   const { data: claimed, error: claimError } = await admin
     .from("stripe_financial_events")
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
       event_type: event.type,
       processing_status: "processing",
       payload: event.data.object,
-      updated_at: new Date().toISOString()
+      updated_at: claimUpdatedAt
     }, { onConflict: "stripe_event_id", ignoreDuplicates: true })
     .select("id")
     .maybeSingle();
@@ -98,6 +99,7 @@ export async function POST(request: Request) {
         retry: true,
       }, { status: 409 });
     }
+    claimUpdatedAt = retryClaimedAt;
   }
 
   try {
@@ -204,18 +206,29 @@ export async function POST(request: Request) {
     }
 
     const processingStatus = financialId || !event.type.startsWith("transfer.") ? "processed" : "ignored";
-    const { error: completeError } = await admin
+    const completedAt = new Date().toISOString();
+    const { data: completedClaim, error: completeError } = await admin
       .from("stripe_financial_events")
       .update({
         object_id: objectId,
         booking_financial_id: financialId,
         processing_status: processingStatus,
         error_message: null,
-        processed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        processed_at: completedAt,
+        updated_at: completedAt
       })
-      .eq("stripe_event_id", event.id);
+      .eq("stripe_event_id", event.id)
+      .eq("processing_status", "processing")
+      .eq("updated_at", claimUpdatedAt)
+      .select("id")
+      .maybeSingle();
     if (completeError) throw completeError;
+    if (!completedClaim) {
+      return NextResponse.json({
+        error: "Webhook claim ownership changed before completion.",
+        retry: true,
+      }, { status: 409 });
+    }
 
     return NextResponse.json({
       received: true,
@@ -225,7 +238,8 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Stripe webhook processing failed", error);
-    const { error: failureWriteError } = await admin
+    const failedAt = new Date().toISOString();
+    const { data: failedClaim, error: failureWriteError } = await admin
       .from("stripe_financial_events")
       .update({
         object_id: objectId,
@@ -233,10 +247,20 @@ export async function POST(request: Request) {
         processing_status: "failed",
         error_message: error instanceof Error ? error.message.slice(0, 500) : "Webhook processing failed",
         processed_at: null,
-        updated_at: new Date().toISOString()
+        updated_at: failedAt
       })
-      .eq("stripe_event_id", event.id);
+      .eq("stripe_event_id", event.id)
+      .eq("processing_status", "processing")
+      .eq("updated_at", claimUpdatedAt)
+      .select("id")
+      .maybeSingle();
     if (failureWriteError) console.error("Stripe webhook failure could not be recorded", failureWriteError);
+    if (!failureWriteError && !failedClaim) {
+      return NextResponse.json({
+        error: "Webhook claim ownership changed during processing.",
+        retry: true,
+      }, { status: 409 });
+    }
     return NextResponse.json({ error: "Webhook processing failed." }, { status: 500 });
   }
 }
