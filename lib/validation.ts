@@ -20,9 +20,9 @@ export const bookingSchema = z.object({
 });
 
 export const partnerApplicationSchema = z.object({
-  propertyName: z.string().min(2),
-  contactName: z.string().min(2),
-  email: z.string().email(),
+  propertyName: z.string().trim().min(2).max(160),
+  contactName: z.string().trim().min(2).max(100),
+  email: z.string().trim().toLowerCase().email().max(254),
   propertyType: z.enum(["hotel", "resort", "vacation_home"])
 });
 

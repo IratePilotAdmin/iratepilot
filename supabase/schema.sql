@@ -25,7 +25,8 @@ create table partner_applications (
   contact_name text not null,
   email text not null,
   property_type property_type not null,
-  status text not null default 'pending',
+  status text not null default 'pending'
+    constraint partner_applications_status_check check (status in ('pending','approved','declined')),
   created_at timestamptz not null default now()
 );
 
@@ -328,7 +329,6 @@ create policy "Admins can manage revenue audit" on revenue_audit_log for all usi
 create policy "Admins can manage revenue reports" on revenue_daily_reports for all using (
   exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin')
 ) with check (exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin'));
-create policy "Public can submit partner applications" on partner_applications for insert with check (true);
 create policy "Public can submit contact messages" on contact_messages for insert with check (true);
 create policy "Partners can view own partner record" on partners for select using (auth.uid() = owner_id);
 create policy "Partners can view own properties" on properties for select using (
