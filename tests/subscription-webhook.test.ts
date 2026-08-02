@@ -22,4 +22,16 @@ describe("subscription webhook coverage", () => {
     expect(webhook).toContain("membership_synced_at.is.null,membership_synced_at.lt.${eventCreatedAt}");
     expect(webhook).toContain("subscription_synced_at.is.null,subscription_synced_at.lt.${eventCreatedAt}");
   });
+
+  it("uses verified subscription items as the partner plan source of truth", () => {
+    expect(webhook).toContain("getVerifiedPartnerSubscriptionPlan(subscription)");
+    expect(webhook).toContain("software_plan: verifiedPlan");
+    expect(webhook).toContain("Partner subscription price does not match a configured iRatePilot plan.");
+
+    const checkoutBlock = webhook.slice(
+      webhook.indexOf('session.metadata?.mode === "partner_subscription_test"'),
+      webhook.indexOf('event.type === "customer.subscription.created"'),
+    );
+    expect(checkoutBlock).not.toContain("software_plan:");
+  });
 });

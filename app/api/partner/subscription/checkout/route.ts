@@ -4,6 +4,7 @@ import { partnerPlans } from "@/config/partner-plans";
 import { requireRole } from "@/lib/auth/require-role";
 import { getStripe } from "@/lib/stripe";
 import { getStripeIdempotencyContext } from "@/lib/stripe-idempotency";
+import { getPartnerStripePriceId, isExpectedPartnerStripePrice } from "@/lib/stripe/partner-subscription-pricing";
 
 const schema = z.object({ plan: z.enum(["starter", "professional", "premium"]) });
 
@@ -13,8 +14,7 @@ export async function POST(request: Request) {
   }
   const parsed = schema.safeParse(await request.json());
   if (!parsed.success) return NextResponse.json({ error: "Choose a valid partner plan." }, { status: 400 });
-  const prices = { starter: process.env.STRIPE_PARTNER_STARTER_PRICE_ID, professional: process.env.STRIPE_PARTNER_PROFESSIONAL_PRICE_ID, premium: process.env.STRIPE_PARTNER_PREMIUM_PRICE_ID };
-  const priceId = prices[parsed.data.plan];
+  const priceId = getPartnerStripePriceId(parsed.data.plan);
   if (!priceId?.startsWith("price_")) return NextResponse.json({ error: "The selected Stripe test price is not configured." }, { status: 503 });
   try {
     const auth = await requireRole(["partner", "admin"]);
@@ -28,14 +28,8 @@ export async function POST(request: Request) {
     const idempotency = getStripeIdempotencyContext(request, "partner-subscription", auth.user.id);
     if (!idempotency) return NextResponse.json({ error: "A valid checkout attempt ID is required." }, { status: 400 });
     const stripe = getStripe();
-    const expectedAmount = partnerPlans[parsed.data.plan].monthlyPrice * 100;
     const price = await stripe.prices.retrieve(priceId);
-    if (
-      !price.active ||
-      price.unit_amount !== expectedAmount ||
-      price.currency !== "usd" ||
-      price.recurring?.interval !== "month"
-    ) {
+    if (!isExpectedPartnerStripePrice(price, parsed.data.plan)) {
       return NextResponse.json({
         error: `Stripe must use an active $${partnerPlans[parsed.data.plan].monthlyPrice}/month USD recurring price for this plan.`
       }, { status: 503 });

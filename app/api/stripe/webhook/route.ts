@@ -10,6 +10,7 @@ import {
 } from "@/lib/bookings/complete-paid-test-booking";
 import { getSubscriptionAccessStatus, getSubscriptionRenewsAt } from "@/lib/stripe/subscription-lifecycle";
 import { isRetryableStripeWebhookClaim } from "@/lib/stripe/webhook-retry";
+import { getVerifiedPartnerSubscriptionPlan } from "@/lib/stripe/partner-subscription-pricing";
 
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
@@ -121,7 +122,6 @@ export async function POST(request: Request) {
         const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
         const subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
         const { error } = await admin.from("partners").update({
-          software_plan: session.metadata.plan,
           stripe_customer_id: customerId || null,
           stripe_subscription_id: subscriptionId || null
         }).eq("id", session.metadata.partnerId)
@@ -152,10 +152,12 @@ export async function POST(request: Request) {
           : await update;
         if (error) throw error;
       }
-      if (subscription.metadata?.mode === "partner_subscription_test" && subscription.metadata.partnerId && (subscription.metadata.plan === "starter" || subscription.metadata.plan === "professional" || subscription.metadata.plan === "premium")) {
+      if (subscription.metadata?.mode === "partner_subscription_test" && subscription.metadata.partnerId) {
+        const verifiedPlan = getVerifiedPartnerSubscriptionPlan(subscription);
+        if (!verifiedPlan) throw new Error("Partner subscription price does not match a configured iRatePilot plan.");
         const customerId = typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
         const update = admin.from("partners").update({
-          software_plan: subscription.metadata.plan,
+          software_plan: verifiedPlan,
           subscription_status: accessStatus,
           stripe_customer_id: customerId,
           stripe_subscription_id: subscriptionId,
