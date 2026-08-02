@@ -1,11 +1,53 @@
 import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { SiteFooter } from "@/components/layout/site-footer";
+import { SiteHeader } from "@/components/layout/site-header";
+import { getBookingConfirmationPresentation, type BookingConfirmationStatus } from "@/lib/booking-confirmation";
+import { createClient } from "@/lib/supabase/server";
+
+export const dynamic = "force-dynamic";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+type BookingRow = {
+  confirmation_code: string;
+  status: BookingConfirmationStatus;
+  check_in: string;
+  check_out: string;
+  guests: number;
+  total: number;
+  stripe_payment_intent_id: string | null;
+  properties: { name: string; city: string; country: string } | null;
+  rooms: { name: string } | null;
+};
 
 export default async function ConfirmationPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   const code = typeof params.code === "string" ? params.code : "";
-  const isRequest = params.mode === "request";
-  const isDuplicate = params.duplicate === "true";
-  return <main className="flex min-h-screen items-center justify-center p-6"><div className="card max-w-xl p-10 text-center"><div className="text-5xl">✓</div><h1 className="mt-5 text-3xl font-bold">{isDuplicate ? "Your request is already pending" : isRequest ? "Your booking request was sent" : "Your test stay is confirmed"}</h1><p className="mt-3 text-slate-500">{code ? `Confirmation ${code}` : "Your booking confirmation is available in Trips."}</p><p className="mt-2 text-sm text-slate-500">{isRequest ? (isDuplicate ? "We found the same open request and did not create a duplicate. No payment was collected." : "The property will review your pending request. No payment was collected.") : "Stripe test mode was used. No real money was charged."}</p><Link href="/account/trips" className="btn-primary mt-8">View trip</Link></div></main>;
+  const replayed = params.duplicate === "true";
+  if (!code) redirect("/account/trips");
+
+  const returnPath = `/booking-confirmation?${new URLSearchParams({
+    code,
+    ...(replayed ? { duplicate: "true" } : {}),
+  }).toString()}`;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect(`/login?next=${encodeURIComponent(returnPath)}`);
+
+  const { data, error } = await supabase.from("bookings")
+    .select("confirmation_code,status,check_in,check_out,guests,total,stripe_payment_intent_id,properties(name,city,country),rooms(name)")
+    .eq("customer_id", user.id)
+    .eq("confirmation_code", code)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) notFound();
+
+  const booking = data as unknown as BookingRow;
+  const presentation = getBookingConfirmationPresentation(
+    booking.status,
+    Boolean(booking.stripe_payment_intent_id),
+    replayed,
+  );
+
+  return <><SiteHeader /><main className="container-page flex min-h-[65vh] items-center justify-center py-12"><div className="card w-full max-w-2xl p-10 text-center"><div className="text-5xl">✓</div><h1 className="mt-5 text-3xl font-bold">{presentation.title}</h1><p className="mt-3 font-semibold text-slate-700">Confirmation {booking.confirmation_code}</p><p className="mt-2 text-sm text-slate-500">{presentation.message}</p><dl className="mt-8 grid gap-4 rounded-xl bg-slate-50 p-6 text-left sm:grid-cols-2"><div><dt className="text-xs uppercase tracking-wider text-slate-500">Property</dt><dd className="mt-1 font-semibold">{booking.properties?.name || "Property"}</dd><dd className="text-sm text-slate-500">{booking.properties ? `${booking.properties.city}, ${booking.properties.country}` : ""}</dd></div><div><dt className="text-xs uppercase tracking-wider text-slate-500">Room</dt><dd className="mt-1 font-semibold">{booking.rooms?.name || "Room"}</dd></div><div><dt className="text-xs uppercase tracking-wider text-slate-500">Stay</dt><dd className="mt-1 font-semibold">{booking.check_in} to {booking.check_out}</dd><dd className="text-sm text-slate-500">{booking.guests} {booking.guests === 1 ? "guest" : "guests"}</dd></div><div><dt className="text-xs uppercase tracking-wider text-slate-500">Total</dt><dd className="mt-1 font-semibold">${Number(booking.total).toFixed(2)}</dd><dd className="text-sm capitalize text-slate-500">Status: {booking.status}</dd></div></dl><Link href="/account/trips" className="btn-primary mt-8">View trip</Link></div></main><SiteFooter /></>;
 }
