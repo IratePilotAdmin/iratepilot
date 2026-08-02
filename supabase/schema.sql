@@ -30,6 +30,10 @@ create table partner_applications (
   created_at timestamptz not null default now()
 );
 
+create unique index one_pending_partner_application_per_email
+  on partner_applications (lower(trim(email)))
+  where status = 'pending';
+
 create table contact_messages (
   id uuid primary key default uuid_generate_v4(),
   name text not null,

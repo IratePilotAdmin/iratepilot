@@ -14,6 +14,9 @@ export async function POST(request: Request) {
       property_type: parsed.data.propertyType,
       status: "pending",
     });
+    if (error?.code === "23505") {
+      return NextResponse.json({ status: "received" }, { status: 201 });
+    }
     if (error) throw error;
     return NextResponse.json({ status: "received" }, { status: 201 });
   } catch {
