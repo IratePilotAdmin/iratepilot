@@ -11,17 +11,20 @@ export function getMembershipStripePriceId(tier: MembershipTier) {
   return prices[tier];
 }
 
-export function isExpectedMembershipStripePrice(price: Stripe.Price, tier: MembershipTier) {
-  return price.active
-    && price.id === getMembershipStripePriceId(tier)
+function matchesConfiguredMembershipStripePrice(price: Stripe.Price, tier: MembershipTier) {
+  return price.id === getMembershipStripePriceId(tier)
     && price.unit_amount === memberships[tier].annualPrice * 100
     && price.currency === "usd"
     && price.recurring?.interval === "year";
+}
+
+export function isExpectedMembershipStripePrice(price: Stripe.Price, tier: MembershipTier) {
+  return price.active && matchesConfiguredMembershipStripePrice(price, tier);
 }
 
 export function getVerifiedMembershipSubscriptionTier(subscription: Stripe.Subscription): MembershipTier | null {
   if (subscription.items.data.length !== 1) return null;
   const item = subscription.items.data[0];
   if (item.quantity !== 1) return null;
-  return membershipTiers.find((tier) => isExpectedMembershipStripePrice(item.price, tier)) ?? null;
+  return membershipTiers.find((tier) => matchesConfiguredMembershipStripePrice(item.price, tier)) ?? null;
 }

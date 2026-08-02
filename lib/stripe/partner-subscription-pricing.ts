@@ -12,17 +12,20 @@ export function getPartnerStripePriceId(plan: PartnerPlan) {
   return prices[plan];
 }
 
-export function isExpectedPartnerStripePrice(price: Stripe.Price, plan: PartnerPlan) {
-  return price.active
-    && price.id === getPartnerStripePriceId(plan)
+function matchesConfiguredPartnerStripePrice(price: Stripe.Price, plan: PartnerPlan) {
+  return price.id === getPartnerStripePriceId(plan)
     && price.unit_amount === partnerPlans[plan].monthlyPrice * 100
     && price.currency === "usd"
     && price.recurring?.interval === "month";
+}
+
+export function isExpectedPartnerStripePrice(price: Stripe.Price, plan: PartnerPlan) {
+  return price.active && matchesConfiguredPartnerStripePrice(price, plan);
 }
 
 export function getVerifiedPartnerSubscriptionPlan(subscription: Stripe.Subscription): PartnerPlan | null {
   if (subscription.items.data.length !== 1) return null;
   const item = subscription.items.data[0];
   if (item.quantity !== 1) return null;
-  return partnerPlanKeys.find((plan) => isExpectedPartnerStripePrice(item.price, plan)) ?? null;
+  return partnerPlanKeys.find((plan) => matchesConfiguredPartnerStripePrice(item.price, plan)) ?? null;
 }

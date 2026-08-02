@@ -69,4 +69,21 @@ describe("partner subscription pricing", () => {
     expect(getVerifiedPartnerSubscriptionPlan(subscription([{ quantity: 1, price }, { quantity: 1, price }]))).toBeNull();
     expect(isExpectedPartnerStripePrice({ ...price, unit_amount: 6_000 } as Stripe.Price, "starter")).toBe(false);
   });
+
+  it("accepts an archived configured price for lifecycle revocation but not new checkout", () => {
+    vi.stubEnv("STRIPE_PARTNER_STARTER_PRICE_ID", "price_starter");
+    const price = {
+      id: "price_starter",
+      active: false,
+      unit_amount: 5_900,
+      currency: "usd",
+      recurring: { interval: "month" },
+    } as Stripe.Price;
+    const subscription = {
+      items: { data: [{ quantity: 1, price }] },
+    } as Stripe.Subscription;
+
+    expect(isExpectedPartnerStripePrice(price, "starter")).toBe(false);
+    expect(getVerifiedPartnerSubscriptionPlan(subscription)).toBe("starter");
+  });
 });

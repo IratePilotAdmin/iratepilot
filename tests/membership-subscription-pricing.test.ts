@@ -60,4 +60,21 @@ describe("membership subscription pricing", () => {
     expect(getVerifiedMembershipSubscriptionTier(subscription([{ quantity: 1, price }, { quantity: 1, price }]))).toBeNull();
     expect(isExpectedMembershipStripePrice({ ...price, active: false } as Stripe.Price, "basic")).toBe(false);
   });
+
+  it("accepts an archived configured price for lifecycle revocation but not new checkout", () => {
+    vi.stubEnv("STRIPE_BASIC_PRICE_ID", "price_basic");
+    const price = {
+      id: "price_basic",
+      active: false,
+      unit_amount: 7_000,
+      currency: "usd",
+      recurring: { interval: "year" },
+    } as Stripe.Price;
+    const subscription = {
+      items: { data: [{ quantity: 1, price }] },
+    } as Stripe.Subscription;
+
+    expect(isExpectedMembershipStripePrice(price, "basic")).toBe(false);
+    expect(getVerifiedMembershipSubscriptionTier(subscription)).toBe("basic");
+  });
 });
