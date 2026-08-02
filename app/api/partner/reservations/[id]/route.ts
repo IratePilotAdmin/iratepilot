@@ -15,6 +15,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   try {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+    if (auth.profile.role !== "admin") {
+      const { data: partner, error: partnerError } = await auth.supabase.from("partners")
+        .select("id,status").eq("owner_id", auth.user.id).maybeSingle();
+      if (partnerError) throw partnerError;
+      if (!partner || partner.status !== "approved") {
+        return NextResponse.json({ error: "An approved partner account is required to review reservations." }, { status: 403 });
+      }
+    }
     const { data, error } = await auth.supabase.rpc("review_booking", {
       p_booking_id: id, p_decision: parsed.data.decision, p_reason: parsed.data.reason || null
     });

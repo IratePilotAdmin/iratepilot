@@ -263,7 +263,7 @@ create policy "Public can view inventory" on inventory for select using (true);
 create policy "Users can view own profile" on profiles for select using (auth.uid() = id);
 create policy "Customers can view own bookings" on bookings for select using (auth.uid() = customer_id);
 create policy "Partners can view own property bookings" on bookings for select using (
-  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = bookings.property_id and partners.owner_id = auth.uid())
+  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = bookings.property_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Admins can manage bookings" on bookings for all using (
   exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin')
@@ -274,7 +274,7 @@ create policy "Customers can view own booking history" on booking_status_history
   exists (select 1 from bookings where bookings.id = booking_id and bookings.customer_id = auth.uid())
 );
 create policy "Partners can view own booking history" on booking_status_history for select using (
-  exists (select 1 from bookings join properties on properties.id = bookings.property_id join partners on partners.id = properties.partner_id where bookings.id = booking_id and partners.owner_id = auth.uid())
+  exists (select 1 from bookings join properties on properties.id = bookings.property_id join partners on partners.id = properties.partner_id where bookings.id = booking_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Users can view own notifications" on notifications for select using (user_id = auth.uid());
 create policy "Users can update own notifications" on notifications for update using (user_id = auth.uid()) with check (user_id = auth.uid());
@@ -562,7 +562,7 @@ begin
     select 1 from profiles where id = auth.uid() and role = 'admin'
     union all
     select 1 from properties p join partners pa on pa.id = p.partner_id
-      where p.id = v_booking.property_id and pa.owner_id = auth.uid()
+      where p.id = v_booking.property_id and pa.owner_id = auth.uid() and pa.status = 'approved'
   ) into v_authorized;
   if not v_authorized then raise exception 'Not authorized'; end if;
   if v_booking.status <> 'pending' then raise exception 'Only pending requests can be reviewed'; end if;
