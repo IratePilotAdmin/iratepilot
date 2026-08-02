@@ -3,6 +3,7 @@ select
   to_regclass('public.profiles') is not null as profiles_ready,
   to_regclass('public.properties') is not null as properties_ready,
   to_regclass('public.bookings') is not null as bookings_ready,
+  to_regclass('public.one_open_booking_per_stay') is not null as booking_deduplication_ready,
   to_regclass('public.booking_financials') is not null as finance_ready,
   to_regclass('public.revenue_daily_inputs') is not null as revenue_inputs_ready,
   to_regclass('public.revenue_recommendations') is not null as recommendations_ready,

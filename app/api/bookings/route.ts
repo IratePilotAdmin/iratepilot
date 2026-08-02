@@ -42,6 +42,27 @@ export async function POST(request: Request) {
     if (roomResult.error || !roomResult.data) return NextResponse.json({ error: "The selected approved room was not found." }, { status: 404 });
     if (parsed.data.guests > Number(roomResult.data.max_guests)) return NextResponse.json({ error: "Guest count exceeds this room’s capacity." }, { status: 400 });
 
+    const findExistingBooking = () => supabase.from("bookings")
+      .select("id,confirmation_code,status,subtotal,fees,total")
+      .eq("customer_id", user.id)
+      .eq("room_id", parsed.data.roomId)
+      .eq("check_in", parsed.data.checkIn)
+      .eq("check_out", parsed.data.checkOut)
+      .in("status", ["pending", "confirmed"])
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    const existingResult = await findExistingBooking();
+    if (existingResult.error) throw existingResult.error;
+    if (existingResult.data) {
+      return NextResponse.json({
+        data: existingResult.data,
+        duplicate: true,
+        mode: "private_request",
+        message: "Your existing booking request was returned. No duplicate request was created."
+      });
+    }
+
     const inventoryResult = await supabase.from("inventory").select("stay_date,available_units,rate")
       .eq("room_id", parsed.data.roomId).gte("stay_date", parsed.data.checkIn).lt("stay_date", parsed.data.checkOut).order("stay_date");
     if (inventoryResult.error) throw inventoryResult.error;
@@ -72,6 +93,18 @@ export async function POST(request: Request) {
       total,
       status: "pending"
     }).select("id,confirmation_code,status,subtotal,fees,total").single();
+    if (error?.code === "23505") {
+      const concurrentResult = await findExistingBooking();
+      if (concurrentResult.error) throw concurrentResult.error;
+      if (concurrentResult.data) {
+        return NextResponse.json({
+          data: concurrentResult.data,
+          duplicate: true,
+          mode: "private_request",
+          message: "Your existing booking request was returned. No duplicate request was created."
+        });
+      }
+    }
     if (error) throw error;
     return NextResponse.json({
       data,

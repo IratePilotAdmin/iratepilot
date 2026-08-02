@@ -69,7 +69,12 @@ export function BookingRequestForm({
       }
       if (!response.ok) throw new Error(body.error || "The booking request could not be created.");
 
-      router.push(`/booking-confirmation?mode=request&code=${encodeURIComponent(body.data.confirmation_code)}`);
+      const confirmation = new URLSearchParams({
+        mode: "request",
+        code: body.data.confirmation_code,
+        ...(body.duplicate ? { duplicate: "true" } : {})
+      });
+      router.push(`/booking-confirmation?${confirmation.toString()}`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "The booking request could not be created.");
       setBusy(false);

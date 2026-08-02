@@ -111,6 +111,10 @@ create table bookings (
   created_at timestamptz not null default now()
 );
 
+create unique index one_open_booking_per_stay
+  on bookings (customer_id, room_id, check_in, check_out)
+  where status in ('pending', 'confirmed');
+
 create table booking_status_history (
   id uuid primary key default uuid_generate_v4(),
   booking_id uuid not null references bookings(id) on delete cascade,
