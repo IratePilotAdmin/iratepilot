@@ -18,7 +18,11 @@ export async function POST(request: Request) {
   try {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-    const { data: partner } = await auth.supabase.from("partners").select("id").eq("owner_id", auth.user.id).single();
+    const { data: partner, error: partnerError } = await auth.supabase.from("partners").select("id,status").eq("owner_id", auth.user.id).maybeSingle();
+    if (partnerError) throw partnerError;
+    if (auth.profile.role !== "admin" && (!partner || partner.status !== "approved")) {
+      return NextResponse.json({ error: "An approved partner account is required to start a subscription." }, { status: 403 });
+    }
     if (!partner) return NextResponse.json({ error: "Create a partner property record first." }, { status: 409 });
     const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const session = await getStripe().checkout.sessions.create({

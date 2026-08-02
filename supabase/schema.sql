@@ -285,10 +285,10 @@ create policy "Admins can manage reward ledger" on reward_ledger for all using (
   exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin')
 );
 create policy "Partners can view own booking financials" on booking_financials for select using (
-  exists (select 1 from partners where partners.id = partner_id and partners.owner_id = auth.uid())
+  exists (select 1 from partners where partners.id = partner_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Partners can view own payouts" on partner_payouts for select using (
-  exists (select 1 from partners where partners.id = partner_id and partners.owner_id = auth.uid())
+  exists (select 1 from partners where partners.id = partner_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Admins can manage booking financials" on booking_financials for all using (
   exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin')

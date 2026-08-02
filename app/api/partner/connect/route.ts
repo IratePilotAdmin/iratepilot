@@ -21,9 +21,12 @@ export async function GET() {
     if (!isStripeTestMode()) return NextResponse.json({ error: "Connect is limited to Stripe test mode." }, { status: 403 });
     const admin = createAdminClient();
     const { data: partner, error } = await admin.from("partners")
-      .select("id,business_name,stripe_connect_account_id,stripe_connect_status,stripe_connect_details_submitted,stripe_connect_charges_enabled,stripe_connect_payouts_enabled,stripe_connect_requirements_due")
+      .select("id,business_name,status,stripe_connect_account_id,stripe_connect_status,stripe_connect_details_submitted,stripe_connect_charges_enabled,stripe_connect_payouts_enabled,stripe_connect_requirements_due")
       .eq("owner_id", auth.user.id).maybeSingle();
     if (error) throw error;
+    if (auth.profile.role !== "admin" && (!partner || partner.status !== "approved")) {
+      return NextResponse.json({ error: "An approved partner account is required to access Stripe Connect." }, { status: 403 });
+    }
     if (!partner) return NextResponse.json({ partner: null });
     if (!partner.stripe_connect_account_id) return NextResponse.json({ partner });
 
