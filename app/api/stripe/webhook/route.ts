@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { completePaidTestBooking, isCompletableBookingIntent } from "@/lib/bookings/complete-paid-test-booking";
+import { getSubscriptionAccessStatus, getSubscriptionRenewsAt } from "@/lib/stripe/subscription-lifecycle";
 
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
@@ -83,7 +84,6 @@ export async function POST(request: Request) {
         const subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
         const { error } = await admin.from("profiles").update({
           membership_tier: session.metadata.plan,
-          membership_status: "active",
           stripe_customer_id: customerId || null,
           stripe_subscription_id: subscriptionId || null
         }).eq("id", session.metadata.userId);
@@ -94,7 +94,6 @@ export async function POST(request: Request) {
         const subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
         const { error } = await admin.from("partners").update({
           software_plan: session.metadata.plan,
-          subscription_status: "active",
           stripe_customer_id: customerId || null,
           stripe_subscription_id: subscriptionId || null
         }).eq("id", session.metadata.partnerId);
@@ -102,21 +101,38 @@ export async function POST(request: Request) {
       }
     }
 
-    if (event.type === "customer.subscription.deleted") {
+    if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
       const subscription = event.data.object as Stripe.Subscription;
       objectId = subscription.id;
-      if (subscription.metadata?.mode === "pilot_test" && subscription.metadata.userId) {
-        const { error } = await admin.from("profiles").update({
-          membership_tier: "none", membership_status: "cancelled",
-          stripe_subscription_id: null, membership_renews_at: null
+      const accessStatus = getSubscriptionAccessStatus(subscription.status);
+      const renewsAt = getSubscriptionRenewsAt(subscription);
+      const subscriptionId = event.type === "customer.subscription.deleted" ? null : subscription.id;
+      if (subscription.metadata?.mode === "pilot_test" && subscription.metadata.userId && (subscription.metadata.plan === "basic" || subscription.metadata.plan === "business")) {
+        const customerId = typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
+        const update = admin.from("profiles").update({
+          membership_tier: subscription.metadata.plan,
+          membership_status: accessStatus,
+          stripe_customer_id: customerId,
+          stripe_subscription_id: subscriptionId,
+          membership_renews_at: renewsAt
         }).eq("id", subscription.metadata.userId);
+        const { error } = event.type === "customer.subscription.deleted"
+          ? await update.eq("stripe_subscription_id", subscription.id)
+          : await update;
         if (error) throw error;
       }
-      if (subscription.metadata?.mode === "partner_subscription_test" && subscription.metadata.partnerId) {
-        const { error } = await admin.from("partners").update({
-          software_plan: "none", subscription_status: "cancelled",
-          stripe_subscription_id: null, subscription_renews_at: null
+      if (subscription.metadata?.mode === "partner_subscription_test" && subscription.metadata.partnerId && (subscription.metadata.plan === "starter" || subscription.metadata.plan === "professional" || subscription.metadata.plan === "premium")) {
+        const customerId = typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
+        const update = admin.from("partners").update({
+          software_plan: subscription.metadata.plan,
+          subscription_status: accessStatus,
+          stripe_customer_id: customerId,
+          stripe_subscription_id: subscriptionId,
+          subscription_renews_at: renewsAt
         }).eq("id", subscription.metadata.partnerId);
+        const { error } = event.type === "customer.subscription.deleted"
+          ? await update.eq("stripe_subscription_id", subscription.id)
+          : await update;
         if (error) throw error;
       }
     }
