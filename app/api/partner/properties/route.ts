@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/require-role";
 import { getPropertyReadiness, type PropertyReadinessInput } from "@/lib/property-readiness";
+import { getLatestPropertyReview, type PropertyReview } from "@/lib/property-review";
 import { propertySchema } from "@/lib/validation";
 
 export async function GET() {
@@ -8,7 +9,7 @@ export async function GET() {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-    let query = auth.supabase.from("properties").select("id,name,slug,type,star_rating,city,country,active,image_url,amenities,created_at,rooms(active,inventory(stay_date,available_units))").order("created_at", { ascending: false });
+    let query = auth.supabase.from("properties").select("id,name,slug,type,star_rating,city,country,active,image_url,amenities,created_at,rooms(active,inventory(stay_date,available_units)),property_review_history(active,note,created_at)").order("created_at", { ascending: false });
     if (auth.profile.role !== "admin") {
       const { data: partner } = await auth.supabase.from("partners").select("id").eq("owner_id", auth.user.id).maybeSingle();
       if (!partner) return NextResponse.json({ data: [] });
@@ -29,7 +30,8 @@ export async function GET() {
         image_url: property.image_url,
         amenities: property.amenities,
         created_at: property.created_at,
-        readiness: getPropertyReadiness(property as PropertyReadinessInput)
+        readiness: getPropertyReadiness(property as PropertyReadinessInput),
+        latest_review: getLatestPropertyReview(property.property_review_history as PropertyReview[]),
       }))
     });
   } catch {

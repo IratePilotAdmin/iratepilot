@@ -2,7 +2,8 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
-type Property = { id: string; name: string; slug: string; type: string; star_rating: number; city: string; country: string; active: boolean; image_url?: string | null; amenities?: string[]; readiness: { ready: boolean; missing: string[] } };
+type Review = { active: boolean; note: string; created_at: string };
+type Property = { id: string; name: string; slug: string; type: string; star_rating: number; city: string; country: string; active: boolean; image_url?: string | null; amenities?: string[]; readiness: { ready: boolean; missing: string[] }; latest_review?: Review | null };
 
 export function PartnerProperties() {
   const [properties, setProperties] = useState<Property[]>([]);
@@ -86,7 +87,7 @@ export function PartnerProperties() {
         <div className="border-b p-6"><h2 className="text-xl font-semibold">Your properties</h2><p className="mt-1 text-sm text-slate-500">Listings stay private until administrator approval.</p></div>
         <div className="divide-y">
           {properties.length === 0 && <p className="p-6 text-sm text-slate-500">No property records yet.</p>}
-          {properties.map((property) => <article key={property.id} className="flex flex-col justify-between gap-3 p-6 sm:flex-row sm:items-center"><div><strong>{property.name}</strong><p className="mt-1 text-sm text-slate-500">{property.star_rating}-star · {property.city}, {property.country}</p>{!property.readiness.ready && <p className="mt-2 text-xs text-amber-700">Still needed: {property.readiness.missing.join(", ")}</p>}</div><span className={property.active ? "badge bg-emerald-50 text-emerald-800" : property.readiness.ready ? "badge bg-blue-50 text-blue-800" : "badge"}>{property.active ? "Published" : property.readiness.ready ? "Ready for review" : "Draft incomplete"}</span></article>)}
+          {properties.map((property) => <article key={property.id} className="grid gap-3 p-6 sm:grid-cols-[1fr_auto]"><div><strong>{property.name}</strong><p className="mt-1 text-sm text-slate-500">{property.star_rating}-star · {property.city}, {property.country}</p>{!property.readiness.ready && <p className="mt-2 text-xs text-amber-700">Still needed: {property.readiness.missing.join(", ")}</p>}{property.latest_review && <div className={property.latest_review.active ? "mt-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-900" : "mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900"}><strong>{property.latest_review.active ? "Publication review" : "Changes requested"}</strong><p className="mt-1">{property.latest_review.note}</p><span className="mt-1 block text-xs opacity-70">{new Date(property.latest_review.created_at).toLocaleDateString()}</span></div>}</div><span className={property.active ? "badge h-fit bg-emerald-50 text-emerald-800" : property.readiness.ready ? "badge h-fit bg-blue-50 text-blue-800" : "badge h-fit"}>{property.active ? "Published" : property.readiness.ready ? "Ready for review" : "Draft incomplete"}</span></article>)}
         </div>
       </section>
       <div className="grid h-fit gap-8">

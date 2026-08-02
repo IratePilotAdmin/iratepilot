@@ -52,6 +52,11 @@ export const propertyContentSchema = z.object({
   amenities: z.array(z.string().trim().min(2).max(80)).min(1).max(20)
 });
 
+export const propertyReviewSchema = z.object({
+  active: z.boolean(),
+  note: z.string().trim().min(5).max(1000),
+});
+
 export const roomSchema = z.object({
   propertyId: z.string().uuid(),
   name: z.string().trim().min(2).max(120),
