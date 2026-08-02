@@ -129,6 +129,26 @@ create table notifications (
   created_at timestamptz not null default now()
 );
 
+create table email_outbox (
+  id uuid primary key default uuid_generate_v4(),
+  recipient_email text not null,
+  subject text not null,
+  template_name text not null,
+  template_data jsonb not null default '{}'::jsonb,
+  status text not null default 'pending'
+    check (status in ('pending','processing','sent','failed')),
+  attempts integer not null default 0 check (attempts >= 0),
+  last_error text,
+  resend_email_id text,
+  scheduled_at timestamptz not null default now(),
+  processed_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index email_outbox_processing_idx
+  on email_outbox (status, scheduled_at);
+
 create table reward_ledger (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid not null references profiles(id) on delete cascade,
@@ -234,6 +254,7 @@ alter table partner_applications enable row level security;
 alter table contact_messages enable row level security;
 alter table booking_status_history enable row level security;
 alter table notifications enable row level security;
+alter table email_outbox enable row level security;
 alter table reward_ledger enable row level security;
 alter table booking_financials enable row level security;
 alter table partner_payouts enable row level security;
@@ -384,6 +405,87 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+create or replace function public.claim_email_outbox_job()
+returns setof public.email_outbox
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  return query
+  with next_job as (
+    select candidate.id
+    from public.email_outbox as candidate
+    where candidate.scheduled_at <= now()
+      and candidate.attempts < 3
+      and (
+        candidate.status in ('pending', 'failed')
+        or (
+          candidate.status = 'processing'
+          and candidate.updated_at < now() - interval '15 minutes'
+        )
+      )
+    order by candidate.scheduled_at, candidate.created_at
+    for update skip locked
+    limit 1
+  )
+  update public.email_outbox as outbox
+  set status = 'processing',
+      attempts = outbox.attempts + 1,
+      last_error = null,
+      processed_at = null,
+      updated_at = now()
+  from next_job
+  where outbox.id = next_job.id
+  returning outbox.*;
+end;
+$$;
+
+create or replace function public.notify_approved_partner_application()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_user_id uuid;
+begin
+  if new.status = 'approved' and old.status is distinct from new.status then
+    select id into v_user_id
+    from auth.users
+    where lower(email) = lower(new.email)
+    order by created_at limit 1;
+
+    if v_user_id is not null then
+      insert into public.notifications (user_id, title, body)
+      values (
+        v_user_id,
+        'Partner access approved',
+        'Your iRatePilot partner account is ready. Finish your property setup to start accepting bookings.'
+      );
+
+      insert into public.email_outbox (
+        recipient_email, subject, template_name, template_data
+      ) values (
+        new.email,
+        'Your iRatePilot partner account is approved',
+        'partner_application_approved',
+        jsonb_build_object(
+          'recipient_name', new.contact_name,
+          'message', 'Your partner account is approved. Finish your property setup to start accepting bookings.',
+          'action_url', 'https://www.iratepilot.com/partner/dashboard'
+        )
+      );
+    end if;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists on_partner_application_approved on partner_applications;
+create trigger on_partner_application_approved
+  after update of status on partner_applications
+  for each row execute procedure public.notify_approved_partner_application();
 
 create or replace function public.review_partner_application(
   p_application_id uuid,
@@ -597,6 +699,13 @@ $$;
 
 revoke all on function public.review_revenue_recommendation(uuid, text) from public;
 grant execute on function public.review_revenue_recommendation(uuid, text) to authenticated;
+revoke all on email_outbox from anon, authenticated;
+grant all on email_outbox to service_role;
+revoke all on function public.claim_email_outbox_job()
+  from public, anon, authenticated;
+grant execute on function public.claim_email_outbox_job() to service_role;
+revoke all on function public.notify_approved_partner_application()
+  from public, anon, authenticated;
 revoke all on function public.review_partner_application(uuid, text)
   from public, anon, service_role;
 grant execute on function public.review_partner_application(uuid, text) to authenticated;
