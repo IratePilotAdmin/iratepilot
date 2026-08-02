@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { inventoryLimits } from "./inventory-limits";
+import { isSafePropertyImageUrl } from "./property-image";
 
 export const staySchema = z.object({
   checkIn: z.string().date(),
@@ -52,7 +53,7 @@ export const propertySchema = z.object({
 });
 
 export const propertyContentSchema = z.object({
-  imageUrl: z.string().url().max(2000),
+  imageUrl: z.string().url().max(2000).refine(isSafePropertyImageUrl, "Use an HTTPS image URL without embedded credentials."),
   amenities: z.array(z.string().trim().min(2).max(80)).min(1).max(20)
 });
 

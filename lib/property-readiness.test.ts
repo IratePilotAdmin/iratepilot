@@ -42,4 +42,15 @@ describe("property publication readiness", () => {
     expect(readiness.ready).toBe(true);
     expect(readiness.missing).toEqual([]);
   });
+
+  it("does not approve an insecure property image URL", () => {
+    const readiness = getPropertyReadiness({
+      image_url: "http://example.com/hotel.jpg",
+      amenities: ["Pool"],
+      rooms: [{ active: true, inventory: [{ stay_date: today, available_units: 1 }] }]
+    }, today);
+
+    expect(readiness.requirements.primaryPhoto).toBe(false);
+    expect(readiness.ready).toBe(false);
+  });
 });

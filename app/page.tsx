@@ -54,7 +54,7 @@ export default function HomePage() {
               <div className="journey-panel">
                 <div className="journey-glow" />
                 <div className="relative overflow-hidden rounded-[28px] bg-slate-950 shadow-2xl shadow-violet-300/40">
-                  <Image src={hotels[0].image} alt="Luxury beachfront hotel" width={1000} height={780} priority className="h-[470px] w-full object-cover opacity-80" />
+                  <Image src={hotels[0].image} alt="Luxury beachfront hotel" width={1000} height={780} priority unoptimized sizes="(max-width: 1024px) 100vw, 50vw" className="h-[470px] w-full object-cover opacity-80" />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/15 to-transparent" />
                   <div className="absolute inset-x-0 bottom-0 p-7 text-white">
                     <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold backdrop-blur">AI match · 96%</span>

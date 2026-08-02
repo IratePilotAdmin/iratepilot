@@ -48,10 +48,10 @@ export default async function HotelPage({ params, searchParams }: { params: Prom
           </div>
 
           <div className="property-gallery mt-7">
-            <div className="relative min-h-[430px] overflow-hidden rounded-l-[28px]"><Image src={hotel.image} alt={hotel.name} fill priority className="object-cover" /></div>
+            <div className="relative min-h-[430px] overflow-hidden rounded-l-[28px]"><Image src={hotel.image} alt={hotel.name} fill priority unoptimized sizes="(max-width: 1024px) 100vw, 66vw" className="object-cover" /></div>
             <div className="grid gap-2">
-              <div className="relative overflow-hidden rounded-tr-[28px]"><Image src={hotel.image} alt={`${hotel.name} property view`} fill className="object-cover" /></div>
-              <div className="relative overflow-hidden rounded-br-[28px]"><Image src={hotel.image} alt={`${hotel.name} guest experience`} fill className="object-cover" /></div>
+              <div className="relative overflow-hidden rounded-tr-[28px]"><Image src={hotel.image} alt={`${hotel.name} property view`} fill unoptimized sizes="(max-width: 1024px) 100vw, 34vw" className="object-cover" /></div>
+              <div className="relative overflow-hidden rounded-br-[28px]"><Image src={hotel.image} alt={`${hotel.name} guest experience`} fill unoptimized sizes="(max-width: 1024px) 100vw, 34vw" className="object-cover" /></div>
             </div>
           </div>
 
