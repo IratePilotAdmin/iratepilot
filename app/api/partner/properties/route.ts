@@ -47,16 +47,22 @@ export async function POST(request: Request) {
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
     const admin = createAdminClient();
 
-    let { data: partner } = await auth.supabase.from("partners").select("id").eq("owner_id", auth.user.id).maybeSingle();
+    const partnerResult = await auth.supabase.from("partners").select("id,status").eq("owner_id", auth.user.id).maybeSingle();
+    if (partnerResult.error) throw partnerResult.error;
+    let partner = partnerResult.data;
+    if (auth.profile.role !== "admin" && (!partner || partner.status !== "approved")) {
+      return NextResponse.json({ error: "An approved partner account is required to submit properties." }, { status: 403 });
+    }
     if (!partner) {
       const { data, error } = await admin.from("partners").insert({
         owner_id: auth.user.id,
         business_name: parsed.data.name,
         status: "pending"
-      }).select("id").single();
+      }).select("id,status").single();
       if (error) throw error;
       partner = data;
     }
+    if (!partner) throw new Error("Partner account could not be resolved.");
 
     const { data, error } = await admin.from("properties").insert({
       partner_id: partner.id,

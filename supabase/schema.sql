@@ -341,19 +341,19 @@ create policy "Partners can view own properties" on properties for select using 
   exists (select 1 from partners where partners.id = partner_id and partners.owner_id = auth.uid())
 );
 create policy "Partners can update own properties" on properties for update using (
-  exists (select 1 from partners where partners.id = partner_id and partners.owner_id = auth.uid())
+  exists (select 1 from partners where partners.id = partner_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 ) with check (
-  active = false and exists (select 1 from partners where partners.id = partner_id and partners.owner_id = auth.uid())
+  active = false and exists (select 1 from partners where partners.id = partner_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Partners can manage own rooms" on rooms for all using (
-  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = rooms.property_id and partners.owner_id = auth.uid())
+  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = rooms.property_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 ) with check (
-  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = rooms.property_id and partners.owner_id = auth.uid())
+  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = rooms.property_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Partners can manage own inventory" on inventory for all using (
-  exists (select 1 from rooms join properties on properties.id = rooms.property_id join partners on partners.id = properties.partner_id where rooms.id = inventory.room_id and partners.owner_id = auth.uid())
+  exists (select 1 from rooms join properties on properties.id = rooms.property_id join partners on partners.id = properties.partner_id where rooms.id = inventory.room_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 ) with check (
-  exists (select 1 from rooms join properties on properties.id = rooms.property_id join partners on partners.id = properties.partner_id where rooms.id = inventory.room_id and partners.owner_id = auth.uid())
+  exists (select 1 from rooms join properties on properties.id = rooms.property_id join partners on partners.id = properties.partner_id where rooms.id = inventory.room_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Admins can manage rooms" on rooms for all using (
   exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin')

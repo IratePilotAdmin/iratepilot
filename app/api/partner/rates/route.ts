@@ -7,8 +7,11 @@ export async function GET() {
   try {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-    const { data: partner } = await auth.supabase.from("partners").select("id").eq("owner_id", auth.user.id).maybeSingle();
-    if (!partner && auth.profile.role !== "admin") return NextResponse.json({ properties: [], rooms: [] });
+    const { data: partner, error: partnerError } = await auth.supabase.from("partners").select("id,status").eq("owner_id", auth.user.id).maybeSingle();
+    if (partnerError) throw partnerError;
+    if (auth.profile.role !== "admin" && (!partner || partner.status !== "approved")) {
+      return NextResponse.json({ error: "An approved partner account is required to manage rates and inventory." }, { status: 403 });
+    }
     let query = auth.supabase.from("properties").select("id,name,active").order("name");
     if (partner) query = query.eq("partner_id", partner.id);
     const { data: properties, error } = await query;
@@ -30,11 +33,13 @@ export async function POST(request: Request) {
   try {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-    const { data: partner } = auth.profile.role === "admin"
-      ? { data: null }
-      : await auth.supabase.from("partners").select("id").eq("owner_id", auth.user.id).maybeSingle();
-    if (auth.profile.role !== "admin" && !partner) {
-      return NextResponse.json({ error: "Partner account not found." }, { status: 404 });
+    const partnerResult = auth.profile.role === "admin"
+      ? { data: null, error: null }
+      : await auth.supabase.from("partners").select("id,status").eq("owner_id", auth.user.id).maybeSingle();
+    if (partnerResult.error) throw partnerResult.error;
+    const partner = partnerResult.data;
+    if (auth.profile.role !== "admin" && (!partner || partner.status !== "approved")) {
+      return NextResponse.json({ error: "An approved partner account is required to manage rates and inventory." }, { status: 403 });
     }
     if (body.action === "create_room") {
       const parsed = roomSchema.safeParse(body);

@@ -14,8 +14,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     let propertyQuery = auth.supabase.from("properties").select("id").eq("id", id);
     if (auth.profile.role !== "admin") {
-      const { data: partner } = await auth.supabase.from("partners").select("id").eq("owner_id", auth.user.id).maybeSingle();
-      if (!partner) return NextResponse.json({ error: "Property not found." }, { status: 404 });
+      const { data: partner, error: partnerError } = await auth.supabase.from("partners").select("id,status").eq("owner_id", auth.user.id).maybeSingle();
+      if (partnerError) throw partnerError;
+      if (!partner || partner.status !== "approved") {
+        return NextResponse.json({ error: "An approved partner account is required to edit properties." }, { status: 403 });
+      }
       propertyQuery = propertyQuery.eq("partner_id", partner.id);
     }
     const { data: property } = await propertyQuery.maybeSingle();
