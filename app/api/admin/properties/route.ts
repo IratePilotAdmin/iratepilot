@@ -7,7 +7,7 @@ export async function GET() {
     const auth = await requireRole(["admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
     const { data, error } = await auth.supabase.from("properties")
-      .select("id,name,slug,type,star_rating,city,country,active,image_url,amenities,created_at,partners(business_name),rooms(active,inventory(stay_date,available_units))")
+      .select("id,name,slug,type,star_rating,city,country,active,image_url,amenities,created_at,partners(business_name,status),rooms(active,inventory(stay_date,available_units))")
       .order("created_at", { ascending: false });
     if (error) throw error;
     return NextResponse.json({

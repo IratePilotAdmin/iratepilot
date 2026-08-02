@@ -442,6 +442,32 @@ create trigger enforce_approved_partner_booking
 before insert or update of property_id, room_id on public.bookings
 for each row execute function public.enforce_approved_partner_booking();
 
+create or replace function public.enforce_partner_before_property_activation()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.active = true and not exists (
+    select 1
+    from public.partners
+    where partners.id = new.partner_id
+      and partners.status = 'approved'
+  ) then
+    raise exception 'Approve the partner account before activating the property'
+      using errcode = '23514';
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.enforce_partner_before_property_activation() from public;
+
+create trigger enforce_partner_before_property_activation
+before insert or update of active, partner_id on public.properties
+for each row execute function public.enforce_partner_before_property_activation();
+
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
