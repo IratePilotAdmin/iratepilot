@@ -31,7 +31,7 @@ describe("customer booking itineraries", () => {
   it("offers secure confirmation links and calendar downloads in Trips", () => {
     expect(trips).toContain("View confirmation");
     expect(trips).toContain("encodeURIComponent(trip.confirmation_code)");
-    expect(trips).toContain('trip.status==="confirmed"&&<TripCalendarButton');
+    expect(trips).toMatch(/trip\.status\s*===\s*"confirmed"\s*&&\s*<TripCalendarButton/);
   });
 
   it("offers calendar export immediately after a confirmed booking", () => {
