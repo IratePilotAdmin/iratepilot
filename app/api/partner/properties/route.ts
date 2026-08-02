@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/require-role";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getPropertyReadiness, type PropertyReadinessInput } from "@/lib/property-readiness";
 import { propertySchema } from "@/lib/validation";
 
@@ -44,10 +45,11 @@ export async function POST(request: Request) {
   try {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+    const admin = createAdminClient();
 
     let { data: partner } = await auth.supabase.from("partners").select("id").eq("owner_id", auth.user.id).maybeSingle();
     if (!partner) {
-      const { data, error } = await auth.supabase.from("partners").insert({
+      const { data, error } = await admin.from("partners").insert({
         owner_id: auth.user.id,
         business_name: parsed.data.name,
         status: "pending"
@@ -56,7 +58,7 @@ export async function POST(request: Request) {
       partner = data;
     }
 
-    const { data, error } = await auth.supabase.from("properties").insert({
+    const { data, error } = await admin.from("properties").insert({
       partner_id: partner.id,
       name: parsed.data.name,
       slug: parsed.data.slug,

@@ -326,11 +326,7 @@ create policy "Admins can manage revenue reports" on revenue_daily_reports for a
 ) with check (exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin'));
 create policy "Public can submit partner applications" on partner_applications for insert with check (true);
 create policy "Public can submit contact messages" on contact_messages for insert with check (true);
-create policy "Partners can create own partner record" on partners for insert with check (auth.uid() = owner_id);
 create policy "Partners can view own partner record" on partners for select using (auth.uid() = owner_id);
-create policy "Partners can create own properties" on properties for insert with check (
-  exists (select 1 from partners where partners.id = partner_id and partners.owner_id = auth.uid())
-);
 create policy "Partners can view own properties" on properties for select using (
   exists (select 1 from partners where partners.id = partner_id and partners.owner_id = auth.uid())
 );
