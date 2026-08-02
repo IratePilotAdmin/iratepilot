@@ -22,6 +22,7 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
+  const eventCreatedAt = new Date(event.created * 1000).toISOString();
   let financialId: string | null = null;
   let objectId: string | null = null;
 
@@ -86,7 +87,8 @@ export async function POST(request: Request) {
           membership_tier: session.metadata.plan,
           stripe_customer_id: customerId || null,
           stripe_subscription_id: subscriptionId || null
-        }).eq("id", session.metadata.userId);
+        }).eq("id", session.metadata.userId)
+          .or(`membership_synced_at.is.null,membership_synced_at.lt.${eventCreatedAt}`);
         if (error) throw error;
       }
       if (session.metadata?.mode === "partner_subscription_test" && session.metadata.partnerId && (session.metadata.plan === "starter" || session.metadata.plan === "professional" || session.metadata.plan === "premium")) {
@@ -96,7 +98,8 @@ export async function POST(request: Request) {
           software_plan: session.metadata.plan,
           stripe_customer_id: customerId || null,
           stripe_subscription_id: subscriptionId || null
-        }).eq("id", session.metadata.partnerId);
+        }).eq("id", session.metadata.partnerId)
+          .or(`subscription_synced_at.is.null,subscription_synced_at.lt.${eventCreatedAt}`);
         if (error) throw error;
       }
     }
@@ -114,8 +117,10 @@ export async function POST(request: Request) {
           membership_status: accessStatus,
           stripe_customer_id: customerId,
           stripe_subscription_id: subscriptionId,
-          membership_renews_at: renewsAt
-        }).eq("id", subscription.metadata.userId);
+          membership_renews_at: renewsAt,
+          membership_synced_at: eventCreatedAt
+        }).eq("id", subscription.metadata.userId)
+          .or(`membership_synced_at.is.null,membership_synced_at.lt.${eventCreatedAt}`);
         const { error } = event.type === "customer.subscription.deleted"
           ? await update.eq("stripe_subscription_id", subscription.id)
           : await update;
@@ -128,8 +133,10 @@ export async function POST(request: Request) {
           subscription_status: accessStatus,
           stripe_customer_id: customerId,
           stripe_subscription_id: subscriptionId,
-          subscription_renews_at: renewsAt
-        }).eq("id", subscription.metadata.partnerId);
+          subscription_renews_at: renewsAt,
+          subscription_synced_at: eventCreatedAt
+        }).eq("id", subscription.metadata.partnerId)
+          .or(`subscription_synced_at.is.null,subscription_synced_at.lt.${eventCreatedAt}`);
         const { error } = event.type === "customer.subscription.deleted"
           ? await update.eq("stripe_subscription_id", subscription.id)
           : await update;

@@ -14,6 +14,7 @@ create table profiles (
   membership_renews_at timestamptz,
   stripe_customer_id text,
   stripe_subscription_id text,
+  membership_synced_at timestamptz,
   reward_points integer not null default 0 check (reward_points >= 0),
   created_at timestamptz not null default now()
 );
@@ -47,6 +48,7 @@ create table partners (
   subscription_renews_at timestamptz,
   stripe_customer_id text,
   stripe_subscription_id text,
+  subscription_synced_at timestamptz,
   created_at timestamptz not null default now()
 );
 

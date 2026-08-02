@@ -15,4 +15,11 @@ describe("subscription webhook coverage", () => {
     expect(webhook).toContain("subscription_renews_at: renewsAt");
     expect(webhook).toContain('.eq("stripe_subscription_id", subscription.id)');
   });
+
+  it("rejects stale traveler and partner subscription events", () => {
+    expect(webhook).toContain("membership_synced_at: eventCreatedAt");
+    expect(webhook).toContain("subscription_synced_at: eventCreatedAt");
+    expect(webhook).toContain("membership_synced_at.is.null,membership_synced_at.lt.${eventCreatedAt}");
+    expect(webhook).toContain("subscription_synced_at.is.null,subscription_synced_at.lt.${eventCreatedAt}");
+  });
 });
