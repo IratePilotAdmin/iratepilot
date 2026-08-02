@@ -44,6 +44,9 @@ export async function PATCH(
       status: string;
       stripe_payment_intent_id: string | null;
     };
+    if (booking.status !== "confirmed") {
+      return NextResponse.json({ error: "Only a confirmed booking can be refunded." }, { status: 409 });
+    }
     if (!booking.stripe_payment_intent_id) {
       return NextResponse.json({ error: "No Stripe payment is attached to this booking." }, { status: 409 });
     }
@@ -56,22 +59,32 @@ export async function PATCH(
       return NextResponse.json({ error: "The Stripe payment is not eligible for refund." }, { status: 409 });
     }
 
-    const { data: financial } = await admin
+    const { data: financial, error: financialError } = await admin
       .from("booking_financials")
-      .select("id,stripe_transfer_id,stripe_transfer_status")
+      .select("id,status,stripe_transfer_id,stripe_transfer_status")
       .eq("booking_id", booking.id)
       .maybeSingle();
+    if (financialError) throw financialError;
 
-    if (financial?.stripe_transfer_id && financial.stripe_transfer_status === "paid") {
+    let transferStatus = financial?.stripe_transfer_status;
+    if (financial && transferStatus === "paid") {
+      if (!financial.stripe_transfer_id) {
+        return NextResponse.json({ error: "The paid partner transfer reference is missing." }, { status: 409 });
+      }
       await stripe.transfers.createReversal(
         financial.stripe_transfer_id,
         {},
         { idempotencyKey: `booking-transfer-reversal-${booking.id}` }
       );
-      await admin.from("booking_financials").update({
+      const { error: reversalUpdateError } = await admin.from("booking_financials").update({
         stripe_transfer_status: "reversed",
         stripe_reversed_at: new Date().toISOString()
       }).eq("id", financial.id);
+      if (reversalUpdateError) throw reversalUpdateError;
+      transferStatus = "reversed";
+    }
+    if (financial?.status === "paid" && transferStatus !== "reversed") {
+      return NextResponse.json({ error: "The partner transfer must be reversed before refunding this booking." }, { status: 409 });
     }
 
     const refund = await stripe.refunds.create(
