@@ -43,6 +43,27 @@ create table contact_messages (
   created_at timestamptz not null default now()
 );
 
+create table email_outbox (
+  id uuid primary key default gen_random_uuid(),
+  recipient_email text not null,
+  subject text not null,
+  template_name text not null,
+  template_data jsonb not null default '{}'::jsonb,
+  status text not null default 'pending' check (status in ('pending','processing','sent','failed')),
+  attempts integer not null default 0 check (attempts >= 0),
+  last_error text,
+  resend_email_id text,
+  scheduled_at timestamptz not null default now(),
+  processed_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index email_outbox_processing_idx on email_outbox (status, scheduled_at);
+alter table email_outbox enable row level security;
+revoke all on email_outbox from anon, authenticated;
+grant all on email_outbox to service_role;
+
 create table partners (
   id uuid primary key default uuid_generate_v4(),
   owner_id uuid not null references profiles(id),
@@ -467,6 +488,41 @@ revoke all on function public.enforce_partner_before_property_activation() from 
 create trigger enforce_partner_before_property_activation
 before insert or update of active, partner_id on public.properties
 for each row execute function public.enforce_partner_before_property_activation();
+
+create or replace function public.claim_transactional_email_job()
+returns setof public.email_outbox
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_job_id uuid;
+begin
+  select id into v_job_id
+  from public.email_outbox
+  where scheduled_at <= now()
+    and attempts < 3
+    and (
+      status in ('pending', 'failed')
+      or (status = 'processing' and updated_at < now() - interval '15 minutes')
+    )
+  order by scheduled_at, created_at
+  for update skip locked
+  limit 1;
+
+  if v_job_id is null then return; end if;
+
+  return query
+  update public.email_outbox
+  set status = 'processing', attempts = attempts + 1,
+      last_error = null, updated_at = now()
+  where id = v_job_id
+  returning *;
+end;
+$$;
+
+revoke all on function public.claim_transactional_email_job() from public;
+grant execute on function public.claim_transactional_email_job() to service_role;
 
 create or replace function public.handle_new_user()
 returns trigger

@@ -8,7 +8,8 @@ select
   to_regclass('public.revenue_daily_inputs') is not null as revenue_inputs_ready,
   to_regclass('public.revenue_recommendations') is not null as recommendations_ready,
   to_regclass('public.revenue_audit_log') is not null as audit_ready,
-  to_regclass('public.revenue_daily_reports') is not null as reports_ready;
+  to_regclass('public.revenue_daily_reports') is not null as reports_ready,
+  to_regclass('public.email_outbox') is not null as email_outbox_ready;
 
 select
   relname as table_name,
@@ -18,7 +19,8 @@ where relnamespace = 'public'::regnamespace
   and relname in (
     'profiles','partners','properties','rooms','inventory','bookings',
     'booking_financials','partner_payouts','revenue_daily_inputs',
-    'revenue_recommendations','revenue_audit_log','revenue_daily_reports'
+    'revenue_recommendations','revenue_audit_log','revenue_daily_reports',
+    'email_outbox'
   )
 order by relname;
 
@@ -36,4 +38,15 @@ select
     'anon',
     'public.review_partner_application(uuid,text)',
     'execute'
-  ) as anonymous_partner_provisioning_blocked;
+  ) as anonymous_partner_provisioning_blocked,
+  to_regprocedure('public.claim_transactional_email_job()') is not null as email_claim_ready,
+  has_function_privilege(
+    'service_role',
+    'public.claim_transactional_email_job()',
+    'execute'
+  ) as service_role_email_claim_ready,
+  not has_function_privilege(
+    'anon',
+    'public.claim_transactional_email_job()',
+    'execute'
+  ) as anonymous_email_claim_blocked;
