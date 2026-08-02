@@ -252,7 +252,6 @@ create policy "Public can view active properties" on properties for select using
 create policy "Public can view active rooms" on rooms for select using (active = true);
 create policy "Public can view inventory" on inventory for select using (true);
 create policy "Users can view own profile" on profiles for select using (auth.uid() = id);
-create policy "Users can update own profile" on profiles for update using (auth.uid() = id);
 create policy "Customers can view own bookings" on bookings for select using (auth.uid() = customer_id);
 create policy "Customers can create own pending bookings" on bookings for insert with check (
   auth.uid() = customer_id and status = 'pending' and stripe_payment_intent_id is null
@@ -390,6 +389,41 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+create or replace function public.update_own_profile(
+  p_full_name text,
+  p_phone text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_profile public.profiles;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required' using errcode = '42501';
+  end if;
+  if p_full_name is null or char_length(trim(p_full_name)) not between 2 and 120 then
+    raise exception 'Invalid full name' using errcode = '22023';
+  end if;
+  if p_phone is not null and char_length(trim(p_phone)) > 30 then
+    raise exception 'Invalid phone number' using errcode = '22023';
+  end if;
+
+  update public.profiles
+  set full_name = trim(p_full_name),
+      phone = nullif(trim(p_phone), '')
+  where id = auth.uid()
+  returning * into v_profile;
+  if not found then
+    raise exception 'Profile not found' using errcode = 'P0002';
+  end if;
+
+  return jsonb_build_object('full_name', v_profile.full_name, 'phone', v_profile.phone);
+end;
+$$;
 
 create or replace function public.review_partner_application(
   p_application_id uuid,
@@ -611,3 +645,5 @@ revoke all on function public.review_booking(uuid, text, text) from public;
 grant execute on function public.review_booking(uuid, text, text) to authenticated;
 revoke all on function public.cancel_pending_booking(uuid, text) from public;
 grant execute on function public.cancel_pending_booking(uuid, text) to authenticated;
+revoke all on function public.update_own_profile(text, text) from public;
+grant execute on function public.update_own_profile(text, text) to authenticated;
