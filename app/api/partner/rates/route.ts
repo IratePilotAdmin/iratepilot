@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { eachDayOfInterval, parseISO, format } from "date-fns";
 import { requireRole } from "@/lib/auth/require-role";
-import { inventorySchema, roomSchema } from "@/lib/validation";
+import { inventorySchema, roomSchema, roomUpdateSchema } from "@/lib/validation";
 import { getInventoryDateRangeError, getUpcomingInventory } from "@/lib/inventory-dates";
 
 export async function GET() {
@@ -61,6 +61,30 @@ export async function POST(request: Request) {
       }).select("id,name").single();
       if (result.error) throw result.error;
       return NextResponse.json({ data: result.data, message: "Room type created." }, { status: 201 });
+    }
+    if (body.action === "update_room") {
+      const parsed = roomUpdateSchema.safeParse(body);
+      if (!parsed.success) return NextResponse.json({ error: "Check the room name, guests, base rate, and status." }, { status: 400 });
+      let roomQuery = auth.supabase.from("rooms")
+        .select("id,properties!inner(partner_id)")
+        .eq("id", parsed.data.roomId);
+      if (partner) roomQuery = roomQuery.eq("properties.partner_id", partner.id);
+      const { data: room, error: roomError } = await roomQuery.maybeSingle();
+      if (roomError) throw roomError;
+      if (!room) return NextResponse.json({ error: "Room type not found." }, { status: 404 });
+      const result = await auth.supabase.from("rooms").update({
+        name: parsed.data.name,
+        max_guests: parsed.data.maxGuests,
+        base_rate: parsed.data.baseRate,
+        active: parsed.data.active,
+      }).eq("id", parsed.data.roomId)
+        .select("id,name,max_guests,base_rate,active")
+        .single();
+      if (result.error) throw result.error;
+      return NextResponse.json({
+        data: result.data,
+        message: parsed.data.active ? "Room type updated." : "Room type retired from new bookings.",
+      });
     }
     if (body.action === "set_inventory") {
       const parsed = inventorySchema.safeParse(body);

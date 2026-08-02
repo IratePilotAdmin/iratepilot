@@ -57,11 +57,22 @@ export const propertyContentSchema = z.object({
   amenities: z.array(z.string().trim().min(2).max(80)).min(1).max(20)
 });
 
-export const roomSchema = z.object({
-  propertyId: z.string().uuid(),
+const roomFieldsSchema = z.object({
   name: z.string().trim().min(2).max(120),
   maxGuests: z.coerce.number().int().min(inventoryLimits.minGuests).max(inventoryLimits.maxGuests),
   baseRate: z.coerce.number().min(inventoryLimits.minNightlyRate).max(inventoryLimits.maxNightlyRate)
+});
+
+export const roomSchema = roomFieldsSchema.extend({
+  propertyId: z.string().uuid(),
+});
+
+export const roomUpdateSchema = roomFieldsSchema.extend({
+  roomId: z.string().uuid(),
+  active: z.preprocess(
+    (value) => (value === "true" ? true : value === "false" ? false : value),
+    z.boolean(),
+  ),
 });
 
 export const inventorySchema = z.object({
