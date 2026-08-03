@@ -27,7 +27,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       p_booking_id: id, p_decision: parsed.data.decision, p_reason: parsed.data.reason || null
     });
     if (error) return NextResponse.json({ error: error.message }, { status: 409 });
-    return NextResponse.json({ data, message: parsed.data.decision === "approve" ? "Reservation approved and inventory held." : "Request declined." });
+    const reviewed = data as { status?: string } | null;
+    const message = parsed.data.decision === "reject"
+      ? "Request declined."
+      : reviewed?.status === "confirmed"
+        ? "Reservation approved and inventory held."
+        : "Request expired because check-in has already begun. No inventory was held.";
+    return NextResponse.json({ data, message });
   } catch {
     return NextResponse.json({ error: "The booking decision could not be saved." }, { status: 503 });
   }

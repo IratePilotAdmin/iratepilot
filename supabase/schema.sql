@@ -716,6 +716,19 @@ begin
   if v_booking.status <> 'pending' then raise exception 'Only pending requests can be reviewed'; end if;
 
   if p_decision = 'approve' then
+    if v_booking.check_in <= current_date then
+      update bookings
+        set status = 'cancelled',
+            cancellation_reason = 'Booking request expired before partner approval',
+            updated_at = now()
+        where id = p_booking_id
+        returning * into v_booking;
+      insert into notifications (user_id, title, body) values (
+        v_booking.customer_id, 'Booking request expired',
+        'Your iRatePilot request ' || v_booking.confirmation_code || ' expired because check-in began before the property approved it. No payment was collected.'
+      );
+      return v_booking;
+    end if;
     v_expected := v_booking.check_out - v_booking.check_in;
     perform 1 from inventory
       where room_id = v_booking.room_id
