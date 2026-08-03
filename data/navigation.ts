@@ -14,6 +14,7 @@ export const partnerNavigation = [
   { href: "/partner/reservations", label: "Reservations" },
   { href: "/partner/messages", label: "Guest messages" },
   { href: "/partner/rates", label: "Rates & inventory" },
+  { href: "/partner/promotions", label: "Rate promotions" },
   { href: "/partner/payouts", label: "Finance & payouts" },
   { href: "/partner/revenue", label: "Revenue AI" },
   { href: "/partner/settings", label: "Settings" }
