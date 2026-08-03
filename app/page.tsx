@@ -105,12 +105,12 @@ export default function HomePage() {
             <div className="relative z-10 max-w-2xl">
               <span className="eyebrow-pill light"><Gem className="h-4 w-4" /> iRatePilot memberships</span>
               <h2 className="mt-6 text-4xl font-black tracking-tight text-white sm:text-5xl">Book more. Pay less in fees. Earn more.</h2>
-              <p className="mt-5 text-lg leading-8 text-violet-100">Membership billing remains inactive during development. Eligible benefits activate only after final terms and partner participation are approved.</p>
+              <p className="mt-5 text-lg leading-8 text-violet-100">Membership checkout is limited to Stripe test mode. Benefits activate only while a verified membership subscription is active.</p>
               <Link href="/rewards" className="mt-7 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 font-bold text-violet-800">Explore rewards <ArrowRight className="h-4 w-4" /></Link>
             </div>
             <div className="relative z-10 grid gap-4">
               <article className="member-tier"><span>Basic</span><strong>$70<small>/year</small></strong><p>0% traveler service fee + reward points</p></article>
-              <article className="member-tier featured"><span><BriefcaseBusiness className="h-4 w-4" /> Business Traveler</span><strong>$120<small>/year</small></strong><p>0% traveler fee · eligible 5%–10% savings · double points</p></article>
+              <article className="member-tier featured"><span><BriefcaseBusiness className="h-4 w-4" /> Business Traveler</span><strong>$120<small>/year</small></strong><p>0% traveler service fee · double reward points</p></article>
             </div>
           </div>
         </section>

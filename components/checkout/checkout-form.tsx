@@ -77,7 +77,7 @@ function PaymentForm({ breakdown }: { breakdown: Breakdown }) {
         <p className="text-sm text-slate-500">{breakdown.roomName} · {breakdown.checkIn} to {breakdown.checkOut}</p>
         <p className="text-sm text-slate-500">{breakdown.guests} guests</p>
         <div className="mt-4 flex justify-between"><span>{breakdown.nights} nights</span><span>${breakdown.subtotal.toFixed(2)}</span></div>
-        <div className="mt-2 flex justify-between"><span>Service fee (5%)</span><span>${breakdown.serviceFee.toFixed(2)}</span></div>
+        <div className="mt-2 flex justify-between"><span>Traveler service fee{breakdown.serviceFee === 0 ? " (member benefit)" : ""}</span><span>${breakdown.serviceFee.toFixed(2)}</span></div>
         <div className="mt-4 flex justify-between border-t pt-4 text-lg font-bold"><span>Total</span><span>${breakdown.total.toFixed(2)}</span></div>
       </aside>
     </div>
