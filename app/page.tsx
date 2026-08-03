@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { SearchForm } from "@/components/search/search-form";
 import { HotelCard } from "@/components/hotels/hotel-card";
 import { hotels } from "@/data/hotels";
+import { partnerPlans, type PartnerPlan } from "@/config/partner-plans";
 
 const destinations = [
   { name: "Miami Beach", copy: "Oceanfront energy", image: hotels[0].image },
@@ -186,10 +187,9 @@ export default function HomePage() {
             <div className="mt-20">
               <div className="text-center"><span className="section-kicker">Revenue AI plans</span><h2 className="mt-4 text-4xl text-white sm:text-5xl">Built for independent hotels and growing portfolios.</h2></div>
               <div className="mt-9 grid gap-4 md:grid-cols-3">
-                <article className="revenue-price"><span>Starter</span><strong>$299<small>/month</small></strong><p>Independent hotel · recommendations, calendar, forecasts, and approvals.</p></article>
-                <article className="revenue-price featured"><span>Professional</span><strong>$699<small>/month</small></strong><p>Full AI pricing, competitor monitoring, advanced forecasting, and reports.</p></article>
-                <article className="revenue-price"><span>Portfolio</span><strong>Custom</strong><p>Multiple properties, centralized controls, consolidated reporting, and tailored onboarding.</p></article>
+                {(Object.entries(partnerPlans) as [PartnerPlan, (typeof partnerPlans)[PartnerPlan]][]).map(([, plan]) => <article className={plan.featured ? "revenue-price featured" : "revenue-price"} key={plan.name}><span>{plan.name}</span><strong>${plan.monthlyPrice}<small>/month</small></strong><p>{plan.audience}</p></article>)}
               </div>
+              <p className="mt-5 text-center text-sm text-slate-300">Private-pilot subscriptions use Stripe test mode. Live software billing requires launch approval.</p>
             </div>
           </div>
         </section>

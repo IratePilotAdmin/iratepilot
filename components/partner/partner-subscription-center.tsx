@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { partnerPlans, type PartnerPlan } from "@/config/partner-plans";
+import { partnerEnterprisePlan, partnerPlans, type PartnerPlan } from "@/config/partner-plans";
 
 type Subscription = {
   business_name: string;
@@ -78,7 +78,7 @@ export function PartnerSubscriptionCenter() {
           </button>
         </article>;})}
     </section>
-    <section className="card p-6 text-sm text-slate-600"><strong className="text-slate-900">Enterprise: $799+/month</strong><p className="mt-2">Custom plans for hotel groups and management companies are arranged manually. Software subscriptions are separate from the 10% commission on completed iRatePilot Travel marketplace bookings.</p></section>
+    <section className="card p-6 text-sm text-slate-600"><strong className="text-slate-900">{partnerEnterprisePlan.name}: {partnerEnterprisePlan.monthlyPriceLabel}/month</strong><p className="mt-2">{partnerEnterprisePlan.audience} Enterprise subscriptions are arranged manually and remain separate from the 10% commission on completed iRatePilot Travel marketplace bookings.</p></section>
     {message && <p role="status" className="card p-5 text-sm">{message}</p>}
     <p className="rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-950">Software subscriptions and the billing portal run in Stripe test mode during the private pilot. No live subscription charge is created.</p>
   </div>;
