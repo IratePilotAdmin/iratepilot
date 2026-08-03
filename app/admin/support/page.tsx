@@ -1,3 +1,11 @@
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { adminNavigation } from "@/data/navigation";
-export default function Page(){return <DashboardShell title="Admin Console" items={adminNavigation}><h1 className="text-3xl font-bold">Support cases</h1><div className="card mt-8 p-8">Administrative module placeholder with role-based access required before launch.</div></DashboardShell>}
+import { AdminSupport } from "@/components/dashboard/admin-support";
+
+export default function Page() {
+  return <DashboardShell title="Admin Console" items={adminNavigation}>
+    <h1 className="text-3xl font-bold">Support cases</h1>
+    <p className="mt-2 text-slate-600">Review customer and partner messages from first contact through resolution.</p>
+    <AdminSupport />
+  </DashboardShell>;
+}

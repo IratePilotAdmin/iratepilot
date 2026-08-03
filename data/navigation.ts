@@ -23,6 +23,7 @@ export const adminNavigation = [
   { href: "/admin/cancellations", label: "Cancellations" },
   { href: "/admin/partners", label: "Partners" },
   { href: "/admin/customers", label: "Customers" },
+  { href: "/admin/support", label: "Support" },
   { href: "/admin/finance", label: "Finance" },
   { href: "/admin/settings", label: "Settings" }
 ];
