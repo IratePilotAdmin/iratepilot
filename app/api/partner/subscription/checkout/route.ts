@@ -19,12 +19,17 @@ export async function POST(request: Request) {
   try {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-    const { data: partner, error: partnerError } = await auth.supabase.from("partners").select("id,status").eq("owner_id", auth.user.id).maybeSingle();
+    const { data: partner, error: partnerError } = await auth.supabase.from("partners")
+      .select("id,status,subscription_status,stripe_customer_id,stripe_subscription_id")
+      .eq("owner_id", auth.user.id).maybeSingle();
     if (partnerError) throw partnerError;
     if (auth.profile.role !== "admin" && (!partner || partner.status !== "approved")) {
       return NextResponse.json({ error: "An approved partner account is required to start a subscription." }, { status: 403 });
     }
     if (!partner) return NextResponse.json({ error: "Create a partner property record first." }, { status: 409 });
+    if (partner.subscription_status === "active" && partner.stripe_subscription_id) {
+      return NextResponse.json({ error: "Manage your active subscription through the test billing portal." }, { status: 409 });
+    }
     const idempotency = getStripeIdempotencyContext(request, "partner-subscription", auth.user.id);
     if (!idempotency) return NextResponse.json({ error: "A valid checkout attempt ID is required." }, { status: 400 });
     const stripe = getStripe();
@@ -37,7 +42,9 @@ export async function POST(request: Request) {
     const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      customer_email: auth.user.email,
+      ...(partner.stripe_customer_id?.startsWith("cus_")
+        ? { customer: partner.stripe_customer_id }
+        : { customer_email: auth.user.email }),
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${base}/partner/settings?subscription=success`,
       cancel_url: `${base}/partner/settings?subscription=cancelled`,
