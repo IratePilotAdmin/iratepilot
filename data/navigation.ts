@@ -8,6 +8,7 @@ export const customerNavigation = [
 
 export const partnerNavigation = [
   { href: "/partner/dashboard", label: "Overview" },
+  { href: "/partner/analytics", label: "Analytics" },
   { href: "/partner/properties", label: "Properties" },
   { href: "/partner/reservations", label: "Reservations" },
   { href: "/partner/rates", label: "Rates & inventory" },
