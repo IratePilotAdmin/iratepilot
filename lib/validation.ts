@@ -45,6 +45,17 @@ export const bookingMessageSchema = z.object({
   body: z.string().trim().min(1).max(2000)
 });
 
+export const reservationReviewSchema = z.discriminatedUnion("decision", [
+  z.object({
+    decision: z.literal("approve"),
+    reason: z.string().trim().max(500).optional(),
+  }),
+  z.object({
+    decision: z.literal("reject"),
+    reason: z.string().trim().min(3).max(500),
+  }),
+]);
+
 export const propertyContentSchema = z.object({
   description: z.string().trim().min(120).max(4000),
   imageUrl: z.string().url().max(2000).refine(isSafePropertyImageUrl, "Use an HTTPS image URL without embedded credentials."),

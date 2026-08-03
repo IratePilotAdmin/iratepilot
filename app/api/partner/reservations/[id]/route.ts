@@ -1,17 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/require-role";
-
-const reviewSchema = z.object({
-  decision: z.enum(["approve", "reject"]),
-  reason: z.string().trim().max(500).optional()
-});
+import { reservationReviewSchema } from "@/lib/validation";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!z.string().uuid().safeParse(id).success) return NextResponse.json({ error: "Invalid booking ID." }, { status: 400 });
-  const parsed = reviewSchema.safeParse(await request.json());
-  if (!parsed.success) return NextResponse.json({ error: "Choose approve or reject." }, { status: 400 });
+  const parsed = reservationReviewSchema.safeParse(await request.json());
+  if (!parsed.success) return NextResponse.json({ error: "Choose approve, or provide a decline reason between 3 and 500 characters." }, { status: 400 });
   try {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -33,8 +29,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       : reviewed?.status === "confirmed"
         ? "Reservation approved and inventory held."
         : "Request expired because check-in has already begun. No inventory was held.";
-    return NextResponse.json({ data, message });
-  } catch {
+    return NextResponse.json({ data, message }, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    console.error("Reservation decision failed", error);
     return NextResponse.json({ error: "The booking decision could not be saved." }, { status: 503 });
   }
 }

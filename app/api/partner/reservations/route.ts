@@ -35,8 +35,9 @@ export async function GET() {
         ...booking,
         financial: financialByBooking.get(booking.id) || null
       }))
-    });
-  } catch {
+    }, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    console.error("Partner reservation list failed", error);
     return NextResponse.json({ error: "Partner reservations are not configured." }, { status: 503 });
   }
 }
