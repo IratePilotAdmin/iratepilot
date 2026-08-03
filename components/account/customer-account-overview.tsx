@@ -28,6 +28,8 @@ const actions = [
 export function CustomerAccountOverview() {
   const [data, setData] = useState<Overview | null>(null);
   const [message, setMessage] = useState("Loading your account…");
+  const [reading, setReading] = useState("");
+  const [notice, setNotice] = useState("");
   useEffect(() => {
     fetch("/api/account/overview", { cache: "no-store" }).then(async (response) => {
       const body = await response.json();
@@ -36,11 +38,39 @@ export function CustomerAccountOverview() {
       setMessage("");
     }).catch((error: Error) => setMessage(error.message));
   }, []);
+
+  async function markRead(id?: string) {
+    setReading(id || "all");
+    const response = await fetch("/api/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(id ? { id } : { all: true }),
+    });
+    const body = await response.json();
+    if (!response.ok) {
+      setNotice(body.error);
+      setReading("");
+      return;
+    }
+    setData((current) => current ? {
+      ...current,
+      summary: {
+        ...current.summary,
+        unreadUpdates: id ? Math.max(0, current.summary.unreadUpdates - body.updated) : 0,
+      },
+      notifications: current.notifications.map((notification) => !id || notification.id === id
+        ? { ...notification, read_at: body.readAt }
+        : notification),
+    } : current);
+    setNotice(id ? "Notification marked as read." : "All notifications marked as read.");
+    setReading("");
+  }
   if (message) return <p role="status" className="card mt-8 p-6 text-sm text-slate-600">{message}</p>;
   if (!data) return null;
 
   return <>
     <p className="mt-2 text-slate-500">Welcome, {data.profileName || "traveler"}. Your trips, membership, payments, and updates are together here.</p>
+    {notice && <p role="status" className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">{notice}</p>}
     {data.truncated && <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Overview counts use your 200 most recent bookings and 100 most recent notifications. Open the detailed pages for the latest records.</p>}
     <section className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
       {[
@@ -59,7 +89,7 @@ export function CustomerAccountOverview() {
     </section>
 
     <section className="mt-8 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-      <article className="card overflow-hidden"><div className="border-b p-6"><h2 className="font-semibold">Recent updates</h2><p className="mt-1 text-sm text-slate-500">Property and iRatePilot notifications</p></div><div className="divide-y">{data.notifications.map((item) => <div className="p-5" key={item.id}><div className="flex items-start justify-between gap-3"><strong className="text-sm">{item.title}</strong>{!item.read_at && <span className="badge">New</span>}</div><p className="mt-2 text-sm text-slate-600">{item.body}</p><time className="mt-2 block text-xs text-slate-400">{new Date(item.created_at).toLocaleString()}</time></div>)}</div>{!data.notifications.length && <p className="p-6 text-sm text-slate-500">No account updates yet.</p>}</article>
+      <article className="card overflow-hidden"><div className="flex items-start justify-between gap-4 border-b p-6"><div><h2 className="font-semibold">Recent updates</h2><p className="mt-1 text-sm text-slate-500">Property and iRatePilot notifications</p></div>{data.summary.unreadUpdates > 0 && <button className="text-xs font-semibold text-brand-700" disabled={!!reading} onClick={() => markRead()}>{reading === "all" ? "Updating…" : "Mark all read"}</button>}</div><div className="divide-y">{data.notifications.map((item) => <div className="p-5" key={item.id}><div className="flex items-start justify-between gap-3"><strong className="text-sm">{item.title}</strong>{!item.read_at && <button aria-label={`Mark ${item.title} as read`} className="badge" disabled={!!reading} onClick={() => markRead(item.id)}>{reading === item.id ? "Updating…" : "Mark read"}</button>}</div><p className="mt-2 text-sm text-slate-600">{item.body}</p><time className="mt-2 block text-xs text-slate-400">{new Date(item.created_at).toLocaleString()}</time></div>)}</div>{!data.notifications.length && <p className="p-6 text-sm text-slate-500">No account updates yet.</p>}</article>
       <article className="card overflow-hidden"><div className="border-b p-6"><h2 className="font-semibold">Recent bookings</h2><p className="mt-1 text-sm text-slate-500">Your five most recently created records</p></div><div className="divide-y">{data.recentBookings.map((booking) => <div className="flex flex-col justify-between gap-3 p-5 sm:flex-row sm:items-center" key={booking.id}><div><strong>{Array.isArray(booking.properties) ? booking.properties[0]?.name : booking.properties?.name || "Property"}</strong><p className="mt-1 text-xs text-slate-500">{booking.confirmation_code} · {booking.check_in} to {booking.check_out}</p></div><div className="sm:text-right"><strong>{money(booking.total)}</strong><p className="text-xs text-slate-500">{getBookingStatusLabel(booking.status)}</p></div></div>)}</div>{!data.recentBookings.length && <p className="p-6 text-sm text-slate-500">No booking records yet.</p>}</article>
     </section>
 
