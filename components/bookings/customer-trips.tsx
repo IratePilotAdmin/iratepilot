@@ -78,8 +78,20 @@ export function CustomerTrips() {
     const body = await response.json();
     setMessage(response.ok ? body.message : body.error);
     if (response.ok) {
+      const createdAt = new Date().toISOString();
       setTrips((current) => current.map((trip) => trip.id === id
-        ? { ...trip, booking_cancellation_requests: [body.data] }
+        ? {
+          ...trip,
+          ...(body.mode === "unpaid_cancellation" ? {
+            status: "cancelled",
+            cancellation_reason: reason,
+            booking_status_history: [
+              ...(trip.booking_status_history || []),
+              { status: "cancelled", note: "Unpaid reservation cancelled; no refund required.", created_at: createdAt },
+            ],
+          } : {}),
+          booking_cancellation_requests: [body.data],
+        }
         : trip));
     }
   }

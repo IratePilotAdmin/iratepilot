@@ -27,7 +27,7 @@ export async function PATCH(
     const admin = createAdminClient();
     const { data: cancellation, error } = await admin
       .from("booking_cancellation_requests")
-      .select("id,status,updated_at,booking_id,bookings(id,total,status,stripe_payment_intent_id)")
+      .select("id,status,reason,updated_at,booking_id,bookings(id,total,status,stripe_payment_intent_id)")
       .eq("id", id).single();
     if (error || !cancellation) return NextResponse.json({ error: "Cancellation request not found." }, { status: 404 });
     if (cancellation.status !== "pending" && !isCancellationClaimStale(cancellation.status, cancellation.updated_at)) {
@@ -63,7 +63,15 @@ export async function PATCH(
       return NextResponse.json({ error: "Only a confirmed booking can be refunded." }, { status: 409 });
     }
     if (!booking.stripe_payment_intent_id) {
-      return NextResponse.json({ error: "No Stripe payment is attached to this booking." }, { status: 409 });
+      const { data: cancelledBooking, error: cancellationError } = await admin.rpc(
+        "cancel_unpaid_confirmed_booking",
+        { p_booking_id: booking.id, p_reason: cancellation.reason }
+      );
+      if (cancellationError) throw cancellationError;
+      return NextResponse.json({
+        data: cancelledBooking,
+        message: "Unpaid reservation cancelled, inventory restored, and no refund was required."
+      });
     }
 
     const stripe = getStripe();
