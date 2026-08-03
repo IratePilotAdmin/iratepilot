@@ -41,6 +41,10 @@ export const contactSchema = z.object({
   message: z.string().trim().min(10).max(3000)
 });
 
+export const bookingMessageSchema = z.object({
+  body: z.string().trim().min(1).max(2000)
+});
+
 export const propertySchema = z.object({
   name: z.string().trim().min(3).max(160),
   slug: z.string().trim().toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(180),
