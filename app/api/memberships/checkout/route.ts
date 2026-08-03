@@ -18,6 +18,14 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user?.email) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+    const { data: profile, error: profileError } = await supabase.from("profiles")
+      .select("membership_status,stripe_customer_id,stripe_subscription_id")
+      .eq("id", user.id)
+      .single();
+    if (profileError) throw profileError;
+    if (profile.membership_status === "active" && profile.stripe_subscription_id) {
+      return NextResponse.json({ error: "Manage your active membership through the test billing portal." }, { status: 409 });
+    }
     const priceId = getMembershipStripePriceId(parsed.data.plan);
     if (!priceId?.startsWith("price_")) return NextResponse.json({ error: "The selected Stripe test price is not configured." }, { status: 503 });
     const stripe = getStripe();
@@ -30,7 +38,9 @@ export async function POST(request: Request) {
     const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      customer_email: user.email,
+      ...(profile.stripe_customer_id?.startsWith("cus_")
+        ? { customer: profile.stripe_customer_id }
+        : { customer_email: user.email }),
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${base}/account/rewards?membership=success`,
       cancel_url: `${base}/account/rewards?membership=cancelled`,
