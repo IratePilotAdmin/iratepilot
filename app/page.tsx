@@ -129,7 +129,7 @@ export default function HomePage() {
                 </div>
                 <div className="mt-9 flex flex-wrap gap-3">
                   <Link href="/partner/revenue" className="revenue-primary">Explore Revenue AI <ArrowRight /></Link>
-                  <Link href="/partner/onboarding" className="revenue-secondary">Request early access</Link>
+                  <Link href="/partner#application" className="revenue-secondary">Request early access</Link>
                 </div>
               </div>
 
@@ -211,7 +211,7 @@ export default function HomePage() {
         <section className="container-page py-20">
           <div className="partner-cta">
             <div><span className="section-kicker">For premium property partners</span><h2>Bring your hotel or vacation home to iRatePilot.</h2><p>Start a draft listing, add rooms, amenities, policies, photos, and rates, then submit it for marketplace approval.</p></div>
-            <div className="flex flex-wrap gap-3"><Link href="/partner/onboarding" className="btn-primary">Start partner onboarding</Link><Link href="/partner" className="btn-secondary">See partner tools</Link></div>
+            <div className="flex flex-wrap gap-3"><Link href="/partner#application" className="btn-primary">Apply as a partner</Link><Link href="/partner" className="btn-secondary">See partner tools</Link></div>
           </div>
         </section>
       </main>

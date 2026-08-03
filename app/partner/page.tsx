@@ -31,7 +31,7 @@ export default function PartnerPage() {
               </div>
               <a href="#join" className="revenue-primary mt-9">Join as a partner <ArrowRight /></a>
             </div>
-            <PartnerApplicationForm />
+            <div id="application" className="scroll-mt-8"><PartnerApplicationForm /></div>
           </div>
         </section>
 
@@ -78,7 +78,7 @@ export default function PartnerPage() {
         <section id="join" className="container-page py-24">
           <div className="partner-join">
             <div><span className="section-kicker text-neutral-400">Partner with us</span><h2 className="mt-4 text-5xl text-white">Ready to grow with iRatePilot?</h2><p className="mt-5 max-w-2xl text-neutral-300">Start your partner application. Subscription billing, payment processing, and marketplace activation remain unavailable until agreements and launch systems are completed.</p></div>
-            <Link href="/partner/onboarding" className="revenue-primary">Start partner onboarding <ArrowRight /></Link>
+            <Link href="#application" className="revenue-primary">Start partner application <ArrowRight /></Link>
           </div>
         </section>
       </main>
