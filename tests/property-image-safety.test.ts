@@ -7,6 +7,7 @@ describe("partner property images", () => {
   it("accepts public HTTPS-style URLs from hotel media hosts", () => {
     expect(isSafePropertyImageUrl("https://media.example-hotel.com/rooms/suite.jpg")).toBe(true);
     expect(propertyContentSchema.safeParse({
+      description: "A detailed property description with enough information about the location, rooms, atmosphere, amenities, and overall guest experience to support marketplace review.",
       imageUrl: "https://media.example-hotel.com/rooms/suite.jpg",
       amenities: ["Pool"],
     }).success).toBe(true);
@@ -20,7 +21,7 @@ describe("partner property images", () => {
       "not-a-url",
     ]) {
       expect(isSafePropertyImageUrl(imageUrl)).toBe(false);
-      expect(propertyContentSchema.safeParse({ imageUrl, amenities: ["Pool"] }).success).toBe(false);
+      expect(propertyContentSchema.safeParse({ description: "A detailed property description with enough information about the location, rooms, atmosphere, amenities, and overall guest experience to support marketplace review.", imageUrl, amenities: ["Pool"] }).success).toBe(false);
     }
   });
 

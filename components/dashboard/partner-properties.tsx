@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
-type Property = { id: string; name: string; slug: string; type: string; star_rating: number; city: string; country: string; active: boolean; image_url?: string | null; amenities?: string[]; readiness: { ready: boolean; missing: string[] } };
+type Property = { id: string; name: string; slug: string; type: string; star_rating: number; description?: string | null; city: string; country: string; active: boolean; image_url?: string | null; amenities?: string[]; readiness: { ready: boolean; missing: string[] } };
 
 export function PartnerProperties() {
   const [properties, setProperties] = useState<Property[]>([]);
@@ -63,6 +63,7 @@ export function PartnerProperties() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          description: form.get("description"),
           imageUrl: form.get("imageUrl"),
           amenities: String(form.get("amenities")).split(",").map((item) => item.trim()).filter(Boolean)
         })
@@ -102,8 +103,9 @@ export function PartnerProperties() {
         <button disabled={busy} className="btn-primary">{busy ? "Submitting…" : "Submit for review"}</button>
       </form>
       <form onSubmit={updateContent} className="card grid gap-4 p-6">
-        <div><h2 className="text-xl font-semibold">Photo and amenities</h2><p className="mt-1 text-sm text-slate-500">Content changes return an approved listing to review.</p></div>
+        <div><h2 className="text-xl font-semibold">Listing content</h2><p className="mt-1 text-sm text-slate-500">Content changes return an approved listing to review.</p></div>
         <label className="text-sm font-medium">Property<select name="propertyId" className="input mt-2" required><option value="">Select property</option>{properties.map((property) => <option key={property.id} value={property.id}>{property.name}</option>)}</select></label>
+        <label className="text-sm font-medium">Detailed description<textarea name="description" className="input mt-2 min-h-32" minLength={120} maxLength={4000} placeholder="Describe the location, rooms, atmosphere, and distinctive guest experience." required /></label>
         <label className="text-sm font-medium">Primary photo URL<input name="imageUrl" type="url" className="input mt-2" placeholder="https://..." pattern="https://.*" required /><small className="mt-1 block text-slate-500">Use a public HTTPS image from your hotel or media host.</small></label>
         <label className="text-sm font-medium">Amenities, separated by commas<textarea name="amenities" className="input mt-2 min-h-24" placeholder="Pool, Spa, Free Wi-Fi, Parking" required /></label>
         <button disabled={busy || !properties.length} className="btn-primary">Save property content</button>

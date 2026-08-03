@@ -57,6 +57,7 @@ export const propertySchema = z.object({
 });
 
 export const propertyContentSchema = z.object({
+  description: z.string().trim().min(120).max(4000),
   imageUrl: z.string().url().max(2000).refine(isSafePropertyImageUrl, "Use an HTTPS image URL without embedded credentials."),
   amenities: z.array(z.string().trim().min(2).max(80)).min(1).max(20)
 });

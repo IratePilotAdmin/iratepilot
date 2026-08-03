@@ -1,3 +1,4 @@
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { adminNavigation } from "@/data/navigation";
-export default function Page(){return <DashboardShell title="Admin Console" items={adminNavigation}><h1 className="text-3xl font-bold">Content management</h1><div className="card mt-8 p-8">Administrative module placeholder with role-based access required before launch.</div></DashboardShell>}
+import { AdminContentQuality } from "@/components/dashboard/admin-content-quality";
+export default function Page(){return <DashboardShell title="Admin Console" items={adminNavigation}><h1 className="text-3xl font-bold">Marketplace content quality</h1><p className="mt-2 text-slate-600">Audit listing presentation and booking readiness without bypassing the property review workflow.</p><AdminContentQuality /></DashboardShell>}
