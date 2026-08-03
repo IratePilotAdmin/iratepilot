@@ -75,11 +75,13 @@ export async function POST(request: Request) {
       city: parsed.data.city,
       region: parsed.data.region || null,
       country: parsed.data.country,
+      image_url: parsed.data.imageUrl,
+      amenities: parsed.data.amenities,
       active: false
     }).select("id,name,slug,type,star_rating,city,country,active,image_url,amenities,created_at").single();
     if (error?.code === "23505") return NextResponse.json({ error: "That property URL is already in use." }, { status: 409 });
     if (error) throw error;
-    return NextResponse.json({ data, message: "Property submitted for administrator review." }, { status: 201 });
+    return NextResponse.json({ data, message: "Property draft created. Add an active room and future inventory to make it ready for administrator review." }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "The property could not be submitted." }, { status: 503 });
   }

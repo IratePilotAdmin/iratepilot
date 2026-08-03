@@ -35,7 +35,9 @@ export function PartnerProperties() {
         body: JSON.stringify({
           name: form.get("name"), slug: form.get("slug"), type: form.get("type"),
           starRating: form.get("starRating"), description: form.get("description"),
-          city: form.get("city"), region: form.get("region"), country: form.get("country")
+          city: form.get("city"), region: form.get("region"), country: form.get("country"),
+          imageUrl: form.get("imageUrl"),
+          amenities: String(form.get("amenities")).split(",").map((item) => item.trim()).filter(Boolean)
         })
       });
       const body = await response.json();
@@ -92,15 +94,17 @@ export function PartnerProperties() {
       </section>
       <div className="grid h-fit gap-8">
       <form onSubmit={submit} className="card grid gap-4 p-6">
-        <div><h2 className="text-xl font-semibold">Submit a property</h2><p className="mt-1 text-sm text-slate-500">Only verified 4- and 5-star properties are eligible.</p></div>
+        <div><h2 className="text-xl font-semibold">Add a property</h2><p className="mt-1 text-sm text-slate-500">Create a complete listing draft for an eligible 4- or 5-star property.</p></div>
         <label className="text-sm font-medium">Property name<input name="name" className="input mt-2" required minLength={3} /></label>
         <label className="text-sm font-medium">Property URL slug<input name="slug" className="input mt-2" placeholder="example-grand-hotel" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required /></label>
         <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Type<select name="type" className="input mt-2"><option value="hotel">Hotel</option><option value="resort">Resort</option><option value="vacation_home">Vacation home</option></select></label><label className="text-sm font-medium">Rating<select name="starRating" className="input mt-2"><option value="4">4 star</option><option value="5">5 star</option></select></label></div>
-        <label className="text-sm font-medium">Description<textarea name="description" className="input mt-2 min-h-28" minLength={30} required /></label>
+        <label className="text-sm font-medium">Detailed description<textarea name="description" className="input mt-2 min-h-32" minLength={120} maxLength={4000} placeholder="Describe the location, rooms, atmosphere, and distinctive guest experience." required /></label>
+        <label className="text-sm font-medium">Primary photo URL<input name="imageUrl" type="url" className="input mt-2" placeholder="https://..." pattern="https://.*" required /><small className="mt-1 block text-slate-500">Use a public HTTPS image from your hotel or media host.</small></label>
+        <label className="text-sm font-medium">Amenities, separated by commas<textarea name="amenities" className="input mt-2 min-h-24" placeholder="Pool, Spa, Free Wi-Fi, Parking" required /></label>
         <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">City<input name="city" className="input mt-2" required /></label><label className="text-sm font-medium">State/region<input name="region" className="input mt-2" /></label></div>
         <label className="text-sm font-medium">Country<input name="country" className="input mt-2" defaultValue="United States" required /></label>
         {message && <p role="status" className="text-sm">{message}</p>}
-        <button disabled={busy} className="btn-primary">{busy ? "Submitting…" : "Submit for review"}</button>
+        <button disabled={busy} className="btn-primary">{busy ? "Creating…" : "Create property draft"}</button>
       </form>
       <form onSubmit={updateContent} className="card grid gap-4 p-6">
         <div><h2 className="text-xl font-semibold">Listing content</h2><p className="mt-1 text-sm text-slate-500">Content changes return an approved listing to review.</p></div>

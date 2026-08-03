@@ -45,22 +45,21 @@ export const bookingMessageSchema = z.object({
   body: z.string().trim().min(1).max(2000)
 });
 
-export const propertySchema = z.object({
-  name: z.string().trim().min(3).max(160),
-  slug: z.string().trim().toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(180),
-  type: z.enum(["hotel", "resort", "vacation_home"]),
-  starRating: z.coerce.number().int().refine((value) => value === 4 || value === 5, "Only 4- and 5-star properties are accepted."),
-  description: z.string().trim().min(30).max(4000),
-  city: z.string().trim().min(2).max(100),
-  region: z.string().trim().max(100).optional(),
-  country: z.string().trim().min(2).max(100)
-});
-
 export const propertyContentSchema = z.object({
   description: z.string().trim().min(120).max(4000),
   imageUrl: z.string().url().max(2000).refine(isSafePropertyImageUrl, "Use an HTTPS image URL without embedded credentials."),
   amenities: z.array(z.string().trim().min(2).max(80)).min(1).max(20)
 });
+
+export const propertySchema = z.object({
+  name: z.string().trim().min(3).max(160),
+  slug: z.string().trim().toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(180),
+  type: z.enum(["hotel", "resort", "vacation_home"]),
+  starRating: z.coerce.number().int().refine((value) => value === 4 || value === 5, "Only 4- and 5-star properties are accepted."),
+  city: z.string().trim().min(2).max(100),
+  region: z.string().trim().max(100).optional(),
+  country: z.string().trim().min(2).max(100)
+}).merge(propertyContentSchema);
 
 const roomFieldsSchema = z.object({
   name: z.string().trim().min(2).max(120),
