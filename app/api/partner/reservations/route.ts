@@ -18,7 +18,7 @@ export async function GET() {
     if (!ids.length) return NextResponse.json({ data: [] });
     const { data, error } = await auth.supabase.from("bookings")
       .select("id,confirmation_code,check_in,check_out,guests,subtotal,fees,total,status,created_at,properties(name),rooms(name),profiles(full_name)")
-      .in("property_id", ids).order("created_at", { ascending: false });
+      .in("property_id", ids).order("created_at", { ascending: false }).limit(500);
     if (error) throw error;
     const bookingIds = (data || []).map((booking) => booking.id);
     const { data: financials, error: financialError } = bookingIds.length
@@ -34,7 +34,8 @@ export async function GET() {
       data: (data || []).map((booking) => ({
         ...booking,
         financial: financialByBooking.get(booking.id) || null
-      }))
+      })),
+      limited: (data || []).length === 500,
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Partner reservation list failed", error);
