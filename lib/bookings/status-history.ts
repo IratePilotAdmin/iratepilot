@@ -6,6 +6,7 @@ export type BookingStatusHistoryEntry = {
 
 const statusLabels: Record<string, string> = {
   pending: "Booking requested",
+  processing: "Refund processing",
   confirmed: "Booking confirmed",
   cancelled: "Booking cancelled",
   refunded: "Payment refunded",
