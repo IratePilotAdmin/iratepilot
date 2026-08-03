@@ -14,7 +14,7 @@ type InboxBooking = {
 };
 type ThreadMessage = { id: string; body: string; created_at: string; isMine: boolean; profiles?: { full_name?: string | null; role?: string } | null };
 
-export function BookingMessageCenter({ mode }: { mode: "customer" | "partner" }) {
+export function BookingMessageCenter({ mode, initialBookingId = "" }: { mode: "customer" | "partner"; initialBookingId?: string }) {
   const [bookings, setBookings] = useState<InboxBooking[]>([]);
   const [selected, setSelected] = useState("");
   const [messages, setMessages] = useState<ThreadMessage[]>([]);
@@ -26,10 +26,11 @@ export function BookingMessageCenter({ mode }: { mode: "customer" | "partner" })
       const body = await response.json();
       if (!response.ok) throw new Error(body.error);
       setBookings(body.data || []);
-      setSelected(body.data?.[0]?.id || "");
+      const authorizedSelection = body.data?.find((booking: InboxBooking) => booking.id === initialBookingId)?.id;
+      setSelected(authorizedSelection || body.data?.[0]?.id || "");
       setNotice(body.truncated ? "Showing the most recent conversations." : "");
     }).catch((error: Error) => setNotice(error.message));
-  }, [mode]);
+  }, [initialBookingId, mode]);
 
   useEffect(() => {
     if (!selected) return;
