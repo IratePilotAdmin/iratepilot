@@ -26,3 +26,26 @@ export function getUpcomingInventory<T extends DatedInventory>(
     .slice()
     .sort((a, b) => a.stay_date.localeCompare(b.stay_date));
 }
+
+export type PricedInventory = DatedInventory & {
+  available_units: number;
+  rate: number;
+};
+
+export function summarizeSellableInventory<T extends PricedInventory>(
+  inventory: T[] | null | undefined,
+  today = getTodayIsoDate(),
+) {
+  const sellable = getUpcomingInventory(inventory, today)
+    .filter((row) => Number(row.available_units) > 0);
+  const rates = sellable.map((row) => Number(row.rate));
+
+  return {
+    sellableDates: sellable.length,
+    totalUnits: sellable.reduce((total, row) => total + Number(row.available_units), 0),
+    startDate: sellable[0]?.stay_date ?? null,
+    endDate: sellable.at(-1)?.stay_date ?? null,
+    minRate: rates.length ? Math.min(...rates) : null,
+    maxRate: rates.length ? Math.max(...rates) : null,
+  };
+}
