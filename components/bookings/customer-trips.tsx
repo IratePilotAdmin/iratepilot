@@ -138,6 +138,7 @@ export function CustomerTrips() {
               </div>
               <div className="flex flex-wrap gap-2 lg:justify-end">
                 <Link href={confirmationHref} className="btn-secondary">View confirmation</Link>
+                <Link href={`/account/support?booking=${encodeURIComponent(trip.id)}`} className="btn-secondary">Message property</Link>
                 {trip.status === "confirmed" && <TripCalendarButton details={calendarDetails} />}
                 {trip.status === "pending" ? (
                   <button onClick={() => cancel(trip.id)} className="btn-secondary">Cancel request</button>
