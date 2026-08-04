@@ -15,10 +15,11 @@ export async function POST(request: Request) {
     const rows = parseRevenueCsv(await file.text());
     const propertyIds = [...new Set(rows.map(row => row.property_id))];
     const roomIds = [...new Set(rows.map(row => row.room_id))];
-    const { data: properties } = await auth.supabase.from("properties").select("id,partner_id,partners(owner_id)").in("id", propertyIds);
+    const { data: properties } = await auth.supabase.from("properties").select("id,partner_id,partners(owner_id,status)").in("id", propertyIds);
     const authorized = (properties || []).every(property => {
       const owner = property.partners?.[0]?.owner_id;
-      return auth.profile.role === "admin" || owner === auth.user.id;
+      const partnerStatus = property.partners?.[0]?.status;
+      return auth.profile.role === "admin" || (owner === auth.user.id && partnerStatus === "approved");
     });
     if (!authorized || properties?.length !== propertyIds.length) return NextResponse.json({ error: "CSV contains a property you cannot manage." }, { status: 403 });
     const { data: rooms } = await auth.supabase.from("rooms").select("id,property_id").in("id", roomIds);

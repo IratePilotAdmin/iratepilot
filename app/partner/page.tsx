@@ -3,13 +3,7 @@ import { ArrowRight, BarChart3, Building2, Check, Headphones, Sparkles } from "l
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { PartnerApplicationForm } from "@/components/forms/partner-application-form";
-
-const managementPlans = [
-  { name: "Starter", price: "$59", audience: "Vacation homes and boutique hotels with up to approximately 25 rooms.", action: "Choose Starter" },
-  { name: "Professional", price: "$199", audience: "4-star hotels and independent hotels ready to grow with AI.", action: "Choose Professional", popular: true },
-  { name: "Premium", price: "$399", audience: "5-star hotels and resorts needing more advanced support.", action: "Choose Premium" },
-  { name: "Enterprise", price: "$799+", audience: "Custom plans for hotel groups and property management companies.", action: "Contact sales" }
-];
+import { partnerEnterprisePlan, partnerPlans, type PartnerPlan } from "@/config/partner-plans";
 
 export default function PartnerPage() {
   return (
@@ -31,7 +25,7 @@ export default function PartnerPage() {
               </div>
               <a href="#join" className="revenue-primary mt-9">Join as a partner <ArrowRight /></a>
             </div>
-            <PartnerApplicationForm />
+            <div id="application" className="scroll-mt-8"><PartnerApplicationForm /></div>
           </div>
         </section>
 
@@ -51,15 +45,21 @@ export default function PartnerPage() {
             </div>
 
             <div className="management-plans">
-              {managementPlans.map((plan) => (
-                <article key={plan.name} className={plan.popular ? "management-plan popular" : "management-plan"}>
-                  {plan.popular && <span className="plan-popular">Most popular</span>}
+              {(Object.entries(partnerPlans) as [PartnerPlan, (typeof partnerPlans)[PartnerPlan]][]).map(([, plan]) => (
+                <article key={plan.name} className={plan.featured ? "management-plan popular" : "management-plan"}>
+                  {plan.featured && <span className="plan-popular">Most popular</span>}
                   <span className="plan-name">{plan.name}</span>
-                  <strong>{plan.price}<small>/month</small></strong>
+                  <strong>${plan.monthlyPrice}<small>/month</small></strong>
                   <p>{plan.audience}</p>
-                  <Link href="#join">{plan.action} <ArrowRight /></Link>
+                  <Link href="#join">Choose {plan.name} <ArrowRight /></Link>
                 </article>
               ))}
+              <article className="management-plan">
+                <span className="plan-name">{partnerEnterprisePlan.name}</span>
+                <strong>{partnerEnterprisePlan.monthlyPriceLabel}<small>/month</small></strong>
+                <p>{partnerEnterprisePlan.audience}</p>
+                <Link href="#join">Contact sales <ArrowRight /></Link>
+              </article>
             </div>
           </div>
           <p className="management-disclosure">
@@ -77,8 +77,8 @@ export default function PartnerPage() {
 
         <section id="join" className="container-page py-24">
           <div className="partner-join">
-            <div><span className="section-kicker text-neutral-400">Partner with us</span><h2 className="mt-4 text-5xl text-white">Ready to grow with iRatePilot?</h2><p className="mt-5 max-w-2xl text-neutral-300">Start your partner application. Subscription billing, payment processing, and marketplace activation remain unavailable until agreements and launch systems are completed.</p></div>
-            <Link href="/partner/onboarding" className="revenue-primary">Start partner onboarding <ArrowRight /></Link>
+            <div><span className="section-kicker text-neutral-400">Partner with us</span><h2 className="mt-4 text-5xl text-white">Ready to grow with iRatePilot?</h2><p className="mt-5 max-w-2xl text-neutral-300">Start your partner application. Approved pilot partners can test subscription and marketplace workflows; live billing and commercial activation still require completed agreements and launch approval.</p></div>
+            <Link href="#application" className="revenue-primary">Start partner application <ArrowRight /></Link>
           </div>
         </section>
       </main>

@@ -14,7 +14,21 @@ function escapeHtml(value: unknown) {
     .replaceAll("'", "&#039;");
 }
 
-export async function POST() {
+async function processTransactionalEmail(request: Request) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    return NextResponse.json(
+      { success: false, error: "Email worker authentication is not configured." },
+      { status: 503 },
+    );
+  }
+  if (request.headers.get("authorization") !== `Bearer ${cronSecret}`) {
+    return NextResponse.json(
+      { success: false, error: "Unauthorized." },
+      { status: 401 },
+    );
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const resendApiKey = process.env.RESEND_API_KEY;
@@ -92,12 +106,12 @@ export async function POST() {
     }
 
     const { error: updateError } = await supabase
-      .from("transactional_email_jobs")
+      .from("email_outbox")
       .update({
         status: "sent",
-        provider_message_id: email?.id ?? null,
+        resend_email_id: email?.id ?? null,
         last_error: null,
-        sent_at: new Date().toISOString(),
+        processed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
       .eq("id", job.id);
@@ -115,7 +129,7 @@ export async function POST() {
       error instanceof Error ? error.message : "Email processing failed.";
 
     await supabase
-      .from("transactional_email_jobs")
+      .from("email_outbox")
       .update({
         status: "failed",
         last_error: message,
@@ -128,4 +142,12 @@ export async function POST() {
       { status: 500 },
     );
   }
+}
+
+export async function GET(request: Request) {
+  return processTransactionalEmail(request);
+}
+
+export async function POST(request: Request) {
+  return processTransactionalEmail(request);
 }

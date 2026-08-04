@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export function SiteFooter() {
   const groups = [
-    { heading: "Travel", links: [["Hotels", "/search"], ["Vacation homes", "/vacation-homes"], ["Deals", "/deals"], ["Rewards", "/rewards"]] },
+    { heading: "Travel", links: [["Hotels", "/search"], ["Vacation homes", "/vacation-homes"], ["Deals", "/deals"], ["Rewards", "/rewards"], ["Mobile app", "/mobile"]] },
     { heading: "Partners", links: [["List a property", "/partner#join"], ["Revenue AI", "/partner/revenue"], ["Partner login", "/login?next=/partner/dashboard"], ["Connectivity", "/partner"]] },
     { heading: "Company", links: [["About", "/about"], ["Contact", "/contact"], ["Privacy", "/privacy"], ["Terms", "/terms"]] }
   ];

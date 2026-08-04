@@ -16,10 +16,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
     if (parsed.data.active) {
       const { data: property, error: propertyError } = await auth.supabase.from("properties")
-        .select("image_url,amenities,rooms(active,inventory(stay_date,available_units))")
+        .select("image_url,amenities,partners!inner(status),rooms(active,inventory(stay_date,available_units))")
         .eq("id", id).maybeSingle();
       if (propertyError) throw propertyError;
       if (!property) return NextResponse.json({ error: "Property not found." }, { status: 404 });
+      const partner = property.partners as unknown as { status: string };
+      if (partner.status !== "approved") {
+        return NextResponse.json({
+          error: "Approve the partner account before publishing this property."
+        }, { status: 409 });
+      }
       const readiness = getPropertyReadiness(property as PropertyReadinessInput);
       if (!readiness.ready) {
         return NextResponse.json({
@@ -30,6 +36,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
     const { data, error } = await auth.supabase.from("properties").update({ active: parsed.data.active }).eq("id", id)
       .select("id,name,active").single();
+    if (error?.code === "23514") {
+      return NextResponse.json({ error: "Approve the partner account before publishing this property." }, { status: 409 });
+    }
     if (error) throw error;
     return NextResponse.json({ data });
   } catch {

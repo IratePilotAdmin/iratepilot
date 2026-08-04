@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
-import { eachDayOfInterval, parseISO, differenceInCalendarDays, format } from "date-fns";
+import { eachDayOfInterval, parseISO, format } from "date-fns";
 import { requireRole } from "@/lib/auth/require-role";
-import { inventorySchema, roomSchema } from "@/lib/validation";
+import { inventorySchema, roomSchema, roomUpdateSchema } from "@/lib/validation";
+import { getInventoryDateRangeError, getUpcomingInventory } from "@/lib/inventory-dates";
 
 export async function GET() {
   try {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-    const { data: partner } = await auth.supabase.from("partners").select("id").eq("owner_id", auth.user.id).maybeSingle();
-    if (!partner && auth.profile.role !== "admin") return NextResponse.json({ properties: [], rooms: [] });
+    const { data: partner, error: partnerError } = await auth.supabase.from("partners").select("id,status").eq("owner_id", auth.user.id).maybeSingle();
+    if (partnerError) throw partnerError;
+    if (auth.profile.role !== "admin" && (!partner || partner.status !== "approved")) {
+      return NextResponse.json({ error: "An approved partner account is required to manage rates and inventory." }, { status: 403 });
+    }
     let query = auth.supabase.from("properties").select("id,name,active").order("name");
     if (partner) query = query.eq("partner_id", partner.id);
     const { data: properties, error } = await query;
@@ -19,7 +23,13 @@ export async function GET() {
       .select("id,property_id,name,max_guests,base_rate,active,inventory(stay_date,available_units,rate)")
       .in("property_id", ids).order("name");
     if (roomsResult.error) throw roomsResult.error;
-    return NextResponse.json({ properties, rooms: roomsResult.data });
+    return NextResponse.json({
+      properties,
+      rooms: (roomsResult.data ?? []).map((room) => ({
+        ...room,
+        inventory: getUpcomingInventory(room.inventory),
+      })),
+    });
   } catch {
     return NextResponse.json({ error: "Rates and inventory are not configured." }, { status: 503 });
   }
@@ -30,11 +40,13 @@ export async function POST(request: Request) {
   try {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-    const { data: partner } = auth.profile.role === "admin"
-      ? { data: null }
-      : await auth.supabase.from("partners").select("id").eq("owner_id", auth.user.id).maybeSingle();
-    if (auth.profile.role !== "admin" && !partner) {
-      return NextResponse.json({ error: "Partner account not found." }, { status: 404 });
+    const partnerResult = auth.profile.role === "admin"
+      ? { data: null, error: null }
+      : await auth.supabase.from("partners").select("id,status").eq("owner_id", auth.user.id).maybeSingle();
+    if (partnerResult.error) throw partnerResult.error;
+    const partner = partnerResult.data;
+    if (auth.profile.role !== "admin" && (!partner || partner.status !== "approved")) {
+      return NextResponse.json({ error: "An approved partner account is required to manage rates and inventory." }, { status: 403 });
     }
     if (body.action === "create_room") {
       const parsed = roomSchema.safeParse(body);
@@ -50,6 +62,30 @@ export async function POST(request: Request) {
       if (result.error) throw result.error;
       return NextResponse.json({ data: result.data, message: "Room type created." }, { status: 201 });
     }
+    if (body.action === "update_room") {
+      const parsed = roomUpdateSchema.safeParse(body);
+      if (!parsed.success) return NextResponse.json({ error: "Check the room name, guests, base rate, and status." }, { status: 400 });
+      let roomQuery = auth.supabase.from("rooms")
+        .select("id,properties!inner(partner_id)")
+        .eq("id", parsed.data.roomId);
+      if (partner) roomQuery = roomQuery.eq("properties.partner_id", partner.id);
+      const { data: room, error: roomError } = await roomQuery.maybeSingle();
+      if (roomError) throw roomError;
+      if (!room) return NextResponse.json({ error: "Room type not found." }, { status: 404 });
+      const result = await auth.supabase.from("rooms").update({
+        name: parsed.data.name,
+        max_guests: parsed.data.maxGuests,
+        base_rate: parsed.data.baseRate,
+        active: parsed.data.active,
+      }).eq("id", parsed.data.roomId)
+        .select("id,name,max_guests,base_rate,active")
+        .single();
+      if (result.error) throw result.error;
+      return NextResponse.json({
+        data: result.data,
+        message: parsed.data.active ? "Room type updated." : "Room type retired from new bookings.",
+      });
+    }
     if (body.action === "set_inventory") {
       const parsed = inventorySchema.safeParse(body);
       if (!parsed.success) return NextResponse.json({ error: "Check the date range, units, and nightly rate." }, { status: 400 });
@@ -59,8 +95,8 @@ export async function POST(request: Request) {
       if (!room) return NextResponse.json({ error: "Room type not found." }, { status: 404 });
       const start = parseISO(parsed.data.startDate);
       const end = parseISO(parsed.data.endDate);
-      const days = differenceInCalendarDays(end, start);
-      if (days < 0 || days > 365) return NextResponse.json({ error: "Inventory ranges must be between 1 and 366 days." }, { status: 400 });
+      const dateError = getInventoryDateRangeError(parsed.data.startDate, parsed.data.endDate);
+      if (dateError) return NextResponse.json({ error: dateError }, { status: 400 });
       const rows = eachDayOfInterval({ start, end }).map((date) => ({
         room_id: parsed.data.roomId, stay_date: format(date, "yyyy-MM-dd"),
         available_units: parsed.data.availableUnits, rate: parsed.data.rate

@@ -2,8 +2,12 @@ import { NextResponse } from "next/server";
 import { differenceInCalendarDays, parseISO, startOfDay } from "date-fns";
 import { fees } from "@/config/fees";
 import { getStripe } from "@/lib/stripe";
+import { getStripeIdempotencyContext } from "@/lib/stripe-idempotency";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { checkoutSchema } from "@/lib/validation";
+import { calculateVerifiedStayPricing } from "@/lib/bookings/stay-pricing";
+import { hasActiveMembership } from "@/lib/memberships/eligibility";
 
 export async function POST(request: Request) {
   if (process.env.ENABLE_TEST_CHECKOUT !== "true") return NextResponse.json({ error: "Test checkout is disabled." }, { status: 503 });
@@ -21,11 +25,15 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Sign in before checkout." }, { status: 401 });
+  const idempotency = getStripeIdempotencyContext(request, "booking", user.id);
+  if (!idempotency) return NextResponse.json({ error: "A valid checkout attempt ID is required." }, { status: 400 });
 
-  const { data: room, error: roomError } = await supabase.from("rooms")
-    .select("id,name,property_id,max_guests,properties!inner(id,name,slug,active)")
+  const admin = createAdminClient();
+  const { data: room, error: roomError } = await admin.from("rooms")
+    .select("id,name,property_id,max_guests,properties!inner(id,name,slug,active,partners!inner(status))")
     .eq("id", parsed.data.roomId).eq("active", true)
-    .eq("properties.slug", parsed.data.hotelSlug).eq("properties.active", true).single();
+    .eq("properties.slug", parsed.data.hotelSlug).eq("properties.active", true)
+    .eq("properties.partners.status", "approved").single();
   if (roomError || !room) return NextResponse.json({ error: "The selected approved room was not found." }, { status: 404 });
   if (parsed.data.guests > Number(room.max_guests)) return NextResponse.json({ error: "Guest count exceeds this room’s capacity." }, { status: 400 });
 
@@ -33,17 +41,17 @@ export async function POST(request: Request) {
     .select("stay_date,available_units,rate").eq("room_id", room.id)
     .gte("stay_date", parsed.data.checkIn).lt("stay_date", parsed.data.checkOut).order("stay_date");
   if (inventoryError) return NextResponse.json({ error: "Inventory could not be verified." }, { status: 503 });
-  if ((inventory || []).length !== nights || (inventory || []).some((day) => day.available_units < 1)) {
+  const { data: profile } = await supabase.from("profiles").select("membership_tier,membership_status").eq("id", user.id).single();
+  const memberFeeExempt = hasActiveMembership(profile);
+  const pricing = calculateVerifiedStayPricing(inventory || [], nights, memberFeeExempt ? 0 : fees.serviceFeeRate);
+  if (!pricing.ok && pricing.reason === "availability") {
     return NextResponse.json({ error: "This room is not available for every selected night." }, { status: 409 });
   }
-
-  const { data: profile } = await supabase.from("profiles").select("membership_tier").eq("id", user.id).single();
-  const subtotal = (inventory || []).reduce((sum, day) => sum + Number(day.rate), 0);
-  const memberFeeExempt = profile?.membership_tier === "basic" || profile?.membership_tier === "business";
-  const serviceFee = memberFeeExempt ? 0 : Math.round(subtotal * fees.serviceFeeRate * 100) / 100;
-  const total = subtotal + serviceFee;
+  if (!pricing.ok) return NextResponse.json({ error: "Pricing could not be verified for this stay." }, { status: 503 });
+  const { subtotal, serviceFee, total } = pricing;
   const property = room.properties as unknown as { id: string; name: string };
-  const confirmationCode = `IRP-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
+  const confirmationToken = idempotency.attemptId.replaceAll("-", "").slice(0, 16).toUpperCase();
+  const confirmationCode = `IRP-${confirmationToken.slice(0, 8)}-${confirmationToken.slice(8)}`;
   const intent = await getStripe().paymentIntents.create({
     amount: Math.round(total * 100),
     currency: "usd",
@@ -61,7 +69,7 @@ export async function POST(request: Request) {
       guests: String(parsed.data.guests),
       confirmationCode
     }
-  });
+  }, { idempotencyKey: idempotency.idempotencyKey });
   return NextResponse.json({
     clientSecret: intent.client_secret,
     breakdown: {

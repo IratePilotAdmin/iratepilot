@@ -24,7 +24,10 @@ export async function PATCH(request: Request) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
-    const { data, error } = await supabase.from("profiles").update({ full_name: parsed.data.fullName, phone: parsed.data.phone || null }).eq("id", user.id).select("full_name,phone").single();
+    const { data, error } = await supabase.rpc("update_own_profile", {
+      p_full_name: parsed.data.fullName,
+      p_phone: parsed.data.phone || null
+    });
     if (error) throw error;
     return NextResponse.json({ data, message: "Profile updated." });
   } catch {

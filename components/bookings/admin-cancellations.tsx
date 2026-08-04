@@ -7,6 +7,8 @@ type Request = {
   status: string;
   refund_amount: number | string | null;
   stripe_refund_id: string | null;
+  updated_at: string;
+  retryable: boolean;
   bookings: {
     confirmation_code: string;
     check_in: string;
@@ -67,6 +69,8 @@ export function AdminCancellations() {
           <strong>{money(item.refund_amount ?? booking?.total ?? 0)}</strong>
           {item.status === "pending"
             ? <div className="mt-3 flex gap-2"><button className="btn-primary" onClick={() => decide(item.id, "approve")}>Approve refund</button><button className="btn-secondary" onClick={() => decide(item.id, "reject")}>Reject</button></div>
+            : item.status === "processing" && item.retryable
+              ? <button className="btn-primary mt-3" onClick={() => decide(item.id, "approve")}>Retry refund</button>
             : <span className="badge mt-3 block">{item.status}</span>}
         </div>
       </article>;

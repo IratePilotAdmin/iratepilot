@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { differenceInCalendarDays, parseISO, startOfDay } from "date-fns";
 import { fees } from "@/config/fees";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { bookingSchema } from "@/lib/validation";
+import { calculateVerifiedStayPricing } from "@/lib/bookings/stay-pricing";
+import { hasActiveMembership } from "@/lib/memberships/eligibility";
 
 export async function GET() {
   try {
@@ -36,29 +39,51 @@ export async function POST(request: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
 
-    const roomResult = await supabase.from("rooms")
-      .select("id,name,property_id,max_guests,properties!inner(id,name,slug,active)")
-      .eq("id", parsed.data.roomId).eq("active", true).eq("properties.slug", parsed.data.hotelSlug).eq("properties.active", true).single();
+    const admin = createAdminClient();
+    const roomResult = await admin.from("rooms")
+      .select("id,name,property_id,max_guests,properties!inner(id,name,slug,active,partners!inner(status))")
+      .eq("id", parsed.data.roomId).eq("active", true).eq("properties.slug", parsed.data.hotelSlug)
+      .eq("properties.active", true).eq("properties.partners.status", "approved").single();
     if (roomResult.error || !roomResult.data) return NextResponse.json({ error: "The selected approved room was not found." }, { status: 404 });
     if (parsed.data.guests > Number(roomResult.data.max_guests)) return NextResponse.json({ error: "Guest count exceeds this room’s capacity." }, { status: 400 });
+
+    const findExistingBooking = () => supabase.from("bookings")
+      .select("id,confirmation_code,status,subtotal,fees,total")
+      .eq("customer_id", user.id)
+      .eq("room_id", parsed.data.roomId)
+      .eq("check_in", parsed.data.checkIn)
+      .eq("check_out", parsed.data.checkOut)
+      .in("status", ["pending", "confirmed"])
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    const existingResult = await findExistingBooking();
+    if (existingResult.error) throw existingResult.error;
+    if (existingResult.data) {
+      return NextResponse.json({
+        data: existingResult.data,
+        duplicate: true,
+        mode: "private_request",
+        message: "Your existing booking request was returned. No duplicate request was created."
+      });
+    }
 
     const inventoryResult = await supabase.from("inventory").select("stay_date,available_units,rate")
       .eq("room_id", parsed.data.roomId).gte("stay_date", parsed.data.checkIn).lt("stay_date", parsed.data.checkOut).order("stay_date");
     if (inventoryResult.error) throw inventoryResult.error;
     const inventory = inventoryResult.data || [];
-    if (inventory.length !== nights || inventory.some((day) => day.available_units < 1)) {
+    const { data: profile } = await supabase.from("profiles").select("membership_tier,membership_status").eq("id", user.id).single();
+    const memberFeeExempt = hasActiveMembership(profile);
+    const pricing = calculateVerifiedStayPricing(inventory, nights, memberFeeExempt ? 0 : fees.serviceFeeRate);
+    if (!pricing.ok && pricing.reason === "availability") {
       return NextResponse.json({ error: "This room is not available for every selected night." }, { status: 409 });
     }
-
-    const { data: profile } = await supabase.from("profiles").select("membership_tier").eq("id", user.id).single();
-    const subtotal = inventory.reduce((sum, day) => sum + Number(day.rate), 0);
-    const memberFeeExempt = profile?.membership_tier === "basic" || profile?.membership_tier === "business";
-    const serviceFee = memberFeeExempt ? 0 : Math.round(subtotal * fees.serviceFeeRate * 100) / 100;
-    const total = subtotal + serviceFee;
+    if (!pricing.ok) return NextResponse.json({ error: "Pricing could not be verified for this stay." }, { status: 503 });
+    const { subtotal, serviceFee, total } = pricing;
     const property = roomResult.data.properties as unknown as { id: string; name: string };
     const confirmationCode = `IRP-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
 
-    const { data, error } = await supabase.from("bookings").insert({
+    const { data, error } = await admin.from("bookings").insert({
       confirmation_code: confirmationCode,
       customer_id: user.id,
       property_id: property.id,
@@ -72,6 +97,18 @@ export async function POST(request: Request) {
       total,
       status: "pending"
     }).select("id,confirmation_code,status,subtotal,fees,total").single();
+    if (error?.code === "23505") {
+      const concurrentResult = await findExistingBooking();
+      if (concurrentResult.error) throw concurrentResult.error;
+      if (concurrentResult.data) {
+        return NextResponse.json({
+          data: concurrentResult.data,
+          duplicate: true,
+          mode: "private_request",
+          message: "Your existing booking request was returned. No duplicate request was created."
+        });
+      }
+    }
     if (error) throw error;
     return NextResponse.json({
       data,
