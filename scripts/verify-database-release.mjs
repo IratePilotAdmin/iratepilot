@@ -50,11 +50,11 @@ const requiredVerifierTokens = [
   "public.send_booking_message(uuid,text)",
   "public.finalize_test_booking_refund(uuid,text,numeric)",
   "public.cancel_unpaid_confirmed_booking(uuid,text)",
-  "booking_cancellation_requests_support_processing",
-  "booking_messages_rls_ready",
-  "anonymous_booking_message_blocked",
+  "cancellation_processing_status_ready",
+  "booking_messages_ready",
+  "anonymous_booking_message_send_blocked",
   "anonymous_refund_finalization_blocked",
-  "anonymous_unpaid_cancellation_blocked",
+  "anonymous_unpaid_booking_cancellation_blocked",
 ];
 
 for (const token of requiredVerifierTokens) {
