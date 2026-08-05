@@ -6,8 +6,10 @@ type Property = { id: string; name: string; slug: string; type: string; star_rat
 
 export function PartnerProperties() {
   const [properties, setProperties] = useState<Property[]>([]);
+  const [selectedPropertyId, setSelectedPropertyId] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const selectedProperty = properties.find((property) => property.id === selectedPropertyId);
 
   const load = useCallback(async () => {
     const response = await fetch("/api/partner/properties");
@@ -43,6 +45,7 @@ export function PartnerProperties() {
       const body = await response.json();
       setMessage(response.ok ? body.message : typeof body.error === "string" ? body.error : "Check all property fields.");
       if (response.ok) {
+        setSelectedPropertyId("");
         formElement.reset();
         await load();
       }
@@ -106,13 +109,13 @@ export function PartnerProperties() {
         {message && <p role="status" className="text-sm">{message}</p>}
         <button disabled={busy} className="btn-primary">{busy ? "Creating…" : "Create property draft"}</button>
       </form>
-      <form onSubmit={updateContent} className="card grid gap-4 p-6">
+      <form key={selectedPropertyId || "empty"} onSubmit={updateContent} className="card grid gap-4 p-6">
         <div><h2 className="text-xl font-semibold">Listing content</h2><p className="mt-1 text-sm text-slate-500">Content changes return an approved listing to review.</p></div>
-        <label className="text-sm font-medium">Property<select name="propertyId" className="input mt-2" required><option value="">Select property</option>{properties.map((property) => <option key={property.id} value={property.id}>{property.name}</option>)}</select></label>
-        <label className="text-sm font-medium">Detailed description<textarea name="description" className="input mt-2 min-h-32" minLength={120} maxLength={4000} placeholder="Describe the location, rooms, atmosphere, and distinctive guest experience." required /></label>
-        <label className="text-sm font-medium">Primary photo URL<input name="imageUrl" type="url" className="input mt-2" placeholder="https://..." pattern="https://.*" required /><small className="mt-1 block text-slate-500">Use a public HTTPS image from your hotel or media host.</small></label>
-        <label className="text-sm font-medium">Amenities, separated by commas<textarea name="amenities" className="input mt-2 min-h-24" placeholder="Pool, Spa, Free Wi-Fi, Parking" required /></label>
-        <button disabled={busy || !properties.length} className="btn-primary">Save property content</button>
+        <label className="text-sm font-medium">Property<select name="propertyId" className="input mt-2" value={selectedPropertyId} onChange={(event) => setSelectedPropertyId(event.target.value)} required><option value="">Select property</option>{properties.map((property) => <option key={property.id} value={property.id}>{property.name}</option>)}</select></label>
+        <label className="text-sm font-medium">Detailed description<textarea name="description" className="input mt-2 min-h-32" minLength={120} maxLength={4000} defaultValue={selectedProperty?.description ?? ""} placeholder="Describe the location, rooms, atmosphere, and distinctive guest experience." required /></label>
+        <label className="text-sm font-medium">Primary photo URL<input name="imageUrl" type="url" className="input mt-2" defaultValue={selectedProperty?.image_url ?? ""} placeholder="https://..." pattern="https://.*" required /><small className="mt-1 block text-slate-500">Use a public HTTPS image from your hotel or media host.</small></label>
+        <label className="text-sm font-medium">Amenities, separated by commas<textarea name="amenities" className="input mt-2 min-h-24" defaultValue={(selectedProperty?.amenities ?? []).join(", ")} placeholder="Pool, Spa, Free Wi-Fi, Parking" required /></label>
+        <button disabled={busy || !selectedProperty} className="btn-primary">Save property content</button>
       </form>
       </div>
     </div>
