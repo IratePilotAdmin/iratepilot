@@ -8,6 +8,7 @@ import {
   PaidBookingFinalizationError,
   refundUnfinalizedTestBooking,
 } from "@/lib/bookings/complete-paid-test-booking";
+import { queueBookingNotification } from "@/lib/email/booking-notifications";
 
 const requestSchema = z.object({
   paymentIntentId: z.string().startsWith("pi_")
@@ -34,6 +35,7 @@ export async function POST(request: Request) {
     }
     paidIntentId = intent.id;
     const { booking } = await completePaidTestBooking(intent);
+    await queueBookingNotification({ event: "payment_confirmed", bookingId: booking.id, confirmationCode: booking.confirmation_code, customerId: user.id, recipientEmail: user.email });
 
     return NextResponse.json({
       data: booking,

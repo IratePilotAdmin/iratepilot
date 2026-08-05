@@ -8,6 +8,7 @@ import {
 } from "@/lib/bookings/complete-approved-booking-test-payment";
 import { refundUnfinalizedTestBooking } from "@/lib/bookings/complete-paid-test-booking";
 import { createClient } from "@/lib/supabase/server";
+import { queueBookingNotification } from "@/lib/email/booking-notifications";
 
 const requestSchema = z.object({ paymentIntentId: z.string().startsWith("pi_") });
 const bookingIdSchema = z.string().uuid();
@@ -33,6 +34,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
     paidIntentId = intent.id;
     const booking = await completeApprovedBookingTestPayment(intent);
+    await queueBookingNotification({ event: "payment_confirmed", bookingId: booking.id, confirmationCode: booking.confirmation_code, customerId: user.id, recipientEmail: user.email });
     return NextResponse.json({ data: booking, message: "Test payment verified for the approved reservation." });
   } catch (error) {
     console.error("Approved reservation payment completion failed", error);
