@@ -33,6 +33,9 @@ type Trip = {
 export function CustomerTrips() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [message, setMessage] = useState("Loading trips…");
+  const [cancellationBookingId, setCancellationBookingId] = useState<string | null>(null);
+  const [cancellationReason, setCancellationReason] = useState("");
+  const [cancellationSubmitting, setCancellationSubmitting] = useState(false);
 
   useEffect(() => {
     fetch("/api/bookings")
@@ -69,8 +72,12 @@ export function CustomerTrips() {
   }
 
   async function requestCancellation(id: string) {
-    const reason = window.prompt("Why would you like to cancel this confirmed stay?");
-    if (!reason) return;
+    const reason = cancellationReason.trim();
+    if (!reason) {
+      setMessage("Please provide a cancellation reason.");
+      return;
+    }
+    setCancellationSubmitting(true);
     const response = await fetch(`/api/bookings/${id}/cancellation`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -94,7 +101,10 @@ export function CustomerTrips() {
           booking_cancellation_requests: [body.data],
         }
         : trip));
+      setCancellationBookingId(null);
+      setCancellationReason("");
     }
+    setCancellationSubmitting(false);
   }
 
   return (
@@ -145,7 +155,54 @@ export function CustomerTrips() {
                 {trip.status === "pending" ? (
                   <button onClick={() => cancel(trip.id)} className="btn-secondary">Cancel request</button>
                 ) : trip.status === "confirmed" && !cancellation ? (
-                  <button onClick={() => requestCancellation(trip.id)} className="btn-secondary">Request cancellation</button>
+                  cancellationBookingId === trip.id ? (
+                    <form
+                      className="w-full space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 lg:w-80"
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        void requestCancellation(trip.id);
+                      }}
+                    >
+                      <label className="block text-left text-sm font-medium" htmlFor={`cancellation-reason-${trip.id}`}>
+                        Why would you like to cancel?
+                      </label>
+                      <textarea
+                        id={`cancellation-reason-${trip.id}`}
+                        className="min-h-24 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                        maxLength={500}
+                        onChange={(event) => setCancellationReason(event.target.value)}
+                        required
+                        value={cancellationReason}
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        <button disabled={cancellationSubmitting} className="btn-primary" type="submit">
+                          {cancellationSubmitting ? "Submitting…" : "Submit cancellation"}
+                        </button>
+                        <button
+                          className="btn-secondary"
+                          disabled={cancellationSubmitting}
+                          onClick={() => {
+                            setCancellationBookingId(null);
+                            setCancellationReason("");
+                          }}
+                          type="button"
+                        >
+                          Keep reservation
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setCancellationBookingId(trip.id);
+                        setCancellationReason("");
+                        setMessage("");
+                      }}
+                      className="btn-secondary"
+                    >
+                      Request cancellation
+                    </button>
+                  )
                 ) : (
                   <span className="badge">{getBookingStatusLabel(cancellation?.status || trip.status)}</span>
                 )}
