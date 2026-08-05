@@ -19,8 +19,8 @@ describe("reservation to guest-message handoff", () => {
   });
 
   it("selects a requested thread only from the authorized inbox response", () => {
-    expect(messageCenter).toContain("body.data?.find((booking: InboxBooking) => booking.id === initialBookingId)?.id");
-    expect(messageCenter).toContain("authorizedSelection || body.data?.[0]?.id");
+    expect(messageCenter).toContain("ordered.find((booking) => booking.id === initialBookingId)?.id");
+    expect(messageCenter).toContain("authorizedSelection || ordered[0]?.id");
     expect(inboxRoute).toContain('.eq("partner_id", partner.id)');
     expect(inboxRoute).toContain('partner.status !== "approved"');
   });
