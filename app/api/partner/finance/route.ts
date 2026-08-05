@@ -6,11 +6,15 @@ export async function GET() {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-    const { data: partner } = await auth.supabase
+    const { data: partner, error: partnerError } = await auth.supabase
       .from("partners")
-      .select("id")
+      .select("id,status")
       .eq("owner_id", auth.user.id)
       .maybeSingle();
+    if (partnerError) throw partnerError;
+    if (auth.profile.role !== "admin" && (!partner || partner.status !== "approved")) {
+      return NextResponse.json({ error: "An approved partner account is required to view finance records." }, { status: 403 });
+    }
     if (!partner) return NextResponse.json({ financials: [], payouts: [] });
 
     const [financials, payouts] = await Promise.all([

@@ -5,7 +5,11 @@ export const memberships = {
     billingPeriod: "year",
     serviceFeeRate: 0,
     rewardMultiplier: 1,
-    discountLabel: "Member-only offers"
+    benefits: [
+      "0% traveler service fees",
+      "1× reward points on eligible confirmed stays",
+      "Access to verified future rate offers"
+    ]
   },
   business: {
     name: "iRatePilot Business",
@@ -13,7 +17,11 @@ export const memberships = {
     billingPeriod: "year",
     serviceFeeRate: 0,
     rewardMultiplier: 2,
-    discountLabel: "5–10% eligible business-travel discounts"
+    benefits: [
+      "0% traveler service fees",
+      "2× reward points on eligible confirmed stays",
+      "Access to verified future rate offers"
+    ]
   }
 } as const;
 

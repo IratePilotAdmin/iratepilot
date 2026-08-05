@@ -77,7 +77,7 @@ function PaymentForm({ breakdown }: { breakdown: Breakdown }) {
         <p className="text-sm text-slate-500">{breakdown.roomName} · {breakdown.checkIn} to {breakdown.checkOut}</p>
         <p className="text-sm text-slate-500">{breakdown.guests} guests</p>
         <div className="mt-4 flex justify-between"><span>{breakdown.nights} nights</span><span>${breakdown.subtotal.toFixed(2)}</span></div>
-        <div className="mt-2 flex justify-between"><span>Service fee (5%)</span><span>${breakdown.serviceFee.toFixed(2)}</span></div>
+        <div className="mt-2 flex justify-between"><span>Traveler service fee{breakdown.serviceFee === 0 ? " (member benefit)" : ""}</span><span>${breakdown.serviceFee.toFixed(2)}</span></div>
         <div className="mt-4 flex justify-between border-t pt-4 text-lg font-bold"><span>Total</span><span>${breakdown.total.toFixed(2)}</span></div>
       </aside>
     </div>
@@ -88,6 +88,7 @@ export function CheckoutForm({ publishableKey, enabled, selection }: { publishab
   const router = useRouter();
   const selectionComplete = Boolean(selection.hotelSlug && selection.roomId && selection.checkIn && selection.checkOut && selection.guests);
   const stripePromise = useMemo(() => publishableKey?.startsWith("pk_test_") ? loadStripe(publishableKey) : null, [publishableKey]);
+  const [checkoutAttemptId] = useState(() => crypto.randomUUID());
   const [clientSecret, setClientSecret] = useState("");
   const [breakdown, setBreakdown] = useState<Breakdown | null>(null);
   const [error, setError] = useState("");
@@ -96,7 +97,7 @@ export function CheckoutForm({ publishableKey, enabled, selection }: { publishab
     if (!enabled || !stripePromise || !selectionComplete) return;
     fetch("/api/stripe/checkout", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Idempotency-Key": checkoutAttemptId },
       body: JSON.stringify(selection)
     })
       .then(async (response) => {
@@ -111,7 +112,7 @@ export function CheckoutForm({ publishableKey, enabled, selection }: { publishab
         setBreakdown(body.breakdown);
       })
       .catch((reason: Error) => setError(reason.message));
-  }, [enabled, router, selection, selectionComplete, stripePromise]);
+  }, [checkoutAttemptId, enabled, router, selection, selectionComplete, stripePromise]);
 
   if (!enabled || !stripePromise) {
     return <div className="card p-8"><h2 className="text-xl font-semibold">Checkout is not available</h2><p className="mt-3 text-slate-600">iRatePilot is in a private pilot. Test checkout requires explicit Stripe test-mode configuration.</p></div>;

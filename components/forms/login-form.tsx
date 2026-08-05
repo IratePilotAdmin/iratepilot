@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getSafeNextPath } from "@/lib/auth/safe-next-path";
 
 export function LoginForm({ configured }: { configured: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const requestedNext = searchParams.get("next");
-  const nextPath = requestedNext?.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : null;
+  const nextPath = getSafeNextPath(searchParams.get("next"));
 
   async function signInWithGoogle() {
     if (!configured) return;

@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { SearchForm } from "@/components/search/search-form";
 import { HotelCard } from "@/components/hotels/hotel-card";
 import { hotels } from "@/data/hotels";
+import { partnerPlans, type PartnerPlan } from "@/config/partner-plans";
 
 const destinations = [
   { name: "Miami Beach", copy: "Oceanfront energy", image: hotels[0].image },
@@ -54,7 +55,7 @@ export default function HomePage() {
               <div className="journey-panel">
                 <div className="journey-glow" />
                 <div className="relative overflow-hidden rounded-[28px] bg-slate-950 shadow-2xl shadow-violet-300/40">
-                  <Image src={hotels[0].image} alt="Luxury beachfront hotel" width={1000} height={780} priority className="h-[470px] w-full object-cover opacity-80" />
+                  <Image src={hotels[0].image} alt="Luxury beachfront hotel" width={1000} height={780} priority unoptimized sizes="(max-width: 1024px) 100vw, 50vw" className="h-[470px] w-full object-cover opacity-80" />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/15 to-transparent" />
                   <div className="absolute inset-x-0 bottom-0 p-7 text-white">
                     <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold backdrop-blur">AI match · 96%</span>
@@ -105,12 +106,12 @@ export default function HomePage() {
             <div className="relative z-10 max-w-2xl">
               <span className="eyebrow-pill light"><Gem className="h-4 w-4" /> iRatePilot memberships</span>
               <h2 className="mt-6 text-4xl font-black tracking-tight text-white sm:text-5xl">Book more. Pay less in fees. Earn more.</h2>
-              <p className="mt-5 text-lg leading-8 text-violet-100">Membership billing remains inactive during development. Eligible benefits activate only after final terms and partner participation are approved.</p>
+              <p className="mt-5 text-lg leading-8 text-violet-100">Membership checkout is limited to Stripe test mode. Benefits activate only while a verified membership subscription is active.</p>
               <Link href="/rewards" className="mt-7 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 font-bold text-violet-800">Explore rewards <ArrowRight className="h-4 w-4" /></Link>
             </div>
             <div className="relative z-10 grid gap-4">
               <article className="member-tier"><span>Basic</span><strong>$70<small>/year</small></strong><p>0% traveler service fee + reward points</p></article>
-              <article className="member-tier featured"><span><BriefcaseBusiness className="h-4 w-4" /> Business Traveler</span><strong>$120<small>/year</small></strong><p>0% traveler fee · eligible 5%–10% savings · double points</p></article>
+              <article className="member-tier featured"><span><BriefcaseBusiness className="h-4 w-4" /> Business Traveler</span><strong>$120<small>/year</small></strong><p>0% traveler service fee · double reward points</p></article>
             </div>
           </div>
         </section>
@@ -129,7 +130,7 @@ export default function HomePage() {
                 </div>
                 <div className="mt-9 flex flex-wrap gap-3">
                   <Link href="/partner/revenue" className="revenue-primary">Explore Revenue AI <ArrowRight /></Link>
-                  <Link href="/partner/onboarding" className="revenue-secondary">Request early access</Link>
+                  <Link href="/partner#application" className="revenue-secondary">Request early access</Link>
                 </div>
               </div>
 
@@ -186,10 +187,9 @@ export default function HomePage() {
             <div className="mt-20">
               <div className="text-center"><span className="section-kicker">Revenue AI plans</span><h2 className="mt-4 text-4xl text-white sm:text-5xl">Built for independent hotels and growing portfolios.</h2></div>
               <div className="mt-9 grid gap-4 md:grid-cols-3">
-                <article className="revenue-price"><span>Starter</span><strong>$299<small>/month</small></strong><p>Independent hotel · recommendations, calendar, forecasts, and approvals.</p></article>
-                <article className="revenue-price featured"><span>Professional</span><strong>$699<small>/month</small></strong><p>Full AI pricing, competitor monitoring, advanced forecasting, and reports.</p></article>
-                <article className="revenue-price"><span>Portfolio</span><strong>Custom</strong><p>Multiple properties, centralized controls, consolidated reporting, and tailored onboarding.</p></article>
+                {(Object.entries(partnerPlans) as [PartnerPlan, (typeof partnerPlans)[PartnerPlan]][]).map(([, plan]) => <article className={plan.featured ? "revenue-price featured" : "revenue-price"} key={plan.name}><span>{plan.name}</span><strong>${plan.monthlyPrice}<small>/month</small></strong><p>{plan.audience}</p></article>)}
               </div>
+              <p className="mt-5 text-center text-sm text-slate-300">Private-pilot subscriptions use Stripe test mode. Live software billing requires launch approval.</p>
             </div>
           </div>
         </section>
@@ -211,7 +211,7 @@ export default function HomePage() {
         <section className="container-page py-20">
           <div className="partner-cta">
             <div><span className="section-kicker">For premium property partners</span><h2>Bring your hotel or vacation home to iRatePilot.</h2><p>Start a draft listing, add rooms, amenities, policies, photos, and rates, then submit it for marketplace approval.</p></div>
-            <div className="flex flex-wrap gap-3"><Link href="/partner/onboarding" className="btn-primary">Start partner onboarding</Link><Link href="/partner" className="btn-secondary">See partner tools</Link></div>
+            <div className="flex flex-wrap gap-3"><Link href="/partner#application" className="btn-primary">Apply as a partner</Link><Link href="/partner" className="btn-secondary">See partner tools</Link></div>
           </div>
         </section>
       </main>

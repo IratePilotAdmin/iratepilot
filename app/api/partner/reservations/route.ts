@@ -5,8 +5,11 @@ export async function GET() {
   try {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-    const { data: partner } = await auth.supabase.from("partners").select("id").eq("owner_id", auth.user.id).maybeSingle();
-    if (!partner && auth.profile.role !== "admin") return NextResponse.json({ data: [] });
+    const { data: partner, error: partnerError } = await auth.supabase.from("partners").select("id,status").eq("owner_id", auth.user.id).maybeSingle();
+    if (partnerError) throw partnerError;
+    if (auth.profile.role !== "admin" && (!partner || partner.status !== "approved")) {
+      return NextResponse.json({ error: "An approved partner account is required to view reservations." }, { status: 403 });
+    }
     let propertyQuery = auth.supabase.from("properties").select("id");
     if (partner) propertyQuery = propertyQuery.eq("partner_id", partner.id);
     const { data: properties, error: propertyError } = await propertyQuery;
@@ -14,8 +17,8 @@ export async function GET() {
     const ids = (properties || []).map((property) => property.id);
     if (!ids.length) return NextResponse.json({ data: [] });
     const { data, error } = await auth.supabase.from("bookings")
-      .select("id,confirmation_code,check_in,check_out,guests,subtotal,fees,total,status,created_at,properties(name),rooms(name),profiles(full_name)")
-      .in("property_id", ids).order("created_at", { ascending: false });
+      .select("id,confirmation_code,check_in,check_out,guests,subtotal,fees,total,status,cancellation_reason,created_at,properties(name),rooms(name),profiles(full_name),booking_status_history(status,note,created_at)")
+      .in("property_id", ids).order("created_at", { ascending: false }).limit(500);
     if (error) throw error;
     const bookingIds = (data || []).map((booking) => booking.id);
     const { data: financials, error: financialError } = bookingIds.length
@@ -31,9 +34,11 @@ export async function GET() {
       data: (data || []).map((booking) => ({
         ...booking,
         financial: financialByBooking.get(booking.id) || null
-      }))
-    });
-  } catch {
+      })),
+      limited: (data || []).length === 500,
+    }, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    console.error("Partner reservation list failed", error);
     return NextResponse.json({ error: "Partner reservations are not configured." }, { status: 503 });
   }
 }

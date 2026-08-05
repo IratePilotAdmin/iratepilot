@@ -2,7 +2,16 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { completePaidTestBooking, isCompletableBookingIntent } from "@/lib/bookings/complete-paid-test-booking";
+import {
+  completePaidTestBooking,
+  isCompletableBookingIntent,
+  PaidBookingFinalizationError,
+  refundUnfinalizedTestBooking,
+} from "@/lib/bookings/complete-paid-test-booking";
+import { getSubscriptionAccessStatus, getSubscriptionRenewsAt } from "@/lib/stripe/subscription-lifecycle";
+import { isRetryableStripeWebhookClaim } from "@/lib/stripe/webhook-retry";
+import { getVerifiedPartnerSubscriptionPlan } from "@/lib/stripe/partner-subscription-pricing";
+import { getVerifiedMembershipSubscriptionTier } from "@/lib/stripe/membership-subscription-pricing";
 
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
@@ -21,8 +30,11 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
+  const eventCreatedAt = new Date(event.created * 1000).toISOString();
   let financialId: string | null = null;
   let objectId: string | null = null;
+  let bookingRefund: { id: string; status: string | null } | null = null;
+  let claimUpdatedAt = new Date().toISOString();
 
   const { data: claimed, error: claimError } = await admin
     .from("stripe_financial_events")
@@ -31,7 +43,7 @@ export async function POST(request: Request) {
       event_type: event.type,
       processing_status: "processing",
       payload: event.data.object,
-      updated_at: new Date().toISOString()
+      updated_at: claimUpdatedAt
     }, { onConflict: "stripe_event_id", ignoreDuplicates: true })
     .select("id")
     .maybeSingle();
@@ -44,7 +56,7 @@ export async function POST(request: Request) {
   if (!claimed) {
     const { data: existing, error: existingError } = await admin
       .from("stripe_financial_events")
-      .select("processing_status, attempt_count")
+      .select("processing_status,attempt_count,updated_at")
       .eq("stripe_event_id", event.id)
       .single();
 
@@ -53,25 +65,43 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Webhook event lookup failed." }, { status: 500 });
     }
 
-    if (existing.processing_status !== "failed") {
+    if (existing.processing_status === "processed" || existing.processing_status === "ignored") {
       return NextResponse.json({ received: true, duplicate: true, eventType: event.type });
     }
 
-    const { error: retryError } = await admin
+    if (!isRetryableStripeWebhookClaim(existing.processing_status, existing.updated_at)) {
+      return NextResponse.json({
+        error: "Webhook event is already processing.",
+        retry: true,
+      }, { status: 409 });
+    }
+
+    const retryClaimedAt = new Date().toISOString();
+    const { data: retryClaim, error: retryError } = await admin
       .from("stripe_financial_events")
       .update({
         processing_status: "processing",
         attempt_count: existing.attempt_count + 1,
         error_message: null,
-        updated_at: new Date().toISOString()
+        updated_at: retryClaimedAt
       })
       .eq("stripe_event_id", event.id)
-      .eq("processing_status", "failed");
+      .eq("processing_status", existing.processing_status)
+      .eq("updated_at", existing.updated_at)
+      .select("id")
+      .maybeSingle();
 
     if (retryError) {
       console.error("Stripe webhook retry claim failed", retryError);
       return NextResponse.json({ error: "Webhook retry could not be claimed." }, { status: 500 });
     }
+    if (!retryClaim) {
+      return NextResponse.json({
+        error: "Webhook retry was claimed by another worker.",
+        retry: true,
+      }, { status: 409 });
+    }
+    claimUpdatedAt = retryClaimedAt;
   }
 
   try {
@@ -82,41 +112,64 @@ export async function POST(request: Request) {
         const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
         const subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
         const { error } = await admin.from("profiles").update({
-          membership_tier: session.metadata.plan,
-          membership_status: "active",
           stripe_customer_id: customerId || null,
           stripe_subscription_id: subscriptionId || null
-        }).eq("id", session.metadata.userId);
+        }).eq("id", session.metadata.userId)
+          .or(`membership_synced_at.is.null,membership_synced_at.lt.${eventCreatedAt}`);
         if (error) throw error;
       }
       if (session.metadata?.mode === "partner_subscription_test" && session.metadata.partnerId && (session.metadata.plan === "starter" || session.metadata.plan === "professional" || session.metadata.plan === "premium")) {
         const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
         const subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
         const { error } = await admin.from("partners").update({
-          software_plan: session.metadata.plan,
-          subscription_status: "active",
           stripe_customer_id: customerId || null,
           stripe_subscription_id: subscriptionId || null
-        }).eq("id", session.metadata.partnerId);
+        }).eq("id", session.metadata.partnerId)
+          .or(`subscription_synced_at.is.null,subscription_synced_at.lt.${eventCreatedAt}`);
         if (error) throw error;
       }
     }
 
-    if (event.type === "customer.subscription.deleted") {
+    if (event.type === "customer.subscription.created" || event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
       const subscription = event.data.object as Stripe.Subscription;
       objectId = subscription.id;
+      const accessStatus = getSubscriptionAccessStatus(subscription.status);
+      const renewsAt = getSubscriptionRenewsAt(subscription);
+      const subscriptionId = event.type === "customer.subscription.deleted" ? null : subscription.id;
       if (subscription.metadata?.mode === "pilot_test" && subscription.metadata.userId) {
-        const { error } = await admin.from("profiles").update({
-          membership_tier: "none", membership_status: "cancelled",
-          stripe_subscription_id: null, membership_renews_at: null
-        }).eq("id", subscription.metadata.userId);
+        const verifiedTier = getVerifiedMembershipSubscriptionTier(subscription);
+        if (!verifiedTier) throw new Error("Membership subscription price does not match a configured iRatePilot tier.");
+        const customerId = typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
+        const update = admin.from("profiles").update({
+          membership_tier: verifiedTier,
+          membership_status: accessStatus,
+          stripe_customer_id: customerId,
+          stripe_subscription_id: subscriptionId,
+          membership_renews_at: renewsAt,
+          membership_synced_at: eventCreatedAt
+        }).eq("id", subscription.metadata.userId)
+          .or(`membership_synced_at.is.null,membership_synced_at.lt.${eventCreatedAt}`);
+        const { error } = event.type === "customer.subscription.deleted"
+          ? await update.eq("stripe_subscription_id", subscription.id)
+          : await update;
         if (error) throw error;
       }
       if (subscription.metadata?.mode === "partner_subscription_test" && subscription.metadata.partnerId) {
-        const { error } = await admin.from("partners").update({
-          software_plan: "none", subscription_status: "cancelled",
-          stripe_subscription_id: null, subscription_renews_at: null
-        }).eq("id", subscription.metadata.partnerId);
+        const verifiedPlan = getVerifiedPartnerSubscriptionPlan(subscription);
+        if (!verifiedPlan) throw new Error("Partner subscription price does not match a configured iRatePilot plan.");
+        const customerId = typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
+        const update = admin.from("partners").update({
+          software_plan: verifiedPlan,
+          subscription_status: accessStatus,
+          stripe_customer_id: customerId,
+          stripe_subscription_id: subscriptionId,
+          subscription_renews_at: renewsAt,
+          subscription_synced_at: eventCreatedAt
+        }).eq("id", subscription.metadata.partnerId)
+          .or(`subscription_synced_at.is.null,subscription_synced_at.lt.${eventCreatedAt}`);
+        const { error } = event.type === "customer.subscription.deleted"
+          ? await update.eq("stripe_subscription_id", subscription.id)
+          : await update;
         if (error) throw error;
       }
     }
@@ -126,8 +179,14 @@ export async function POST(request: Request) {
       objectId = intent.id;
       if (intent.metadata?.mode === "booking_test") {
         if (!isCompletableBookingIntent(intent)) throw new Error("Stripe test booking metadata is incomplete.");
-        const completion = await completePaidTestBooking(intent);
-        financialId = completion.financialId;
+        try {
+          const completion = await completePaidTestBooking(intent);
+          financialId = completion.financialId;
+        } catch (error) {
+          if (!(error instanceof PaidBookingFinalizationError)) throw error;
+          const refund = await refundUnfinalizedTestBooking(intent.id);
+          bookingRefund = { id: refund.id, status: refund.status };
+        }
       }
     }
 
@@ -151,23 +210,40 @@ export async function POST(request: Request) {
     }
 
     const processingStatus = financialId || !event.type.startsWith("transfer.") ? "processed" : "ignored";
-    const { error: completeError } = await admin
+    const completedAt = new Date().toISOString();
+    const { data: completedClaim, error: completeError } = await admin
       .from("stripe_financial_events")
       .update({
         object_id: objectId,
         booking_financial_id: financialId,
         processing_status: processingStatus,
         error_message: null,
-        processed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        processed_at: completedAt,
+        updated_at: completedAt
       })
-      .eq("stripe_event_id", event.id);
+      .eq("stripe_event_id", event.id)
+      .eq("processing_status", "processing")
+      .eq("updated_at", claimUpdatedAt)
+      .select("id")
+      .maybeSingle();
     if (completeError) throw completeError;
+    if (!completedClaim) {
+      return NextResponse.json({
+        error: "Webhook claim ownership changed before completion.",
+        retry: true,
+      }, { status: 409 });
+    }
 
-    return NextResponse.json({ received: true, eventType: event.type, mode: "pilot_test" });
+    return NextResponse.json({
+      received: true,
+      eventType: event.type,
+      mode: "pilot_test",
+      ...(bookingRefund ? { bookingRefund } : {}),
+    });
   } catch (error) {
     console.error("Stripe webhook processing failed", error);
-    const { error: failureWriteError } = await admin
+    const failedAt = new Date().toISOString();
+    const { data: failedClaim, error: failureWriteError } = await admin
       .from("stripe_financial_events")
       .update({
         object_id: objectId,
@@ -175,10 +251,20 @@ export async function POST(request: Request) {
         processing_status: "failed",
         error_message: error instanceof Error ? error.message.slice(0, 500) : "Webhook processing failed",
         processed_at: null,
-        updated_at: new Date().toISOString()
+        updated_at: failedAt
       })
-      .eq("stripe_event_id", event.id);
+      .eq("stripe_event_id", event.id)
+      .eq("processing_status", "processing")
+      .eq("updated_at", claimUpdatedAt)
+      .select("id")
+      .maybeSingle();
     if (failureWriteError) console.error("Stripe webhook failure could not be recorded", failureWriteError);
+    if (!failureWriteError && !failedClaim) {
+      return NextResponse.json({
+        error: "Webhook claim ownership changed during processing.",
+        retry: true,
+      }, { status: 409 });
+    }
     return NextResponse.json({ error: "Webhook processing failed." }, { status: 500 });
   }
 }

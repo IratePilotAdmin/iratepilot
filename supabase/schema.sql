@@ -14,6 +14,7 @@ create table profiles (
   membership_renews_at timestamptz,
   stripe_customer_id text,
   stripe_subscription_id text,
+  membership_synced_at timestamptz,
   reward_points integer not null default 0 check (reward_points >= 0),
   created_at timestamptz not null default now()
 );
@@ -24,9 +25,14 @@ create table partner_applications (
   contact_name text not null,
   email text not null,
   property_type property_type not null,
-  status text not null default 'pending',
+  status text not null default 'pending'
+    constraint partner_applications_status_check check (status in ('pending','approved','declined')),
   created_at timestamptz not null default now()
 );
+
+create unique index one_pending_partner_application_per_email
+  on partner_applications (lower(trim(email)))
+  where status = 'pending';
 
 create table contact_messages (
   id uuid primary key default uuid_generate_v4(),
@@ -36,6 +42,27 @@ create table contact_messages (
   status text not null default 'new',
   created_at timestamptz not null default now()
 );
+
+create table email_outbox (
+  id uuid primary key default gen_random_uuid(),
+  recipient_email text not null,
+  subject text not null,
+  template_name text not null,
+  template_data jsonb not null default '{}'::jsonb,
+  status text not null default 'pending' check (status in ('pending','processing','sent','failed')),
+  attempts integer not null default 0 check (attempts >= 0),
+  last_error text,
+  resend_email_id text,
+  scheduled_at timestamptz not null default now(),
+  processed_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index email_outbox_processing_idx on email_outbox (status, scheduled_at);
+alter table email_outbox enable row level security;
+revoke all on email_outbox from anon, authenticated;
+grant all on email_outbox to service_role;
 
 create table partners (
   id uuid primary key default uuid_generate_v4(),
@@ -47,6 +74,7 @@ create table partners (
   subscription_renews_at timestamptz,
   stripe_customer_id text,
   stripe_subscription_id text,
+  subscription_synced_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -77,8 +105,8 @@ create table rooms (
   id uuid primary key default uuid_generate_v4(),
   property_id uuid not null references properties(id) on delete cascade,
   name text not null,
-  max_guests integer not null default 2,
-  base_rate numeric(12,2) not null,
+  max_guests integer not null default 2 constraint rooms_max_guests_bounds check (max_guests between 1 and 30),
+  base_rate numeric(12,2) not null constraint rooms_base_rate_bounds check (base_rate between 25 and 25000),
   active boolean not null default true
 );
 
@@ -86,8 +114,8 @@ create table inventory (
   id uuid primary key default uuid_generate_v4(),
   room_id uuid not null references rooms(id) on delete cascade,
   stay_date date not null,
-  available_units integer not null default 0,
-  rate numeric(12,2) not null,
+  available_units integer not null default 0 constraint inventory_available_units_bounds check (available_units between 0 and 500),
+  rate numeric(12,2) not null constraint inventory_rate_bounds check (rate between 25 and 25000),
   unique(room_id, stay_date)
 );
 
@@ -110,6 +138,14 @@ create table bookings (
   updated_at timestamptz not null default now(),
   created_at timestamptz not null default now()
 );
+
+create unique index one_open_booking_per_stay
+  on bookings (customer_id, room_id, check_in, check_out)
+  where status in ('pending', 'confirmed');
+
+create unique index bookings_stripe_payment_intent_id_key
+  on bookings (stripe_payment_intent_id)
+  where stripe_payment_intent_id is not null;
 
 create table booking_status_history (
   id uuid primary key default uuid_generate_v4(),
@@ -242,17 +278,48 @@ alter table revenue_recommendations enable row level security;
 alter table revenue_audit_log enable row level security;
 alter table revenue_daily_reports enable row level security;
 
-create policy "Public can view active properties" on properties for select using (active = true);
-create policy "Public can view active rooms" on rooms for select using (active = true);
-create policy "Public can view inventory" on inventory for select using (true);
-create policy "Users can view own profile" on profiles for select using (auth.uid() = id);
-create policy "Users can update own profile" on profiles for update using (auth.uid() = id);
-create policy "Customers can view own bookings" on bookings for select using (auth.uid() = customer_id);
-create policy "Customers can create own pending bookings" on bookings for insert with check (
-  auth.uid() = customer_id and status = 'pending' and stripe_payment_intent_id is null
+create or replace function public.is_approved_marketplace_property(p_property_id uuid)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select exists (
+    select 1 from public.properties
+    join public.partners on partners.id = properties.partner_id
+    where properties.id = p_property_id
+      and properties.active = true
+      and partners.status = 'approved'
+  );
+$$;
+
+create or replace function public.is_approved_marketplace_room(p_room_id uuid)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select exists (
+    select 1 from public.rooms
+    join public.properties on properties.id = rooms.property_id
+    join public.partners on partners.id = properties.partner_id
+    where rooms.id = p_room_id
+      and rooms.active = true
+      and properties.active = true
+      and partners.status = 'approved'
+  );
+$$;
+
+revoke all on function public.is_approved_marketplace_property(uuid) from public;
+revoke all on function public.is_approved_marketplace_room(uuid) from public;
+grant execute on function public.is_approved_marketplace_property(uuid) to anon, authenticated;
+grant execute on function public.is_approved_marketplace_room(uuid) to anon, authenticated;
+
+create policy "Public can view active properties" on properties for select using (
+  active = true and public.is_approved_marketplace_property(id)
 );
+create policy "Public can view active rooms" on rooms for select using (
+  active = true and public.is_approved_marketplace_property(property_id)
+);
+create policy "Public can view inventory" on inventory for select using (
+  public.is_approved_marketplace_room(room_id)
+);
+create policy "Users can view own profile" on profiles for select using (auth.uid() = id);
+create policy "Customers can view own bookings" on bookings for select using (auth.uid() = customer_id);
 create policy "Partners can view own property bookings" on bookings for select using (
-  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = bookings.property_id and partners.owner_id = auth.uid())
+  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = bookings.property_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Admins can manage bookings" on bookings for all using (
   exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin')
@@ -263,7 +330,7 @@ create policy "Customers can view own booking history" on booking_status_history
   exists (select 1 from bookings where bookings.id = booking_id and bookings.customer_id = auth.uid())
 );
 create policy "Partners can view own booking history" on booking_status_history for select using (
-  exists (select 1 from bookings join properties on properties.id = bookings.property_id join partners on partners.id = properties.partner_id where bookings.id = booking_id and partners.owner_id = auth.uid())
+  exists (select 1 from bookings join properties on properties.id = bookings.property_id join partners on partners.id = properties.partner_id where bookings.id = booking_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Users can view own notifications" on notifications for select using (user_id = auth.uid());
 create policy "Users can update own notifications" on notifications for update using (user_id = auth.uid()) with check (user_id = auth.uid());
@@ -274,10 +341,10 @@ create policy "Admins can manage reward ledger" on reward_ledger for all using (
   exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin')
 );
 create policy "Partners can view own booking financials" on booking_financials for select using (
-  exists (select 1 from partners where partners.id = partner_id and partners.owner_id = auth.uid())
+  exists (select 1 from partners where partners.id = partner_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Partners can view own payouts" on partner_payouts for select using (
-  exists (select 1 from partners where partners.id = partner_id and partners.owner_id = auth.uid())
+  exists (select 1 from partners where partners.id = partner_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Admins can manage booking financials" on booking_financials for all using (
   exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin')
@@ -290,25 +357,25 @@ create policy "Admins can manage partner payouts" on partner_payouts for all usi
   exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin')
 );
 create policy "Partners can manage own revenue inputs" on revenue_daily_inputs for all using (
-  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid())
+  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 ) with check (
-  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid())
+  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Partners can manage own revenue recommendations" on revenue_recommendations for all using (
-  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid())
+  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 ) with check (
-  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid())
+  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Partners can view own revenue audit" on revenue_audit_log for select using (
-  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid())
+  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Partners can create own revenue audit" on revenue_audit_log for insert with check (
-  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid())
+  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Partners can manage own revenue reports" on revenue_daily_reports for all using (
-  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid())
+  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 ) with check (
-  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid())
+  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = property_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Admins can manage revenue inputs" on revenue_daily_inputs for all using (
   exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin')
@@ -322,30 +389,27 @@ create policy "Admins can manage revenue audit" on revenue_audit_log for all usi
 create policy "Admins can manage revenue reports" on revenue_daily_reports for all using (
   exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin')
 ) with check (exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin'));
-create policy "Public can submit partner applications" on partner_applications for insert with check (true);
-create policy "Public can submit contact messages" on contact_messages for insert with check (true);
-create policy "Partners can create own partner record" on partners for insert with check (auth.uid() = owner_id);
-create policy "Partners can view own partner record" on partners for select using (auth.uid() = owner_id);
-create policy "Partners can create own properties" on properties for insert with check (
-  exists (select 1 from partners where partners.id = partner_id and partners.owner_id = auth.uid())
+create policy "Admins can view partner applications" on partner_applications for select using (
+  exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin')
 );
+create policy "Partners can view own partner record" on partners for select using (auth.uid() = owner_id);
 create policy "Partners can view own properties" on properties for select using (
   exists (select 1 from partners where partners.id = partner_id and partners.owner_id = auth.uid())
 );
 create policy "Partners can update own properties" on properties for update using (
-  exists (select 1 from partners where partners.id = partner_id and partners.owner_id = auth.uid())
+  exists (select 1 from partners where partners.id = partner_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 ) with check (
-  active = false and exists (select 1 from partners where partners.id = partner_id and partners.owner_id = auth.uid())
+  active = false and exists (select 1 from partners where partners.id = partner_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Partners can manage own rooms" on rooms for all using (
-  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = rooms.property_id and partners.owner_id = auth.uid())
+  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = rooms.property_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 ) with check (
-  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = rooms.property_id and partners.owner_id = auth.uid())
+  exists (select 1 from properties join partners on partners.id = properties.partner_id where properties.id = rooms.property_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Partners can manage own inventory" on inventory for all using (
-  exists (select 1 from rooms join properties on properties.id = rooms.property_id join partners on partners.id = properties.partner_id where rooms.id = inventory.room_id and partners.owner_id = auth.uid())
+  exists (select 1 from rooms join properties on properties.id = rooms.property_id join partners on partners.id = properties.partner_id where rooms.id = inventory.room_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 ) with check (
-  exists (select 1 from rooms join properties on properties.id = rooms.property_id join partners on partners.id = properties.partner_id where rooms.id = inventory.room_id and partners.owner_id = auth.uid())
+  inventory.stay_date >= current_date and exists (select 1 from rooms join properties on properties.id = rooms.property_id join partners on partners.id = properties.partner_id where rooms.id = inventory.room_id and partners.owner_id = auth.uid() and partners.status = 'approved')
 );
 create policy "Admins can manage rooms" on rooms for all using (
   exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin')
@@ -368,6 +432,98 @@ create policy "Admins can manage properties" on properties for all using (
   exists (select 1 from profiles where profiles.id = auth.uid() and profiles.role = 'admin')
 );
 
+create or replace function public.enforce_approved_partner_booking()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not exists (
+    select 1
+    from public.rooms
+    join public.properties on properties.id = rooms.property_id
+    join public.partners on partners.id = properties.partner_id
+    where rooms.id = new.room_id
+      and properties.id = new.property_id
+      and rooms.active = true
+      and properties.active = true
+      and partners.status = 'approved'
+  ) then
+    raise exception 'Bookings require an active room from an approved partner'
+      using errcode = '23514';
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.enforce_approved_partner_booking() from public;
+
+create trigger enforce_approved_partner_booking
+before insert or update of property_id, room_id on public.bookings
+for each row execute function public.enforce_approved_partner_booking();
+
+create or replace function public.enforce_partner_before_property_activation()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.active = true and not exists (
+    select 1
+    from public.partners
+    where partners.id = new.partner_id
+      and partners.status = 'approved'
+  ) then
+    raise exception 'Approve the partner account before activating the property'
+      using errcode = '23514';
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.enforce_partner_before_property_activation() from public;
+
+create trigger enforce_partner_before_property_activation
+before insert or update of active, partner_id on public.properties
+for each row execute function public.enforce_partner_before_property_activation();
+
+create or replace function public.claim_transactional_email_job()
+returns setof public.email_outbox
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_job_id uuid;
+begin
+  select id into v_job_id
+  from public.email_outbox
+  where scheduled_at <= now()
+    and attempts < 3
+    and (
+      status in ('pending', 'failed')
+      or (status = 'processing' and updated_at < now() - interval '15 minutes')
+    )
+  order by scheduled_at, created_at
+  for update skip locked
+  limit 1;
+
+  if v_job_id is null then return; end if;
+
+  return query
+  update public.email_outbox
+  set status = 'processing', attempts = attempts + 1,
+      last_error = null, updated_at = now()
+  where id = v_job_id
+  returning *;
+end;
+$$;
+
+revoke all on function public.claim_transactional_email_job() from public;
+grant execute on function public.claim_transactional_email_job() to service_role;
+
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -384,6 +540,41 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+create or replace function public.update_own_profile(
+  p_full_name text,
+  p_phone text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_profile public.profiles;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required' using errcode = '42501';
+  end if;
+  if p_full_name is null or char_length(trim(p_full_name)) not between 2 and 120 then
+    raise exception 'Invalid full name' using errcode = '22023';
+  end if;
+  if p_phone is not null and char_length(trim(p_phone)) > 30 then
+    raise exception 'Invalid phone number' using errcode = '22023';
+  end if;
+
+  update public.profiles
+  set full_name = trim(p_full_name),
+      phone = nullif(trim(p_phone), '')
+  where id = auth.uid()
+  returning * into v_profile;
+  if not found then
+    raise exception 'Profile not found' using errcode = 'P0002';
+  end if;
+
+  return jsonb_build_object('full_name', v_profile.full_name, 'phone', v_profile.phone);
+end;
+$$;
 
 create or replace function public.review_partner_application(
   p_application_id uuid,
@@ -475,7 +666,7 @@ begin
     select 1 from profiles where id = auth.uid() and role = 'admin'
     union all
     select 1 from properties p join partners pa on pa.id = p.partner_id
-      where p.id = v_recommendation.property_id and pa.owner_id = auth.uid()
+      where p.id = v_recommendation.property_id and pa.owner_id = auth.uid() and pa.status = 'approved'
   ) into v_authorized;
   if not v_authorized then raise exception 'Not authorized'; end if;
   if v_recommendation.status <> 'pending' then raise exception 'Recommendation already reviewed'; end if;
@@ -519,12 +710,25 @@ begin
     select 1 from profiles where id = auth.uid() and role = 'admin'
     union all
     select 1 from properties p join partners pa on pa.id = p.partner_id
-      where p.id = v_booking.property_id and pa.owner_id = auth.uid()
+      where p.id = v_booking.property_id and pa.owner_id = auth.uid() and pa.status = 'approved'
   ) into v_authorized;
   if not v_authorized then raise exception 'Not authorized'; end if;
   if v_booking.status <> 'pending' then raise exception 'Only pending requests can be reviewed'; end if;
 
   if p_decision = 'approve' then
+    if v_booking.check_in <= current_date then
+      update bookings
+        set status = 'cancelled',
+            cancellation_reason = 'Booking request expired before partner approval',
+            updated_at = now()
+        where id = p_booking_id
+        returning * into v_booking;
+      insert into notifications (user_id, title, body) values (
+        v_booking.customer_id, 'Booking request expired',
+        'Your iRatePilot request ' || v_booking.confirmation_code || ' expired because check-in began before the property approved it. No payment was collected.'
+      );
+      return v_booking;
+    end if;
     v_expected := v_booking.check_out - v_booking.check_in;
     perform 1 from inventory
       where room_id = v_booking.room_id
@@ -540,7 +744,8 @@ begin
         and stay_date >= v_booking.check_in and stay_date < v_booking.check_out;
     update bookings set status = 'confirmed', cancellation_reason = null, updated_at = now()
       where id = p_booking_id returning * into v_booking;
-    select membership_tier into v_tier from profiles where id = v_booking.customer_id;
+    select case when membership_status = 'active' then membership_tier else 'none' end
+      into v_tier from profiles where id = v_booking.customer_id;
     v_points := case when v_tier = 'business' then floor(v_booking.subtotal)::integer * 2
                      when v_tier = 'basic' then floor(v_booking.subtotal)::integer
                      else 0 end;
@@ -604,3 +809,5 @@ revoke all on function public.review_booking(uuid, text, text) from public;
 grant execute on function public.review_booking(uuid, text, text) to authenticated;
 revoke all on function public.cancel_pending_booking(uuid, text) from public;
 grant execute on function public.cancel_pending_booking(uuid, text) to authenticated;
+revoke all on function public.update_own_profile(text, text) from public;
+grant execute on function public.update_own_profile(text, text) to authenticated;

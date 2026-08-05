@@ -10,9 +10,12 @@ export async function POST(request: Request) {
     if (!isStripeTestMode()) return NextResponse.json({ error: "Connect is limited to Stripe test mode." }, { status: 403 });
     const admin = createAdminClient();
     const { data: partner, error } = await admin.from("partners")
-      .select("id,business_name,stripe_connect_account_id")
+      .select("id,business_name,status,stripe_connect_account_id")
       .eq("owner_id", auth.user.id).maybeSingle();
     if (error) throw error;
+    if (auth.profile.role !== "admin" && (!partner || partner.status !== "approved")) {
+      return NextResponse.json({ error: "An approved partner account is required to start Stripe onboarding." }, { status: 403 });
+    }
     if (!partner) return NextResponse.json({ error: "Create a partner account first." }, { status: 409 });
 
     const stripe = getStripe();

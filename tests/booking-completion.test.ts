@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type Stripe from "stripe";
-import { isCompletableBookingIntent } from "../lib/bookings/complete-paid-test-booking";
+import {
+  getBookingFinalizationRefundKey,
+  isCompletableBookingIntent,
+  PaidBookingFinalizationError,
+} from "../lib/bookings/complete-paid-test-booking";
 
 function paymentIntent(overrides: Partial<Stripe.PaymentIntent> = {}) {
   return {
@@ -32,5 +36,12 @@ describe("paid test booking completion", () => {
     expect(isCompletableBookingIntent(paymentIntent({ amount_received: 0 }))).toBe(false);
     expect(isCompletableBookingIntent(paymentIntent(), "another-user")).toBe(false);
     expect(isCompletableBookingIntent(paymentIntent({ metadata: { mode: "booking_test" } }))).toBe(false);
+  });
+
+  it("uses a stable refund key for a paid intent that cannot become a booking", () => {
+    expect(getBookingFinalizationRefundKey("pi_test_booking"))
+      .toBe("booking-finalization-refund-pi_test_booking");
+    expect(new PaidBookingFinalizationError("Inventory is no longer available"))
+      .toBeInstanceOf(PaidBookingFinalizationError);
   });
 });

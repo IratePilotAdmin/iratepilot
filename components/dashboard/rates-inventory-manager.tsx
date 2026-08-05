@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { getTodayIsoDate, summarizeSellableInventory } from "@/lib/inventory-dates";
 
 type Property = { id: string; name: string; active: boolean };
 type Inventory = { stay_date: string; available_units: number; rate: number };
@@ -11,7 +12,12 @@ export function RatesInventoryManager() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [selectedRoomId, setSelectedRoomId] = useState("");
+  const [inventoryRoomId, setInventoryRoomId] = useState("");
+  const today = useMemo(() => getTodayIsoDate(), []);
   const propertyNames = useMemo(() => new Map(properties.map((property) => [property.id, property.name])), [properties]);
+  const selectedRoom = useMemo(() => rooms.find((room) => room.id === selectedRoomId), [rooms, selectedRoomId]);
+  const inventoryRoom = useMemo(() => rooms.find((room) => room.id === inventoryRoomId), [rooms, inventoryRoomId]);
 
   const load = useCallback(async () => {
     const response = await fetch("/api/partner/rates");
@@ -25,7 +31,7 @@ export function RatesInventoryManager() {
     void load();
   }, [load]);
 
-  async function send(event: FormEvent<HTMLFormElement>, action: "create_room" | "set_inventory") {
+  async function send(event: FormEvent<HTMLFormElement>, action: "create_room" | "update_room" | "set_inventory") {
     event.preventDefault();
     const form = event.currentTarget;
     setBusy(true);
@@ -41,6 +47,11 @@ export function RatesInventoryManager() {
       setMessage(response.ok ? body.message : body.error);
       if (response.ok) {
         form.reset();
+        if (action === "create_room") {
+          setInventoryRoomId(body.data.id);
+          setMessage(`${body.message} Add future inventory for this room next.`);
+        }
+        if (action === "update_room") setSelectedRoomId("");
         await load();
       }
     } catch {
@@ -56,12 +67,13 @@ export function RatesInventoryManager() {
       <div className="divide-y">
         {!rooms.length && <p className="p-6 text-sm text-slate-500">Add a property, then create its first room type.</p>}
         {rooms.map((room) => {
-          const next = room.inventory?.slice().sort((a, b) => a.stay_date.localeCompare(b.stay_date))[0];
-          return <article key={room.id} className="grid gap-3 p-6 sm:grid-cols-[1fr_auto] sm:items-center"><div><strong>{room.name}</strong><p className="mt-1 text-sm text-slate-500">{propertyNames.get(room.property_id)} · Up to {room.max_guests} guests</p></div><div className="sm:text-right"><strong>${Number(next?.rate || room.base_rate).toFixed(2)}</strong><p className="text-xs text-slate-500">{next ? `${next.available_units} units on ${next.stay_date}` : "Base rate · no dated inventory"}</p></div></article>;
+          const coverage = summarizeSellableInventory(room.inventory, today);
+          const rateLabel = coverage.minRate === null ? `$${Number(room.base_rate).toFixed(2)} base rate` : coverage.minRate === coverage.maxRate ? `$${coverage.minRate.toFixed(2)}` : `$${coverage.minRate.toFixed(2)}–$${coverage.maxRate!.toFixed(2)}`;
+          return <article key={room.id} className="grid gap-3 p-6 sm:grid-cols-[1fr_auto] sm:items-center"><div><strong>{room.name}</strong><p className="mt-1 text-sm text-slate-500">{propertyNames.get(room.property_id)} · Up to {room.max_guests} guests · {room.active ? "Active" : "Retired"}</p></div><div className="sm:text-right"><strong>{rateLabel}</strong><p className="text-xs text-slate-500">{coverage.sellableDates ? `${coverage.sellableDates} sellable nights · ${coverage.startDate} to ${coverage.endDate}` : "No sellable future inventory"}</p></div></article>;
         })}
       </div>
     </section>
-    <div className="grid gap-8 lg:grid-cols-2">
+    <div className="grid gap-8 xl:grid-cols-3">
       <form onSubmit={(event) => send(event, "create_room")} className="card grid gap-4 p-6">
         <div><h2 className="text-xl font-semibold">Add room type</h2><p className="mt-1 text-sm text-slate-500">Create a room or vacation-home unit.</p></div>
         <label className="text-sm font-medium">Property<select name="propertyId" className="input mt-2" required><option value="">Select property</option>{properties.map((property) => <option key={property.id} value={property.id}>{property.name}</option>)}</select></label>
@@ -69,12 +81,20 @@ export function RatesInventoryManager() {
         <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Maximum guests<input name="maxGuests" type="number" min="1" max="30" className="input mt-2" required /></label><label className="text-sm font-medium">Base nightly rate<input name="baseRate" type="number" min="25" step="0.01" className="input mt-2" required /></label></div>
         <button disabled={busy || !properties.length} className="btn-primary">Create room type</button>
       </form>
+      <form onSubmit={(event) => send(event, "update_room")} className="card grid gap-4 p-6">
+        <div><h2 className="text-xl font-semibold">Edit room type</h2><p className="mt-1 text-sm text-slate-500">Correct details or retire a room from new bookings.</p></div>
+        <label className="text-sm font-medium">Room type<select name="roomId" value={selectedRoomId} onChange={(event) => setSelectedRoomId(event.target.value)} className="input mt-2" required><option value="">Select room</option>{rooms.map((room) => <option key={room.id} value={room.id}>{propertyNames.get(room.property_id)} — {room.name}</option>)}</select></label>
+        <label className="text-sm font-medium">Room name<input key={`${selectedRoomId}-name`} name="name" defaultValue={selectedRoom?.name || ""} className="input mt-2" required disabled={!selectedRoom} /></label>
+        <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Maximum guests<input key={`${selectedRoomId}-guests`} name="maxGuests" type="number" min="1" max="30" defaultValue={selectedRoom?.max_guests} className="input mt-2" required disabled={!selectedRoom} /></label><label className="text-sm font-medium">Base nightly rate<input key={`${selectedRoomId}-rate`} name="baseRate" type="number" min="25" step="0.01" defaultValue={selectedRoom?.base_rate} className="input mt-2" required disabled={!selectedRoom} /></label></div>
+        <label className="text-sm font-medium">Booking status<select key={`${selectedRoomId}-active`} name="active" defaultValue={selectedRoom?.active === false ? "false" : "true"} className="input mt-2" disabled={!selectedRoom}><option value="true">Active for new bookings</option><option value="false">Retired from new bookings</option></select></label>
+        <button disabled={busy || !selectedRoom} className="btn-primary">Save room type</button>
+      </form>
       <form onSubmit={(event) => send(event, "set_inventory")} className="card grid gap-4 p-6">
         <div><h2 className="text-xl font-semibold">Set dated inventory</h2><p className="mt-1 text-sm text-slate-500">Update up to 366 consecutive dates.</p></div>
-        <label className="text-sm font-medium">Room type<select name="roomId" className="input mt-2" required><option value="">Select room</option>{rooms.map((room) => <option key={room.id} value={room.id}>{propertyNames.get(room.property_id)} — {room.name}</option>)}</select></label>
-        <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Start date<input name="startDate" type="date" className="input mt-2" required /></label><label className="text-sm font-medium">End date<input name="endDate" type="date" className="input mt-2" required /></label></div>
-        <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Available units<input name="availableUnits" type="number" min="0" max="500" className="input mt-2" required /></label><label className="text-sm font-medium">Nightly rate<input name="rate" type="number" min="25" step="0.01" className="input mt-2" required /></label></div>
-        <button disabled={busy || !rooms.length} className="btn-primary">Update inventory</button>
+        <label className="text-sm font-medium">Room type<select name="roomId" value={inventoryRoomId} onChange={(event) => setInventoryRoomId(event.target.value)} className="input mt-2" required><option value="">Select room</option>{rooms.map((room) => <option key={room.id} value={room.id}>{propertyNames.get(room.property_id)} — {room.name}</option>)}</select></label>
+        <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Start date<input name="startDate" type="date" min={today} className="input mt-2" required disabled={!inventoryRoom} /></label><label className="text-sm font-medium">End date<input name="endDate" type="date" min={today} className="input mt-2" required disabled={!inventoryRoom} /></label></div>
+        <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Available units<input name="availableUnits" type="number" min="0" max="500" className="input mt-2" required disabled={!inventoryRoom} /></label><label className="text-sm font-medium">Nightly rate<input key={`${inventoryRoomId}-inventory-rate`} name="rate" type="number" min="25" step="0.01" defaultValue={inventoryRoom?.base_rate} className="input mt-2" required disabled={!inventoryRoom} /></label></div>
+        <button disabled={busy || !inventoryRoom} className="btn-primary">Update inventory</button>
       </form>
     </div>
     {message && <p role="status" className="card p-4 text-sm">{message}</p>}
