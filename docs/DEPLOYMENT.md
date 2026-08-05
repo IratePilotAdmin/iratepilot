@@ -46,4 +46,13 @@ The following keys from `.env.example` are missing from the Vercel project:
 - `STRIPE_BASIC_PRICE_ID` — required before offering the Basic traveler membership.
 - `OPENAI_API_KEY` — required before enabling the AI travel planner.
 
-`NEXT_PUBLIC_SUPABASE_ANON_KEY` is not required because `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is configured. The presence and scope audit does not verify the actual values of `PILOT_MODE`, `NEXT_PUBLIC_PUBLIC_BOOKING`, `NEXT_PUBLIC_ENABLE_TEST_CHECKOUT`, or `ENABLE_TEST_CHECKOUT`; confirm their release-gate values separately before production promotion.
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` is not required because `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is configured.
+
+The non-secret release-gate values were verified separately:
+
+- `PILOT_MODE=true` — correct for the private pilot.
+- `NEXT_PUBLIC_PUBLIC_BOOKING=false` — public booking remains disabled.
+- `NEXT_PUBLIC_ENABLE_TEST_CHECKOUT=true` — **release blocker; set the Production value to `false`.**
+- `ENABLE_TEST_CHECKOUT=true` — **release blocker; set the Production value to `false`.**
+
+After changing either test-checkout variable, redeploy the release candidate and verify that both browser and server test-payment paths reject test checkout before promoting to production.
