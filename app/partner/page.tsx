@@ -3,6 +3,7 @@ import { ArrowRight, BarChart3, Building2, Check, Headphones, Sparkles } from "l
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { PartnerApplicationForm } from "@/components/forms/partner-application-form";
+import { RevenueAiMarketing } from "@/components/partner/revenue-ai-marketing";
 import { partnerEnterprisePlan, partnerPlans, type PartnerPlan } from "@/config/partner-plans";
 
 export default function PartnerPage() {
@@ -66,6 +67,8 @@ export default function PartnerPage() {
             Subscriptions cover iRatePilot Management software. The 10% marketplace commission applies only to completed bookings generated through iRatePilot Travel. Taxes and payment-processing terms may also apply.
           </p>
         </section>
+
+        <RevenueAiMarketing />
 
         <section className="border-y border-neutral-200 bg-[#f7f6f3]">
           <div className="container-page grid gap-8 py-20 md:grid-cols-3">
