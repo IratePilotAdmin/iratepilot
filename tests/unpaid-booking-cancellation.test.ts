@@ -25,10 +25,27 @@ describe("unpaid confirmed booking cancellation", () => {
   });
 
   it("refuses paid bookings and enforces customer or privileged ownership", () => {
+    expect(migration).toContain("auth.uid() is null and auth.role() <> 'service_role'");
+    expect(migration).toContain("Authentication required");
     expect(migration).toContain("stripe_payment_intent_id is not null");
     expect(migration).toContain("Paid bookings require the refund workflow");
     expect(migration).toContain("v_booking.customer_id <> auth.uid()");
     expect(migration).toContain("auth.role() <> 'service_role'");
+  });
+
+  it("does not expose cancellation execution to anonymous callers", () => {
+    expect(migration).toContain(
+      "revoke all on function public.cancel_unpaid_confirmed_booking(uuid, text) from anon",
+    );
+    expect(migration).toContain(
+      "grant execute on function public.cancel_unpaid_confirmed_booking(uuid, text) to authenticated",
+    );
+    expect(migration).toContain(
+      "grant execute on function public.cancel_unpaid_confirmed_booking(uuid, text) to service_role",
+    );
+    expect(migration).not.toContain(
+      "grant execute on function public.cancel_unpaid_confirmed_booking(uuid, text) to anon",
+    );
   });
 
   it("lets admins resolve legacy unpaid refund requests without Stripe", () => {
