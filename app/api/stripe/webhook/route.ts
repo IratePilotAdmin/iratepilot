@@ -8,6 +8,11 @@ import {
   PaidBookingFinalizationError,
   refundUnfinalizedTestBooking,
 } from "@/lib/bookings/complete-paid-test-booking";
+import {
+  ApprovedBookingPaymentFinalizationError,
+  completeApprovedBookingTestPayment,
+  isApprovedBookingTestIntent,
+} from "@/lib/bookings/complete-approved-booking-test-payment";
 import { getSubscriptionAccessStatus, getSubscriptionRenewsAt } from "@/lib/stripe/subscription-lifecycle";
 import { isRetryableStripeWebhookClaim } from "@/lib/stripe/webhook-retry";
 import { getVerifiedPartnerSubscriptionPlan } from "@/lib/stripe/partner-subscription-pricing";
@@ -184,6 +189,16 @@ export async function POST(request: Request) {
           financialId = completion.financialId;
         } catch (error) {
           if (!(error instanceof PaidBookingFinalizationError)) throw error;
+          const refund = await refundUnfinalizedTestBooking(intent.id);
+          bookingRefund = { id: refund.id, status: refund.status };
+        }
+      }
+      if (intent.metadata?.mode === "approved_booking_test") {
+        if (!isApprovedBookingTestIntent(intent)) throw new Error("Approved-booking test payment metadata is incomplete.");
+        try {
+          await completeApprovedBookingTestPayment(intent);
+        } catch (error) {
+          if (!(error instanceof ApprovedBookingPaymentFinalizationError)) throw error;
           const refund = await refundUnfinalizedTestBooking(intent.id);
           bookingRefund = { id: refund.id, status: refund.status };
         }

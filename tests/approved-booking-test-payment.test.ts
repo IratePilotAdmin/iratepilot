@@ -5,6 +5,7 @@ const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.ur
 const intentRoute = read("app/api/bookings/[id]/payment-intent/route.ts");
 const completionRoute = read("app/api/bookings/[id]/complete-payment/route.ts");
 const finalizer = read("lib/bookings/complete-approved-booking-test-payment.ts");
+const webhook = read("app/api/stripe/webhook/route.ts");
 const migration = read("supabase/migrations/202608020026_approved_booking_test_payments.sql");
 const trips = read("components/bookings/customer-trips.tsx");
 const historyRoute = read("app/api/account/payments/route.ts");
@@ -25,6 +26,14 @@ describe("approved reservation test payments", () => {
     expect(finalizer).toContain('intent.status === "succeeded"');
     expect(finalizer).toContain('intent.metadata.mode === "approved_booking_test"');
     expect(finalizer).toContain("p_amount_total_cents: intent.amount_received");
+  });
+
+  it("finalizes succeeded approved-booking payments from the Stripe webhook and refunds failures", () => {
+    expect(webhook).toContain('intent.metadata?.mode === "approved_booking_test"');
+    expect(webhook).toContain("isApprovedBookingTestIntent(intent)");
+    expect(webhook).toContain("await completeApprovedBookingTestPayment(intent)");
+    expect(webhook).toContain("error instanceof ApprovedBookingPaymentFinalizationError");
+    expect(webhook).toContain("refundUnfinalizedTestBooking(intent.id)");
   });
 
   it("atomically prevents duplicate or mismatched payments without changing inventory", () => {
