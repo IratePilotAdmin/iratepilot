@@ -6,7 +6,7 @@ const route = readFileSync(
   "utf8",
 );
 const migration = readFileSync(
-  new URL("../supabase/migrations/202608020013_reconcile_refunded_booking_finance.sql", import.meta.url),
+  new URL("../supabase/migrations/202608050027_cancel_uncreated_refunded_transfers.sql", import.meta.url),
   "utf8",
 );
 
@@ -31,5 +31,13 @@ describe("refunded booking finance reconciliation", () => {
   it("voids finance after its paid transfer has been reversed", () => {
     expect(migration).toContain("set status = 'void'");
     expect(migration).toContain("status <> 'paid' or stripe_transfer_status = 'reversed'");
+  });
+
+  it("cancels an uncreated transfer when its booking is refunded", () => {
+    expect(migration).toContain("'not_started','pending','paid','reversed','failed','cancelled'");
+    expect(migration).toContain("financial.stripe_transfer_id is null");
+    expect(migration).toContain("stripe_transfer_status = 'cancelled'");
+    expect(migration).toContain("then 'cancelled'");
+    expect(migration).toContain("stripe_transfer_error = case");
   });
 });
