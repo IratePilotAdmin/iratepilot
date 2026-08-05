@@ -834,7 +834,8 @@ begin
 end;
 $$;
 
-revoke all on function public.complete_approved_booking_test_payment(uuid, uuid, text, integer) from public;
+revoke all on function public.complete_approved_booking_test_payment(uuid, uuid, text, integer)
+  from public, anon, authenticated;
 grant execute on function public.complete_approved_booking_test_payment(uuid, uuid, text, integer) to service_role;
 
 revoke all on function public.review_revenue_recommendation(uuid, text) from public;

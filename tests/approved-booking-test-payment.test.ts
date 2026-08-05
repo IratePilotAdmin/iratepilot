@@ -46,6 +46,7 @@ describe("approved reservation test payments", () => {
     expect(migration).toContain("set status = 'eligible'");
     expect(migration).toContain("grant execute on function public.complete_approved_booking_test_payment");
     expect(migration).toContain("to service_role");
+    expect(migration).toContain("from public, anon, authenticated");
   });
 
   it("exposes a payment action and keeps payment history owner-scoped for every signed-in role", () => {
