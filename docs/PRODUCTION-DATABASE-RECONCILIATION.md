@@ -27,3 +27,12 @@ This indicates that the production schema was applied outside the Supabase CLI a
 8. Run customer, partner, and administrator end-to-end tests before merging release PR #137.
 
 Database repair or migration execution must not proceed from an autosaved SQL editor buffer containing unrelated statements. Use a clean CLI session or a newly verified empty editor, and inspect the exact SQL immediately before execution.
+
+## Rollback preparation
+
+- Migration 024 rollback: `supabase/rollbacks/202608020024_booking_messages.rollback.sql`
+- Migration 025 rollback: `supabase/rollbacks/202608020025_cancel_unpaid_confirmed_bookings.rollback.sql`
+
+The migration 024 rollback refuses to drop `booking_messages` once it contains any rows. After the feature accepts production messages, recovery must use a verified database backup or a forward fix instead of deleting the table. Migration 025 adds only a new function, so its rollback removes only that function.
+
+Keep the rollback for each migration ready in a separate, clean session. Do not run a rollback unless the corresponding migration verification fails and the rollback target has been inspected immediately beforehand.
