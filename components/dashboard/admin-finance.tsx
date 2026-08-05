@@ -68,7 +68,7 @@ export function AdminFinance() {
 
   const attention = useMemo(() => rows.filter(row => row.stripe_transfer_status === "failed"), [rows]);
   return <div className="mt-8 grid gap-8">
-    <p className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">Stripe test-mode reconciliation. Transfer and reversal references are retained for audit review.</p>
+    <p className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">Stripe test-mode reconciliation. Transfer and reversal references are retained for audit review. “Cancelled” means a refunded booking never created a partner transfer.</p>
     {attention.length > 0 && <p className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950"><strong>{attention.length} transfer{attention.length === 1 ? "" : "s"} need attention.</strong> Review the error and retry only after the partner payout account is ready.</p>}
     <section className="grid gap-4 md:grid-cols-3">{[["Gross booking value", summary.gross], ["Marketplace revenue (10%)", summary.commission], ["Partner liability", summary.partnerNet]].map(([label, value]) => <article className="card p-6" key={String(label)}><span className="text-sm text-slate-500">{label}</span><strong className="mt-2 block text-3xl">{money(Number(value))}</strong></article>)}</section>
     <section className="grid gap-4 md:grid-cols-3">{[["Transfers paid", summary.paidTransfers], ["Transfers reversed", summary.reversedTransfers], ["Transfers failed", summary.failedTransfers]].map(([label, value]) => <article className="card p-5" key={String(label)}><span className="text-sm text-slate-500">{label}</span><strong className="mt-1 block text-2xl">{value}</strong></article>)}</section>
