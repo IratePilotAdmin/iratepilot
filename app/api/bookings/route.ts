@@ -13,10 +13,13 @@ export async function GET() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
     const { data, error } = await supabase.from("bookings")
-      .select("id,confirmation_code,check_in,check_out,guests,subtotal,fees,total,status,cancellation_reason,created_at,properties(name,city,country),rooms(name),booking_status_history(status,note,created_at),booking_cancellation_requests(id,status,reason,refund_amount,stripe_refund_id)")
+      .select("id,confirmation_code,check_in,check_out,guests,subtotal,fees,total,status,cancellation_reason,created_at,stripe_payment_intent_id,properties(name,city,country),rooms(name),booking_status_history(status,note,created_at),booking_cancellation_requests(id,status,reason,refund_amount,stripe_refund_id)")
       .eq("customer_id", user.id).order("created_at", { ascending: false });
     if (error) throw error;
-    return NextResponse.json({ data });
+    return NextResponse.json({ data: (data || []).map(({ stripe_payment_intent_id, ...booking }) => ({
+      ...booking,
+      payment_collected: Boolean(stripe_payment_intent_id),
+    })) });
   } catch {
     return NextResponse.json({ error: "Trips are not configured." }, { status: 503 });
   }

@@ -6,6 +6,8 @@ const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.ur
 const serverCheckoutRoutes = [
   "app/api/stripe/checkout/route.ts",
   "app/api/bookings/complete-payment/route.ts",
+  "app/api/bookings/[id]/payment-intent/route.ts",
+  "app/api/bookings/[id]/complete-payment/route.ts",
   "app/api/memberships/checkout/route.ts",
   "app/api/memberships/portal/route.ts",
   "app/api/partner/subscription/checkout/route.ts",
@@ -19,6 +21,12 @@ describe("production test-checkout gates", () => {
 
   it("keeps the checkout page disabled unless the server flag is explicitly true", () => {
     expect(read("app/checkout/page.tsx")).toContain(
+      'const enabled = process.env.ENABLE_TEST_CHECKOUT === "true"',
+    );
+  });
+
+  it("keeps approved-reservation payment pages disabled unless the server flag is explicitly true", () => {
+    expect(read("app/account/trips/[id]/pay/page.tsx")).toContain(
       'const enabled = process.env.ENABLE_TEST_CHECKOUT === "true"',
     );
   });

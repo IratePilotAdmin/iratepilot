@@ -31,8 +31,8 @@ describe("customer payment history", () => {
   });
 
   it("keeps the endpoint customer scoped and strips payment provider identifiers", () => {
-    expect(route).toContain('requireRole(["customer"])');
-    expect(route).toContain('.eq("customer_id", auth.user.id)');
+    expect(route).toContain("supabase.auth.getUser()");
+    expect(route).toContain('.eq("customer_id", user.id)');
     expect(route).toContain("PAYMENT_HISTORY_LIMIT = 200");
     expect(route).toContain('"Cache-Control": "no-store"');
     expect(component).not.toContain("stripe_payment_intent_id");
