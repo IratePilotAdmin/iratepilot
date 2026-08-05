@@ -33,3 +33,17 @@ Audit date: 2026-08-05
 - The current production deployment returns `404` for `/mobile` because that route is part of the unmerged release; this is expected to resolve only after the approved release is promoted.
 
 Do not manually alias the preview deployment to the production domains. Complete the production database reconciliation, verify the required production environment-variable names and scopes without exposing their values, merge PR #137, and then confirm that Vercel promotes the resulting `main` deployment.
+
+## Verified environment-variable inventory
+
+Audit date: 2026-08-05
+
+The Vercel project has the core Supabase, Stripe, Resend, cron, pilot-mode, and booking-control variable names configured for Production. Secret values were not opened or copied during this audit.
+
+The following keys from `.env.example` are missing from the Vercel project:
+
+- `NEXT_PUBLIC_APP_URL` — set the production value to the canonical public origin, `https://www.iratepilot.com`.
+- `STRIPE_BASIC_PRICE_ID` — required before offering the Basic traveler membership.
+- `OPENAI_API_KEY` — required before enabling the AI travel planner.
+
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` is not required because `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is configured. The presence and scope audit does not verify the actual values of `PILOT_MODE`, `NEXT_PUBLIC_PUBLIC_BOOKING`, `NEXT_PUBLIC_ENABLE_TEST_CHECKOUT`, or `ENABLE_TEST_CHECKOUT`; confirm their release-gate values separately before production promotion.
