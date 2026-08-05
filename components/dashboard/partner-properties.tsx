@@ -1,11 +1,15 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import { toPropertySlug } from "@/lib/property-slug";
 
 type Property = { id: string; name: string; slug: string; type: string; star_rating: number; description?: string | null; city: string; country: string; active: boolean; image_url?: string | null; amenities?: string[]; readiness: { ready: boolean; missing: string[] } };
 
 export function PartnerProperties() {
   const [properties, setProperties] = useState<Property[]>([]);
+  const [propertyName, setPropertyName] = useState("");
+  const [propertySlug, setPropertySlug] = useState("");
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -76,6 +80,9 @@ export function PartnerProperties() {
       const body = await response.json();
       setMessage(response.ok ? body.message : body.error);
       if (response.ok) {
+        setPropertyName("");
+        setPropertySlug("");
+        setSlugManuallyEdited(false);
         formElement.reset();
         await load();
       }
@@ -98,8 +105,8 @@ export function PartnerProperties() {
       <div className="grid h-fit gap-8">
       <form onSubmit={submit} className="card grid gap-4 p-6">
         <div><h2 className="text-xl font-semibold">Add a property</h2><p className="mt-1 text-sm text-slate-500">Create a complete listing draft for an eligible 4- or 5-star property.</p></div>
-        <label className="text-sm font-medium">Property name<input name="name" className="input mt-2" required minLength={3} /></label>
-        <label className="text-sm font-medium">Property URL slug<input name="slug" className="input mt-2" placeholder="example-grand-hotel" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required /></label>
+        <label className="text-sm font-medium">Property name<input name="name" className="input mt-2" value={propertyName} onChange={(event) => { const name = event.target.value; setPropertyName(name); if (!slugManuallyEdited) setPropertySlug(toPropertySlug(name)); }} required minLength={3} /></label>
+        <label className="text-sm font-medium">Property URL slug<input name="slug" className="input mt-2" value={propertySlug} onChange={(event) => { setPropertySlug(event.target.value.toLowerCase()); setSlugManuallyEdited(true); }} placeholder="example-grand-hotel" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required /><small className="mt-1 block text-slate-500">Generated from the property name. Edit only if you need a different public URL.</small></label>
         <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Type<select name="type" className="input mt-2"><option value="hotel">Hotel</option><option value="resort">Resort</option><option value="vacation_home">Vacation home</option></select></label><label className="text-sm font-medium">Rating<select name="starRating" className="input mt-2"><option value="4">4 star</option><option value="5">5 star</option></select></label></div>
         <label className="text-sm font-medium">Detailed description<textarea name="description" className="input mt-2 min-h-32" minLength={120} maxLength={4000} placeholder="Describe the location, rooms, atmosphere, and distinctive guest experience." required /></label>
         <label className="text-sm font-medium">Primary photo URL<input name="imageUrl" type="url" className="input mt-2" placeholder="https://..." pattern="https://.*" required /><small className="mt-1 block text-slate-500">Use a public HTTPS image from your hotel or media host.</small></label>
