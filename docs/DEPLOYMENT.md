@@ -20,3 +20,16 @@ Generate a high-entropy `CRON_SECRET` in Vercel for the transactional email work
 Apply migration `202608020021_enforce_future_partner_inventory.sql` before enabling partner rate and inventory management in production. It prevents approved partners from creating or changing inventory for dates that have already passed.
 
 The repository uses a Hobby-compatible daily schedule at 08:00 UTC. During the private pilot, urgent queues can be drained by sending an authenticated `POST /api/email/process` for each job. Upgrade the Vercel plan before increasing the automated cadence.
+
+## Verified deployment baseline
+
+Audit date: 2026-08-05
+
+- `iratepilot.com` permanently redirects to `www.iratepilot.com`.
+- The public domains currently serve production deployment `dpl_6FVBKbz2yS76gRuvj9fcY3ByFSgy` from `main` commit `5a90b82931795a13d545c77201590905cf487649`.
+- Release PR #137 currently targets preview deployment `dpl_9rLKQ8gJ6yXTWydAr9sersVhRPb9` from commit `3f0bb9ffc0edf9e34ba7378b4b54b6e23ed7ac30`.
+- GitHub CI, Dependency Review, CodeQL, and the Vercel preview succeeded for that release commit.
+- Preview smoke tests passed for `/`, `/partner`, `/admin` (expected sign-in redirect), and `/mobile`, with no browser-console or Vercel runtime errors.
+- The current production deployment returns `404` for `/mobile` because that route is part of the unmerged release; this is expected to resolve only after the approved release is promoted.
+
+Do not manually alias the preview deployment to the production domains. Complete the production database reconciliation, verify the required production environment-variable names and scopes without exposing their values, merge PR #137, and then confirm that Vercel promotes the resulting `main` deployment.
