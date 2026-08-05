@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { getConversationActivityAt, orderBookingConversations } from "@/lib/bookings/conversation-inbox";
 
 type InboxBooking = {
   id: string;
@@ -8,6 +9,7 @@ type InboxBooking = {
   status: string;
   check_in: string;
   check_out: string;
+  created_at: string;
   properties?: { name?: string } | null;
   profiles?: { full_name?: string | null } | null;
   latestMessage?: { body: string; created_at: string } | null;
@@ -26,9 +28,10 @@ export function BookingMessageCenter({ mode, initialBookingId = "" }: { mode: "c
     fetch(mode === "partner" ? "/api/partner/messages" : "/api/bookings/messages", { cache: "no-store", signal: controller.signal }).then(async (response) => {
       const body = await response.json();
       if (!response.ok) throw new Error(body.error);
-      setBookings(body.data || []);
-      const authorizedSelection = body.data?.find((booking: InboxBooking) => booking.id === initialBookingId)?.id;
-      setSelected(authorizedSelection || body.data?.[0]?.id || "");
+      const ordered = orderBookingConversations<InboxBooking>(body.data || []);
+      setBookings(ordered);
+      const authorizedSelection = ordered.find((booking) => booking.id === initialBookingId)?.id;
+      setSelected(authorizedSelection || ordered[0]?.id || "");
       setNotice(body.truncated ? "Showing the most recent conversations." : "");
     }).catch((error: Error) => {
       if (error.name !== "AbortError") setNotice(error.message);
@@ -88,6 +91,7 @@ export function BookingMessageCenter({ mode, initialBookingId = "" }: { mode: "c
         <strong className="block text-sm">{booking.properties?.name || "Property"}</strong>
         <span className="mt-1 block text-xs text-slate-500">{mode === "partner" ? `${booking.profiles?.full_name || "Traveler"} · ` : ""}{booking.confirmation_code}</span>
         <span className="mt-2 block truncate text-sm text-slate-600">{booking.latestMessage?.body || "No messages yet"}</span>
+        <time dateTime={getConversationActivityAt(booking)} className="mt-2 block text-xs text-slate-400">{booking.latestMessage ? "Latest message" : "Booking created"} · {new Date(getConversationActivityAt(booking)).toLocaleString()}</time>
       </button>)}</div>
       {!bookings.length && !notice && <p className="p-5 text-sm text-slate-500">No bookings are available for messaging.</p>}
     </aside>

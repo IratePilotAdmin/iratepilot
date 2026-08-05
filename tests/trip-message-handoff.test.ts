@@ -21,7 +21,7 @@ describe("trip to property-message handoff", () => {
 
   it("preselects only a booking returned by the customer authorized inbox", () => {
     expect(support).toContain('initialBookingId={booking}');
-    expect(messageCenter).toContain("authorizedSelection || body.data?.[0]?.id");
+    expect(messageCenter).toContain("authorizedSelection || ordered[0]?.id");
     expect(inbox).toContain('.eq("customer_id", auth.user.id)');
   });
 });
