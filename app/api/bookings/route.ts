@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { bookingSchema } from "@/lib/validation";
 import { calculateVerifiedStayPricing } from "@/lib/bookings/stay-pricing";
 import { hasActiveMembership } from "@/lib/memberships/eligibility";
+import { queueBookingNotification } from "@/lib/email/booking-notifications";
 
 export async function GET() {
   try {
@@ -113,6 +114,13 @@ export async function POST(request: Request) {
       }
     }
     if (error) throw error;
+    await queueBookingNotification({
+      event: "request_received",
+      bookingId: data.id,
+      confirmationCode: data.confirmation_code,
+      customerId: user.id,
+      recipientEmail: user.email,
+    });
     return NextResponse.json({
       data,
       mode: "private_request",

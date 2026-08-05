@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe } from "@/lib/stripe";
 import { cancellationClaimTimeoutMs, isCancellationClaimStale } from "@/lib/bookings/cancellation-claims";
+import { queueBookingNotification } from "@/lib/email/booking-notifications";
 
 const schema = z.object({
   decision: z.enum(["approve", "reject"]),
@@ -27,7 +28,7 @@ export async function PATCH(
     const admin = createAdminClient();
     const { data: cancellation, error } = await admin
       .from("booking_cancellation_requests")
-      .select("id,status,reason,updated_at,booking_id,bookings(id,total,status,stripe_payment_intent_id)")
+      .select("id,status,reason,updated_at,booking_id,bookings(id,customer_id,confirmation_code,total,status,stripe_payment_intent_id)")
       .eq("id", id).single();
     if (error || !cancellation) return NextResponse.json({ error: "Cancellation request not found." }, { status: 404 });
     if (cancellation.status !== "pending" && !isCancellationClaimStale(cancellation.status, cancellation.updated_at)) {
@@ -57,6 +58,8 @@ export async function PATCH(
       id: string;
       total: number | string;
       status: string;
+      customer_id: string;
+      confirmation_code: string;
       stripe_payment_intent_id: string | null;
     };
     if (booking.status !== "confirmed") {
@@ -68,6 +71,7 @@ export async function PATCH(
         { p_booking_id: booking.id, p_reason: cancellation.reason }
       );
       if (cancellationError) throw cancellationError;
+      await queueBookingNotification({ event: "cancelled", bookingId: booking.id, confirmationCode: booking.confirmation_code, customerId: booking.customer_id });
       return NextResponse.json({
         data: cancelledBooking,
         message: "Unpaid reservation cancelled, inventory restored, and no refund was required."
@@ -145,6 +149,7 @@ export async function PATCH(
     );
     if (finalizeError) throw finalizeError;
     claimedRequestId = null;
+    await queueBookingNotification({ event: "refund_completed", bookingId: booking.id, confirmationCode: booking.confirmation_code, customerId: booking.customer_id });
     return NextResponse.json({
       data: refundedBooking,
       message: "Test refund completed, partner transfer reversed, inventory restored, and finance voided."
