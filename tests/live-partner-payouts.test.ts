@@ -58,7 +58,7 @@ describe("live partner payout safeguards", () => {
 
   it("provides a gated, mode-safe live reconciliation path", () => {
     expect(transferRetry).toContain("isLivePartnerPayoutsEnabled()");
-    expect(transferRetry).toContain("booking.stripe_payment_mode !== mode");
+    expect(transferRetry).toContain("bookingPaymentMode !== mode");
     expect(transferRetry).toContain("partner.stripe_connect_mode !== mode");
     expect(transferRetry).toContain('["failed", "not_started", "pending"]');
     expect(transferRetry).toContain('idempotencyKey: `booking-transfer-${financial.booking_id}`');
@@ -74,7 +74,8 @@ describe("live partner payout safeguards", () => {
 
   it("records transfer failures without reversing a completed customer booking", () => {
     expect(approvedPayment).toContain('console.error("Stripe live partner transfer failed"');
-    expect(approvedPayment).toContain('stripe_transfer_status: "failed"');
+    expect(approvedPayment).toContain('transferCreated ? "pending" : "failed"');
+    expect(transferRetry).toContain('transferCreated ? "pending" : "failed"');
     expect(approvedPayment.indexOf("await createLivePartnerTransfer(booking, intent)"))
       .toBeGreaterThan(approvedPayment.indexOf("booking = data as Booking"));
   });
