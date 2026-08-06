@@ -60,6 +60,7 @@ async function createLivePartnerTransfer(booking: Booking, intent: Stripe.Paymen
     const { data: claim, error: claimError } = await admin.from("booking_financials").update({
       stripe_transfer_status: "pending",
       stripe_transfer_error: null,
+      stripe_transferred_at: new Date().toISOString(),
     }).eq("id", financial.id)
       .eq("status", "eligible")
       .is("stripe_transfer_id", null)
