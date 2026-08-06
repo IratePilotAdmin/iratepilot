@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 import { createAdminClient } from "../supabase/admin";
 import { getStripe, isLivePartnerPayoutsEnabled } from "../stripe";
+import { partnerTransferFailureStatus } from "../payments/partner-transfer-failure-status";
 import { getApprovedBookingMetadataMode, type BookingPaymentMode } from "../stripe/booking-payment-mode";
 
 type Booking = { id: string; confirmation_code: string; stripe_payment_intent_id?: string | null; stripe_payment_mode?: string | null };
@@ -35,11 +36,6 @@ export function getApprovedBookingIntentPaymentMode(intent: Stripe.PaymentIntent
   if (intent.metadata.mode === getApprovedBookingMetadataMode("test")) return "test";
   if (intent.metadata.mode === getApprovedBookingMetadataMode("live")) return "live";
   return null;
-}
-
-function isAmbiguousStripeTransferError(error: unknown) {
-  const type = (error as { type?: unknown } | null)?.type;
-  return type === "StripeConnectionError" || type === "StripeAPIError";
 }
 
 async function createLivePartnerTransfer(booking: Booking, intent: Stripe.PaymentIntent) {
@@ -111,10 +107,14 @@ async function createLivePartnerTransfer(booking: Booking, intent: Stripe.Paymen
   } catch (transferError) {
     console.error("Stripe live partner transfer failed", transferError);
     const message = transferError instanceof Error ? transferError.message.slice(0, 500) : "Stripe transfer failed";
-    const keepPending = transferConfirmed || (transferAttempted && isAmbiguousStripeTransferError(transferError));
+    const failureStatus = partnerTransferFailureStatus({
+      error: transferError,
+      transferAttempted,
+      transferConfirmed,
+    });
     await admin.from("booking_financials").update({
-      stripe_transfer_status: keepPending ? "pending" : "failed",
-      stripe_transfer_error: keepPending ? `Stripe transfer may have been created; reconciliation required: ${message}` : message,
+      stripe_transfer_status: failureStatus,
+      stripe_transfer_error: failureStatus === "pending" ? `Stripe transfer may have been created; reconciliation required: ${message}` : message,
     }).eq("booking_id", booking.id).eq("stripe_transfer_status", "pending").is("stripe_transfer_id", null);
   }
 }
