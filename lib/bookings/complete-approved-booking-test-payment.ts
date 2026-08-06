@@ -37,11 +37,17 @@ export function getApprovedBookingIntentPaymentMode(intent: Stripe.PaymentIntent
   return null;
 }
 
+function isAmbiguousStripeTransferError(error: unknown) {
+  const type = (error as { type?: unknown } | null)?.type;
+  return type === "StripeConnectionError" || type === "StripeAPIError";
+}
+
 async function createLivePartnerTransfer(booking: Booking, intent: Stripe.PaymentIntent) {
   if (!isLivePartnerPayoutsEnabled()) return;
 
   const admin = createAdminClient();
   let transferAttempted = false;
+  let transferConfirmed = false;
   try {
     const { data: financial, error: financialError } = await admin
       .from("booking_financials")
@@ -92,6 +98,7 @@ async function createLivePartnerTransfer(booking: Booking, intent: Stripe.Paymen
         environment: "production",
       },
     }, { idempotencyKey: `booking-transfer-${booking.id}` });
+    transferConfirmed = true;
 
     const { error: updateError } = await admin.from("booking_financials").update({
       stripe_transfer_id: transfer.id,
@@ -104,9 +111,10 @@ async function createLivePartnerTransfer(booking: Booking, intent: Stripe.Paymen
   } catch (transferError) {
     console.error("Stripe live partner transfer failed", transferError);
     const message = transferError instanceof Error ? transferError.message.slice(0, 500) : "Stripe transfer failed";
+    const keepPending = transferConfirmed || (transferAttempted && isAmbiguousStripeTransferError(transferError));
     await admin.from("booking_financials").update({
-      stripe_transfer_status: transferAttempted ? "pending" : "failed",
-      stripe_transfer_error: transferAttempted ? `Stripe transfer may have been created; reconciliation required: ${message}` : message,
+      stripe_transfer_status: keepPending ? "pending" : "failed",
+      stripe_transfer_error: keepPending ? `Stripe transfer may have been created; reconciliation required: ${message}` : message,
     }).eq("booking_id", booking.id).eq("stripe_transfer_status", "pending").is("stripe_transfer_id", null);
   }
 }
