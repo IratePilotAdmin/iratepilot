@@ -61,6 +61,10 @@ describe("live partner payout safeguards", () => {
     expect(transferRetry).toContain("bookingPaymentMode !== mode");
     expect(transferRetry).toContain("partner.stripe_connect_mode !== mode");
     expect(transferRetry).toContain('["failed", "not_started", "pending"]');
+    expect(transferRetry).toContain("stripe.transfers.list({ transfer_group: transferGroup");
+    expect(transferRetry).toContain("candidate.metadata.booking_id === financial.booking_id");
+    expect(transferRetry.indexOf("stripe.transfers.list"))
+      .toBeLessThan(transferRetry.indexOf("stripe.transfers.create"));
     expect(transferRetry).toContain('idempotencyKey: `booking-transfer-${financial.booking_id}`');
     expect(transferRetry).toContain('booking.stripe_payment_mode ?? (isStripeTestMode() ? "test" : null)');
   });
