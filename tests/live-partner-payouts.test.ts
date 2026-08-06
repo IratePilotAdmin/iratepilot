@@ -6,6 +6,8 @@ const statusRoute = readFileSync(new URL("../app/api/partner/connect/route.ts", 
 const onboardingRoute = readFileSync(new URL("../app/api/partner/connect/onboarding/route.ts", import.meta.url), "utf8");
 const dashboardRoute = readFileSync(new URL("../app/api/partner/connect/dashboard/route.ts", import.meta.url), "utf8");
 const approvedPayment = readFileSync(new URL("../lib/bookings/complete-approved-booking-test-payment.ts", import.meta.url), "utf8");
+const transferRetry = readFileSync(new URL("../app/api/admin/finance/transfers/[id]/retry/route.ts", import.meta.url), "utf8");
+const cancellationReview = readFileSync(new URL("../app/api/admin/cancellations/[id]/route.ts", import.meta.url), "utf8");
 const migration = readFileSync(new URL("../supabase/migrations/202608060029_partner_connect_modes.sql", import.meta.url), "utf8");
 const rollback = readFileSync(new URL("../supabase/rollbacks/202608060029_partner_connect_modes.rollback.sql", import.meta.url), "utf8");
 
@@ -38,6 +40,23 @@ describe("live partner payout safeguards", () => {
     expect(approvedPayment).toContain("getStripe().transfers.create");
     expect(approvedPayment).toContain('idempotencyKey: `booking-transfer-${booking.id}`');
     expect(approvedPayment).toContain('if (paymentMode === "live") await createLivePartnerTransfer');
+  });
+
+  it("atomically claims a payout before calling Stripe and coordinates cancellations", () => {
+    expect(approvedPayment).toContain('stripe_transfer_status: "pending"');
+    expect(approvedPayment.indexOf('stripe_transfer_status: "pending"'))
+      .toBeLessThan(approvedPayment.indexOf("getStripe().transfers.create"));
+    expect(approvedPayment).toContain('.in("stripe_transfer_status", ["not_started", "failed"])');
+    expect(cancellationReview).toContain('transferStatus === "pending"');
+    expect(cancellationReview).toContain("payout is currently processing");
+  });
+
+  it("provides a gated, mode-safe live reconciliation path", () => {
+    expect(transferRetry).toContain("isLivePartnerPayoutsEnabled()");
+    expect(transferRetry).toContain("booking.stripe_payment_mode !== mode");
+    expect(transferRetry).toContain("partner.stripe_connect_mode !== mode");
+    expect(transferRetry).toContain('["failed", "not_started", "pending"]');
+    expect(transferRetry).toContain('idempotencyKey: `booking-transfer-${financial.booking_id}`');
   });
 
   it("records transfer failures without reversing a completed customer booking", () => {
