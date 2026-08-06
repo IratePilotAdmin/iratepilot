@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { queueTransactionalEmail } from "@/lib/email/outbox";
+import { queueTransactionalEmail, wakeTransactionalEmailWorker } from "@/lib/email/outbox";
 
 type BookingEmailEvent = "request_received" | "approved" | "declined" | "payment_confirmed" | "cancelled" | "refund_completed";
 
@@ -40,7 +40,7 @@ export async function queueBookingNotification(input: {
     if (existing) return existing;
 
     const content = copy[input.event];
-    return await queueTransactionalEmail({
+    const job = await queueTransactionalEmail({
       recipientEmail,
       subject: content.subject,
       templateName: `booking_${input.event}`,
@@ -51,6 +51,8 @@ export async function queueBookingNotification(input: {
         action_url: "https://www.iratepilot.com/account/trips",
       },
     });
+    await wakeTransactionalEmailWorker();
+    return job;
   } catch (error) {
     console.error("Booking notification could not be queued", { event: input.event, bookingId: input.bookingId, error });
     return null;

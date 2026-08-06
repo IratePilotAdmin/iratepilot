@@ -20,6 +20,23 @@ const statusStyle = { ready: "text-emerald-700", attention: "text-amber-700", of
 export function AdminSettings() {
   const [data, setData] = useState<Response | null>(null);
   const [message, setMessage] = useState("Checking platform readiness…");
+  const [emailTestBusy, setEmailTestBusy] = useState(false);
+  const [emailTestMessage, setEmailTestMessage] = useState("");
+
+  async function sendEmailTest() {
+    setEmailTestBusy(true);
+    setEmailTestMessage("");
+    try {
+      const response = await fetch("/api/admin/email-test", { method: "POST" });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "The test email could not be sent.");
+      setEmailTestMessage(body.message);
+    } catch (error) {
+      setEmailTestMessage(error instanceof Error ? error.message : "The test email could not be sent.");
+    } finally {
+      setEmailTestBusy(false);
+    }
+  }
 
   useEffect(() => {
     fetch("/api/admin/settings", { cache: "no-store" })
@@ -40,6 +57,13 @@ export function AdminSettings() {
         <h2 className="mt-2 text-2xl font-semibold">{data.requiredReady ? "Required services are configured" : "Required services need attention"}</h2>
         <p className="mt-2 text-sm text-slate-600">This checks configuration and connectivity only. It does not verify database migration state, legal approval, or production payment readiness.</p>
         <div className="mt-5 flex flex-wrap gap-5 text-sm"><span><strong>{data.summary.ready}</strong> ready</span><span><strong>{data.summary.attention}</strong> need attention</span><span><strong>{data.summary.off}</strong> intentionally off</span></div>
+      </section>
+
+      <section className="card mt-6 p-6">
+        <h2 className="text-xl font-semibold">Transactional email test</h2>
+        <p className="mt-2 text-sm text-slate-600">Send one operational test message to the signed-in administrator. This creates no booking, payment, refund, or partner transfer.</p>
+        <button className="btn-primary mt-4" disabled={emailTestBusy} onClick={sendEmailTest}>{emailTestBusy ? "Sending…" : "Send test email"}</button>
+        {emailTestMessage && <p className="mt-3 text-sm" role="status">{emailTestMessage}</p>}
       </section>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">{categories.map(([category, label]) => <section className="card overflow-hidden" key={category}>
