@@ -14,6 +14,7 @@ type ConnectPartner = {
 
 export function StripeConnectCenter() {
   const [partner, setPartner] = useState<ConnectPartner | null>(null);
+  const [mode, setMode] = useState<"test" | "live" | null>(null);
   const [message, setMessage] = useState("Checking Stripe payout status…");
   const [busy, setBusy] = useState(false);
 
@@ -22,6 +23,7 @@ export function StripeConnectCenter() {
     const body = await response.json();
     if (!response.ok) throw new Error(body.error);
     setPartner(body.partner);
+    setMode(body.mode || null);
     setMessage(body.partner ? "" : "Create your partner account before connecting payouts.");
   }
 
@@ -45,7 +47,7 @@ export function StripeConnectCenter() {
   const ready = partner?.stripe_connect_status === "ready";
   return <section className="card overflow-hidden">
     <div className="border-b p-6">
-      <span className="section-kicker">Stripe Connect · test mode</span>
+      <span className="section-kicker">Stripe Connect · {mode === "live" ? "live payouts" : "test mode"}</span>
       <h2 className="mt-3 text-2xl font-semibold">Hotel payout account</h2>
       <p className="mt-2 text-sm text-slate-600">Stripe verifies the business and bank information. iRatePilot never stores bank credentials.</p>
     </div>
@@ -61,7 +63,7 @@ export function StripeConnectCenter() {
         {partner.stripe_connect_details_submitted && <button className="btn-secondary" disabled={busy} onClick={() => open("dashboard")}>Open Stripe Express</button>}
         <button className="btn-secondary" disabled={busy} onClick={() => { setMessage("Refreshing Stripe status…"); load().catch((error: Error) => setMessage(error.message)); }}>Refresh status</button>
       </div>
-      {ready && <p className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">This test payout account is ready for marketplace transfer testing.</p>}
+      {ready && <p className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">{mode === "live" ? "This payout account is verified and ready to receive eligible booking proceeds." : "This test payout account is ready for marketplace transfer testing."}</p>}
     </div>}
     {message && <p role="status" className="border-t p-6 text-sm text-slate-600">{message}</p>}
   </section>;
