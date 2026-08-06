@@ -41,6 +41,7 @@ async function createLivePartnerTransfer(booking: Booking, intent: Stripe.Paymen
   if (!isLivePartnerPayoutsEnabled()) return;
 
   const admin = createAdminClient();
+  let transferCreated = false;
   try {
     const { data: financial, error: financialError } = await admin
       .from("booking_financials")
@@ -91,6 +92,7 @@ async function createLivePartnerTransfer(booking: Booking, intent: Stripe.Paymen
       },
     }, { idempotencyKey: `booking-transfer-${booking.id}` });
 
+    transferCreated = true;
     const { error: updateError } = await admin.from("booking_financials").update({
       stripe_transfer_id: transfer.id,
       stripe_transfer_status: "paid",
@@ -103,8 +105,8 @@ async function createLivePartnerTransfer(booking: Booking, intent: Stripe.Paymen
     console.error("Stripe live partner transfer failed", transferError);
     const message = transferError instanceof Error ? transferError.message.slice(0, 500) : "Stripe transfer failed";
     await admin.from("booking_financials").update({
-      stripe_transfer_status: "failed",
-      stripe_transfer_error: message,
+      stripe_transfer_status: transferCreated ? "pending" : "failed",
+      stripe_transfer_error: transferCreated ? `Stripe transfer created; persistence reconciliation required: ${message}` : message,
     }).eq("booking_id", booking.id).eq("stripe_transfer_status", "pending").is("stripe_transfer_id", null);
   }
 }
