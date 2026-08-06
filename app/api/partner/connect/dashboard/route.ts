@@ -7,7 +7,8 @@ export async function POST() {
   try {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-    if (!isPartnerConnectEnabled()) return NextResponse.json({ error: "Partner payouts are not enabled for this Stripe environment." }, { status: 403 });\n    const mode = stripeMode();
+    if (!isPartnerConnectEnabled()) return NextResponse.json({ error: "Partner payouts are not enabled for this Stripe environment." }, { status: 403 });
+    const mode = stripeMode();
     const admin = createAdminClient();
     const { data: partner, error: partnerError } = await admin.from("partners")
       .select("status,stripe_connect_account_id,stripe_connect_mode,stripe_connect_details_submitted")
