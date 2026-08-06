@@ -39,7 +39,8 @@ export async function POST(
       stripe_connect_mode: string | null;
       stripe_connect_payouts_enabled: boolean;
     };
-    if (booking.status !== "confirmed" || !booking.stripe_payment_intent_id || booking.stripe_payment_mode !== mode) {
+    const bookingPaymentMode = booking.stripe_payment_mode ?? (isStripeTestMode() ? "test" : null);
+    if (booking.status !== "confirmed" || !booking.stripe_payment_intent_id || bookingPaymentMode !== mode) {
       return NextResponse.json({ error: "Only a paid, confirmed booking in the active Stripe environment can fund a transfer." }, { status: 409 });
     }
     if (!partner?.stripe_connect_account_id || partner.stripe_connect_mode !== mode || !partner.stripe_connect_payouts_enabled) {
