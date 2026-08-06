@@ -57,6 +57,18 @@ async function createLivePartnerTransfer(booking: Booking, intent: Stripe.Paymen
     };
     if (!partner?.stripe_connect_account_id || partner.stripe_connect_mode !== "live" || !partner.stripe_connect_payouts_enabled) return;
 
+    const { data: claim, error: claimError } = await admin.from("booking_financials").update({
+      stripe_transfer_status: "pending",
+      stripe_transfer_error: null,
+    }).eq("id", financial.id)
+      .eq("status", "eligible")
+      .is("stripe_transfer_id", null)
+      .in("stripe_transfer_status", ["not_started", "failed"])
+      .select("id")
+      .maybeSingle();
+    if (claimError) throw claimError;
+    if (!claim) return;
+
     const sourceTransaction = typeof intent.latest_charge === "string"
       ? intent.latest_charge
       : intent.latest_charge?.id;
@@ -84,7 +96,7 @@ async function createLivePartnerTransfer(booking: Booking, intent: Stripe.Paymen
       stripe_transfer_error: null,
       stripe_transferred_at: new Date().toISOString(),
       status: "paid",
-    }).eq("id", financial.id);
+    }).eq("id", financial.id).eq("stripe_transfer_status", "pending");
     if (updateError) throw updateError;
   } catch (transferError) {
     console.error("Stripe live partner transfer failed", transferError);
@@ -92,7 +104,7 @@ async function createLivePartnerTransfer(booking: Booking, intent: Stripe.Paymen
     await admin.from("booking_financials").update({
       stripe_transfer_status: "failed",
       stripe_transfer_error: message,
-    }).eq("booking_id", booking.id).is("stripe_transfer_id", null);
+    }).eq("booking_id", booking.id).eq("stripe_transfer_status", "pending").is("stripe_transfer_id", null);
   }
 }
 
