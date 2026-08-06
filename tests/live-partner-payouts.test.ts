@@ -79,8 +79,12 @@ describe("live partner payout safeguards", () => {
 
   it("records transfer failures without reversing a completed customer booking", () => {
     expect(approvedPayment).toContain('console.error("Stripe live partner transfer failed"');
-    expect(approvedPayment).toContain('transferCreated ? "pending" : "failed"');
-    expect(transferRetry).toContain('transferCreated ? "pending" : "failed"');
+    expect(approvedPayment).toContain('transferAttempted ? "pending" : "failed"');
+    expect(transferRetry).toContain('transferAttempted ? "pending" : "failed"');
+    expect(approvedPayment.indexOf("transferAttempted = true"))
+      .toBeLessThan(approvedPayment.indexOf("getStripe().transfers.create"));
+    expect(transferRetry.indexOf("transferAttempted = true"))
+      .toBeLessThan(transferRetry.indexOf("stripe.transfers.create"));
     expect(approvedPayment.indexOf("await createLivePartnerTransfer(booking, intent)"))
       .toBeGreaterThan(approvedPayment.indexOf("booking = data as Booking"));
   });
