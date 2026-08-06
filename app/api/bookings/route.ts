@@ -7,6 +7,7 @@ import { bookingSchema } from "@/lib/validation";
 import { calculateVerifiedStayPricing } from "@/lib/bookings/stay-pricing";
 import { hasActiveMembership } from "@/lib/memberships/eligibility";
 import { queueBookingNotification } from "@/lib/email/booking-notifications";
+import { getApprovedBookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
 
 export async function GET() {
   try {
@@ -20,14 +21,20 @@ export async function GET() {
     return NextResponse.json({ data: (data || []).map(({ stripe_payment_intent_id, ...booking }) => ({
       ...booking,
       payment_collected: Boolean(stripe_payment_intent_id),
-    })) });
+    })), paymentMode: getApprovedBookingPaymentMode() });
   } catch {
     return NextResponse.json({ error: "Trips are not configured." }, { status: 503 });
   }
 }
 
 export async function POST(request: Request) {
-  if (process.env.PILOT_MODE !== "true") return NextResponse.json({ error: "Private booking requests are disabled." }, { status: 503 });
+  const approvedPaymentMode = getApprovedBookingPaymentMode();
+  const requestMode = process.env.PILOT_MODE === "true"
+    ? "private_request"
+    : approvedPaymentMode === "live"
+      ? "commercial_request"
+      : null;
+  if (!requestMode) return NextResponse.json({ error: "Booking requests are disabled." }, { status: 503 });
   const parsed = bookingSchema.safeParse(await request.json());
   if (!parsed.success) return NextResponse.json({ error: "Check the property, room, dates, and guest count." }, { status: 400 });
 
@@ -67,7 +74,7 @@ export async function POST(request: Request) {
       return NextResponse.json({
         data: existingResult.data,
         duplicate: true,
-        mode: "private_request",
+        mode: requestMode,
         message: "Your existing booking request was returned. No duplicate request was created."
       });
     }
@@ -108,7 +115,7 @@ export async function POST(request: Request) {
         return NextResponse.json({
           data: concurrentResult.data,
           duplicate: true,
-          mode: "private_request",
+          mode: requestMode,
           message: "Your existing booking request was returned. No duplicate request was created."
         });
       }
@@ -123,8 +130,8 @@ export async function POST(request: Request) {
     });
     return NextResponse.json({
       data,
-      mode: "private_request",
-      message: "Booking request created for manual partner review. No payment was collected."
+      mode: requestMode,
+      message: "Booking request created for partner review. No payment was collected."
     }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "The booking request could not be created." }, { status: 503 });

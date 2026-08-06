@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { queueTransactionalEmail, wakeTransactionalEmailWorker } from "@/lib/email/outbox";
+import type { BookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
 
 type BookingEmailEvent = "request_received" | "approved" | "declined" | "payment_confirmed" | "cancelled" | "refund_completed";
 
@@ -18,6 +19,7 @@ export async function queueBookingNotification(input: {
   confirmationCode?: string | null;
   customerId: string;
   recipientEmail?: string | null;
+  paymentMode?: BookingPaymentMode;
 }) {
   try {
     const admin = createAdminClient();
@@ -39,7 +41,13 @@ export async function queueBookingNotification(input: {
     if (lookupError) throw lookupError;
     if (existing) return existing;
 
-    const content = copy[input.event];
+    const content = { ...copy[input.event] };
+    if (input.event === "payment_confirmed" && input.paymentMode === "live") {
+      content.message = "Your payment was verified and your reservation is confirmed.";
+    }
+    if (input.event === "refund_completed" && input.paymentMode === "live") {
+      content.message = "Your payment was refunded and your reservation was cancelled.";
+    }
     const job = await queueTransactionalEmail({
       recipientEmail,
       subject: content.subject,

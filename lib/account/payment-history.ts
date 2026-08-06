@@ -17,6 +17,7 @@ export type CustomerBookingPayment = {
   status: string;
   created_at: string;
   stripe_payment_intent_id: string | null;
+  stripe_payment_mode?: "test" | "live" | null;
   properties?: { name?: string } | Array<{ name?: string }> | null;
   rooms?: { name?: string } | Array<{ name?: string }> | null;
   booking_cancellation_requests?: CancellationRecord[] | null;
@@ -36,6 +37,7 @@ export type CustomerPaymentEntry = {
   total: number;
   refundedAmount: number;
   state: PaymentState;
+  paymentMode: "test" | "live" | null;
 };
 
 const amount = (value: number | string | null | undefined) => {
@@ -76,6 +78,7 @@ export function buildCustomerPaymentHistory(bookings: CustomerBookingPayment[]) 
       total: amount(booking.total),
       refundedAmount: state === "refunded" ? amount(refunded?.refund_amount ?? booking.total) : 0,
       state,
+      paymentMode: hasPayment ? booking.stripe_payment_mode || "test" : null,
     };
   });
 
@@ -86,7 +89,8 @@ export function buildCustomerPaymentHistory(bookings: CustomerBookingPayment[]) 
   return {
     entries,
     summary: {
-      testPayments: paidEntries.length,
+      testPayments: paidEntries.filter((entry) => entry.paymentMode === "test").length,
+      livePayments: paidEntries.filter((entry) => entry.paymentMode === "live").length,
       collected,
       refunded,
       net: Math.max(0, collected - refunded),

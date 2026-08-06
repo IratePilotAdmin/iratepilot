@@ -40,10 +40,10 @@ export function AdminCancellations() {
   }, []);
   async function decide(id: string, decision: "approve" | "reject") {
     const prompt = decision === "approve"
-      ? "Approve this cancellation and issue a full Stripe test refund?"
+      ? "Approve this cancellation and issue a full Stripe refund?"
       : "Reject this cancellation request?";
     if (!window.confirm(prompt)) return;
-    setMessage(decision === "approve" ? "Processing Stripe test refund…" : "Saving decision…");
+    setMessage(decision === "approve" ? "Processing Stripe refund…" : "Saving decision…");
     const response = await fetch(`/api/admin/cancellations/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },

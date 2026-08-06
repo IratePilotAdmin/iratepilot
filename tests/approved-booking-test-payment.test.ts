@@ -6,34 +6,35 @@ const intentRoute = read("app/api/bookings/[id]/payment-intent/route.ts");
 const completionRoute = read("app/api/bookings/[id]/complete-payment/route.ts");
 const finalizer = read("lib/bookings/complete-approved-booking-test-payment.ts");
 const webhook = read("app/api/stripe/webhook/route.ts");
-const migration = read("supabase/migrations/202608020026_approved_booking_test_payments.sql");
+const migration = read("supabase/migrations/202608060028_live_booking_payment_modes.sql");
+const paymentFinalizerMigration = migration.slice(0, migration.indexOf("create or replace function public.finalize_booking_refund"));
 const trips = read("components/bookings/customer-trips.tsx");
 const historyRoute = read("app/api/account/payments/route.ts");
 
 describe("approved reservation test payments", () => {
   it("creates only test-mode intents for the authenticated booking owner", () => {
-    expect(intentRoute).toContain('STRIPE_SECRET_KEY?.startsWith("sk_test_")');
+    expect(intentRoute).toContain("getApprovedBookingPaymentMode()");
     expect(intentRoute).toContain('.eq("customer_id", user.id)');
     expect(intentRoute).toContain('booking.status !== "confirmed"');
     expect(intentRoute).toContain('booking.stripe_payment_intent_id');
-    expect(intentRoute).toContain('idempotencyKey: `approved-booking-test-payment-${booking.id}`');
-    expect(intentRoute).toContain('mode: "approved_booking_test"');
+    expect(intentRoute).toContain('idempotencyKey: `approved-booking-${paymentMode}-payment-${booking.id}`');
+    expect(intentRoute).toContain("getApprovedBookingMetadataMode(paymentMode)");
   });
 
   it("verifies successful Stripe metadata before finalizing", () => {
-    expect(completionRoute).toContain("isApprovedBookingTestIntent(intent, user.id)");
+    expect(completionRoute).toContain("isApprovedBookingPaymentIntent(intent, user.id, paymentMode)");
     expect(completionRoute).toContain("intent.metadata.bookingId !== id");
     expect(finalizer).toContain('intent.status === "succeeded"');
-    expect(finalizer).toContain('intent.metadata.mode === "approved_booking_test"');
+    expect(finalizer).toContain("getApprovedBookingIntentPaymentMode(intent)");
     expect(finalizer).toContain("p_amount_total_cents: intent.amount_received");
   });
 
   it("finalizes succeeded approved-booking payments from the Stripe webhook and refunds failures", () => {
-    expect(webhook).toContain('intent.metadata?.mode === "approved_booking_test"');
-    expect(webhook).toContain("isApprovedBookingTestIntent(intent)");
-    expect(webhook).toContain("await completeApprovedBookingTestPayment(intent)");
+    expect(webhook).toContain("intent.metadata?.mode === getApprovedBookingMetadataMode(webhookMode)");
+    expect(webhook).toContain("isApprovedBookingPaymentIntent(intent, undefined, webhookMode)");
+    expect(webhook).toContain("await completeApprovedBookingPayment(intent)");
     expect(webhook).toContain("error instanceof ApprovedBookingPaymentFinalizationError");
-    expect(webhook).toContain("refundUnfinalizedTestBooking(intent.id)");
+    expect(webhook).toContain("refundUnfinalizedBookingPayment(intent.id)");
   });
 
   it("atomically prevents duplicate or mismatched payments without changing inventory", () => {
@@ -42,15 +43,16 @@ describe("approved reservation test payments", () => {
     expect(migration).toContain("v_booking.status <> 'confirmed'");
     expect(migration).toContain("round(v_booking.total * 100)::integer <> p_amount_total_cents");
     expect(migration).toContain("v_booking.stripe_payment_intent_id = p_payment_intent_id");
-    expect(migration).not.toContain("update public.inventory");
+    expect(migration).toContain("v_booking.stripe_payment_mode = p_payment_mode");
+    expect(paymentFinalizerMigration).not.toContain("update public.inventory");
     expect(migration).toContain("set status = 'eligible'");
-    expect(migration).toContain("grant execute on function public.complete_approved_booking_test_payment");
+    expect(migration).toContain("grant execute on function public.complete_approved_booking_payment");
     expect(migration).toContain("to service_role");
     expect(migration).toContain("from public, anon, authenticated");
   });
 
   it("exposes a payment action and keeps payment history owner-scoped for every signed-in role", () => {
-    expect(trips).toContain("Pay now (test)");
+    expect(trips).toContain('paymentMode === "test" ? " (test)" : ""');
     expect(trips).toContain("!trip.payment_collected");
     expect(historyRoute).toContain("supabase.auth.getUser()");
     expect(historyRoute).toContain('.eq("customer_id", user.id)');

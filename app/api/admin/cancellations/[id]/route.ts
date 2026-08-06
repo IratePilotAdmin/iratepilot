@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe } from "@/lib/stripe";
 import { cancellationClaimTimeoutMs, isCancellationClaimStale } from "@/lib/bookings/cancellation-claims";
 import { queueBookingNotification } from "@/lib/email/booking-notifications";
+import { getStripeWebhookMode, type BookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
 
 const schema = z.object({
   decision: z.enum(["approve", "reject"]),
@@ -28,7 +29,7 @@ export async function PATCH(
     const admin = createAdminClient();
     const { data: cancellation, error } = await admin
       .from("booking_cancellation_requests")
-      .select("id,status,reason,updated_at,booking_id,bookings(id,customer_id,confirmation_code,total,status,stripe_payment_intent_id)")
+      .select("id,status,reason,updated_at,booking_id,bookings(id,customer_id,confirmation_code,total,status,stripe_payment_intent_id,stripe_payment_mode)")
       .eq("id", id).single();
     if (error || !cancellation) return NextResponse.json({ error: "Cancellation request not found." }, { status: 404 });
     if (cancellation.status !== "pending" && !isCancellationClaimStale(cancellation.status, cancellation.updated_at)) {
@@ -61,6 +62,7 @@ export async function PATCH(
       customer_id: string;
       confirmation_code: string;
       stripe_payment_intent_id: string | null;
+      stripe_payment_mode: BookingPaymentMode | null;
     };
     if (booking.status !== "confirmed") {
       return NextResponse.json({ error: "Only a confirmed booking can be refunded." }, { status: 409 });
@@ -80,8 +82,9 @@ export async function PATCH(
 
     const stripe = getStripe();
     const intent = await stripe.paymentIntents.retrieve(booking.stripe_payment_intent_id);
-    if (intent.livemode) {
-      return NextResponse.json({ error: "Live refunds are disabled during the private pilot." }, { status: 403 });
+    const refundMode = getStripeWebhookMode();
+    if (!refundMode || booking.stripe_payment_mode !== refundMode || intent.livemode !== (refundMode === "live")) {
+      return NextResponse.json({ error: "The payment environment is not enabled for refunds." }, { status: 403 });
     }
     if (intent.status !== "succeeded") {
       return NextResponse.json({ error: "The Stripe payment is not eligible for refund." }, { status: 409 });
@@ -140,7 +143,7 @@ export async function PATCH(
     );
     const refundAmount = refund.amount / 100;
     const { data: refundedBooking, error: finalizeError } = await admin.rpc(
-      "finalize_test_booking_refund",
+      "finalize_booking_refund",
       {
         p_request_id: id,
         p_refund_id: refund.id,
@@ -149,10 +152,10 @@ export async function PATCH(
     );
     if (finalizeError) throw finalizeError;
     claimedRequestId = null;
-    await queueBookingNotification({ event: "refund_completed", bookingId: booking.id, confirmationCode: booking.confirmation_code, customerId: booking.customer_id });
+    await queueBookingNotification({ event: "refund_completed", bookingId: booking.id, confirmationCode: booking.confirmation_code, customerId: booking.customer_id, paymentMode: refundMode });
     return NextResponse.json({
       data: refundedBooking,
-      message: "Test refund completed, partner transfer reversed, inventory restored, and finance voided."
+      message: `${refundMode === "test" ? "Test r" : "R"}efund completed, partner transfer reversed, inventory restored, and finance voided.`
     });
   } catch (error) {
     if (claimedRequestId) {
