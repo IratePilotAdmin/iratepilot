@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { partnerTransferFailureStatus } from "../lib/payments/partner-transfer-failure-status";
 
 const stripe = readFileSync(new URL("../lib/stripe.ts", import.meta.url), "utf8");
 const statusRoute = readFileSync(new URL("../app/api/partner/connect/route.ts", import.meta.url), "utf8");
@@ -79,18 +80,43 @@ describe("live partner payout safeguards", () => {
 
   it("records transfer failures without reversing a completed customer booking", () => {
     expect(approvedPayment).toContain('console.error("Stripe live partner transfer failed"');
-    expect(approvedPayment).toContain("isAmbiguousStripeTransferError");
-    expect(approvedPayment).toContain("transferConfirmed || (transferAttempted && isAmbiguousStripeTransferError(transferError))");
-    expect(transferRetry).toContain("isAmbiguousStripeTransferError");
-    expect(transferRetry).toContain("wasIndeterminate || transferConfirmed || (transferAttempted && isAmbiguousStripeTransferError(error))");
-    expect(approvedPayment).toContain('keepPending ? "pending" : "failed"');
-    expect(transferRetry).toContain('keepPending ? "pending" : "failed"');
+    expect(approvedPayment).toContain("partnerTransferFailureStatus");
+    expect(transferRetry).toContain("partnerTransferFailureStatus");
     expect(approvedPayment.indexOf("transferAttempted = true"))
       .toBeLessThan(approvedPayment.indexOf("getStripe().transfers.create"));
     expect(transferRetry.indexOf("transferAttempted = true"))
       .toBeLessThan(transferRetry.indexOf("stripe.transfers.create"));
     expect(approvedPayment.indexOf("await createLivePartnerTransfer(booking, intent)"))
       .toBeGreaterThan(approvedPayment.indexOf("booking = data as Booking"));
+  });
+
+  it("persists ambiguous payout failures as pending and definitive rejections as failed", () => {
+    expect(partnerTransferFailureStatus({
+      error: { type: "StripeConnectionError" },
+      transferAttempted: true,
+    })).toBe("pending");
+    expect(partnerTransferFailureStatus({
+      error: { type: "StripeAPIError" },
+      transferAttempted: true,
+    })).toBe("pending");
+    expect(partnerTransferFailureStatus({
+      error: { type: "StripeInvalidRequestError" },
+      transferAttempted: true,
+    })).toBe("failed");
+    expect(partnerTransferFailureStatus({
+      error: new Error("database write failed"),
+      transferAttempted: false,
+      transferConfirmed: true,
+    })).toBe("pending");
+    expect(partnerTransferFailureStatus({
+      error: new Error("lookup failed"),
+      transferAttempted: false,
+      wasIndeterminate: true,
+    })).toBe("pending");
+    expect(partnerTransferFailureStatus({
+      error: new Error("validation failed before Stripe"),
+      transferAttempted: false,
+    })).toBe("failed");
   });
 
   it("tracks account environment and blocks unsafe rollback after live onboarding", () => {
