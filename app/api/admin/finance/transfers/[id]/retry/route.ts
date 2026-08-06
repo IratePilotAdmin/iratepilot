@@ -1,3 +1,4 @@
+import type Stripe from "stripe";
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -73,19 +74,34 @@ export async function POST(
 
     const amount = Math.round(Number(financial.partner_net) * 100);
     if (!Number.isInteger(amount) || amount <= 0) throw new Error("The partner transfer amount is invalid.");
-    const transfer = await stripe.transfers.create({
-      amount,
-      currency: "usd",
-      destination: partner.stripe_connect_account_id,
-      source_transaction: sourceTransaction,
-      transfer_group: `booking_${financial.booking_id}`,
-      metadata: {
-        booking_id: financial.booking_id,
-        booking_financial_id: financial.id,
-        confirmation_code: booking.confirmation_code,
-        environment: mode === "live" ? "production" : "private_pilot"
-      }
-    }, { idempotencyKey: `booking-transfer-${financial.booking_id}` });
+    const transferGroup = `booking_${financial.booking_id}`;
+    let transfer: Stripe.Transfer | undefined;
+    if (financial.stripe_transfer_status === "pending") {
+      const existingTransfers = await stripe.transfers.list({ transfer_group: transferGroup, limit: 100 });
+      transfer = existingTransfers.data.find((candidate) => {
+        const destination = typeof candidate.destination === "string" ? candidate.destination : candidate.destination?.id;
+        return candidate.metadata.booking_id === financial.booking_id
+          && destination === partner.stripe_connect_account_id
+          && candidate.amount === amount
+          && candidate.currency === "usd"
+          && !candidate.reversed;
+      });
+    }
+    if (!transfer) {
+      transfer = await stripe.transfers.create({
+        amount,
+        currency: "usd",
+        destination: partner.stripe_connect_account_id,
+        source_transaction: sourceTransaction,
+        transfer_group: transferGroup,
+        metadata: {
+          booking_id: financial.booking_id,
+          booking_financial_id: financial.id,
+          confirmation_code: booking.confirmation_code,
+          environment: mode === "live" ? "production" : "private_pilot"
+        }
+      }, { idempotencyKey: `booking-transfer-${financial.booking_id}` });
+    }
 
     transferCreated = true;
     const { error: updateError } = await admin.from("booking_financials").update({
