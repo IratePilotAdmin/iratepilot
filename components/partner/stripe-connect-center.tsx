@@ -13,7 +13,8 @@ type ConnectPartner = {
 };
 
 export function StripeConnectCenter() {
-  const [partner, setPartner] = useState<ConnectPartner | null>(null);\n  const [mode, setMode] = useState<"test" | "live" | null>(null);
+  const [partner, setPartner] = useState<ConnectPartner | null>(null);
+  const [mode, setMode] = useState<"test" | "live" | null>(null);
   const [message, setMessage] = useState("Checking Stripe payout status…");
   const [busy, setBusy] = useState(false);
 
@@ -21,7 +22,8 @@ export function StripeConnectCenter() {
     const response = await fetch("/api/partner/connect", { cache: "no-store" });
     const body = await response.json();
     if (!response.ok) throw new Error(body.error);
-    setPartner(body.partner);\n    setMode(body.mode || null);
+    setPartner(body.partner);
+    setMode(body.mode || null);
     setMessage(body.partner ? "" : "Create your partner account before connecting payouts.");
   }
 
