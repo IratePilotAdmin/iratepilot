@@ -18,7 +18,8 @@ export async function GET() {
   try {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-    if (!isPartnerConnectEnabled()) return NextResponse.json({ error: "Partner payouts are not enabled for this Stripe environment." }, { status: 403 });\n    const mode = stripeMode();
+    if (!isPartnerConnectEnabled()) return NextResponse.json({ error: "Partner payouts are not enabled for this Stripe environment." }, { status: 403 });
+    const mode = stripeMode();
     const admin = createAdminClient();
     const { data: partner, error } = await admin.from("partners")
       .select("id,business_name,status,stripe_connect_account_id,stripe_connect_mode,stripe_connect_status,stripe_connect_details_submitted,stripe_connect_charges_enabled,stripe_connect_payouts_enabled,stripe_connect_requirements_due")
@@ -27,8 +28,8 @@ export async function GET() {
     if (auth.profile.role !== "admin" && (!partner || partner.status !== "approved")) {
       return NextResponse.json({ error: "An approved partner account is required to access Stripe Connect." }, { status: 403 });
     }
-    if (!partner) return NextResponse.json({ partner: null });
-    if (!partner.stripe_connect_account_id) return NextResponse.json({ partner });
+    if (!partner) return NextResponse.json({ partner: null, mode });
+    if (!partner.stripe_connect_account_id || partner.stripe_connect_mode !== mode) return NextResponse.json({ partner: { ...partner, stripe_connect_account_id: null, stripe_connect_status: "not_started", stripe_connect_details_submitted: false, stripe_connect_charges_enabled: false, stripe_connect_payouts_enabled: false, stripe_connect_requirements_due: [] }, mode });
 
     const stripe = getStripe();
     const account = await stripe.accounts.retrieve(partner.stripe_connect_account_id);
