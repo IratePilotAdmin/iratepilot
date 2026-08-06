@@ -3,11 +3,7 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe, isLivePartnerPayoutsEnabled, isStripeTestMode, stripeMode } from "@/lib/stripe";
-
-function isAmbiguousStripeTransferError(error: unknown) {
-  const type = (error as { type?: unknown } | null)?.type;
-  return type === "StripeConnectionError" || type === "StripeAPIError";
-}
+import { partnerTransferFailureStatus } from "@/lib/payments/partner-transfer-failure-status";
 
 export async function POST(
   _request: Request,
@@ -125,10 +121,15 @@ export async function POST(
   } catch (error) {
     if (claimedFinancialId) {
       const admin = createAdminClient();
-      const keepPending = wasIndeterminate || transferConfirmed || (transferAttempted && isAmbiguousStripeTransferError(error));
+      const failureStatus = partnerTransferFailureStatus({
+        error,
+        transferAttempted,
+        transferConfirmed,
+        wasIndeterminate,
+      });
       await admin.from("booking_financials").update({
-        stripe_transfer_status: keepPending ? "pending" : "failed",
-        stripe_transfer_error: keepPending
+        stripe_transfer_status: failureStatus,
+        stripe_transfer_error: failureStatus === "pending"
           ? "Stripe transfer may exist; persistence reconciliation required."
           : error instanceof Error ? error.message.slice(0, 500) : "Transfer retry failed",
       }).eq("id", claimedFinancialId).eq("stripe_transfer_status", "pending").is("stripe_transfer_id", null);
