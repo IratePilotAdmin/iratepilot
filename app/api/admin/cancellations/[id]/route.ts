@@ -23,6 +23,8 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid cancellation request ID." }, { status: 400 });
   }
   let claimedRequestId: string | null = null;
+  let claimedFinancial: { id: string; previousTransferStatus: string } | null = null;
+  let refundCreated = false;
   try {
     const auth = await requireRole(["admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -108,6 +110,24 @@ export async function PATCH(
       return NextResponse.json({ error: "The partner transfer must be reversed before refunding this booking." }, { status: 409 });
     }
 
+    if (financial?.status === "eligible" && transferStatus && ["not_started", "failed"].includes(transferStatus)) {
+      const { data: payoutReservation, error: payoutReservationError } = await admin.from("booking_financials").update({
+        stripe_transfer_status: "cancelled",
+        stripe_transfer_error: "Reserved for approved customer refund",
+      }).eq("id", financial.id)
+        .eq("status", "eligible")
+        .is("stripe_transfer_id", null)
+        .in("stripe_transfer_status", ["not_started", "failed"])
+        .select("id")
+        .maybeSingle();
+      if (payoutReservationError) throw payoutReservationError;
+      if (!payoutReservation) {
+        return NextResponse.json({ error: "The partner payout state changed. Refresh and retry the cancellation." }, { status: 409 });
+      }
+      claimedFinancial = { id: financial.id, previousTransferStatus: transferStatus };
+      transferStatus = "cancelled";
+    }
+
     const claimTime = new Date().toISOString();
     const staleBefore = new Date(Date.now() - cancellationClaimTimeoutMs).toISOString();
     const { data: claim, error: claimError } = await admin.from("booking_cancellation_requests").update({
@@ -120,7 +140,16 @@ export async function PATCH(
       .select("id")
       .maybeSingle();
     if (claimError) throw claimError;
-    if (!claim) return NextResponse.json({ error: "This request is already being reviewed." }, { status: 409 });
+    if (!claim) {
+      if (claimedFinancial) {
+        await admin.from("booking_financials").update({
+          stripe_transfer_status: claimedFinancial.previousTransferStatus,
+          stripe_transfer_error: null,
+        }).eq("id", claimedFinancial.id).eq("status", "eligible").eq("stripe_transfer_status", "cancelled");
+        claimedFinancial = null;
+      }
+      return NextResponse.json({ error: "This request is already being reviewed." }, { status: 409 });
+    }
     claimedRequestId = id;
 
     if (financial && transferStatus === "paid") {
@@ -144,6 +173,7 @@ export async function PATCH(
       { payment_intent: intent.id },
       { idempotencyKey: `booking-cancellation-${id}` }
     );
+    refundCreated = true;
     const refundAmount = refund.amount / 100;
     const { data: refundedBooking, error: finalizeError } = await admin.rpc(
       "finalize_booking_refund",
@@ -161,6 +191,14 @@ export async function PATCH(
       message: `${refundMode === "test" ? "Test r" : "R"}efund completed, partner transfer reversed, inventory restored, and finance voided.`
     });
   } catch (error) {
+    if (claimedFinancial && !refundCreated) {
+      const releaseFinancialAdmin = createAdminClient();
+      const { error: payoutReleaseError } = await releaseFinancialAdmin.from("booking_financials").update({
+        stripe_transfer_status: claimedFinancial.previousTransferStatus,
+        stripe_transfer_error: null,
+      }).eq("id", claimedFinancial.id).eq("status", "eligible").eq("stripe_transfer_status", "cancelled");
+      if (payoutReleaseError) console.error("Cancellation payout reservation release failed", payoutReleaseError);
+    }
     if (claimedRequestId) {
       const releaseAdmin = createAdminClient();
       const { error: releaseError } = await releaseAdmin.from("booking_cancellation_requests").update({
