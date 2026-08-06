@@ -33,7 +33,7 @@ export default function HomePage() {
                 <div className="mt-8 flex flex-wrap gap-3 text-sm font-semibold text-slate-600">
                   <span className="trust-chip"><Check /> Premium-only collection</span>
                   <span className="trust-chip"><Check /> Transparent trip totals</span>
-                  <span className="trust-chip"><Check /> Test payments only</span>
+                  <span className="trust-chip"><Check /> Secure live payments</span>
                 </div>
               </div>
               <div className="journey-panel">
@@ -103,7 +103,7 @@ export default function HomePage() {
         <section className="bg-slate-950 py-20 text-white">
           <div className="container-page">
             <div className="grid gap-12 lg:grid-cols-[.9fr_1.1fr]">
-              <div><span className="section-kicker text-violet-300">Built around trust</span><h2 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">Premium travel with clearer boundaries.</h2><p className="mt-5 text-lg leading-8 text-slate-300">iRatePilot starts with directly approved properties. We do not claim unapproved OTA partnerships, live rates, or active payment processing.</p></div>
+              <div><span className="section-kicker text-violet-300">Built around trust</span><h2 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">Premium travel with clearer boundaries.</h2><p className="mt-5 text-lg leading-8 text-slate-300">iRatePilot starts with directly approved properties. We do not claim unapproved OTA partnerships or live rates beyond inventory supplied by approved partners.</p></div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <article className="dark-feature"><ShieldCheck /><strong>Admin-approved inventory</strong><p>Partner properties remain drafts until reviewed and published.</p></article>
                 <article className="dark-feature"><Building2 /><strong>4- and 5-star focus</strong><p>Hotels, resorts, and professionally managed vacation homes.</p></article>
