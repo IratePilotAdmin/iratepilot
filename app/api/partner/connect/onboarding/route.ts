@@ -19,6 +19,12 @@ export async function POST(request: Request) {
     }
     if (!partner) return NextResponse.json({ error: "Create a partner account first." }, { status: 409 });
 
+    if (partner.stripe_connect_account_id && partner.stripe_connect_mode === "live" && mode === "test") {
+      return NextResponse.json({
+        error: "A live payout account is already connected. Test-mode onboarding cannot replace it."
+      }, { status: 409 });
+    }
+
     const stripe = getStripe();
     let accountId = partner.stripe_connect_mode === mode ? partner.stripe_connect_account_id : null;
     if (!accountId) {
@@ -39,7 +45,7 @@ export async function POST(request: Request) {
         }
       });
       accountId = account.id;
-      await admin.from("partners").update({
+      const { error: updateError } = await admin.from("partners").update({
         stripe_connect_account_id: accountId,
         stripe_connect_mode: mode,
         stripe_connect_status: "not_started",
@@ -49,6 +55,7 @@ export async function POST(request: Request) {
         stripe_connect_requirements_due: [],
         stripe_connect_updated_at: new Date().toISOString()
       }).eq("id", partner.id);
+      if (updateError) throw updateError;
     }
 
     const origin = new URL(request.url).origin;
