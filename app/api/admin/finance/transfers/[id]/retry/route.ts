@@ -4,12 +4,19 @@ import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe, isLivePartnerPayoutsEnabled, isStripeTestMode, stripeMode } from "@/lib/stripe";
 
+function isAmbiguousStripeTransferError(error: unknown) {
+  const type = (error as { type?: unknown } | null)?.type;
+  return type === "StripeConnectionError" || type === "StripeAPIError";
+}
+
 export async function POST(
   _request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   let claimedFinancialId: string | null = null;
   let transferAttempted = false;
+  let transferConfirmed = false;
+  let wasIndeterminate = false;
   try {
     const auth = await requireRole(["admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -29,6 +36,8 @@ export async function POST(
     if (financial.stripe_transfer_id || !["failed", "not_started", "pending"].includes(financial.stripe_transfer_status)) {
       return NextResponse.json({ error: "This transfer cannot be retried." }, { status: 409 });
     }
+
+    wasIndeterminate = financial.stripe_transfer_status === "pending";
 
     const booking = financial.bookings as unknown as {
       confirmation_code: string;
@@ -100,6 +109,7 @@ export async function POST(
         }
       }, { idempotencyKey: `booking-transfer-${financial.booking_id}` });
     }
+    transferConfirmed = true;
 
     const { error: updateError } = await admin.from("booking_financials").update({
       stripe_transfer_id: transfer.id,
@@ -115,10 +125,11 @@ export async function POST(
   } catch (error) {
     if (claimedFinancialId) {
       const admin = createAdminClient();
+      const keepPending = wasIndeterminate || transferConfirmed || (transferAttempted && isAmbiguousStripeTransferError(error));
       await admin.from("booking_financials").update({
-        stripe_transfer_status: transferAttempted ? "pending" : "failed",
-        stripe_transfer_error: transferAttempted
-          ? "Stripe transfer may have been created; persistence reconciliation required."
+        stripe_transfer_status: keepPending ? "pending" : "failed",
+        stripe_transfer_error: keepPending
+          ? "Stripe transfer may exist; persistence reconciliation required."
           : error instanceof Error ? error.message.slice(0, 500) : "Transfer retry failed",
       }).eq("id", claimedFinancialId).eq("stripe_transfer_status", "pending").is("stripe_transfer_id", null);
     }
