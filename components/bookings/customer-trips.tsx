@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { TripCalendarButton } from "@/components/bookings/trip-calendar-button";
 import { TripStatusTimeline } from "@/components/bookings/trip-status-timeline";
 import { getBookingStatusLabel, type BookingStatusHistoryEntry } from "@/lib/bookings/status-history";
+import type { BookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
 
 type CancellationRequest = {
   id: string;
@@ -33,6 +34,7 @@ type Trip = {
 export function CustomerTrips() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [message, setMessage] = useState("Loading trips…");
+  const [paymentMode, setPaymentMode] = useState<BookingPaymentMode | null>(null);
   const [cancellationBookingId, setCancellationBookingId] = useState<string | null>(null);
   const [cancellationReason, setCancellationReason] = useState("");
   const [cancellationSubmitting, setCancellationSubmitting] = useState(false);
@@ -43,6 +45,7 @@ export function CustomerTrips() {
         const body = await response.json();
         if (!response.ok) throw new Error(body.error);
         setTrips(body.data);
+        setPaymentMode(body.paymentMode === "test" || body.paymentMode === "live" ? body.paymentMode : null);
         setMessage("");
       })
       .catch((error: Error) => setMessage(error.message));
@@ -150,7 +153,7 @@ export function CustomerTrips() {
               <div className="flex flex-wrap gap-2 lg:justify-end">
                 <Link href={confirmationHref} className="btn-secondary">View confirmation</Link>
                 <Link href={`/account/support?booking=${encodeURIComponent(trip.id)}`} className="btn-secondary">Message property</Link>
-                {trip.status === "confirmed" && !trip.payment_collected && <Link href={`/account/trips/${encodeURIComponent(trip.id)}/pay`} className="btn-primary">Pay now (test)</Link>}
+                {trip.status === "confirmed" && !trip.payment_collected && paymentMode && <Link href={`/account/trips/${encodeURIComponent(trip.id)}/pay`} className="btn-primary">Pay now{paymentMode === "test" ? " (test)" : ""}</Link>}
                 {trip.status === "confirmed" && <TripCalendarButton details={calendarDetails} />}
                 {trip.status === "pending" ? (
                   <button onClick={() => cancel(trip.id)} className="btn-secondary">Cancel request</button>

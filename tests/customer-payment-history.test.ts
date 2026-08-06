@@ -21,7 +21,7 @@ describe("customer payment history", () => {
       booking({ id: "booking-3", total: 90, status: "pending", stripe_payment_intent_id: null }),
     ]);
     expect(history.entries.map((entry) => entry.state)).toEqual(["paid", "refunded", "not_collected"]);
-    expect(history.summary).toEqual({ testPayments: 2, collected: 370, refunded: 150, net: 220, unpaidRequests: 1 });
+    expect(history.summary).toEqual({ testPayments: 2, livePayments: 0, collected: 370, refunded: 150, net: 220, unpaidRequests: 1 });
   });
 
   it("shows an in-flight cancellation as a refund under review", () => {
@@ -39,10 +39,20 @@ describe("customer payment history", () => {
     expect(component).not.toContain("stripe_refund_id");
   });
 
-  it("replaces the starter payment-method module with a test-mode ledger", () => {
+  it("supports test and live payment records without exposing card data", () => {
     expect(page).toContain("<CustomerPaymentHistory />");
     expect(page).not.toContain("Starter account module");
-    expect(component).toContain("This private pilot uses Stripe test mode.");
+    expect(component).toContain("Payments are handled securely by Stripe");
     expect(component).toContain("No payment collected");
+  });
+
+  it("counts live and test payments separately", () => {
+    const history = buildCustomerPaymentHistory([
+      booking({ stripe_payment_mode: "test" }),
+      booking({ id: "booking-live", stripe_payment_mode: "live" }),
+    ]);
+    expect(history.summary.testPayments).toBe(1);
+    expect(history.summary.livePayments).toBe(1);
+    expect(history.entries.map((entry) => entry.paymentMode)).toEqual(["test", "live"]);
   });
 });

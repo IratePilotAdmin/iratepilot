@@ -15,12 +15,14 @@ export function getBookingFinalizationRefundKey(paymentIntentId: string) {
   return `booking-finalization-refund-${paymentIntentId}`;
 }
 
-export function refundUnfinalizedTestBooking(paymentIntentId: string) {
+export function refundUnfinalizedBookingPayment(paymentIntentId: string) {
   return getStripe().refunds.create(
     { payment_intent: paymentIntentId },
     { idempotencyKey: getBookingFinalizationRefundKey(paymentIntentId) },
   );
 }
+
+export const refundUnfinalizedTestBooking = refundUnfinalizedBookingPayment;
 
 export function isCompletableBookingIntent(intent: Stripe.PaymentIntent, expectedUserId?: string) {
   const metadata = intent.metadata;

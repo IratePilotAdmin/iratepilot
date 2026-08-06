@@ -1,9 +1,12 @@
+import type { BookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
+
 export type BookingConfirmationStatus = "pending" | "confirmed" | "cancelled" | "refunded";
 
 export function getBookingConfirmationPresentation(
   status: BookingConfirmationStatus,
   paid: boolean,
   replayed = false,
+  paymentMode?: BookingPaymentMode | null,
 ) {
   if (status === "pending") {
     return replayed
@@ -18,7 +21,9 @@ export function getBookingConfirmationPresentation(
   }
   if (status === "confirmed") {
     return paid
-      ? { title: "Your test stay is confirmed", message: "Stripe test mode was used. No real money was charged." }
+      ? paymentMode === "live"
+        ? { title: "Your stay is confirmed", message: "Your secure payment was received and your reservation is confirmed." }
+        : { title: "Your test stay is confirmed", message: "Stripe test mode was used. No real money was charged." }
       : { title: "Your booking is confirmed", message: "The property approved your request. No payment was collected." };
   }
   if (status === "refunded") {

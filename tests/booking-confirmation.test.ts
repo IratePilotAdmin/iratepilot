@@ -6,6 +6,7 @@ describe("booking confirmation presentation", () => {
     expect(getBookingConfirmationPresentation("pending", false).title).toBe("Your booking request was sent");
     expect(getBookingConfirmationPresentation("pending", false, true).title).toBe("Your request is already pending");
     expect(getBookingConfirmationPresentation("confirmed", true).title).toBe("Your test stay is confirmed");
+    expect(getBookingConfirmationPresentation("confirmed", true, false, "live").title).toBe("Your stay is confirmed");
     expect(getBookingConfirmationPresentation("confirmed", false).title).toBe("Your booking is confirmed");
   });
 
