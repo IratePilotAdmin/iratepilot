@@ -7,7 +7,8 @@ export async function POST(request: Request) {
   try {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-    if (!isPartnerConnectEnabled()) return NextResponse.json({ error: "Partner payouts are not enabled for this Stripe environment." }, { status: 403 });\n    const mode = stripeMode();
+    if (!isPartnerConnectEnabled()) return NextResponse.json({ error: "Partner payouts are not enabled for this Stripe environment." }, { status: 403 });
+    const mode = stripeMode();
     const admin = createAdminClient();
     const { data: partner, error } = await admin.from("partners")
       .select("id,business_name,status,stripe_connect_account_id,stripe_connect_mode")
@@ -40,7 +41,12 @@ export async function POST(request: Request) {
       accountId = account.id;
       await admin.from("partners").update({
         stripe_connect_account_id: accountId,
+        stripe_connect_mode: mode,
         stripe_connect_status: "not_started",
+        stripe_connect_details_submitted: false,
+        stripe_connect_charges_enabled: false,
+        stripe_connect_payouts_enabled: false,
+        stripe_connect_requirements_due: [],
         stripe_connect_updated_at: new Date().toISOString()
       }).eq("id", partner.id);
     }
@@ -58,4 +64,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Stripe Connect onboarding could not be started." }, { status: 503 });
   }
 }
-
