@@ -9,7 +9,7 @@ export async function POST(
   context: { params: Promise<{ id: string }> }
 ) {
   let claimedFinancialId: string | null = null;
-  let transferCreated = false;
+  let transferAttempted = false;
   try {
     const auth = await requireRole(["admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -85,6 +85,7 @@ export async function POST(
         && !candidate.reversed;
     });
     if (!transfer) {
+      transferAttempted = true;
       transfer = await stripe.transfers.create({
         amount,
         currency: "usd",
@@ -100,7 +101,6 @@ export async function POST(
       }, { idempotencyKey: `booking-transfer-${financial.booking_id}` });
     }
 
-    transferCreated = true;
     const { error: updateError } = await admin.from("booking_financials").update({
       stripe_transfer_id: transfer.id,
       stripe_transfer_status: "paid",
@@ -116,9 +116,9 @@ export async function POST(
     if (claimedFinancialId) {
       const admin = createAdminClient();
       await admin.from("booking_financials").update({
-        stripe_transfer_status: transferCreated ? "pending" : "failed",
-        stripe_transfer_error: transferCreated
-          ? "Stripe transfer created; persistence reconciliation required."
+        stripe_transfer_status: transferAttempted ? "pending" : "failed",
+        stripe_transfer_error: transferAttempted
+          ? "Stripe transfer may have been created; persistence reconciliation required."
           : error instanceof Error ? error.message.slice(0, 500) : "Transfer retry failed",
       }).eq("id", claimedFinancialId).eq("stripe_transfer_status", "pending").is("stripe_transfer_id", null);
     }
