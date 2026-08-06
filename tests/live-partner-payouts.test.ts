@@ -5,6 +5,7 @@ const stripe = readFileSync(new URL("../lib/stripe.ts", import.meta.url), "utf8"
 const statusRoute = readFileSync(new URL("../app/api/partner/connect/route.ts", import.meta.url), "utf8");
 const onboardingRoute = readFileSync(new URL("../app/api/partner/connect/onboarding/route.ts", import.meta.url), "utf8");
 const dashboardRoute = readFileSync(new URL("../app/api/partner/connect/dashboard/route.ts", import.meta.url), "utf8");
+const approvedPayment = readFileSync(new URL("../lib/bookings/complete-approved-booking-test-payment.ts", import.meta.url), "utf8");
 const migration = readFileSync(new URL("../supabase/migrations/202608060029_partner_connect_modes.sql", import.meta.url), "utf8");
 const rollback = readFileSync(new URL("../supabase/rollbacks/202608060029_partner_connect_modes.rollback.sql", import.meta.url), "utf8");
 
@@ -21,6 +22,29 @@ describe("live partner payout safeguards", () => {
       expect(route).toContain("stripeMode");
       expect(route).toContain("stripe_connect_mode");
     }
+  });
+
+  it("never lets test mode replace an existing live Connect account", () => {
+    expect(onboardingRoute).toContain('partner.stripe_connect_mode === "live" && mode === "test"');
+    expect(onboardingRoute).toContain("Test-mode onboarding cannot replace it.");
+    expect(onboardingRoute.indexOf('partner.stripe_connect_mode === "live" && mode === "test"'))
+      .toBeLessThan(onboardingRoute.indexOf("stripe.accounts.create"));
+  });
+
+  it("creates live transfers only behind the live gate and for live payout-ready accounts", () => {
+    expect(approvedPayment).toContain("isLivePartnerPayoutsEnabled()");
+    expect(approvedPayment).toContain('partner.stripe_connect_mode !== "live"');
+    expect(approvedPayment).toContain("partner.stripe_connect_payouts_enabled");
+    expect(approvedPayment).toContain("getStripe().transfers.create");
+    expect(approvedPayment).toContain('idempotencyKey: `booking-transfer-${booking.id}`');
+    expect(approvedPayment).toContain('if (paymentMode === "live") await createLivePartnerTransfer');
+  });
+
+  it("records transfer failures without reversing a completed customer booking", () => {
+    expect(approvedPayment).toContain('console.error("Stripe live partner transfer failed"');
+    expect(approvedPayment).toContain('stripe_transfer_status: "failed"');
+    expect(approvedPayment.indexOf("await createLivePartnerTransfer(booking, intent)"))
+      .toBeGreaterThan(approvedPayment.indexOf("booking = data as Booking"));
   });
 
   it("tracks account environment and blocks unsafe rollback after live onboarding", () => {
