@@ -98,6 +98,9 @@ export async function PATCH(
     if (financialError) throw financialError;
 
     let transferStatus = financial?.stripe_transfer_status;
+    if (transferStatus === "pending") {
+      return NextResponse.json({ error: "The partner payout is currently processing. Retry the cancellation after payout reconciliation completes." }, { status: 409 });
+    }
     if (financial && transferStatus === "paid" && !financial.stripe_transfer_id) {
       return NextResponse.json({ error: "The paid partner transfer reference is missing." }, { status: 409 });
     }
