@@ -63,6 +63,7 @@ describe("live partner payout safeguards", () => {
     expect(transferRetry).toContain('["failed", "not_started", "pending"]');
     expect(transferRetry).toContain("stripe.transfers.list({ transfer_group: transferGroup");
     expect(transferRetry).toContain("candidate.metadata.booking_id === financial.booking_id");
+    expect(transferRetry).not.toContain('if (financial.stripe_transfer_status === "pending")');
     expect(transferRetry.indexOf("stripe.transfers.list"))
       .toBeLessThan(transferRetry.indexOf("stripe.transfers.create"));
     expect(transferRetry).toContain('idempotencyKey: `booking-transfer-${financial.booking_id}`');
