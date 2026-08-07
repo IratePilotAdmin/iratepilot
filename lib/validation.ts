@@ -72,6 +72,18 @@ export const propertySchema = z.object({
   country: z.string().trim().min(2).max(100)
 }).merge(propertyContentSchema);
 
+export const pmsConnectionSchema = z.object({
+  propertyId: z.string().uuid(),
+  providerId: z.enum([
+    "oracle-opera", "hilton-pep", "hilton-onq", "marriott-fosse",
+    "marriott-fs-pms", "hotelkey", "oracle-opera-5", "infor-hms",
+    "agilysys-pms", "planet-protel", "mews", "stayntouch", "cloudbeds",
+    "sihot", "rms-cloud", "maestro-pms", "apaleo", "shiji-pms",
+    "guestline", "ezee-absolute", "clock-pms-plus", "hotelogix",
+  ]),
+  externalPropertyCode: z.string().trim().min(1).max(120),
+});
+
 const roomFieldsSchema = z.object({
   name: z.string().trim().min(2).max(120),
   maxGuests: z.coerce.number().int().min(inventoryLimits.minGuests).max(inventoryLimits.maxGuests),
