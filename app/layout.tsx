@@ -12,9 +12,6 @@ export const metadata: Metadata = {
   applicationName: "iRatePilot",
   title: { default: siteTitle, template: "%s | iRatePilot" },
   description: siteDescription,
-  alternates: {
-    canonical: "/",
-  },
   robots: {
     index: true,
     follow: true,
