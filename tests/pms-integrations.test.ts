@@ -65,6 +65,41 @@ describe("PMS integration foundation", () => {
     expect(JSON.stringify(result)).not.toContain("hotelkey-client");
   });
 
+  it.each([
+    ["mews", "PMS_MEWS"],
+    ["cloudbeds", "PMS_CLOUDBEDS"],
+    ["apaleo", "PMS_APALEO"],
+  ])("validates complete %s configuration without exposing values", (providerId, prefix) => {
+    const secret = "provider-secret-value";
+    const result = buildPmsReadiness({
+      [`${prefix}_BASE_URL`]: "https://partner.example.invalid",
+      [`${prefix}_CLIENT_ID`]: "client-id",
+      [`${prefix}_CLIENT_SECRET`]: secret,
+    });
+    const provider = result.find((item) => item.id === providerId);
+
+    expect(provider?.status).toBe("ready_for_validation");
+    expect(provider?.invalidConfiguration).toEqual([]);
+    expect(JSON.stringify(provider)).not.toContain(secret);
+  });
+
+  it("rejects insecure endpoints and undersized secrets by key name only", () => {
+    const result = buildPmsReadiness({
+      PMS_MEWS_BASE_URL: "http://partner.example.invalid",
+      PMS_MEWS_CLIENT_ID: "client-id",
+      PMS_MEWS_CLIENT_SECRET: "short",
+    });
+    const mews = result.find((provider) => provider.id === "mews");
+
+    expect(mews?.status).toBe("invalid_configuration");
+    expect(mews?.invalidConfiguration).toEqual([
+      "PMS_MEWS_BASE_URL",
+      "PMS_MEWS_CLIENT_SECRET",
+    ]);
+    expect(JSON.stringify(mews)).not.toContain("partner.example.invalid");
+    expect(JSON.stringify(mews)).not.toContain("short");
+  });
+
   it("protects PMS readiness behind the admin role and disables caching", () => {
     expect(route).toContain('requireRole(["admin"])');
     expect(route).toContain('"Cache-Control": "no-store"');

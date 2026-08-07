@@ -38,6 +38,7 @@ export type PmsAccessModel =
 export type PmsConnectionStatus =
   | "not_configured"
   | "credentials_required"
+  | "invalid_configuration"
   | "ready_for_validation";
 
 export type SupplierHotel = {
@@ -67,6 +68,7 @@ export type PmsProviderReadiness = {
   capabilities: readonly PmsCapability[];
   certificationRequired: boolean;
   missingConfiguration: string[];
+  invalidConfiguration: string[];
   documentationUrl?: string;
   notes: string;
 };
