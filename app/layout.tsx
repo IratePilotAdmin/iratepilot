@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { PwaRegistration } from "@/components/pwa-registration";
 import "./globals.css";
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.iratepilot.com";
+const siteUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://www.iratepilot.com").replace(/\/$/, "");
 const siteTitle = "iRatePilot | Book Hotels & Vacation Homes";
 const siteDescription =
   "Search and book curated hotels, resorts, and vacation homes with transparent rates and secure online payments.";
