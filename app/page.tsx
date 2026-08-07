@@ -80,7 +80,7 @@ export default function HomePage() {
               <Link href="/search">View all properties <ArrowRight /></Link>
             </div>
             <div className="mt-9 grid gap-6 lg:grid-cols-3">
-              {hotels.slice(0, 3).map((hotel) => <HotelCard key={hotel.slug} hotel={hotel} variant="grid" />)}
+              {hotels.slice(0, 3).map((hotel) => <HotelCard key={hotel.slug} hotel={hotel} variant="grid" hotelHref={`/search?destination=${encodeURIComponent(hotel.city)}`} />)}
             </div>
           </div>
         </section>
