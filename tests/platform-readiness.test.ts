@@ -41,6 +41,21 @@ describe("platform readiness console", () => {
     expect(result.items.find((item) => item.id === "database")?.status).toBe("attention");
   });
 
+  it("recognizes a fully gated commercial booking configuration", () => {
+    const result = buildPlatformReadiness({
+      ...configured,
+      PILOT_MODE: "false",
+      STRIPE_SECRET_KEY: "sk_live_secret-value",
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_live_public-value",
+      NEXT_PUBLIC_PUBLIC_BOOKING: "true",
+      ENABLE_LIVE_BOOKING_PAYMENTS: "true",
+      ENABLE_LIVE_STRIPE_WEBHOOKS: "true",
+    }, true);
+    expect(result.requiredReady).toBe(true);
+    expect(result.items.find((item) => item.id === "live_booking_payments")?.status).toBe("ready");
+    expect(result.items.find((item) => item.id === "live_stripe_webhooks")?.status).toBe("ready");
+  });
+
   it("replaces the mutable-settings placeholder with a read-only console", () => {
     expect(page).toContain("<AdminSettings />");
     expect(page).not.toContain("Administrative module placeholder");

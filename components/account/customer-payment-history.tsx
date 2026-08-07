@@ -6,15 +6,15 @@ import type { CustomerPaymentEntry, PaymentState } from "@/lib/account/payment-h
 
 type PaymentHistory = {
   entries: CustomerPaymentEntry[];
-  summary: { testPayments: number; collected: number; refunded: number; net: number; unpaidRequests: number };
+  summary: { testPayments: number; livePayments: number; collected: number; refunded: number; net: number; unpaidRequests: number };
   truncated: boolean;
 };
 
 const money = (value: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
 const labels: Record<PaymentState, string> = {
-  paid: "Paid in test mode",
+  paid: "Paid",
   refund_pending: "Refund under review",
-  refunded: "Refunded in test mode",
+  refunded: "Refunded",
   not_collected: "No payment collected",
 };
 
@@ -38,16 +38,16 @@ export function CustomerPaymentHistory() {
 
   return <>
     <div className="mt-6 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-950">
-      This private pilot uses Stripe test mode. These records are not live card charges, and iRatePilot does not store card numbers.
+      Payments are handled securely by Stripe, and iRatePilot does not store card numbers. Test-mode records are labeled below and are not live card charges.
     </div>
     {data.truncated && <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Showing your 200 most recent booking payment records.</p>}
 
     <section className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
       {[
-        ["Test payments", data.summary.testPayments.toLocaleString()],
-        ["Collected in test mode", money(data.summary.collected)],
-        ["Refunded in test mode", money(data.summary.refunded)],
-        ["Net test payments", money(data.summary.net)],
+        ["Payments", (data.summary.testPayments + data.summary.livePayments).toLocaleString()],
+        ["Collected", money(data.summary.collected)],
+        ["Refunded", money(data.summary.refunded)],
+        ["Net payments", money(data.summary.net)],
       ].map(([label, value]) => <article className="card p-6" key={label}><span className="text-sm text-slate-500">{label}</span><strong className="mt-2 block text-2xl">{value}</strong></article>)}
     </section>
 
@@ -59,7 +59,7 @@ export function CustomerPaymentHistory() {
         </select></label>
       </div>
       <div className="divide-y">{visible.map((entry) => <article className="grid gap-5 p-6 lg:grid-cols-[1fr_auto]" key={entry.bookingId}>
-        <div><div className="flex flex-wrap items-center gap-2"><strong>{entry.propertyName}</strong><span className="badge">{labels[entry.state]}</span></div>
+        <div><div className="flex flex-wrap items-center gap-2"><strong>{entry.propertyName}</strong><span className="badge">{labels[entry.state]}{entry.paymentMode === "test" && entry.state !== "not_collected" ? " in test mode" : ""}</span></div>
           <p className="mt-1 text-sm text-slate-500">{entry.roomName} · {entry.checkIn} to {entry.checkOut}</p>
           <p className="mt-3 text-xs uppercase tracking-wider text-slate-500">{entry.confirmationCode}</p>
           <Link className="mt-4 inline-block text-sm font-semibold text-brand-700" href={`/booking-confirmation?code=${encodeURIComponent(entry.confirmationCode)}`}>View booking confirmation →</Link>

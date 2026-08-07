@@ -6,6 +6,22 @@ export function getStripe() {
   return new Stripe(secret);
 }
 
+export function stripeMode() {
+  if (process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_")) return "live" as const;
+  if (process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_")) return "test" as const;
+  return null;
+}
+
 export function isStripeTestMode() {
-  return process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_") === true;
+  return stripeMode() === "test";
+}
+
+export function isLivePartnerPayoutsEnabled() {
+  return process.env.ENABLE_LIVE_PARTNER_PAYOUTS === "true"
+    && process.env.PILOT_MODE === "false"
+    && stripeMode() === "live";
+}
+
+export function isPartnerConnectEnabled() {
+  return isStripeTestMode() || isLivePartnerPayoutsEnabled();
 }

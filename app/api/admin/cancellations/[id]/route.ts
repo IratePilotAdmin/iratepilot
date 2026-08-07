@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe } from "@/lib/stripe";
 import { cancellationClaimTimeoutMs, isCancellationClaimStale } from "@/lib/bookings/cancellation-claims";
 import { queueBookingNotification } from "@/lib/email/booking-notifications";
+import { getStripeWebhookMode, type BookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
 
 const schema = z.object({
   decision: z.enum(["approve", "reject"]),
@@ -22,13 +23,15 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid cancellation request ID." }, { status: 400 });
   }
   let claimedRequestId: string | null = null;
+  let claimedFinancial: { id: string; previousTransferStatus: string } | null = null;
+  let refundCreated = false;
   try {
     const auth = await requireRole(["admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
     const admin = createAdminClient();
     const { data: cancellation, error } = await admin
       .from("booking_cancellation_requests")
-      .select("id,status,reason,updated_at,booking_id,bookings(id,customer_id,confirmation_code,total,status,stripe_payment_intent_id)")
+      .select("id,status,reason,updated_at,booking_id,bookings(id,customer_id,confirmation_code,total,status,stripe_payment_intent_id,stripe_payment_mode)")
       .eq("id", id).single();
     if (error || !cancellation) return NextResponse.json({ error: "Cancellation request not found." }, { status: 404 });
     if (cancellation.status !== "pending" && !isCancellationClaimStale(cancellation.status, cancellation.updated_at)) {
@@ -61,6 +64,7 @@ export async function PATCH(
       customer_id: string;
       confirmation_code: string;
       stripe_payment_intent_id: string | null;
+      stripe_payment_mode: BookingPaymentMode | null;
     };
     if (booking.status !== "confirmed") {
       return NextResponse.json({ error: "Only a confirmed booking can be refunded." }, { status: 409 });
@@ -80,8 +84,9 @@ export async function PATCH(
 
     const stripe = getStripe();
     const intent = await stripe.paymentIntents.retrieve(booking.stripe_payment_intent_id);
-    if (intent.livemode) {
-      return NextResponse.json({ error: "Live refunds are disabled during the private pilot." }, { status: 403 });
+    const refundMode = getStripeWebhookMode();
+    if (!refundMode || booking.stripe_payment_mode !== refundMode || intent.livemode !== (refundMode === "live")) {
+      return NextResponse.json({ error: "The payment environment is not enabled for refunds." }, { status: 403 });
     }
     if (intent.status !== "succeeded") {
       return NextResponse.json({ error: "The Stripe payment is not eligible for refund." }, { status: 409 });
@@ -95,11 +100,32 @@ export async function PATCH(
     if (financialError) throw financialError;
 
     let transferStatus = financial?.stripe_transfer_status;
+    if (transferStatus === "pending") {
+      return NextResponse.json({ error: "The partner payout is currently processing. Retry the cancellation after payout reconciliation completes." }, { status: 409 });
+    }
     if (financial && transferStatus === "paid" && !financial.stripe_transfer_id) {
       return NextResponse.json({ error: "The paid partner transfer reference is missing." }, { status: 409 });
     }
     if (financial?.status === "paid" && transferStatus !== "paid" && transferStatus !== "reversed") {
       return NextResponse.json({ error: "The partner transfer must be reversed before refunding this booking." }, { status: 409 });
+    }
+
+    if (financial?.status === "eligible" && transferStatus && ["not_started", "failed"].includes(transferStatus)) {
+      const { data: payoutReservation, error: payoutReservationError } = await admin.from("booking_financials").update({
+        stripe_transfer_status: "cancelled",
+        stripe_transfer_error: "Reserved for approved customer refund",
+      }).eq("id", financial.id)
+        .eq("status", "eligible")
+        .is("stripe_transfer_id", null)
+        .in("stripe_transfer_status", ["not_started", "failed"])
+        .select("id")
+        .maybeSingle();
+      if (payoutReservationError) throw payoutReservationError;
+      if (!payoutReservation) {
+        return NextResponse.json({ error: "The partner payout state changed. Refresh and retry the cancellation." }, { status: 409 });
+      }
+      claimedFinancial = { id: financial.id, previousTransferStatus: transferStatus };
+      transferStatus = "cancelled";
     }
 
     const claimTime = new Date().toISOString();
@@ -114,7 +140,16 @@ export async function PATCH(
       .select("id")
       .maybeSingle();
     if (claimError) throw claimError;
-    if (!claim) return NextResponse.json({ error: "This request is already being reviewed." }, { status: 409 });
+    if (!claim) {
+      if (claimedFinancial) {
+        await admin.from("booking_financials").update({
+          stripe_transfer_status: claimedFinancial.previousTransferStatus,
+          stripe_transfer_error: null,
+        }).eq("id", claimedFinancial.id).eq("status", "eligible").eq("stripe_transfer_status", "cancelled");
+        claimedFinancial = null;
+      }
+      return NextResponse.json({ error: "This request is already being reviewed." }, { status: 409 });
+    }
     claimedRequestId = id;
 
     if (financial && transferStatus === "paid") {
@@ -138,9 +173,10 @@ export async function PATCH(
       { payment_intent: intent.id },
       { idempotencyKey: `booking-cancellation-${id}` }
     );
+    refundCreated = true;
     const refundAmount = refund.amount / 100;
     const { data: refundedBooking, error: finalizeError } = await admin.rpc(
-      "finalize_test_booking_refund",
+      "finalize_booking_refund",
       {
         p_request_id: id,
         p_refund_id: refund.id,
@@ -149,12 +185,20 @@ export async function PATCH(
     );
     if (finalizeError) throw finalizeError;
     claimedRequestId = null;
-    await queueBookingNotification({ event: "refund_completed", bookingId: booking.id, confirmationCode: booking.confirmation_code, customerId: booking.customer_id });
+    await queueBookingNotification({ event: "refund_completed", bookingId: booking.id, confirmationCode: booking.confirmation_code, customerId: booking.customer_id, paymentMode: refundMode });
     return NextResponse.json({
       data: refundedBooking,
-      message: "Test refund completed, partner transfer reversed, inventory restored, and finance voided."
+      message: `${refundMode === "test" ? "Test r" : "R"}efund completed, partner transfer reversed, inventory restored, and finance voided.`
     });
   } catch (error) {
+    if (claimedFinancial && !refundCreated) {
+      const releaseFinancialAdmin = createAdminClient();
+      const { error: payoutReleaseError } = await releaseFinancialAdmin.from("booking_financials").update({
+        stripe_transfer_status: claimedFinancial.previousTransferStatus,
+        stripe_transfer_error: null,
+      }).eq("id", claimedFinancial.id).eq("status", "eligible").eq("stripe_transfer_status", "cancelled");
+      if (payoutReleaseError) console.error("Cancellation payout reservation release failed", payoutReleaseError);
+    }
     if (claimedRequestId) {
       const releaseAdmin = createAdminClient();
       const { error: releaseError } = await releaseAdmin.from("booking_cancellation_requests").update({

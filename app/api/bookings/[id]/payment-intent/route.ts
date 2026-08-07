@@ -2,19 +2,19 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { createRequestClient } from "@/lib/supabase/request";
+import { getApprovedBookingMetadataMode, getApprovedBookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
 
 const bookingIdSchema = z.string().uuid();
 
-export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (process.env.ENABLE_TEST_CHECKOUT !== "true" || !process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_")) {
-    return NextResponse.json({ error: "Approved-reservation test payments are disabled." }, { status: 503 });
-  }
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const paymentMode = getApprovedBookingPaymentMode();
+  if (!paymentMode) return NextResponse.json({ error: "Approved-reservation payments are disabled." }, { status: 503 });
 
   const { id } = await params;
   if (!bookingIdSchema.safeParse(id).success) return NextResponse.json({ error: "Invalid booking ID." }, { status: 400 });
 
-  const supabase = await createClient();
+  const supabase = await createRequestClient(request);
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
 
@@ -41,17 +41,18 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     currency: "usd",
     payment_method_types: ["card"],
     metadata: {
-      mode: "approved_booking_test",
+      mode: getApprovedBookingMetadataMode(paymentMode),
       bookingId: booking.id,
       userId: user.id,
       confirmationCode: booking.confirmation_code,
     },
-    description: `Test payment for ${booking.confirmation_code}`,
-  }, { idempotencyKey: `approved-booking-test-payment-${booking.id}` });
+    description: `${paymentMode === "test" ? "Test payment" : "Payment"} for ${booking.confirmation_code}`,
+  }, { idempotencyKey: `approved-booking-${paymentMode}-payment-${booking.id}` });
 
   if (!intent.client_secret) return NextResponse.json({ error: "Stripe did not return a checkout secret." }, { status: 503 });
   return NextResponse.json({
     clientSecret: intent.client_secret,
+    paymentMode,
     breakdown: {
       confirmationCode: booking.confirmation_code,
       propertyName: property?.name || "Property",

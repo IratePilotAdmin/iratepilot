@@ -2,11 +2,46 @@ import type { Metadata, Viewport } from "next";
 import { PwaRegistration } from "@/components/pwa-registration";
 import "./globals.css";
 
+const siteUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://www.iratepilot.com").replace(/\/$/, "");
+const siteTitle = "iRatePilot | Book Hotels & Vacation Homes";
+const siteDescription =
+  "Search and book curated hotels, resorts, and vacation homes with transparent rates and secure online payments.";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${siteUrl}/#website`,
+      url: siteUrl,
+      name: "iRatePilot",
+      alternateName: "iRate Pilot",
+      description: siteDescription,
+      inLanguage: "en-US",
+      publisher: { "@id": `${siteUrl}/#organization` },
+    },
+    {
+      "@type": "Organization",
+      "@id": `${siteUrl}/#organization`,
+      url: siteUrl,
+      name: "iRatePilot",
+      description: siteDescription,
+    },
+  ],
+};
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://www.iratepilot.com"),
+  metadataBase: new URL(siteUrl),
   applicationName: "iRatePilot",
-  title: { default: "iRatePilot | Premium Hotels & Vacation Homes", template: "%s | iRatePilot" },
-  description: "Discover curated 4- and 5-star hotels, resorts, and premium vacation homes.",
+  title: { default: siteTitle, template: "%s | iRatePilot" },
+  description: siteDescription,
+  robots: {
+    index: true,
+    follow: true,
+  },
+  verification: {
+    google: "xGIw-MTpAB7pMkte_o4yhCtq2_UveLttNThqImPiJa8",
+  },
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -18,10 +53,16 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
+    url: siteUrl,
     siteName: "iRatePilot",
-    title: "iRatePilot | Premium Hotels & Vacation Homes",
-    description: "Discover curated premium stays and AI-powered hospitality tools."
-  }
+    title: siteTitle,
+    description: siteDescription,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteTitle,
+    description: siteDescription,
+  },
 };
 
 export const viewport: Viewport = {
@@ -32,5 +73,18 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body>{children}<PwaRegistration /></body></html>;
+  return (
+    <html lang="en">
+      <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
+          }}
+        />
+        {children}
+        <PwaRegistration />
+      </body>
+    </html>
+  );
 }

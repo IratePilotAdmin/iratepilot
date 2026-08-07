@@ -3,20 +3,20 @@ import { z } from "zod";
 import { getStripe } from "@/lib/stripe";
 import {
   ApprovedBookingPaymentFinalizationError,
-  completeApprovedBookingTestPayment,
-  isApprovedBookingTestIntent,
+  completeApprovedBookingPayment,
+  isApprovedBookingPaymentIntent,
 } from "@/lib/bookings/complete-approved-booking-test-payment";
-import { refundUnfinalizedTestBooking } from "@/lib/bookings/complete-paid-test-booking";
+import { refundUnfinalizedBookingPayment } from "@/lib/bookings/complete-paid-test-booking";
 import { createClient } from "@/lib/supabase/server";
 import { queueBookingNotification } from "@/lib/email/booking-notifications";
+import { getApprovedBookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
 
 const requestSchema = z.object({ paymentIntentId: z.string().startsWith("pi_") });
 const bookingIdSchema = z.string().uuid();
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  if (process.env.ENABLE_TEST_CHECKOUT !== "true" || !process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_")) {
-    return NextResponse.json({ error: "Approved-reservation test payments are disabled." }, { status: 503 });
-  }
+  const paymentMode = getApprovedBookingPaymentMode();
+  if (!paymentMode) return NextResponse.json({ error: "Approved-reservation payments are disabled." }, { status: 503 });
   const { id } = await params;
   if (!bookingIdSchema.safeParse(id).success) return NextResponse.json({ error: "Invalid booking ID." }, { status: 400 });
   const parsed = requestSchema.safeParse(await request.json());
@@ -29,20 +29,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   let paidIntentId: string | null = null;
   try {
     const intent = await getStripe().paymentIntents.retrieve(parsed.data.paymentIntentId);
-    if (!isApprovedBookingTestIntent(intent, user.id) || intent.metadata.bookingId !== id) {
-      return NextResponse.json({ error: "The test payment has not been verified for this reservation." }, { status: 409 });
+    if (!isApprovedBookingPaymentIntent(intent, user.id, paymentMode) || intent.metadata.bookingId !== id) {
+      return NextResponse.json({ error: "The payment has not been verified for this reservation." }, { status: 409 });
     }
     paidIntentId = intent.id;
-    const booking = await completeApprovedBookingTestPayment(intent);
-    await queueBookingNotification({ event: "payment_confirmed", bookingId: booking.id, confirmationCode: booking.confirmation_code, customerId: user.id, recipientEmail: user.email });
-    return NextResponse.json({ data: booking, message: "Test payment verified for the approved reservation." });
+    const booking = await completeApprovedBookingPayment(intent);
+    await queueBookingNotification({ event: "payment_confirmed", bookingId: booking.id, confirmationCode: booking.confirmation_code, customerId: user.id, recipientEmail: user.email, paymentMode });
+    return NextResponse.json({ data: booking, message: `${paymentMode === "test" ? "Test p" : "P"}ayment verified for the approved reservation.` });
   } catch (error) {
     console.error("Approved reservation payment completion failed", error);
     if (paidIntentId && error instanceof ApprovedBookingPaymentFinalizationError) {
       try {
-        const refund = await refundUnfinalizedTestBooking(paidIntentId);
+        const refund = await refundUnfinalizedBookingPayment(paidIntentId);
         return NextResponse.json({
-          error: "The approved reservation could not record the test payment. It was automatically refunded.",
+          error: "The approved reservation could not record the payment. It was automatically refunded.",
           refund: { id: refund.id, status: refund.status },
         }, { status: 409 });
       } catch (refundError) {

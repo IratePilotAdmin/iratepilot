@@ -17,6 +17,14 @@ const unpaidCancellationRollback = readFileSync(
   "utf8",
 ).toLowerCase();
 
+const mobilePushTokensRollback = readFileSync(
+  new URL(
+    "../supabase/rollbacks/202608060030_mobile_push_tokens.rollback.sql",
+    import.meta.url,
+  ),
+  "utf8",
+).toLowerCase();
+
 describe("production migration rollback scripts", () => {
   it("refuses to remove booking messages after customer data exists", () => {
     expect(bookingMessagesRollback).toContain(
@@ -35,5 +43,14 @@ describe("production migration rollback scripts", () => {
       "drop function if exists public.cancel_unpaid_confirmed_booking(uuid, text)",
     );
     expect(unpaidCancellationRollback).not.toContain("drop table");
+  });
+
+  it("refuses to remove registered mobile devices before rolling back migration 030", () => {
+    expect(mobilePushTokensRollback).toContain(
+      "refusing rollback: public.mobile_push_tokens contains data",
+    );
+    expect(mobilePushTokensRollback).toContain(
+      "drop table if exists public.mobile_push_tokens",
+    );
   });
 });

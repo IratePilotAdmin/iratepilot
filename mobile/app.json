@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "iRatePilot",
+    "slug": "iratepilot",
+    "owner": "ceoiratepilot",
+    "version": "0.4.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "iratepilot",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.iratepilot.app",
+      "icon": "./assets/icon.png"
+    },
+    "android": {
+      "package": "com.iratepilot.app",
+      "icon": "./assets/icon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#020b36"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "plugins": [
+      "expo-router",
+      ["@stripe/stripe-react-native", { "enableGooglePay": false }],
+      ["expo-notifications", { "defaultChannel": "bookings" }]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "052043d3-9483-4a86-a01f-b9d63cf8df2e"
+      }
+    }
+  }
+}
