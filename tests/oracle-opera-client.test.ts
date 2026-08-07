@@ -63,6 +63,71 @@ describe("OracleOperaClient", () => {
     expect(error).toMatchObject({ code: "timeout" });
     expect(String(error)).not.toContain(config.clientSecret);
   });
+
+  it("shares one in-flight token refresh across concurrent requests", async () => {
+    let releaseToken!: (response: Response) => void;
+    const tokenResponse = new Promise<Response>((resolve) => {
+      releaseToken = resolve;
+    });
+    const fetcher = vi.fn()
+      .mockImplementationOnce(() => tokenResponse)
+      .mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ ok: true }))));
+    const client = new OracleOperaClient(config, fetcher);
+
+    const first = client.request("/one");
+    const second = client.request("/two");
+    expect(fetcher).toHaveBeenCalledTimes(1);
+
+    releaseToken(new Response(JSON.stringify({ access_token: "shared", expires_in: 3600 })));
+    await Promise.all([first, second]);
+    expect(fetcher).toHaveBeenCalledTimes(3);
+  });
+
+  it("honors caller cancellation", async () => {
+    const controller = new AbortController();
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: "token" })))
+      .mockImplementationOnce((_url, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+        if (init?.signal?.aborted) {
+          reject(new DOMException("Aborted", "AbortError"));
+          return;
+        }
+        init?.signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+      }));
+    const client = new OracleOperaClient(config, fetcher);
+
+    const request = client.request("/cancelled", { signal: controller.signal });
+    controller.abort();
+    const error = await request.catch((value) => value);
+    expect(error).toMatchObject({ code: "request_failed" });
+  });
+
+  it("sanitizes malformed JSON and keeps the timeout active while parsing", async () => {
+    const malformed = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: "token" })))
+      .mockResolvedValueOnce(new Response("customer-secret-not-json"));
+    const malformedClient = new OracleOperaClient(config, malformed);
+    const malformedError = await malformedClient.request("/malformed").catch((value) => value);
+    expect(malformedError).toMatchObject({ code: "request_failed" });
+    expect(String(malformedError)).not.toContain("customer-secret-not-json");
+
+    const stalled = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: "token" })))
+      .mockImplementationOnce((_url, init?: RequestInit) => {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener("abort", () => {
+              reject(new DOMException("Aborted", "AbortError"));
+            });
+          }),
+        } as Response);
+      });
+    const stalledClient = new OracleOperaClient({ ...config, timeoutMs: 1 }, stalled);
+    const timeoutError = await stalledClient.request("/stalled").catch((value) => value);
+    expect(timeoutError).toMatchObject({ code: "timeout" });
+  });
 });
 
 describe("loadOracleOperaConfig", () => {
