@@ -17,6 +17,8 @@ export async function GET() {
     publicBookingEnabled: process.env.NEXT_PUBLIC_PUBLIC_BOOKING === "true",
     secretKeyIsLive: process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_") === true,
     publishableKeyIsLive: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.startsWith("pk_live_") === true,
+    liveWebhooksEnabled: process.env.ENABLE_LIVE_STRIPE_WEBHOOKS === "true",
+    webhookSecretConfigured: process.env.STRIPE_WEBHOOK_SECRET?.startsWith("whsec_") === true,
     partnerPayoutsEnabled: process.env.ENABLE_LIVE_PARTNER_PAYOUTS === "true",
     paymentMode: getApprovedBookingPaymentMode(),
   };
