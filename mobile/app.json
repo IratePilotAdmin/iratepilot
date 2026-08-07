@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "iRatePilot",
+    "slug": "iratepilot",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "iratepilot",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.iratepilot.app"
+    },
+    "android": {
+      "package": "com.iratepilot.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#f5f3ff"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
