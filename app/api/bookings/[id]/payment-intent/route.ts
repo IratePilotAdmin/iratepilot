@@ -2,19 +2,19 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { createRequestClient } from "@/lib/supabase/request";
 import { getApprovedBookingMetadataMode, getApprovedBookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
 
 const bookingIdSchema = z.string().uuid();
 
-export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const paymentMode = getApprovedBookingPaymentMode();
   if (!paymentMode) return NextResponse.json({ error: "Approved-reservation payments are disabled." }, { status: 503 });
 
   const { id } = await params;
   if (!bookingIdSchema.safeParse(id).success) return NextResponse.json({ error: "Invalid booking ID." }, { status: 400 });
 
-  const supabase = await createClient();
+  const supabase = await createRequestClient(request);
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
 

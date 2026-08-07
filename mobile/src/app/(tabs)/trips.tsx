@@ -23,6 +23,7 @@ export default function TripsScreen() {
   const { initialized, session, user } = useAuth();
   const accessToken = session?.access_token;
   const [bookings, setBookings] = useState<MobileBooking[]>([]);
+  const [paymentMode, setPaymentMode] = useState<"test" | "live" | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +35,7 @@ export default function TripsScreen() {
     getBookings(accessToken, controller.signal)
       .then((result) => {
         setBookings(result.bookings);
+        setPaymentMode(result.paymentMode);
         setError(null);
       })
       .catch((caught) => {
@@ -52,6 +54,7 @@ export default function TripsScreen() {
     try {
       const result = await getBookings(accessToken);
       setBookings(result.bookings);
+      setPaymentMode(result.paymentMode);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Unable to refresh your trips.");
     } finally {
@@ -92,28 +95,36 @@ export default function TripsScreen() {
           <View style={styles.emptyCard}><Text style={styles.emptyTitle}>No trips yet</Text><Text style={styles.emptyText}>Search for a hotel and send your first booking request.</Text></View>
         ) : null}
 
-        {bookings.map((booking) => (
-          <View key={booking.id} style={styles.card}>
-            <View style={styles.cardHeader}>
-              <View style={styles.cardTitleGroup}>
-                <Text style={styles.hotel}>{booking.properties?.name ?? "iRatePilot hotel"}</Text>
-                <Text style={styles.location}>{booking.properties ? `${booking.properties.city}, ${booking.properties.country}` : "Partner property"}</Text>
+        {bookings.map((booking) => {
+          const canPay = booking.status === "confirmed" && !booking.payment_collected && paymentMode !== null;
+          return (
+            <View key={booking.id} style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardTitleGroup}>
+                  <Text style={styles.hotel}>{booking.properties?.name ?? "iRatePilot hotel"}</Text>
+                  <Text style={styles.location}>{booking.properties ? `${booking.properties.city}, ${booking.properties.country}` : "Partner property"}</Text>
+                </View>
+                <Text style={styles.status}>{booking.status.replaceAll("_", " ")}</Text>
               </View>
-              <Text style={styles.status}>{booking.status.replaceAll("_", " ")}</Text>
+              <Text style={styles.code}>{booking.confirmation_code}</Text>
+              <View style={styles.row}><Text style={styles.rowLabel}>Stay</Text><Text style={styles.rowValue}>{booking.check_in} – {booking.check_out}</Text></View>
+              <View style={styles.row}><Text style={styles.rowLabel}>Room</Text><Text style={styles.rowValue}>{booking.rooms?.name ?? "Selected room"} · {booking.guests} {booking.guests === 1 ? "guest" : "guests"}</Text></View>
+              <View style={styles.row}><Text style={styles.rowLabel}>Total</Text><Text style={styles.total}>{money(booking.total)}</Text></View>
+              <View style={styles.payment}>
+                <Text style={styles.paymentTitle}>{booking.payment_collected ? "Payment recorded" : booking.status === "pending" ? "No payment due while pending" : canPay ? "Secure payment available" : "Payment not collected"}</Text>
+                <Text style={styles.paymentText}>{booking.payment_collected ? "Your transaction is linked to this reservation." : canPay ? "Pay by card in the secure iRatePilot checkout." : "Payment becomes available only for an eligible confirmed reservation."}</Text>
+              </View>
+              {canPay ? (
+                <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: "/trips/[id]/pay", params: { id: booking.id } })} style={styles.primary}>
+                  <Text style={styles.primaryText}>Pay securely · {money(booking.total)}</Text>
+                </Pressable>
+              ) : null}
+              <Pressable accessibilityRole="link" onPress={() => openWebPath(`/booking-confirmation?code=${encodeURIComponent(booking.confirmation_code)}`)} style={styles.secondary}>
+                <Text style={styles.secondaryText}>Open full reservation details</Text>
+              </Pressable>
             </View>
-            <Text style={styles.code}>{booking.confirmation_code}</Text>
-            <View style={styles.row}><Text style={styles.rowLabel}>Stay</Text><Text style={styles.rowValue}>{booking.check_in} – {booking.check_out}</Text></View>
-            <View style={styles.row}><Text style={styles.rowLabel}>Room</Text><Text style={styles.rowValue}>{booking.rooms?.name ?? "Selected room"} · {booking.guests} {booking.guests === 1 ? "guest" : "guests"}</Text></View>
-            <View style={styles.row}><Text style={styles.rowLabel}>Total</Text><Text style={styles.total}>{money(booking.total)}</Text></View>
-            <View style={styles.payment}>
-              <Text style={styles.paymentTitle}>{booking.payment_collected ? "Payment recorded" : booking.status === "pending" ? "No payment due while pending" : "Payment not collected"}</Text>
-              <Text style={styles.paymentText}>{booking.payment_collected ? "Your transaction is linked to this reservation." : "Only use iRatePilot’s secure payment flow when this reservation becomes eligible."}</Text>
-            </View>
-            <Pressable accessibilityRole="link" onPress={() => openWebPath(`/booking-confirmation?code=${encodeURIComponent(booking.confirmation_code)}`)} style={styles.secondary}>
-              <Text style={styles.secondaryText}>Open full reservation details</Text>
-            </Pressable>
-          </View>
-        ))}
+          );
+        })}
       </ScrollView>
     </SafeAreaView>
   );
@@ -127,7 +138,7 @@ const styles = StyleSheet.create({
   kicker: { color: "#7c3aed", fontSize: 12, fontWeight: "800", letterSpacing: 1.3, marginTop: 12 },
   title: { color: "#0f172a", fontSize: 36, fontWeight: "900", letterSpacing: -1.2, lineHeight: 42, marginTop: 10 },
   body: { color: "#475569", fontSize: 16, lineHeight: 25, marginTop: 12 },
-  primary: { alignItems: "center", backgroundColor: "#6d28d9", borderRadius: 14, marginTop: 28, padding: 16 },
+  primary: { alignItems: "center", backgroundColor: "#6d28d9", borderRadius: 14, marginTop: 15, padding: 16 },
   primaryText: { color: "#ffffff", fontSize: 16, fontWeight: "800" },
   spinner: { marginTop: 32 },
   error: { backgroundColor: "#fff1f2", borderRadius: 12, color: "#9f1239", marginTop: 24, padding: 14 },
