@@ -17,6 +17,17 @@ export type MobileBooking = {
   rooms: { name: string } | null;
 };
 
+export type BookingPaymentIntent = {
+  clientSecret: string;
+  paymentMode: "test" | "live";
+  breakdown: {
+    confirmationCode: string;
+    propertyName: string;
+    roomName: string;
+    total: number;
+  };
+};
+
 export async function getBookings(accessToken: string, signal?: AbortSignal) {
   const response = await fetch(buildWebUrl("/api/bookings"), {
     headers: {
@@ -29,6 +40,19 @@ export async function getBookings(accessToken: string, signal?: AbortSignal) {
   if (!response.ok) throw new Error(body.error || "Unable to load your trips.");
   return {
     bookings: (body.data ?? []) as MobileBooking[],
-    paymentMode: body.paymentMode as "disabled" | "test" | "live",
+    paymentMode: (body.paymentMode ?? null) as "test" | "live" | null,
   };
+}
+
+export async function createBookingPaymentIntent(bookingId: string, accessToken: string) {
+  const response = await fetch(buildWebUrl(`/api/bookings/${encodeURIComponent(bookingId)}/payment-intent`), {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+  const body = await response.json();
+  if (!response.ok) throw new Error(body.error || "Unable to prepare secure payment.");
+  return body as BookingPaymentIntent;
 }
