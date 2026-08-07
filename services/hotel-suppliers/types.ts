@@ -4,7 +4,23 @@ export type PmsProviderId =
   | "hilton-onq"
   | "marriott-fosse"
   | "marriott-fs-pms"
-  | "hotelkey";
+  | "hotelkey"
+  | "oracle-opera-5"
+  | "infor-hms"
+  | "agilysys-pms"
+  | "planet-protel"
+  | "mews"
+  | "stayntouch"
+  | "cloudbeds"
+  | "sihot"
+  | "rms-cloud"
+  | "maestro-pms"
+  | "apaleo"
+  | "shiji-pms"
+  | "guestline"
+  | "ezee-absolute"
+  | "clock-pms-plus"
+  | "hotelogix";
 
 export type PmsCapability =
   | "availability"

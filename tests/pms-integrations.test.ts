@@ -17,8 +17,24 @@ describe("PMS integration foundation", () => {
       "marriott-fosse",
       "marriott-fs-pms",
       "hotelkey",
+      "oracle-opera-5",
+      "infor-hms",
+      "agilysys-pms",
+      "planet-protel",
+      "mews",
+      "stayntouch",
+      "cloudbeds",
+      "sihot",
+      "rms-cloud",
+      "maestro-pms",
+      "apaleo",
+      "shiji-pms",
+      "guestline",
+      "ezee-absolute",
+      "clock-pms-plus",
+      "hotelogix",
     ]);
-    expect(new Set(pmsProviders.map((provider) => provider.id)).size).toBe(6);
+    expect(new Set(pmsProviders.map((provider) => provider.id)).size).toBe(22);
   });
 
   it("does not report a provider ready until all server credentials exist", () => {
