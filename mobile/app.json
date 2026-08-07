@@ -2,7 +2,7 @@
   "expo": {
     "name": "iRatePilot",
     "slug": "iratepilot",
-    "version": "0.1.0",
+    "version": "0.3.0",
     "orientation": "portrait",
     "scheme": "iratepilot",
     "userInterfaceStyle": "automatic",
@@ -18,7 +18,7 @@
       },
       "edgeToEdgeEnabled": true
     },
-    "plugins": ["expo-router"],
+    "plugins": ["expo-router", "@stripe/stripe-react-native"],
     "experiments": {
       "typedRoutes": true
     }
