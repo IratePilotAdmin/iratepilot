@@ -1,6 +1,6 @@
 export { mockSupplier } from "./mock";
 export { getPmsProvider, pmsProviders } from "./providers";
-export { buildPmsReadiness } from "./readiness";
+export { buildPmsReadiness, validatePmsConfiguration } from "./readiness";
 export { HiltonPmsAdapter } from "./hilton";
 export { MarriottPmsAdapter } from "./marriott";
 export { HotelKeyAdapter } from "./hotelkey";
