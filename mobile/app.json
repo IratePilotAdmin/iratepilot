@@ -25,7 +25,7 @@
     },
     "plugins": [
       "expo-router",
-      "@stripe/stripe-react-native",
+      ["@stripe/stripe-react-native", { "enableGooglePay": false }],
       ["expo-notifications", { "defaultChannel": "bookings" }]
     ],
     "experiments": {
