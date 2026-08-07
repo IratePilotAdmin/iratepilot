@@ -18,7 +18,7 @@ export function NotificationNavigation() {
     function navigate(response: Notifications.NotificationResponse | null) {
       if (!response) return;
       const data = response.notification.request.content.data;
-      router.push(notificationRoute(data));
+      router.push(notificationRoute(data ?? {}));
     }
 
     void Notifications.getLastNotificationResponseAsync().then(navigate);
