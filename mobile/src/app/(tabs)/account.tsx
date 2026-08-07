@@ -62,7 +62,7 @@ export default function AccountScreen() {
               <Pressable accessibilityRole="button" disabled={updatingNotifications} onPress={() => void toggleNotifications()} style={styles.notificationButton}>
                 <Text style={styles.notificationButtonText}>{updatingNotifications ? "Updating…" : notificationsEnabled ? "Turn off" : "Enable notifications"}</Text>
               </Pressable>
-              {notificationMessage ? <Text accessibilityRole="status" style={styles.message}>{notificationMessage}</Text> : null}
+              {notificationMessage ? <Text accessibilityLiveRegion="polite" style={styles.message}>{notificationMessage}</Text> : null}
             </View>
             <Pressable accessibilityRole="button" onPress={() => void signOut()} style={styles.primary}>
               <Text style={styles.primaryText}>Sign out</Text>
