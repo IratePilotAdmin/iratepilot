@@ -2,7 +2,7 @@
   "expo": {
     "name": "iRatePilot",
     "slug": "iratepilot",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "orientation": "portrait",
     "scheme": "iratepilot",
     "userInterfaceStyle": "automatic",
@@ -18,7 +18,11 @@
       },
       "edgeToEdgeEnabled": true
     },
-    "plugins": ["expo-router", "@stripe/stripe-react-native"],
+    "plugins": [
+      "expo-router",
+      "@stripe/stripe-react-native",
+      ["expo-notifications", { "defaultChannel": "bookings" }]
+    ],
     "experiments": {
       "typedRoutes": true
     }
