@@ -39,7 +39,7 @@ describe("mobile booking notifications", () => {
   it("restricts notification taps to owned application routes", () => {
     expect(client).toContain('/^[0-9a-f-]{36}$/i');
     expect(client).toContain('"/(tabs)/trips"');
-    expect(navigation).toContain("notificationRoute(data)");
+    expect(navigation).toContain("notificationRoute(data ?? {})");
     expect(navigation).not.toContain("data.url");
   });
 

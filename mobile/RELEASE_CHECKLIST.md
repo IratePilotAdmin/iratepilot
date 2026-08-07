@@ -4,10 +4,12 @@ No production build or store submission is approved until every item is complete
 
 ## Repository gates
 
-- [ ] PR #160 merged after its required Vercel check succeeds.
-- [ ] PR #161 retargeted to `main` and all required checks pass.
-- [ ] Supabase backup verified and migration `202608060030_mobile_push_tokens.sql` applied.
-- [ ] Rollback script retained and reviewed.
+- [x] Mobile application foundation and release workflows merged to `main`.
+- [x] Supabase backup verified and migration `202608060030_mobile_push_tokens.sql` applied.
+- [x] Rollback script retained and reviewed.
+- [x] iOS production build uploaded successfully to App Store Connect.
+- [x] App Store Connect application record created (`6799150724`).
+- [ ] Build version `1.0.0` after this release-alignment change is merged.
 - [ ] `npm run typecheck` and `npm run release:check` pass inside `mobile/`.
 
 ## EAS and credentials
@@ -35,3 +37,11 @@ No production build or store submission is approved until every item is complete
 - [ ] App Store privacy details and Google Play Data safety answers reviewed.
 - [ ] Privacy policy, terms, support URL, and account-deletion path verified.
 - [ ] TestFlight and Play internal-testing builds approved before production submission.
+
+## Current store blockers
+
+- [ ] Select the new `1.0.0` iOS build in App Store Connect.
+- [ ] Upload final iPhone screenshots and complete App Store metadata.
+- [ ] Complete App Review contact, reviewer account, privacy, accessibility, and export-compliance answers.
+- [ ] Create the Android production AAB and upload it to the Google Play internal track as a draft.
+- [ ] Complete Google Play app access, Data safety, content rating, ads, and target API declarations.
