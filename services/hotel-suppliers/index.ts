@@ -6,6 +6,12 @@ export { MarriottPmsAdapter } from "./marriott";
 export { HotelKeyAdapter } from "./hotelkey";
 export { MewsAdapter } from "./mews";
 export { CloudbedsAdapter } from "./cloudbeds";
+export { ApaleoAdapter } from "./apaleo";
+export type {
+  ApaleoAvailabilityRequest, ApaleoCancellation, ApaleoCancelReservationRequest,
+  ApaleoCreateReservationRequest, ApaleoMapper, ApaleoOffer, ApaleoOperation,
+  ApaleoReservation, ApaleoStay, ApaleoTransport, ApaleoTransportRequest,
+} from "./apaleo";
 export type {
   CloudbedsAvailabilityRequest, CloudbedsCancellation, CloudbedsCancelReservationRequest,
   CloudbedsCreateReservationRequest, CloudbedsMapper, CloudbedsOffer, CloudbedsOperation,
