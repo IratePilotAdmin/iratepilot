@@ -4,6 +4,12 @@ export { buildPmsReadiness } from "./readiness";
 export { HiltonPmsAdapter } from "./hilton";
 export { MarriottPmsAdapter } from "./marriott";
 export { HotelKeyAdapter } from "./hotelkey";
+export { MewsAdapter } from "./mews";
+export type {
+  MewsAvailabilityRequest, MewsCancellation, MewsCancelReservationRequest,
+  MewsCreateReservationRequest, MewsMapper, MewsOffer, MewsOperation,
+  MewsReservation, MewsStay, MewsTransport, MewsTransportRequest,
+} from "./mews";
 export type {
   HotelKeyAvailabilityRequest, HotelKeyCancellation, HotelKeyCancelReservationRequest,
   HotelKeyCreateReservationRequest, HotelKeyMapper, HotelKeyOffer, HotelKeyOperation,
