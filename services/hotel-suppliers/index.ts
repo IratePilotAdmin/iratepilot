@@ -2,6 +2,13 @@ export { mockSupplier } from "./mock";
 export { getPmsProvider, pmsProviders } from "./providers";
 export { buildPmsReadiness } from "./readiness";
 export { HiltonPmsAdapter } from "./hilton";
+export { MarriottPmsAdapter } from "./marriott";
+export type {
+  MarriottAvailabilityRequest, MarriottCancellation, MarriottCancelReservationRequest,
+  MarriottCreateReservationRequest, MarriottOffer, MarriottOperation, MarriottPmsMapper,
+  MarriottPmsProvider, MarriottPmsTransport, MarriottReservation, MarriottStay,
+  MarriottTransportRequest,
+} from "./marriott";
 export type {
   HiltonAvailabilityRequest,
   HiltonCancellation,
