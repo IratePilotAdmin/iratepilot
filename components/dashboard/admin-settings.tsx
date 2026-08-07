@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { ReadinessItem } from "@/lib/admin/platform-readiness";
 import type { PmsProviderReadiness } from "@/services/hotel-suppliers";
 
@@ -8,6 +8,17 @@ type Response = {
   items: ReadinessItem[];
   summary: { ready: number; attention: number; off: number };
   requiredReady: boolean;
+};
+
+type PmsConnection = {
+  id: string;
+  provider_id: string;
+  property_name: string;
+  external_property_code: string;
+  connection_status: string;
+  credential_keys: string[];
+  credentials_configured: boolean;
+  credentials_updated_at: string | null;
 };
 
 const categories: Array<[ReadinessItem["category"], string]> = [
@@ -24,7 +35,15 @@ export function AdminSettings() {
   const [emailTestBusy, setEmailTestBusy] = useState(false);
   const [emailTestMessage, setEmailTestMessage] = useState("");
   const [pmsProviders, setPmsProviders] = useState<PmsProviderReadiness[]>([]);
+  const [pmsConnections, setPmsConnections] = useState<PmsConnection[]>([]);
+  const [selectedConnectionId, setSelectedConnectionId] = useState("");
   const [pmsMessage, setPmsMessage] = useState("Checking PMS connections…");
+  const [credentialBusy, setCredentialBusy] = useState(false);
+  const [credentialMessage, setCredentialMessage] = useState("");
+  const selectedConnection = useMemo(
+    () => pmsConnections.find((connection) => connection.id === selectedConnectionId),
+    [pmsConnections, selectedConnectionId],
+  );
 
   async function sendEmailTest() {
     setEmailTestBusy(true);
@@ -56,10 +75,61 @@ export function AdminSettings() {
         const body = await response.json();
         if (!response.ok) throw new Error(body.error);
         setPmsProviders(body.providers);
+        setPmsConnections(body.connections ?? []);
+        setSelectedConnectionId((current) => current || body.connections?.[0]?.id || "");
         setPmsMessage("");
       })
       .catch((error: Error) => setPmsMessage(error.message));
   }, []);
+
+  async function saveCredentials(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedConnection) return;
+    setCredentialBusy(true);
+    setCredentialMessage("");
+    try {
+      const form = new FormData(event.currentTarget);
+      const credentials = Object.fromEntries(selectedConnection.credential_keys.map((key) => [key, form.get(key)]));
+      const response = await fetch("/api/admin/integrations/pms/credentials", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ connectionId: selectedConnection.id, credentials }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Credentials could not be stored.");
+      setCredentialMessage(body.message);
+      event.currentTarget.reset();
+      setPmsConnections((items) => items.map((item) => item.id === selectedConnection.id
+        ? { ...item, credentials_configured: true, credentials_updated_at: new Date().toISOString() }
+        : item));
+    } catch (error) {
+      setCredentialMessage(error instanceof Error ? error.message : "Credentials could not be stored.");
+    } finally {
+      setCredentialBusy(false);
+    }
+  }
+
+  async function testCredentials() {
+    if (!selectedConnection) return;
+    setCredentialBusy(true);
+    setCredentialMessage("");
+    try {
+      const response = await fetch("/api/admin/integrations/pms/credentials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ connectionId: selectedConnection.id }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Configuration test failed.");
+      setCredentialMessage(body.passed
+        ? "Encrypted configuration passed validation. No live vendor request was sent."
+        : "Encrypted configuration did not pass validation.");
+    } catch (error) {
+      setCredentialMessage(error instanceof Error ? error.message : "Configuration test failed.");
+    } finally {
+      setCredentialBusy(false);
+    }
+  }
 
   return <>
     {message && <p role="status" className="card mt-8 p-6 text-sm text-slate-600">{message}</p>}
@@ -108,6 +178,34 @@ export function AdminSettings() {
             </div>
           </article>)}
         </div>}
+      </section>
+
+      <section className="card mt-6 p-6">
+        <span className="text-xs uppercase tracking-wider text-slate-500">Administrators only</span>
+        <h2 className="mt-2 text-xl font-semibold">PMS credential vault</h2>
+        <p className="mt-2 text-sm text-slate-600">Store sandbox credentials with server-side encryption. Saved values are never returned to this page or exposed to hotel partners.</p>
+        {pmsConnections.length === 0 ? <p className="mt-4 text-sm text-slate-500">A partner must declare a hotel PMS before credentials can be configured.</p> : <form key={selectedConnectionId} className="mt-5 grid gap-4" onSubmit={saveCredentials}>
+          <label className="text-sm font-medium">Hotel connection
+            <select className="input mt-2" value={selectedConnectionId} onChange={(event) => { setSelectedConnectionId(event.target.value); setCredentialMessage(""); }} required>
+              {pmsConnections.map((connection) => <option key={connection.id} value={connection.id}>{connection.property_name} — {connection.provider_id}</option>)}
+            </select>
+          </label>
+          {selectedConnection && <>
+            <div className="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
+              <strong className="text-slate-900">{selectedConnection.property_name}</strong>
+              <span className="ml-2">Property code: {selectedConnection.external_property_code}</span>
+              <p className="mt-1">Vault status: {selectedConnection.credentials_configured ? "configured" : "not configured"}</p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">{selectedConnection.credential_keys.map((key) => <label className="text-sm font-medium" key={key}>{key.replaceAll("_", " ").toLowerCase()}
+              <input className="input mt-2" name={key} type="password" autoComplete="new-password" maxLength={4096} required />
+            </label>)}</div>
+            <div className="flex flex-wrap gap-3">
+              <button className="btn-primary" disabled={credentialBusy} type="submit">{credentialBusy ? "Working…" : "Encrypt and save"}</button>
+              <button className="btn-secondary" disabled={credentialBusy || !selectedConnection.credentials_configured} onClick={testCredentials} type="button">Validate stored configuration</button>
+            </div>
+          </>}
+          {credentialMessage && <p className="text-sm" role="status">{credentialMessage}</p>}
+        </form>}
       </section>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">{categories.map(([category, label]) => <section className="card overflow-hidden" key={category}>
