@@ -3,6 +3,12 @@ export { getPmsProvider, pmsProviders } from "./providers";
 export { buildPmsReadiness } from "./readiness";
 export { HiltonPmsAdapter } from "./hilton";
 export { MarriottPmsAdapter } from "./marriott";
+export { HotelKeyAdapter } from "./hotelkey";
+export type {
+  HotelKeyAvailabilityRequest, HotelKeyCancellation, HotelKeyCancelReservationRequest,
+  HotelKeyCreateReservationRequest, HotelKeyMapper, HotelKeyOffer, HotelKeyOperation,
+  HotelKeyReservation, HotelKeyStay, HotelKeyTransport, HotelKeyTransportRequest,
+} from "./hotelkey";
 export type {
   MarriottAvailabilityRequest, MarriottCancellation, MarriottCancelReservationRequest,
   MarriottCreateReservationRequest, MarriottOffer, MarriottOperation, MarriottPmsMapper,
