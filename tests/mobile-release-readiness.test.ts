@@ -2,12 +2,21 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+const app = JSON.parse(read("mobile/app.json"));
 const eas = JSON.parse(read("mobile/eas.json"));
 const packageJson = JSON.parse(read("mobile/package.json"));
 const preflight = read("mobile/scripts/release-check.mjs");
 const checklist = read("mobile/RELEASE_CHECKLIST.md");
 
 describe("native mobile release preparation", () => {
+  it("configures the approved artwork for iOS and Android app icons", () => {
+    expect(app.expo.icon).toBe("./assets/icon.png");
+    expect(app.expo.ios.icon).toBe("./assets/icon.png");
+    expect(app.expo.android.icon).toBe("./assets/icon.png");
+    expect(app.expo.android.adaptiveIcon.foregroundImage).toBe("./assets/icon.png");
+    expect(app.expo.android.adaptiveIcon.backgroundColor).toBe("#020b36");
+  });
+
   it("separates internal preview builds from store production builds", () => {
     expect(eas.cli.requireCommit).toBe(true);
     expect(eas.build.preview.distribution).toBe("internal");
