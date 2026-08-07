@@ -2,7 +2,7 @@ import "react-native-url-polyfill/auto";
 
 import { AppState, Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, processLock } from "@supabase/supabase-js";
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const key = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -22,10 +22,11 @@ const storage = {
 
 export const supabase = createClient(url, key, {
   auth: {
-    storage: Platform.OS === "web" ? undefined : storage,
+    ...(Platform.OS !== "web" ? { storage } : {}),
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    lock: processLock,
   },
 });
 
