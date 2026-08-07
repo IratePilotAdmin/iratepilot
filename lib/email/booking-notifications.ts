@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { queueTransactionalEmail, wakeTransactionalEmailWorker } from "@/lib/email/outbox";
+import { sendBookingPushNotification } from "@/lib/notifications/expo";
 import type { BookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
 
 type BookingEmailEvent = "request_received" | "approved" | "declined" | "payment_confirmed" | "cancelled" | "refund_completed";
@@ -60,6 +61,16 @@ export async function queueBookingNotification(input: {
       },
     });
     await wakeTransactionalEmailWorker();
+    try {
+      await sendBookingPushNotification({
+        event: input.event,
+        bookingId: input.bookingId,
+        customerId: input.customerId,
+        confirmationCode: input.confirmationCode,
+      });
+    } catch (pushError) {
+      console.error("Booking push notification could not be sent", { event: input.event, bookingId: input.bookingId, pushError });
+    }
     return job;
   } catch (error) {
     console.error("Booking notification could not be queued", { event: input.event, bookingId: input.bookingId, error });
