@@ -31,6 +31,7 @@ export class OracleOperaClientError extends Error {
 
 export class OracleOperaClient {
   private token?: CachedToken;
+  private tokenRefresh?: Promise<string>;
 
   constructor(
     private readonly config: OracleOperaConfig,
@@ -54,22 +55,32 @@ export class OracleOperaClient {
       body = JSON.stringify(body);
     }
 
-    const response = await this.fetchWithTimeout(
+    return this.fetchWithTimeout(
       this.resolvePath(path),
       { ...options, headers, body, hotelId: undefined } as RequestInit,
       "request_failed",
+      async (response) => {
+        if (!response.ok) {
+          throw new OracleOperaClientError(
+            "Oracle OPERA request failed",
+            "request_failed",
+            response.status,
+          );
+        }
+
+        if (response.status === 204) return undefined as T;
+        try {
+          return await response.json() as T;
+        } catch (error) {
+          if (error instanceof Error && error.name === "AbortError") throw error;
+          throw new OracleOperaClientError(
+            "Oracle OPERA response was invalid",
+            "request_failed",
+            response.status,
+          );
+        }
+      },
     );
-
-    if (!response.ok) {
-      throw new OracleOperaClientError(
-        "Oracle OPERA request failed",
-        "request_failed",
-        response.status,
-      );
-    }
-
-    if (response.status === 204) return undefined as T;
-    return response.json() as Promise<T>;
   }
 
   private async accessToken() {
@@ -77,10 +88,21 @@ export class OracleOperaClient {
       return this.token.value;
     }
 
+    if (!this.tokenRefresh) {
+      this.tokenRefresh = this.refreshAccessToken().finally(() => {
+        this.tokenRefresh = undefined;
+      });
+    }
+
+    return this.tokenRefresh;
+  }
+
+  private async refreshAccessToken() {
+
     const credentials = Buffer.from(
       `${this.config.clientId}:${this.config.clientSecret}`,
     ).toString("base64");
-    const response = await this.fetchWithTimeout(
+    return this.fetchWithTimeout(
       this.config.tokenUrl,
       {
         method: "POST",
@@ -92,44 +114,62 @@ export class OracleOperaClient {
         body: new URLSearchParams({ grant_type: "client_credentials" }),
       },
       "authentication_failed",
+      async (response) => {
+        if (!response.ok) {
+          throw new OracleOperaClientError(
+            "Oracle OPERA authentication failed",
+            "authentication_failed",
+            response.status,
+          );
+        }
+
+        let payload: TokenResponse;
+        try {
+          payload = await response.json() as TokenResponse;
+        } catch (error) {
+          if (error instanceof Error && error.name === "AbortError") throw error;
+          throw new OracleOperaClientError(
+            "Oracle OPERA authentication response was invalid",
+            "authentication_failed",
+            response.status,
+          );
+        }
+
+        if (!payload.access_token) {
+          throw new OracleOperaClientError(
+            "Oracle OPERA authentication response was invalid",
+            "authentication_failed",
+            response.status,
+          );
+        }
+
+        this.token = {
+          value: payload.access_token,
+          expiresAt: this.now() + Math.max(payload.expires_in ?? 300, 1) * 1_000,
+        };
+        return this.token.value;
+      },
     );
-
-    if (!response.ok) {
-      throw new OracleOperaClientError(
-        "Oracle OPERA authentication failed",
-        "authentication_failed",
-        response.status,
-      );
-    }
-
-    const payload = await response.json() as TokenResponse;
-    if (!payload.access_token) {
-      throw new OracleOperaClientError(
-        "Oracle OPERA authentication response was invalid",
-        "authentication_failed",
-        response.status,
-      );
-    }
-
-    this.token = {
-      value: payload.access_token,
-      expiresAt: this.now() + Math.max(payload.expires_in ?? 300, 1) * 1_000,
-    };
-    return this.token.value;
   }
 
-  private async fetchWithTimeout(
+  private async fetchWithTimeout<T>(
     url: string,
     init: RequestInit,
     failureCode: "authentication_failed" | "request_failed",
+    consume: (response: Response) => Promise<T>,
   ) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs);
+    const signal = init.signal
+      ? AbortSignal.any([init.signal, controller.signal])
+      : controller.signal;
 
     try {
-      return await this.fetcher(url, { ...init, signal: controller.signal });
+      const response = await this.fetcher(url, { ...init, signal });
+      return await consume(response);
     } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
+      if (error instanceof OracleOperaClientError) throw error;
+      if (controller.signal.aborted) {
         throw new OracleOperaClientError("Oracle OPERA request timed out", "timeout");
       }
       throw new OracleOperaClientError("Oracle OPERA request could not be completed", failureCode);
