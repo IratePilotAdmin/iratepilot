@@ -16,6 +16,9 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  verification: {
+    google: "xGIw-MTpAB7pMkte_o4yhCtq2_UveLttNThqImPiJa8",
+  },
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
