@@ -5,6 +5,12 @@ export { HiltonPmsAdapter } from "./hilton";
 export { MarriottPmsAdapter } from "./marriott";
 export { HotelKeyAdapter } from "./hotelkey";
 export { MewsAdapter } from "./mews";
+export { CloudbedsAdapter } from "./cloudbeds";
+export type {
+  CloudbedsAvailabilityRequest, CloudbedsCancellation, CloudbedsCancelReservationRequest,
+  CloudbedsCreateReservationRequest, CloudbedsMapper, CloudbedsOffer, CloudbedsOperation,
+  CloudbedsReservation, CloudbedsStay, CloudbedsTransport, CloudbedsTransportRequest,
+} from "./cloudbeds";
 export type {
   MewsAvailabilityRequest, MewsCancellation, MewsCancelReservationRequest,
   MewsCreateReservationRequest, MewsMapper, MewsOffer, MewsOperation,
