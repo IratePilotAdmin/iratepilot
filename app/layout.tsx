@@ -7,6 +7,29 @@ const siteTitle = "iRatePilot | Book Hotels & Vacation Homes";
 const siteDescription =
   "Search and book curated hotels, resorts, and vacation homes with transparent rates and secure online payments.";
 
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${siteUrl}/#website`,
+      url: siteUrl,
+      name: "iRatePilot",
+      alternateName: "iRate Pilot",
+      description: siteDescription,
+      inLanguage: "en-US",
+      publisher: { "@id": `${siteUrl}/#organization` },
+    },
+    {
+      "@type": "Organization",
+      "@id": `${siteUrl}/#organization`,
+      url: siteUrl,
+      name: "iRatePilot",
+      description: siteDescription,
+    },
+  ],
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: "iRatePilot",
@@ -50,5 +73,18 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body>{children}<PwaRegistration /></body></html>;
+  return (
+    <html lang="en">
+      <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
+          }}
+        />
+        {children}
+        <PwaRegistration />
+      </body>
+    </html>
+  );
 }
