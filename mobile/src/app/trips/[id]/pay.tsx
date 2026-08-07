@@ -28,12 +28,12 @@ export default function PayForTripScreen() {
   const [complete, setComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const accessToken = session?.access_token;
+  const authenticationError = !id || !accessToken ? "Sign in again to prepare this payment." : null;
+  const displayedError = error ?? authenticationError;
+
   useEffect(() => {
-    const accessToken = session?.access_token;
-    if (!id || !accessToken) {
-      setError("Sign in again to prepare this payment.");
-      return;
-    }
+    if (!id || !accessToken) return;
 
     let active = true;
     void createBookingPaymentIntent(id, accessToken)
@@ -58,7 +58,7 @@ export default function PayForTripScreen() {
     return () => {
       active = false;
     };
-  }, [id, initPaymentSheet, session?.access_token, user?.email]);
+  }, [accessToken, id, initPaymentSheet, user?.email]);
 
   async function pay() {
     setPaying(true);
@@ -102,8 +102,8 @@ export default function PayForTripScreen() {
             {intent.paymentMode === "test" ? <Text style={styles.test}>TEST MODE · No live charge</Text> : null}
           </View>
         ) : null}
-        {!ready && !error ? <ActivityIndicator color="#6d28d9" style={styles.spinner} /> : null}
-        {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
+        {!ready && !displayedError ? <ActivityIndicator color="#6d28d9" style={styles.spinner} /> : null}
+        {displayedError ? <Text accessibilityRole="alert" style={styles.error}>{displayedError}</Text> : null}
         <Pressable accessibilityRole="button" disabled={!ready || paying} onPress={() => void pay()} style={[styles.primary, (!ready || paying) && styles.disabled]}>
           <Text style={styles.primaryText}>{paying ? "Opening secure checkout…" : "Pay now"}</Text>
         </Pressable>
