@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { router } from "expo-router";
 import {
   ActivityIndicator,
@@ -21,30 +21,43 @@ function money(value: number) {
 
 export default function TripsScreen() {
   const { initialized, session, user } = useAuth();
+  const accessToken = session?.access_token;
   const [bookings, setBookings] = useState<MobileBooking[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (refresh = false) => {
-    if (!session?.access_token) return;
-    refresh ? setRefreshing(true) : setLoading(true);
+  useEffect(() => {
+    if (!accessToken) return;
+    const controller = new AbortController();
+
+    getBookings(accessToken, controller.signal)
+      .then((result) => {
+        setBookings(result.bookings);
+        setError(null);
+      })
+      .catch((caught) => {
+        if (caught instanceof Error && caught.name === "AbortError") return;
+        setError(caught instanceof Error ? caught.message : "Unable to load your trips.");
+      })
+      .finally(() => setLoading(false));
+
+    return () => controller.abort();
+  }, [accessToken]);
+
+  async function refresh() {
+    if (!accessToken) return;
+    setRefreshing(true);
     setError(null);
     try {
-      const result = await getBookings(session.access_token);
+      const result = await getBookings(accessToken);
       setBookings(result.bookings);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to load your trips.");
+      setError(caught instanceof Error ? caught.message : "Unable to refresh your trips.");
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
-  }, [session?.access_token]);
-
-  useEffect(() => {
-    if (user) void load();
-    else setBookings([]);
-  }, [load, user]);
+  }
 
   if (!initialized) {
     return <SafeAreaView style={styles.safe}><View style={styles.loading}><ActivityIndicator color="#6d28d9" /></View></SafeAreaView>;
@@ -67,7 +80,7 @@ export default function TripsScreen() {
     <SafeAreaView style={styles.safe}>
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl onRefresh={() => void load(true)} refreshing={refreshing} tintColor="#6d28d9" />}
+        refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#6d28d9" />}
       >
         <Text style={styles.kicker}>YOUR TRIPS</Text>
         <Text style={styles.title}>Reservations in one place.</Text>
