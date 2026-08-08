@@ -137,6 +137,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_SIHOT",
     requiredConfiguration: standardConfiguration,
+    documentationUrl: "https://partner.sihot.com/SIHOTAPI/",
     notes: "Requires SIHOT-approved interface access and property-specific mappings.",
   },
   {
