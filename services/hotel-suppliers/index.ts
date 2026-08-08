@@ -17,6 +17,8 @@ export { MaestroHttpTransport, MaestroTransportError } from "./maestro";
 export type { MaestroConfig, MaestroEndpoint, MaestroFetch } from "./maestro";
 export { ShijiHttpTransport, ShijiTransportError } from "./shiji";
 export type { ShijiConfig, ShijiEndpoint, ShijiFetch } from "./shiji";
+export { GuestlineHttpTransport, GuestlineTransportError } from "./guestline";
+export type { GuestlineConfig, GuestlineEndpoint, GuestlineFetch } from "./guestline";
 export {
   isStandardPmsProvider,
   StandardPmsAdapter,
