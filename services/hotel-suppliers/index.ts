@@ -4,6 +4,8 @@ export { buildPmsReadiness, validatePmsConfiguration } from "./readiness";
 export { HiltonPmsAdapter } from "./hilton";
 export { MarriottPmsAdapter } from "./marriott";
 export { HotelKeyAdapter } from "./hotelkey";
+export { HotelKeyHttpTransport, HotelKeyTransportError } from "./hotelkey";
+export type { HotelKeyConfig, HotelKeyEndpoint, HotelKeyFetch } from "./hotelkey";
 export { MewsAdapter } from "./mews";
 export { CloudbedsAdapter } from "./cloudbeds";
 export { ApaleoAdapter } from "./apaleo";
