@@ -92,6 +92,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_INFOR_HMS",
     requiredConfiguration: standardConfiguration,
+    documentationUrl: "https://docs.infor.com/inforos/2026.x/en-us/useradminlib_cloud/apigatewayag_cloud/wps1514559141744.html",
     notes: "Activate after Infor or an authorized hotel partner supplies API access and property mappings.",
   },
   {
