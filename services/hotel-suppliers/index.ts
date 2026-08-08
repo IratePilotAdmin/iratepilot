@@ -11,6 +11,8 @@ export { StayntouchHttpTransport, StayntouchTransportError } from "./stayntouch"
 export type { StayntouchConfig, StayntouchFetch } from "./stayntouch";
 export { SihotHttpTransport, SihotTransportError } from "./sihot";
 export type { SihotConfig, SihotFetch } from "./sihot";
+export { RmsCloudHttpTransport, RmsCloudTransportError } from "./rms-cloud";
+export type { RmsCloudConfig, RmsCloudFetch } from "./rms-cloud";
 export {
   isStandardPmsProvider,
   StandardPmsAdapter,
