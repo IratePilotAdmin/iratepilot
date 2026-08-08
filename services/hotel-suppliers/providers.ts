@@ -77,7 +77,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     certificationRequired: true,
     environmentPrefix: "PMS_HOTELKEY",
     requiredConfiguration: standardConfiguration,
-    documentationUrl: "https://www.hotelkeyapp.com/",
+    documentationUrl: "https://www.hotelkeyapp.com/system-integrations",
     notes: "Activate after HotelKey approves the partnership and supplies production API documentation, credentials, and property mappings.",
   },
   {
@@ -213,4 +213,3 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
 export function getPmsProvider(providerId: PmsProviderId) {
   return pmsProviders.find((provider) => provider.id === providerId);
 }
-
