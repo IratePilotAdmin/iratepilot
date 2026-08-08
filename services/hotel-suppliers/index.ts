@@ -7,6 +7,8 @@ export { HotelKeyAdapter } from "./hotelkey";
 export { MewsAdapter } from "./mews";
 export { CloudbedsAdapter } from "./cloudbeds";
 export { ApaleoAdapter } from "./apaleo";
+export { StayntouchHttpTransport, StayntouchTransportError } from "./stayntouch";
+export type { StayntouchConfig, StayntouchFetch } from "./stayntouch";
 export {
   isStandardPmsProvider,
   StandardPmsAdapter,
