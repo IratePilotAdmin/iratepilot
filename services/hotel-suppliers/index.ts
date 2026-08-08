@@ -2,6 +2,8 @@ export { mockSupplier } from "./mock";
 export { getPmsProvider, pmsProviders } from "./providers";
 export { buildPmsReadiness, validatePmsConfiguration } from "./readiness";
 export { HiltonPmsAdapter } from "./hilton";
+export { HiltonPepHttpTransport, HiltonPepTransportError } from "./hilton";
+export type { HiltonPepConfig, HiltonPepEndpoint, HiltonPepFetch } from "./hilton";
 export { MarriottPmsAdapter } from "./marriott";
 export { HotelKeyAdapter } from "./hotelkey";
 export { HotelKeyHttpTransport, HotelKeyTransportError } from "./hotelkey";
