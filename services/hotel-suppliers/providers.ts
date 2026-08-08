@@ -177,6 +177,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_GUESTLINE",
     requiredConfiguration: standardConfiguration,
+    documentationUrl: "https://developers.guestline.com/",
     notes: "Activate after Guestline supplies approved connectivity and property mappings.",
   },
   {
