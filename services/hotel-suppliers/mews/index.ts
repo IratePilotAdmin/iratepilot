@@ -1,4 +1,6 @@
 export { MewsAdapter } from "./adapter";
+export { MewsHttpTransport, MewsTransportError } from "./transport";
+export type { MewsConnectorConfig, MewsFetch } from "./transport";
 export type {
   MewsAvailabilityRequest,
   MewsCancellation,
@@ -12,3 +14,4 @@ export type {
   MewsTransport,
   MewsTransportRequest,
 } from "./contracts";
+
