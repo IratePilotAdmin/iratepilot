@@ -108,6 +108,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_PLANET_PROTEL",
     requiredConfiguration: standardConfiguration,
+    documentationUrl: "https://www.weareplanet.com/hotel-pms",
     notes: "Activate only with Planet-issued credentials, endpoint details, and hotel scope.",
   },
   {
