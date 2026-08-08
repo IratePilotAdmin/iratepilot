@@ -85,6 +85,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_ORACLE_OPERA_5",
     requiredConfiguration: standardConfiguration,
+    documentationUrl: "https://docs.oracle.com/cd/E98457_01/opera_5_6_core_help/20460.htm",
     notes: "Legacy OPERA 5 connectivity must use an Oracle-approved interface and property-authorized endpoint.",
   },
   {
