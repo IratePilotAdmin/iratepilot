@@ -100,6 +100,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_AGILYSYS",
     requiredConfiguration: standardConfiguration,
+    documentationUrl: "https://www.agilysys.com/en/products/pms/",
     notes: "Requires an approved Agilysys integration path and property authorization.",
   },
   {
