@@ -33,6 +33,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     certificationRequired: true,
     environmentPrefix: "PMS_HILTON_PEP",
     requiredConfiguration: standardConfiguration,
+    documentationUrl: "https://stories.hilton.com/releases/hotel-key-partnership",
     notes: "Connectivity is brand-controlled. Activate only after Hilton approves the integration and supplies endpoint, property, and credential details.",
   },
   {
