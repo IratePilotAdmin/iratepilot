@@ -21,6 +21,10 @@ export { GuestlineHttpTransport, GuestlineTransportError } from "./guestline";
 export type { GuestlineConfig, GuestlineEndpoint, GuestlineFetch } from "./guestline";
 export { EzeeAbsoluteHttpTransport, EzeeAbsoluteTransportError } from "./ezee-absolute";
 export type { EzeeAbsoluteConfig, EzeeAbsoluteEndpoint, EzeeAbsoluteFetch } from "./ezee-absolute";
+export { ClockPmsHttpTransport, ClockPmsTransportError } from "./clock-pms-plus";
+export type {
+  ClockPmsAuthRequest, ClockPmsConfig, ClockPmsEndpoint, ClockPmsFetch,
+} from "./clock-pms-plus";
 export {
   isStandardPmsProvider,
   StandardPmsAdapter,
@@ -96,5 +100,4 @@ export type {
   PmsProviderReadiness,
   SupplierHotel,
 } from "./types";
-
 
