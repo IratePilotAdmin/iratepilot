@@ -69,6 +69,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     certificationRequired: true,
     environmentPrefix: "PMS_MARRIOTT_FS_PMS",
     requiredConfiguration: standardConfiguration,
+    documentationUrl: "https://ofhub.marriott.com/wp-content/uploads/2015/03/Open-Questions-on-POS-031515.pdf",
     notes: "FS-PMS connectivity requires Marriott approval and property-level authorization before reservation traffic is enabled.",
   },
   {
