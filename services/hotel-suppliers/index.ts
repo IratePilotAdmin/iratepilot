@@ -31,6 +31,8 @@ export { InforHmsHttpTransport, InforHmsTransportError } from "./infor-hms";
 export type { InforHmsConfig, InforHmsEndpoint, InforHmsFetch } from "./infor-hms";
 export { AgilysysPmsHttpTransport, AgilysysPmsTransportError } from "./agilysys-pms";
 export type { AgilysysPmsConfig, AgilysysPmsEndpoint, AgilysysPmsFetch } from "./agilysys-pms";
+export { PlanetProtelHttpTransport, PlanetProtelTransportError } from "./planet-protel";
+export type { PlanetProtelConfig, PlanetProtelEndpoint, PlanetProtelFetch } from "./planet-protel";
 export {
   isStandardPmsProvider,
   StandardPmsAdapter,
