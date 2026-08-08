@@ -19,6 +19,8 @@ export { ShijiHttpTransport, ShijiTransportError } from "./shiji";
 export type { ShijiConfig, ShijiEndpoint, ShijiFetch } from "./shiji";
 export { GuestlineHttpTransport, GuestlineTransportError } from "./guestline";
 export type { GuestlineConfig, GuestlineEndpoint, GuestlineFetch } from "./guestline";
+export { EzeeAbsoluteHttpTransport, EzeeAbsoluteTransportError } from "./ezee-absolute";
+export type { EzeeAbsoluteConfig, EzeeAbsoluteEndpoint, EzeeAbsoluteFetch } from "./ezee-absolute";
 export {
   isStandardPmsProvider,
   StandardPmsAdapter,

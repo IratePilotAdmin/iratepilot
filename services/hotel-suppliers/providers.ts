@@ -185,6 +185,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_EZEE_ABSOLUTE",
     requiredConfiguration: standardConfiguration,
+    documentationUrl: "https://www.yanoljacloudsolution.com/",
     notes: "Requires authorized eZee connectivity credentials and hotel scope.",
   },
   {
