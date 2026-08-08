@@ -7,6 +7,25 @@ export { HotelKeyAdapter } from "./hotelkey";
 export { MewsAdapter } from "./mews";
 export { CloudbedsAdapter } from "./cloudbeds";
 export { ApaleoAdapter } from "./apaleo";
+export {
+  isStandardPmsProvider,
+  StandardPmsAdapter,
+  standardPmsProviderIds,
+} from "./standard";
+export type {
+  StandardPmsAvailabilityRequest,
+  StandardPmsCancellation,
+  StandardPmsCancelReservationRequest,
+  StandardPmsCreateReservationRequest,
+  StandardPmsMapper,
+  StandardPmsOffer,
+  StandardPmsOperation,
+  StandardPmsProviderId,
+  StandardPmsReservation,
+  StandardPmsStay,
+  StandardPmsTransport,
+  StandardPmsTransportRequest,
+} from "./standard";
 export type {
   ApaleoAvailabilityRequest, ApaleoCancellation, ApaleoCancelReservationRequest,
   ApaleoCreateReservationRequest, ApaleoMapper, ApaleoOffer, ApaleoOperation,
@@ -63,3 +82,4 @@ export type {
   PmsProviderReadiness,
   SupplierHotel,
 } from "./types";
+
