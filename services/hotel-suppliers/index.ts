@@ -29,6 +29,8 @@ export { HotelogixHttpTransport, HotelogixTransportError } from "./hotelogix";
 export type { HotelogixConfig, HotelogixEndpoint, HotelogixFetch } from "./hotelogix";
 export { InforHmsHttpTransport, InforHmsTransportError } from "./infor-hms";
 export type { InforHmsConfig, InforHmsEndpoint, InforHmsFetch } from "./infor-hms";
+export { AgilysysPmsHttpTransport, AgilysysPmsTransportError } from "./agilysys-pms";
+export type { AgilysysPmsConfig, AgilysysPmsEndpoint, AgilysysPmsFetch } from "./agilysys-pms";
 export {
   isStandardPmsProvider,
   StandardPmsAdapter,
