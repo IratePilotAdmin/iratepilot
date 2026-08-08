@@ -27,6 +27,8 @@ export type {
 } from "./clock-pms-plus";
 export { HotelogixHttpTransport, HotelogixTransportError } from "./hotelogix";
 export type { HotelogixConfig, HotelogixEndpoint, HotelogixFetch } from "./hotelogix";
+export { InforHmsHttpTransport, InforHmsTransportError } from "./infor-hms";
+export type { InforHmsConfig, InforHmsEndpoint, InforHmsFetch } from "./infor-hms";
 export {
   isStandardPmsProvider,
   StandardPmsAdapter,
