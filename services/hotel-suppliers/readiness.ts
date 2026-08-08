@@ -17,7 +17,7 @@ function isValidConfiguration(key: string, value: string) {
       return false;
     }
   }
-  if (key.endsWith("_CLIENT_SECRET") || key.endsWith("_APP_KEY")) {
+  if (key.endsWith("_CLIENT_SECRET") || key.endsWith("_APP_KEY") || key.endsWith("_TOKEN")) {
     return value.length >= 12;
   }
   return value.length >= 3;
@@ -65,3 +65,4 @@ export function buildPmsReadiness(environment: Environment): PmsProviderReadines
     };
   });
 }
+
