@@ -1,4 +1,6 @@
 export { HotelKeyAdapter } from "./adapter";
+export { HotelKeyHttpTransport, HotelKeyTransportError } from "./transport";
+export type { HotelKeyConfig, HotelKeyEndpoint, HotelKeyFetch } from "./transport";
 export type {
   HotelKeyAvailabilityRequest,
   HotelKeyCancellation,
