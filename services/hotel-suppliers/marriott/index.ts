@@ -1,6 +1,8 @@
 export { MarriottPmsAdapter } from "./adapter";
 export { MarriottFosseHttpTransport, MarriottFosseTransportError } from "./fosse-transport";
 export type { MarriottFosseConfig, MarriottFosseEndpoint, MarriottFosseFetch } from "./fosse-transport";
+export { MarriottFsPmsHttpTransport, MarriottFsPmsTransportError } from "./fs-pms-transport";
+export type { MarriottFsPmsConfig, MarriottFsPmsEndpoint, MarriottFsPmsFetch } from "./fs-pms-transport";
 export type {
   MarriottAvailabilityRequest, MarriottCancellation, MarriottCancelReservationRequest,
   MarriottCreateReservationRequest, MarriottOffer, MarriottOperation, MarriottPmsMapper,
