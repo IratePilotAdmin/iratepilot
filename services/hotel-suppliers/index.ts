@@ -4,6 +4,8 @@ export { buildPmsReadiness, validatePmsConfiguration } from "./readiness";
 export { HiltonPmsAdapter } from "./hilton";
 export { HiltonPepHttpTransport, HiltonPepTransportError } from "./hilton";
 export type { HiltonPepConfig, HiltonPepEndpoint, HiltonPepFetch } from "./hilton";
+export { HiltonOnQHttpTransport, HiltonOnQTransportError } from "./hilton";
+export type { HiltonOnQConfig, HiltonOnQEndpoint, HiltonOnQFetch } from "./hilton";
 export { MarriottPmsAdapter } from "./marriott";
 export { HotelKeyAdapter } from "./hotelkey";
 export { HotelKeyHttpTransport, HotelKeyTransportError } from "./hotelkey";
@@ -116,4 +118,5 @@ export type {
   PmsProviderReadiness,
   SupplierHotel,
 } from "./types";
+
 

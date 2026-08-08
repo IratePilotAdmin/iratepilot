@@ -45,6 +45,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     certificationRequired: true,
     environmentPrefix: "PMS_HILTON_ONQ",
     requiredConfiguration: standardConfiguration,
+    documentationUrl: "https://pim.hilton.com/HiltonWebPim/Help/Facility_Details/facility_details_screen.htm",
     notes: "Legacy OnQ connectivity is property- and brand-controlled and may require a Hilton-approved connectivity intermediary.",
   },
   {
@@ -214,3 +215,4 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
 export function getPmsProvider(providerId: PmsProviderId) {
   return pmsProviders.find((provider) => provider.id === providerId);
 }
+
