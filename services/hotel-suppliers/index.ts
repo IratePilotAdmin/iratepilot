@@ -7,6 +7,8 @@ export type { HiltonPepConfig, HiltonPepEndpoint, HiltonPepFetch } from "./hilto
 export { HiltonOnQHttpTransport, HiltonOnQTransportError } from "./hilton";
 export type { HiltonOnQConfig, HiltonOnQEndpoint, HiltonOnQFetch } from "./hilton";
 export { MarriottPmsAdapter } from "./marriott";
+export { MarriottFosseHttpTransport, MarriottFosseTransportError } from "./marriott";
+export type { MarriottFosseConfig, MarriottFosseEndpoint, MarriottFosseFetch } from "./marriott";
 export { HotelKeyAdapter } from "./hotelkey";
 export { HotelKeyHttpTransport, HotelKeyTransportError } from "./hotelkey";
 export type { HotelKeyConfig, HotelKeyEndpoint, HotelKeyFetch } from "./hotelkey";
