@@ -9,6 +9,8 @@ export { CloudbedsAdapter } from "./cloudbeds";
 export { ApaleoAdapter } from "./apaleo";
 export { StayntouchHttpTransport, StayntouchTransportError } from "./stayntouch";
 export type { StayntouchConfig, StayntouchFetch } from "./stayntouch";
+export { SihotHttpTransport, SihotTransportError } from "./sihot";
+export type { SihotConfig, SihotFetch } from "./sihot";
 export {
   isStandardPmsProvider,
   StandardPmsAdapter,
