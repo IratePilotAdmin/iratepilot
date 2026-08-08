@@ -25,6 +25,8 @@ export { ClockPmsHttpTransport, ClockPmsTransportError } from "./clock-pms-plus"
 export type {
   ClockPmsAuthRequest, ClockPmsConfig, ClockPmsEndpoint, ClockPmsFetch,
 } from "./clock-pms-plus";
+export { HotelogixHttpTransport, HotelogixTransportError } from "./hotelogix";
+export type { HotelogixConfig, HotelogixEndpoint, HotelogixFetch } from "./hotelogix";
 export {
   isStandardPmsProvider,
   StandardPmsAdapter,
