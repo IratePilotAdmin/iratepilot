@@ -169,6 +169,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_SHIJI",
     requiredConfiguration: standardConfiguration,
+    documentationUrl: "https://www.shijigroup.com/shiji-platform",
     notes: "Requires Shiji partner approval, credentials, and property-level authorization.",
   },
   {
@@ -204,3 +205,4 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
 export function getPmsProvider(providerId: PmsProviderId) {
   return pmsProviders.find((provider) => provider.id === providerId);
 }
+
