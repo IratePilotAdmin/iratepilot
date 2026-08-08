@@ -193,6 +193,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_CLOCK_PMS_PLUS",
     requiredConfiguration: standardConfiguration,
+    documentationUrl: "https://api-docs.clock-software.com/",
     notes: "Activate after Clock Software approves the integration and property access.",
   },
   {
