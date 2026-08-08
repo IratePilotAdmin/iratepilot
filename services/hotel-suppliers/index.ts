@@ -33,6 +33,10 @@ export { AgilysysPmsHttpTransport, AgilysysPmsTransportError } from "./agilysys-
 export type { AgilysysPmsConfig, AgilysysPmsEndpoint, AgilysysPmsFetch } from "./agilysys-pms";
 export { PlanetProtelHttpTransport, PlanetProtelTransportError } from "./planet-protel";
 export type { PlanetProtelConfig, PlanetProtelEndpoint, PlanetProtelFetch } from "./planet-protel";
+export { OracleOpera5Transport, OracleOpera5TransportError } from "./oracle-opera-5";
+export type {
+  OracleOpera5Config, OracleOpera5Endpoint, OracleOpera5Fetch, OracleOpera5SoapHeaders,
+} from "./oracle-opera-5";
 export {
   isStandardPmsProvider,
   StandardPmsAdapter,
