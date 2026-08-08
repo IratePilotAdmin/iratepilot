@@ -201,6 +201,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_HOTELOGIX",
     requiredConfiguration: standardConfiguration,
+    documentationUrl: "https://www.hotelogix.com/other-interfaces",
     notes: "Requires Hotelogix-approved API access and property mappings.",
   },
 ] as const;
