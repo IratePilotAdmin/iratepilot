@@ -9,7 +9,7 @@ export type HotelKeyConfig = {
   baseUrl: string;
   apiCredential?: string;
   getApiCredential?: () => Promise<string>;
-  endpoints: Record<HotelKeyOperation, HotelKeyEndpoint>;
+  endpoints: Partial<Record<HotelKeyOperation, HotelKeyEndpoint>>;
   credentialHeader?: string;
   credentialScheme?: string;
   timeoutMs?: number;
@@ -91,7 +91,9 @@ export class HotelKeyHttpTransport implements HotelKeyTransport {
   async execute(request: HotelKeyTransportRequest): Promise<unknown> {
     const payload = payloadRecord(request.payload);
     const mapping = this.config.endpoints[request.operation];
-    const id = request.operation === "cancel_reservation" ? reservationId(payload) : "";
+    if (!mapping) throw new Error(`HotelKey endpoint mapping is required for ${request.operation}`);
+    const id = request.operation === "get_reservation" || request.operation === "modify_reservation" || request.operation === "cancel_reservation"
+      ? reservationId(payload) : "";
     const path = mapping.path
       .replace("{propertyCode}", encodeURIComponent(request.propertyCode))
       .replace("{reservationId}", encodeURIComponent(id));

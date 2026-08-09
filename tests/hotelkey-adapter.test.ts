@@ -14,6 +14,16 @@ const mapper: HotelKeyMapper = {
     confirmationNumber: "HK-123", externalReference: input.externalReference,
     status: "confirmed", raw,
   }),
+  getReservationPayload: (input) => ({ reservationId: input.reservationId }),
+  getReservationResponse: (raw, input) => ({
+    propertyCode: input.propertyCode, reservationId: input.reservationId,
+    externalReference: input.externalReference ?? input.reservationId, status: "confirmed", raw,
+  }),
+  modifyReservationPayload: (input) => ({ reservation: input }),
+  modifyReservationResponse: (raw, input) => ({
+    propertyCode: input.propertyCode, reservationId: input.reservationId,
+    externalReference: input.externalReference, status: "modified", raw,
+  }),
   cancelReservationPayload: (input) => ({ cancellation: input }),
   cancelReservationResponse: (raw, input) => ({
     propertyCode: input.propertyCode, reservationId: input.reservationId,
