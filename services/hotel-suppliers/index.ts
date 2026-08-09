@@ -1,6 +1,17 @@
 export { mockSupplier } from "./mock";
 export { getPmsProvider, pmsProviders } from "./providers";
 export { buildPmsReadiness, validatePmsConfiguration } from "./readiness";
+export {
+  auditPriorityPmsProductionReadiness,
+  priorityPmsProductionManifest,
+  priorityPmsProviderIds,
+} from "./priority-readiness";
+export type {
+  PriorityPmsLaunchEvidence,
+  PriorityPmsLaunchStatus,
+  PriorityPmsProductionManifest,
+  PriorityPmsProviderId,
+} from "./priority-readiness";
 export { HiltonPmsAdapter } from "./hilton";
 export { HiltonPepHttpTransport, HiltonPepTransportError } from "./hilton";
 export { HiltonPepConnectionTestError, testHiltonPepSandboxConnection } from "./hilton";
