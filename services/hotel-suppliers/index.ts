@@ -18,6 +18,8 @@ export { MewsAdapter } from "./mews";
 export { testMewsSandboxConnection, MewsConnectionTestError } from "./mews";
 export type { MewsConnectionTestResult } from "./mews";
 export { CloudbedsAdapter } from "./cloudbeds";
+export { CloudbedsConnectionTestError, testCloudbedsSandboxConnection } from "./cloudbeds";
+export type { CloudbedsConnectionTestResult } from "./cloudbeds";
 export { ApaleoAdapter } from "./apaleo";
 export { StayntouchHttpTransport, StayntouchTransportError } from "./stayntouch";
 export type { StayntouchConfig, StayntouchFetch } from "./stayntouch";

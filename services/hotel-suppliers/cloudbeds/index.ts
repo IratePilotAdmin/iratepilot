@@ -4,6 +4,11 @@ export {
   CloudbedsTransportError,
 } from "./transport";
 export type { CloudbedsConfig, CloudbedsFetch } from "./transport";
+export {
+  CloudbedsConnectionTestError,
+  testCloudbedsSandboxConnection,
+} from "./connection-test";
+export type { CloudbedsConnectionTestResult } from "./connection-test";
 export type {
   CloudbedsAvailabilityRequest,
   CloudbedsCancellation,

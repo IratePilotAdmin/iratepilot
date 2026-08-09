@@ -6,8 +6,10 @@ import {
 } from "@/lib/integrations/pms-credentials";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
+  CloudbedsConnectionTestError,
   getPmsProvider,
   MewsConnectionTestError,
+  testCloudbedsSandboxConnection,
   testMewsSandboxConnection,
   validatePmsConfiguration,
 } from "@/services/hotel-suppliers";
@@ -140,6 +142,7 @@ export async function POST(request: Request) {
       ? "encrypted_configuration_valid"
       : "configuration_invalid";
     let serviceCount: number | undefined;
+    let hotelCount: number | undefined;
 
     if (configurationPassed && provider.id === "mews") {
       validationMode = "vendor_sandbox";
@@ -158,6 +161,22 @@ export async function POST(request: Request) {
         detailCode = error instanceof MewsConnectionTestError
           ? error.detailCode
           : "mews_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "cloudbeds") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testCloudbedsSandboxConnection({
+          baseUrl: credentials.PMS_CLOUDBEDS_BASE_URL,
+          apiKey: credentials.PMS_CLOUDBEDS_API_KEY,
+        });
+        hotelCount = result.hotelCount;
+        detailCode = "cloudbeds_hotels_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof CloudbedsConnectionTestError
+          ? error.detailCode
+          : "cloudbeds_sandbox_unreachable";
       }
     }
     const testedAt = new Date().toISOString();
@@ -188,6 +207,7 @@ export async function POST(request: Request) {
       liveVendorConnectionTested,
       testedAt,
       ...(serviceCount === undefined ? {} : { serviceCount }),
+      ...(hotelCount === undefined ? {} : { hotelCount }),
     }, { status: passed ? 200 : 422, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("PMS configuration test failed", error);

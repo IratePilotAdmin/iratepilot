@@ -136,7 +136,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     id: "cloudbeds", name: "Cloudbeds", vendor: "Cloudbeds",
     accessModel: "public_partner_platform", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_CLOUDBEDS",
-    requiredConfiguration: standardConfiguration,
+    requiredConfiguration: ["BASE_URL", "API_KEY"],
     documentationUrl: "https://developers.cloudbeds.com/",
     notes: "Use approved Cloudbeds API credentials and property-scoped authorization.",
   },
