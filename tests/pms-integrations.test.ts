@@ -56,14 +56,14 @@ describe("PMS integration foundation", () => {
     const secret = "do-not-expose-this-secret";
     const result = buildPmsReadiness({
       PMS_HOTELKEY_BASE_URL: "https://partner.example.invalid",
-      PMS_HOTELKEY_CLIENT_ID: "hotelkey-client",
-      PMS_HOTELKEY_CLIENT_SECRET: secret,
+      PMS_HOTELKEY_API_CREDENTIAL: secret,
+      PMS_HOTELKEY_VALIDATION_PATH: "/api/v1/properties/test-property",
     });
     const hotelKey = result.find((provider) => provider.id === "hotelkey");
 
     expect(hotelKey?.status).toBe("ready_for_validation");
     expect(JSON.stringify(result)).not.toContain(secret);
-    expect(JSON.stringify(result)).not.toContain("hotelkey-client");
+    expect(JSON.stringify(result)).not.toContain("test-property");
   });
 
   it.each([
