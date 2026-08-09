@@ -5,6 +5,20 @@ import {
   priorityPmsProviderIds,
 } from "../services/hotel-suppliers/priority-readiness";
 
+
+function configuredEnvironment() {
+  return Object.fromEntries(
+    priorityPmsProductionManifest.flatMap((provider) =>
+      provider.requiredEnvironmentKeys.map((key) => {
+        if (key.endsWith("_BASE_URL")) return [key, `https://${provider.id}.example.com`];
+        if (key.endsWith("_TOKEN_URL")) return [key, `https://auth.${provider.id}.example.com/token`];
+        if (key.endsWith("_PATH")) return [key, `/v1/${key.toLowerCase()}`];
+        return [key, `configured-${key}`];
+      }),
+    ),
+  );
+}
+
 describe("priority PMS production readiness", () => {
   it("defines a complete launch contract for all six priority providers", () => {
     expect(priorityPmsProductionManifest.map(({ id }) => id)).toEqual(priorityPmsProviderIds);
@@ -28,11 +42,7 @@ describe("priority PMS production readiness", () => {
   });
 
   it("requires operational evidence after configuration", () => {
-    const environment = Object.fromEntries(
-      priorityPmsProductionManifest.flatMap((provider) =>
-        provider.requiredEnvironmentKeys.map((key) => [key, `configured-${key}`]),
-      ),
-    );
+    const environment = configuredEnvironment();
     expect(auditPriorityPmsProductionReadiness(environment)[0]?.status).toBe("vendor_approval_required");
     expect(auditPriorityPmsProductionReadiness(environment, {
       "oracle-opera": { vendorApproved: true },
@@ -43,5 +53,44 @@ describe("priority PMS production readiness", () => {
     expect(auditPriorityPmsProductionReadiness(environment, {
       "oracle-opera": { vendorApproved: true, propertyMapped: true, sandboxValidated: true },
     })[0]?.status).toBe("ready_for_live");
+  });
+
+  it("rejects insecure and malformed URLs before declaring a provider live-ready", () => {
+    const environment = configuredEnvironment();
+    environment.PMS_HILTON_PEP_BASE_URL = "http://pep.example.com";
+    environment.PMS_ORACLE_OPERA_DISTRIBUTION_TOKEN_URL = "not-a-url";
+
+    const results = auditPriorityPmsProductionReadiness(environment, {
+      "oracle-opera": { vendorApproved: true, propertyMapped: true, sandboxValidated: true },
+      "hilton-pep": { vendorApproved: true, propertyMapped: true, sandboxValidated: true },
+    });
+
+    expect(results.find(({ id }) => id === "oracle-opera")).toMatchObject({
+      status: "configuration_invalid",
+      invalidEnvironmentKeys: ["PMS_ORACLE_OPERA_DISTRIBUTION_TOKEN_URL"],
+    });
+    expect(results.find(({ id }) => id === "hilton-pep")).toMatchObject({
+      status: "configuration_invalid",
+      invalidEnvironmentKeys: expect.arrayContaining(["PMS_HILTON_PEP_BASE_URL"]),
+    });
+  });
+
+  it("rejects cross-origin operation paths and invalid timeouts", () => {
+    const environment = configuredEnvironment();
+    environment.PMS_HOTELKEY_CREATE_PATH = "https://attacker.example.com/reservations";
+    environment.PMS_HOTELKEY_TIMEOUT_MS = "0";
+
+    const hotelKey = auditPriorityPmsProductionReadiness(environment, {
+      hotelkey: { vendorApproved: true, propertyMapped: true, sandboxValidated: true },
+    }).find(({ id }) => id === "hotelkey");
+
+    expect(hotelKey).toMatchObject({
+      status: "configuration_invalid",
+      invalidEnvironmentKeys: [
+        "PMS_HOTELKEY_CREATE_PATH",
+        "PMS_HOTELKEY_TIMEOUT_MS",
+      ],
+    });
+    expect(JSON.stringify(hotelKey)).not.toContain("attacker.example.com");
   });
 });
