@@ -12,6 +12,11 @@ export { HiltonOnQHttpTransport, HiltonOnQTransportError } from "./onq-transport
 export type { HiltonOnQConfig, HiltonOnQEndpoint, HiltonOnQFetch } from "./onq-transport";
 export { HiltonOnQConnectionTestError, testHiltonOnQSandboxConnection } from "./onq-connection-test";
 export type { HiltonOnQConnectionTestConfig, HiltonOnQConnectionTestResult } from "./onq-connection-test";
+export { HiltonOnQMapper } from "./onq-mapper";
+export { createHiltonOnQSyncAdapter, loadHiltonOnQSyncConfig } from "./onq-sync";
+export type { HiltonOnQSyncEnvironment } from "./onq-sync";
+export { parseHiltonOnQEvent, verifyHiltonOnQWebhook } from "./onq-webhook";
+export type { HiltonOnQEvent } from "./onq-webhook";
 export type {
   HiltonAvailabilityRequest,
   HiltonCancellation,
