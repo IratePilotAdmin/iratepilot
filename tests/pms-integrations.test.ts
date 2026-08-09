@@ -127,6 +127,33 @@ describe("PMS integration foundation", () => {
     expect(JSON.stringify(cloudbeds)).not.toContain("cbat_test-key-value");
   });
 
+  it("validates the Stayntouch bearer-token contract used by its transport", () => {
+    const result = buildPmsReadiness({
+      PMS_STAYNTOUCH_BASE_URL: "https://api.stayntouch.com/connect/",
+      PMS_STAYNTOUCH_ACCESS_TOKEN: "stayntouch-sandbox-token",
+    });
+    const stayntouch = result.find((provider) => provider.id === "stayntouch");
+
+    expect(stayntouch?.status).toBe("ready_for_validation");
+    expect(stayntouch?.missingConfiguration).toEqual([]);
+    expect(stayntouch?.invalidConfiguration).toEqual([]);
+    expect(JSON.stringify(stayntouch)).not.toContain("stayntouch-sandbox-token");
+  });
+
+  it("does not accept generic OAuth client credentials for Stayntouch", () => {
+    const result = buildPmsReadiness({
+      PMS_STAYNTOUCH_BASE_URL: "https://api.stayntouch.com/connect/",
+      PMS_STAYNTOUCH_CLIENT_ID: "wrong-client-id",
+      PMS_STAYNTOUCH_CLIENT_SECRET: "wrong-client-secret",
+    });
+    const stayntouch = result.find((provider) => provider.id === "stayntouch");
+
+    expect(stayntouch?.status).toBe("credentials_required");
+    expect(stayntouch?.missingConfiguration).toEqual([
+      "PMS_STAYNTOUCH_ACCESS_TOKEN",
+    ]);
+  });
+
   it("rejects insecure endpoints and undersized secrets by key name only", () => {
     const result = buildPmsReadiness({
       PMS_MEWS_BASE_URL: "http://partner.example.invalid",

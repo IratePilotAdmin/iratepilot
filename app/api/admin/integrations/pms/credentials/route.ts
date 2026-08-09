@@ -11,10 +11,12 @@ import {
   getPmsProvider,
   MewsConnectionTestError,
   OracleOperaConnectionTestError,
+  StayntouchConnectionTestError,
   testApaleoSandboxConnection,
   testCloudbedsSandboxConnection,
   testMewsSandboxConnection,
   testOracleOperaSandboxConnection,
+  testStayntouchSandboxConnection,
   validatePmsConfiguration,
 } from "@/services/hotel-suppliers";
 
@@ -221,6 +223,22 @@ export async function POST(request: Request) {
         detailCode = error instanceof ApaleoConnectionTestError
           ? error.detailCode
           : "apaleo_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "stayntouch") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testStayntouchSandboxConnection({
+          baseUrl: credentials.PMS_STAYNTOUCH_BASE_URL,
+          accessToken: credentials.PMS_STAYNTOUCH_ACCESS_TOKEN,
+        });
+        hotelCount = result.hotelCount;
+        detailCode = "stayntouch_hotels_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof StayntouchConnectionTestError
+          ? error.detailCode
+          : "stayntouch_sandbox_unreachable";
       }
     }
     const testedAt = new Date().toISOString();

@@ -24,7 +24,16 @@ export { ApaleoAdapter } from "./apaleo";
 export { ApaleoConnectionTestError, testApaleoSandboxConnection } from "./apaleo";
 export type { ApaleoConnectionTestConfig, ApaleoConnectionTestResult } from "./apaleo";
 export { StayntouchHttpTransport, StayntouchTransportError } from "./stayntouch";
-export type { StayntouchConfig, StayntouchFetch } from "./stayntouch";
+export {
+  StayntouchConnectionTestError,
+  testStayntouchSandboxConnection,
+} from "./stayntouch";
+export type {
+  StayntouchConfig,
+  StayntouchConnectionTestConfig,
+  StayntouchConnectionTestResult,
+  StayntouchFetch,
+} from "./stayntouch";
 export { SihotHttpTransport, SihotTransportError } from "./sihot";
 export type { SihotConfig, SihotFetch } from "./sihot";
 export { RmsCloudHttpTransport, RmsCloudTransportError } from "./rms-cloud";
