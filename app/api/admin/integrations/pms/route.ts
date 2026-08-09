@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buildPmsReadiness, pmsProviders } from "@/services/hotel-suppliers";
+import {
+  auditPriorityPmsProductionReadiness,
+  buildPmsReadiness,
+  pmsProviders,
+} from "@/services/hotel-suppliers";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +33,7 @@ export async function GET() {
     return NextResponse.json(
       {
         providers: buildPmsReadiness(process.env),
+        priorityProductionReadiness: auditPriorityPmsProductionReadiness(process.env),
         connections: (connectionsResult.data ?? []).map((connection) => ({
           ...connection,
           property_name: propertyNames.get(connection.property_id) ?? "Unknown property",

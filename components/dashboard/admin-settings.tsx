@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { ReadinessItem } from "@/lib/admin/platform-readiness";
-import type { PmsProviderReadiness } from "@/services/hotel-suppliers";
+import type { PmsProviderReadiness, PriorityPmsLaunchStatus } from "@/services/hotel-suppliers";
 
 type Response = {
   items: ReadinessItem[];
@@ -21,6 +21,20 @@ type PmsConnection = {
   credentials_updated_at: string | null;
 };
 
+type PriorityPmsProductionReadiness = {
+  id: string;
+  name: string;
+  status: PriorityPmsLaunchStatus;
+  configuredEnvironmentKeys: string[];
+  missingEnvironmentKeys: string[];
+  invalidEnvironmentKeys: string[];
+  evidence: {
+    vendorApproved: boolean;
+    propertyMapped: boolean;
+    sandboxValidated: boolean;
+  };
+};
+
 const categories: Array<[ReadinessItem["category"], string]> = [
   ["core", "Core platform"],
   ["communications", "Communications"],
@@ -28,6 +42,14 @@ const categories: Array<[ReadinessItem["category"], string]> = [
   ["features", "Feature flags"],
 ];
 const statusStyle = { ready: "text-emerald-700", attention: "text-amber-700", off: "text-slate-500" };
+const priorityStatusStyle: Record<PriorityPmsLaunchStatus, string> = {
+  configuration_required: "text-amber-700",
+  configuration_invalid: "text-red-700",
+  vendor_approval_required: "text-amber-700",
+  property_mapping_required: "text-amber-700",
+  sandbox_validation_required: "text-amber-700",
+  ready_for_live: "text-emerald-700",
+};
 
 export function AdminSettings() {
   const [data, setData] = useState<Response | null>(null);
@@ -35,6 +57,7 @@ export function AdminSettings() {
   const [emailTestBusy, setEmailTestBusy] = useState(false);
   const [emailTestMessage, setEmailTestMessage] = useState("");
   const [pmsProviders, setPmsProviders] = useState<PmsProviderReadiness[]>([]);
+  const [priorityPmsReadiness, setPriorityPmsReadiness] = useState<PriorityPmsProductionReadiness[]>([]);
   const [pmsConnections, setPmsConnections] = useState<PmsConnection[]>([]);
   const [selectedConnectionId, setSelectedConnectionId] = useState("");
   const [pmsMessage, setPmsMessage] = useState("Checking PMS connections…");
@@ -75,6 +98,7 @@ export function AdminSettings() {
         const body = await response.json();
         if (!response.ok) throw new Error(body.error);
         setPmsProviders(body.providers);
+        setPriorityPmsReadiness(body.priorityProductionReadiness ?? []);
         setPmsConnections(body.connections ?? []);
         setSelectedConnectionId((current) => current || body.connections?.[0]?.id || "");
         setPmsMessage("");
@@ -159,6 +183,34 @@ export function AdminSettings() {
             <span><strong>{pmsProviders.filter((provider) => provider.status !== "ready_for_validation").length}</strong> need configuration</span>
           </div>}
         </div>
+        {priorityPmsReadiness.length > 0 && <div className="border-b bg-slate-50 p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <span className="text-xs uppercase tracking-wider text-slate-500">Production launch gate</span>
+              <h3 className="mt-2 text-lg font-semibold">Priority PMS providers</h3>
+              <p className="mt-1 text-sm text-slate-600">This strict audit requires valid production configuration, vendor approval, property mapping, and completed sandbox validation. Only configuration key names are shown; secret values never leave the server.</p>
+            </div>
+            <div className="text-sm text-slate-600">
+              <strong>{priorityPmsReadiness.filter((provider) => provider.status === "ready_for_live").length}</strong> of <strong>{priorityPmsReadiness.length}</strong> ready for live
+            </div>
+          </div>
+          <div className="mt-5 grid gap-3 xl:grid-cols-2">
+            {priorityPmsReadiness.map((provider) => <article className="rounded-lg border bg-white p-4" key={provider.id}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <strong>{provider.name}</strong>
+                <span className={`text-sm font-semibold ${priorityStatusStyle[provider.status]}`}>{provider.status.replaceAll("_", " ")}</span>
+              </div>
+              <p className="mt-2 text-xs text-slate-500">Configured keys: {provider.configuredEnvironmentKeys.length}</p>
+              {provider.missingEnvironmentKeys.length > 0 && <p className="mt-2 break-words text-xs text-amber-700">Missing: {provider.missingEnvironmentKeys.join(", ")}</p>}
+              {provider.invalidEnvironmentKeys.length > 0 && <p className="mt-2 break-words text-xs text-red-700">Invalid: {provider.invalidEnvironmentKeys.join(", ")}</p>}
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                <span>Vendor: {provider.evidence.vendorApproved ? "approved" : "pending"}</span>
+                <span>Mapping: {provider.evidence.propertyMapped ? "complete" : "pending"}</span>
+                <span>Sandbox: {provider.evidence.sandboxValidated ? "passed" : "pending"}</span>
+              </div>
+            </article>)}
+          </div>
+        </div>}
         {pmsMessage && <p className="p-6 text-sm text-slate-600" role="status">{pmsMessage}</p>}
         {pmsProviders.length > 0 && <div className="divide-y">
           {pmsProviders.map((provider) => <article className="grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(220px,auto)]" key={provider.id}>

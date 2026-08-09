@@ -7,6 +7,10 @@ const route = readFileSync(
   new URL("../app/api/admin/integrations/pms/route.ts", import.meta.url),
   "utf8",
 );
+const adminSettings = readFileSync(
+  new URL("../components/dashboard/admin-settings.tsx", import.meta.url),
+  "utf8",
+);
 
 describe("PMS integration foundation", () => {
   it("registers every requested PMS family exactly once", () => {
@@ -207,6 +211,15 @@ describe("PMS integration foundation", () => {
     expect(route).toContain('requireRole(["admin"])');
     expect(route).toContain('"Cache-Control": "no-store"');
     expect(route).not.toContain("CLIENT_SECRET");
+  });
+
+  it("exposes the strict priority production audit to administrators without secret values", () => {
+    expect(route).toContain("auditPriorityPmsProductionReadiness(process.env)");
+    expect(route).toContain("priorityProductionReadiness");
+    expect(adminSettings).toContain("Production launch gate");
+    expect(adminSettings).toContain("missingEnvironmentKeys");
+    expect(adminSettings).toContain("invalidEnvironmentKeys");
+    expect(adminSettings).toContain("secret values never leave the server");
   });
 });
 
