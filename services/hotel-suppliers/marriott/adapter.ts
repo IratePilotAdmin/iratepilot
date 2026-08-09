@@ -1,7 +1,7 @@
 import type {
   MarriottAvailabilityRequest, MarriottCancellation, MarriottCancelReservationRequest,
   MarriottCreateReservationRequest, MarriottOffer, MarriottPmsMapper, MarriottPmsProvider,
-  MarriottPmsTransport, MarriottReservation,
+  MarriottGetReservationRequest, MarriottModifyReservationRequest, MarriottPmsTransport, MarriottReservation,
 } from "./contracts";
 
 export class MarriottPmsAdapter {
@@ -25,6 +25,29 @@ export class MarriottPmsAdapter {
       requestId: input.externalReference, payload: this.mapper.createReservationPayload(input),
     });
     return this.mapper.createReservationResponse(payload, input);
+  }
+
+  async getReservation(input: MarriottGetReservationRequest): Promise<MarriottReservation> {
+    if (!this.mapper.getReservationPayload || !this.mapper.getReservationResponse) {
+      throw new Error(`${this.provider} reservation retrieval is not configured`);
+    }
+    const payload = await this.transport.execute({
+      provider: this.provider, propertyCode: input.propertyCode, operation: "get_reservation",
+      requestId: input.externalReference ?? `get:${input.reservationId}`,
+      payload: this.mapper.getReservationPayload(input),
+    });
+    return this.mapper.getReservationResponse(payload, input);
+  }
+
+  async modifyReservation(input: MarriottModifyReservationRequest): Promise<MarriottReservation> {
+    if (!this.mapper.modifyReservationPayload || !this.mapper.modifyReservationResponse) {
+      throw new Error(`${this.provider} reservation modification is not configured`);
+    }
+    const payload = await this.transport.execute({
+      provider: this.provider, propertyCode: input.propertyCode, operation: "modify_reservation",
+      requestId: `modify:${input.externalReference}`, payload: this.mapper.modifyReservationPayload(input),
+    });
+    return this.mapper.modifyReservationResponse(payload, input);
   }
 
   async cancelReservation(input: MarriottCancelReservationRequest): Promise<MarriottCancellation> {

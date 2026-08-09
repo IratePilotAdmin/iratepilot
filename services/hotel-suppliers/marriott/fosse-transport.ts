@@ -5,7 +5,7 @@ export type MarriottFosseConfig = {
   baseUrl: string;
   apiCredential?: string;
   getApiCredential?: () => Promise<string>;
-  endpoints: Record<MarriottOperation, MarriottFosseEndpoint>;
+  endpoints: Partial<Record<MarriottOperation, MarriottFosseEndpoint>>;
   credentialHeader?: string;
   credentialScheme?: string;
   timeoutMs?: number;
@@ -82,7 +82,10 @@ export class MarriottFosseHttpTransport implements MarriottPmsTransport {
     }
     const payload = payloadRecord(request.payload);
     const mapping = this.config.endpoints[request.operation];
-    const id = request.operation === "cancel_reservation" ? reservationId(payload) : "";
+    if (!mapping) throw new Error(`Marriott FOSSE endpoint mapping is required for ${request.operation}`);
+    const id = ["get_reservation", "modify_reservation", "cancel_reservation"].includes(request.operation)
+      ? reservationId(payload)
+      : "";
     const path = mapping.path
       .replace("{propertyCode}", encodeURIComponent(request.propertyCode))
       .replace("{reservationId}", encodeURIComponent(id));
