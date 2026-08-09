@@ -3,7 +3,11 @@ export { getPmsProvider, pmsProviders } from "./providers";
 export { buildPmsReadiness, validatePmsConfiguration } from "./readiness";
 export { HiltonPmsAdapter } from "./hilton";
 export { HiltonPepHttpTransport, HiltonPepTransportError } from "./hilton";
-export type { HiltonPepConfig, HiltonPepEndpoint, HiltonPepFetch } from "./hilton";
+export { HiltonPepConnectionTestError, testHiltonPepSandboxConnection } from "./hilton";
+export type {
+  HiltonPepConfig, HiltonPepConnectionTestConfig, HiltonPepConnectionTestResult,
+  HiltonPepEndpoint, HiltonPepFetch,
+} from "./hilton";
 export { HiltonOnQHttpTransport, HiltonOnQTransportError } from "./hilton";
 export type { HiltonOnQConfig, HiltonOnQEndpoint, HiltonOnQFetch } from "./hilton";
 export { MarriottPmsAdapter } from "./marriott";
