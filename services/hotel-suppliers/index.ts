@@ -48,6 +48,8 @@ export type {
 } from "./sihot";
 export { RmsCloudHttpTransport, RmsCloudTransportError } from "./rms-cloud";
 export type { RmsCloudConfig, RmsCloudFetch } from "./rms-cloud";
+export { RmsCloudConnectionTestError, testRmsCloudSandboxConnection } from "./rms-cloud";
+export type { RmsCloudConnectionTestConfig, RmsCloudConnectionTestResult } from "./rms-cloud";
 export { MaestroHttpTransport, MaestroTransportError } from "./maestro";
 export type { MaestroConfig, MaestroEndpoint, MaestroFetch } from "./maestro";
 export { ShijiHttpTransport, ShijiTransportError } from "./shiji";
