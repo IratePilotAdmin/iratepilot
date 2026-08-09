@@ -19,8 +19,16 @@ describe("PMS credential vault", () => {
 
   it("never returns credential values and labels tests honestly", () => {
     expect(route).toContain('validationMode: "configuration_only"');
-    expect(route).toContain("liveVendorConnectionTested: false");
+    expect(route).toContain('validationMode = "vendor_sandbox"');
+    expect(route).toContain("liveVendorConnectionTested = true");
+    expect(route).toContain("testMewsSandboxConnection");
     expect(route).not.toMatch(/credentials[,}]/);
+  });
+
+  it("only advances a connection after a real vendor sandbox test", () => {
+    expect(route).toContain("passed && liveVendorConnectionTested");
+    expect(route).toContain('connection_status: "sandbox"');
+    expect(route).toContain("last_validated_at: testedAt");
   });
 
   it("denies browser roles direct access to encrypted records", () => {

@@ -7,6 +7,8 @@ import {
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   getPmsProvider,
+  MewsConnectionTestError,
+  testMewsSandboxConnection,
   validatePmsConfiguration,
 } from "@/services/hotel-suppliers";
 
@@ -129,22 +131,50 @@ export async function POST(request: Request) {
       keyVersion: stored.data.key_version,
     });
     const validation = validatePmsConfiguration(provider, credentials);
-    const passed = validation.missingConfiguration.length === 0
+    const configurationPassed = validation.missingConfiguration.length === 0
       && validation.invalidConfiguration.length === 0;
+    let passed = configurationPassed;
+    let validationMode: "configuration_only" | "vendor_sandbox" = "configuration_only";
+    let liveVendorConnectionTested = false;
+    let detailCode = configurationPassed
+      ? "encrypted_configuration_valid"
+      : "configuration_invalid";
+    let serviceCount: number | undefined;
+
+    if (configurationPassed && provider.id === "mews") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testMewsSandboxConnection({
+          baseUrl: credentials.PMS_MEWS_BASE_URL,
+          clientToken: credentials.PMS_MEWS_CLIENT_TOKEN,
+          accessToken: credentials.PMS_MEWS_ACCESS_TOKEN,
+          client: credentials.PMS_MEWS_CLIENT,
+        });
+        serviceCount = result.serviceCount;
+        detailCode = "mews_services_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof MewsConnectionTestError
+          ? error.detailCode
+          : "mews_sandbox_unreachable";
+      }
+    }
     const testedAt = new Date().toISOString();
 
     const event = await admin.from("pms_connection_test_events").insert({
       connection_id: selected.id,
-      validation_mode: "configuration_only",
+      validation_mode: validationMode,
       result: passed ? "passed" : "failed",
-      detail_code: passed ? "encrypted_configuration_valid" : "configuration_invalid",
+      detail_code: detailCode,
       tested_by: auth.user.id,
       created_at: testedAt,
     });
     if (event.error) throw event.error;
-    if (passed) {
+    if (passed && liveVendorConnectionTested) {
       const updated = await admin.from("property_pms_connections").update({
         connection_status: "sandbox",
+        last_validated_at: testedAt,
         updated_at: testedAt,
       }).eq("id", selected.id);
       if (updated.error) throw updated.error;
@@ -154,9 +184,10 @@ export async function POST(request: Request) {
       connectionId: selected.id,
       providerId: provider.id,
       passed,
-      validationMode: "configuration_only",
-      liveVendorConnectionTested: false,
+      validationMode,
+      liveVendorConnectionTested,
       testedAt,
+      ...(serviceCount === undefined ? {} : { serviceCount }),
     }, { status: passed ? 200 : 422, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("PMS configuration test failed", error);
