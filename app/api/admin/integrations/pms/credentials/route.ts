@@ -13,6 +13,7 @@ import {
   HiltonOnQConnectionTestError,
   MaestroConnectionTestError,
   MarriottFosseConnectionTestError,
+  MarriottFsPmsConnectionTestError,
   MewsConnectionTestError,
   OracleOperaConnectionTestError,
   RmsCloudConnectionTestError,
@@ -26,6 +27,7 @@ import {
   testMewsSandboxConnection,
   testMaestroSandboxConnection,
   testMarriottFosseSandboxConnection,
+  testMarriottFsPmsSandboxConnection,
   testOracleOperaSandboxConnection,
   testRmsCloudSandboxConnection,
   testShijiSandboxConnection,
@@ -244,6 +246,25 @@ export async function POST(request: Request) {
         detailCode = error instanceof MarriottFosseConnectionTestError
           ? error.detailCode
           : "marriott_fosse_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "marriott-fs-pms") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testMarriottFsPmsSandboxConnection({
+          baseUrl: credentials.PMS_MARRIOTT_FS_PMS_BASE_URL,
+          apiCredential: credentials.PMS_MARRIOTT_FS_PMS_API_CREDENTIAL,
+          validationPath: credentials.PMS_MARRIOTT_FS_PMS_VALIDATION_PATH,
+          credentialHeader: credentials.PMS_MARRIOTT_FS_PMS_CREDENTIAL_HEADER,
+          credentialScheme: credentials.PMS_MARRIOTT_FS_PMS_CREDENTIAL_SCHEME,
+        });
+        resourceCount = result.resourceCount;
+        detailCode = "marriott_fs_pms_validation_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof MarriottFsPmsConnectionTestError
+          ? error.detailCode
+          : "marriott_fs_pms_sandbox_unreachable";
       }
     } else if (configurationPassed && provider.id === "mews") {
       validationMode = "vendor_sandbox";
