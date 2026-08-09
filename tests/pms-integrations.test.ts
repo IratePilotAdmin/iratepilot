@@ -214,12 +214,25 @@ describe("PMS integration foundation", () => {
   });
 
   it("exposes the strict priority production audit to administrators without secret values", () => {
-    expect(route).toContain("auditPriorityPmsProductionReadiness(process.env)");
+    expect(route).toContain("auditPriorityPmsProductionReadiness(process.env, evidence)");
     expect(route).toContain("priorityProductionReadiness");
     expect(adminSettings).toContain("Production launch gate");
     expect(adminSettings).toContain("missingEnvironmentKeys");
     expect(adminSettings).toContain("invalidEnvironmentKeys");
     expect(adminSettings).toContain("secret values never leave the server");
+  });
+
+  it("persists priority launch evidence through an admin-only, sequential update", () => {
+    expect(route).toContain("export async function PATCH");
+    expect(route).toContain('requireRole(["admin"])');
+    expect(route).toContain('from("priority_pms_launch_evidence")');
+    expect(route).toContain("Vendor approval must be recorded before property mapping.");
+    expect(route).toContain("Vendor approval and property mapping are required before sandbox validation.");
+    expect(route).toContain("updated_by: auth.user.id");
+    expect(adminSettings).toContain("Confirm vendor approval");
+    expect(adminSettings).toContain("Confirm property mapping");
+    expect(adminSettings).toContain("Confirm sandbox validation");
+    expect(adminSettings).toContain("migration 034");
   });
 });
 
