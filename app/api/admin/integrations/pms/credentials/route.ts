@@ -11,12 +11,14 @@ import {
   getPmsProvider,
   MewsConnectionTestError,
   OracleOperaConnectionTestError,
+  RmsCloudConnectionTestError,
   SihotConnectionTestError,
   StayntouchConnectionTestError,
   testApaleoSandboxConnection,
   testCloudbedsSandboxConnection,
   testMewsSandboxConnection,
   testOracleOperaSandboxConnection,
+  testRmsCloudSandboxConnection,
   testSihotSandboxConnection,
   testStayntouchSandboxConnection,
   validatePmsConfiguration,
@@ -260,6 +262,26 @@ export async function POST(request: Request) {
         detailCode = error instanceof SihotConnectionTestError
           ? error.detailCode
           : "sihot_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "rms-cloud") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testRmsCloudSandboxConnection({
+          baseUrl: credentials.PMS_RMS_CLOUD_BASE_URL,
+          agentId: credentials.PMS_RMS_CLOUD_AGENT_ID,
+          agentPassword: credentials.PMS_RMS_CLOUD_AGENT_PASSWORD,
+          clientId: credentials.PMS_RMS_CLOUD_CLIENT_ID,
+          clientPassword: credentials.PMS_RMS_CLOUD_CLIENT_PASSWORD,
+          propertyId: credentials.PMS_RMS_CLOUD_PROPERTY_ID,
+        });
+        propertyCount = result.propertyCount;
+        detailCode = "rms_cloud_property_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof RmsCloudConnectionTestError
+          ? error.detailCode
+          : "rms_cloud_sandbox_unreachable";
       }
     }
     const testedAt = new Date().toISOString();
