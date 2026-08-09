@@ -176,7 +176,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     id: "shiji-pms", name: "Shiji PMS", vendor: "Shiji Group",
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_SHIJI",
-    requiredConfiguration: standardConfiguration,
+    requiredConfiguration: ["BASE_URL", "ACCESS_TOKEN", "VALIDATION_PATH"],
     documentationUrl: "https://www.shijigroup.com/shiji-platform",
     notes: "Requires Shiji partner approval, credentials, and property-level authorization.",
   },
