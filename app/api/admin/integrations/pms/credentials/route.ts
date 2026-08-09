@@ -12,6 +12,7 @@ import {
   HiltonPepConnectionTestError,
   HiltonOnQConnectionTestError,
   HotelKeyConnectionTestError,
+  isStandardPmsProvider,
   MaestroConnectionTestError,
   MarriottFosseConnectionTestError,
   MarriottFsPmsConnectionTestError,
@@ -21,6 +22,7 @@ import {
   ShijiConnectionTestError,
   SihotConnectionTestError,
   StayntouchConnectionTestError,
+  StandardPmsConnectionTestError,
   testApaleoSandboxConnection,
   testCloudbedsSandboxConnection,
   testHiltonPepSandboxConnection,
@@ -35,6 +37,7 @@ import {
   testShijiSandboxConnection,
   testSihotSandboxConnection,
   testStayntouchSandboxConnection,
+  testStandardPmsConnection,
   validatePmsConfiguration,
 } from "@/services/hotel-suppliers";
 
@@ -60,7 +63,7 @@ function credentialRecord(value: unknown) {
 async function connection(admin: ReturnType<typeof createAdminClient>, id: string) {
   const result = await admin
     .from("property_pms_connections")
-    .select("id,provider_id")
+    .select("id,provider_id,external_property_code")
     .eq("id", id)
     .maybeSingle();
   if (result.error) throw result.error;
@@ -430,6 +433,29 @@ export async function POST(request: Request) {
         detailCode = error instanceof ShijiConnectionTestError
           ? error.detailCode
           : "shiji_sandbox_unreachable";
+      }
+    } else if (configurationPassed && isStandardPmsProvider(provider.id)) {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      const prefix = provider.environmentPrefix;
+      try {
+        await testStandardPmsConnection({
+          providerId: provider.id,
+          baseUrl: credentials[`${prefix}_BASE_URL`],
+          apiCredential: credentials[`${prefix}_CLIENT_SECRET`],
+          validationPath: credentials[`${prefix}_VALIDATION_PATH`],
+          credentialHeader: credentials[`${prefix}_CREDENTIAL_HEADER`],
+          credentialScheme: credentials[`${prefix}_CREDENTIAL_SCHEME`],
+          propertyCode: selected.external_property_code,
+          timeoutMs: 15_000,
+        });
+        resourceCount = 1;
+        detailCode = `${provider.id.replaceAll("-", "_")}_validation_read_succeeded`;
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof StandardPmsConnectionTestError
+          ? error.detailCode
+          : `${provider.id.replaceAll("-", "_")}_connection_unreachable`;
       }
     }
     const testedAt = new Date().toISOString();
