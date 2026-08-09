@@ -66,7 +66,6 @@ describe("PMS integration foundation", () => {
   });
 
   it.each([
-    ["mews", "PMS_MEWS"],
     ["cloudbeds", "PMS_CLOUDBEDS"],
     ["apaleo", "PMS_APALEO"],
   ])("validates complete %s configuration without exposing values", (providerId, prefix) => {
@@ -83,18 +82,52 @@ describe("PMS integration foundation", () => {
     expect(JSON.stringify(provider)).not.toContain(secret);
   });
 
+  it("validates the exact credential contract used by the Mews transport", () => {
+    const result = buildPmsReadiness({
+      PMS_MEWS_BASE_URL: "https://api.mews-demo.com",
+      PMS_MEWS_CLIENT_TOKEN: "client-token-value",
+      PMS_MEWS_ACCESS_TOKEN: "access-token-value",
+      PMS_MEWS_CLIENT: "iRatePilot 1.0.0",
+    });
+    const mews = result.find((provider) => provider.id === "mews");
+
+    expect(mews?.status).toBe("ready_for_validation");
+    expect(mews?.missingConfiguration).toEqual([]);
+    expect(mews?.invalidConfiguration).toEqual([]);
+    expect(JSON.stringify(mews)).not.toContain("client-token-value");
+    expect(JSON.stringify(mews)).not.toContain("access-token-value");
+  });
+
+  it("does not accept generic OAuth credentials for the Mews Connector API", () => {
+    const result = buildPmsReadiness({
+      PMS_MEWS_BASE_URL: "https://api.mews-demo.com",
+      PMS_MEWS_CLIENT_ID: "wrong-client-id",
+      PMS_MEWS_CLIENT_SECRET: "wrong-client-secret",
+    });
+    const mews = result.find((provider) => provider.id === "mews");
+
+    expect(mews?.status).toBe("credentials_required");
+    expect(mews?.missingConfiguration).toEqual([
+      "PMS_MEWS_CLIENT_TOKEN",
+      "PMS_MEWS_ACCESS_TOKEN",
+      "PMS_MEWS_CLIENT",
+    ]);
+  });
+
   it("rejects insecure endpoints and undersized secrets by key name only", () => {
     const result = buildPmsReadiness({
       PMS_MEWS_BASE_URL: "http://partner.example.invalid",
-      PMS_MEWS_CLIENT_ID: "client-id",
-      PMS_MEWS_CLIENT_SECRET: "short",
+      PMS_MEWS_CLIENT_TOKEN: "short",
+      PMS_MEWS_ACCESS_TOKEN: "also-short",
+      PMS_MEWS_CLIENT: "iRatePilot",
     });
     const mews = result.find((provider) => provider.id === "mews");
 
     expect(mews?.status).toBe("invalid_configuration");
     expect(mews?.invalidConfiguration).toEqual([
       "PMS_MEWS_BASE_URL",
-      "PMS_MEWS_CLIENT_SECRET",
+      "PMS_MEWS_CLIENT_TOKEN",
+      "PMS_MEWS_ACCESS_TOKEN",
     ]);
     expect(JSON.stringify(mews)).not.toContain("partner.example.invalid");
     expect(JSON.stringify(mews)).not.toContain("short");
@@ -106,3 +139,4 @@ describe("PMS integration foundation", () => {
     expect(route).not.toContain("CLIENT_SECRET");
   });
 });
+

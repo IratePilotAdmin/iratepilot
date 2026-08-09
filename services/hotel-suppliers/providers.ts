@@ -120,7 +120,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     id: "mews", name: "Mews", vendor: "Mews",
     accessModel: "public_partner_platform", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_MEWS",
-    requiredConfiguration: standardConfiguration,
+    requiredConfiguration: ["BASE_URL", "CLIENT_TOKEN", "ACCESS_TOKEN", "CLIENT"],
     documentationUrl: "https://mews-systems.gitbook.io/connector-api/",
     notes: "Use Mews-approved connector credentials and validate each property mapping before live traffic.",
   },
