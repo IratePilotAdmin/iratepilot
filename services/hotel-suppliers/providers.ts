@@ -56,7 +56,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     capabilities: fullReservationCapabilities,
     certificationRequired: true,
     environmentPrefix: "PMS_MARRIOTT_FOSSE",
-    requiredConfiguration: standardConfiguration,
+    requiredConfiguration: ["BASE_URL", "API_CREDENTIAL", "VALIDATION_PATH"],
     documentationUrl: "https://www.hotel-development.marriott.com/resourcefiles/fdd-document/2024-ri-fdd-3-31-2024.pdf",
     notes: "FOSSE connectivity requires Marriott approval and an issued integration specification or certified connectivity partner.",
   },
