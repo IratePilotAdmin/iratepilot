@@ -128,7 +128,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     id: "stayntouch", name: "Stayntouch", vendor: "Stayntouch",
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_STAYNTOUCH",
-    requiredConfiguration: standardConfiguration,
+    requiredConfiguration: ["BASE_URL", "ACCESS_TOKEN"],
     documentationUrl: "https://api-specs.stayntouch.com/v2/index.html",
     notes: "Requires Stayntouch partner access and hotel authorization.",
   },
