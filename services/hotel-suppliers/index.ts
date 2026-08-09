@@ -51,7 +51,11 @@ export type { RmsCloudConfig, RmsCloudFetch } from "./rms-cloud";
 export { RmsCloudConnectionTestError, testRmsCloudSandboxConnection } from "./rms-cloud";
 export type { RmsCloudConnectionTestConfig, RmsCloudConnectionTestResult } from "./rms-cloud";
 export { MaestroHttpTransport, MaestroTransportError } from "./maestro";
-export type { MaestroConfig, MaestroEndpoint, MaestroFetch } from "./maestro";
+export { MaestroConnectionTestError, testMaestroSandboxConnection } from "./maestro";
+export type {
+  MaestroConfig, MaestroConnectionTestConfig, MaestroConnectionTestResult,
+  MaestroEndpoint, MaestroFetch,
+} from "./maestro";
 export { ShijiHttpTransport, ShijiTransportError } from "./shiji";
 export type { ShijiConfig, ShijiEndpoint, ShijiFetch } from "./shiji";
 export { GuestlineHttpTransport, GuestlineTransportError } from "./guestline";
