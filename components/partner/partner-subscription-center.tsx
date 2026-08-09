@@ -78,7 +78,7 @@ export function PartnerSubscriptionCenter() {
           </button>
         </article>;})}
     </section>
-    <section className="card p-6 text-sm text-slate-600"><strong className="text-slate-900">{partnerEnterprisePlan.name}: {partnerEnterprisePlan.monthlyPriceLabel}/month</strong><p className="mt-2">{partnerEnterprisePlan.audience} Enterprise subscriptions are arranged manually and remain separate from the 10% commission on completed iRatePilot Travel marketplace bookings.</p></section>
+    <section className="card p-6 text-sm text-slate-600"><strong className="text-slate-900">{partnerEnterprisePlan.name}: {partnerEnterprisePlan.monthlyPriceLabel}/month</strong><p className="mt-2">{partnerEnterprisePlan.audience} Enterprise subscriptions are arranged manually and remain separate from the 14% commission on completed iRatePilot Travel marketplace bookings.</p></section>
     {message && <p role="status" className="card p-5 text-sm">{message}</p>}
     <p className="rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-950">Software subscriptions and the billing portal run in Stripe test mode during the private pilot. No live subscription charge is created.</p>
   </div>;

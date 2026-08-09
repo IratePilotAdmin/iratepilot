@@ -108,7 +108,7 @@ export default function HomePage() {
                 <article className="dark-feature"><ShieldCheck /><strong>Admin-approved inventory</strong><p>Partner properties remain drafts until reviewed and published.</p></article>
                 <article className="dark-feature"><Building2 /><strong>4- and 5-star focus</strong><p>Hotels, resorts, and professionally managed vacation homes.</p></article>
                 <article className="dark-feature"><Headphones /><strong>AI + human support</strong><p>Routine answers with escalation for exceptions and complex cases.</p></article>
-                <article className="dark-feature"><Star /><strong>Transparent economics</strong><p>5% traveler fee and 10% partner commission shown separately.</p></article>
+                <article className="dark-feature"><Star /><strong>Transparent economics</strong><p>5% traveler fee and 14% partner commission shown separately.</p></article>
               </div>
             </div>
           </div>
