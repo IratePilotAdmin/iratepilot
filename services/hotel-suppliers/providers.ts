@@ -20,7 +20,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     capabilities: fullReservationCapabilities,
     certificationRequired: true,
     environmentPrefix: "PMS_ORACLE_OPERA",
-    requiredConfiguration: [...standardConfiguration, "APP_KEY"],
+    requiredConfiguration: [...standardConfiguration, "APP_KEY", "HOTEL_ID"],
     documentationUrl: "https://docs.oracle.com/en/industries/hospitality/integration-platform/",
     notes: "Use Oracle Hospitality Integration Platform (OHIP) credentials issued for each approved environment and hotel chain/property scope.",
   },
