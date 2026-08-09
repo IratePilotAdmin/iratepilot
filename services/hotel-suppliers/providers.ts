@@ -160,7 +160,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     id: "maestro-pms", name: "Maestro PMS", vendor: "Maestro",
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_MAESTRO",
-    requiredConfiguration: standardConfiguration,
+    requiredConfiguration: ["BASE_URL", "ACCESS_TOKEN", "VALIDATION_PATH"],
     documentationUrl: "https://www.maestropms.com/interfaces-open-apis-integration-pms-partners.html",
     notes: "Requires a Maestro-approved integration and hotel authorization.",
   },

@@ -9,6 +9,7 @@ import {
   ApaleoConnectionTestError,
   CloudbedsConnectionTestError,
   getPmsProvider,
+  MaestroConnectionTestError,
   MewsConnectionTestError,
   OracleOperaConnectionTestError,
   RmsCloudConnectionTestError,
@@ -17,6 +18,7 @@ import {
   testApaleoSandboxConnection,
   testCloudbedsSandboxConnection,
   testMewsSandboxConnection,
+  testMaestroSandboxConnection,
   testOracleOperaSandboxConnection,
   testRmsCloudSandboxConnection,
   testSihotSandboxConnection,
@@ -154,6 +156,7 @@ export async function POST(request: Request) {
     let serviceCount: number | undefined;
     let hotelCount: number | undefined;
     let propertyCount: number | undefined;
+    let resourceCount: number | undefined;
 
     if (configurationPassed && provider.id === "oracle-opera") {
       validationMode = "vendor_sandbox";
@@ -283,6 +286,25 @@ export async function POST(request: Request) {
           ? error.detailCode
           : "rms_cloud_sandbox_unreachable";
       }
+    } else if (configurationPassed && provider.id === "maestro-pms") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testMaestroSandboxConnection({
+          baseUrl: credentials.PMS_MAESTRO_BASE_URL,
+          accessToken: credentials.PMS_MAESTRO_ACCESS_TOKEN,
+          validationPath: credentials.PMS_MAESTRO_VALIDATION_PATH,
+          authorizationHeader: credentials.PMS_MAESTRO_AUTHORIZATION_HEADER,
+          authorizationScheme: credentials.PMS_MAESTRO_AUTHORIZATION_SCHEME,
+        });
+        resourceCount = result.resourceCount;
+        detailCode = "maestro_validation_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof MaestroConnectionTestError
+          ? error.detailCode
+          : "maestro_sandbox_unreachable";
+      }
     }
     const testedAt = new Date().toISOString();
 
@@ -314,6 +336,7 @@ export async function POST(request: Request) {
       ...(serviceCount === undefined ? {} : { serviceCount }),
       ...(hotelCount === undefined ? {} : { hotelCount }),
       ...(propertyCount === undefined ? {} : { propertyCount }),
+      ...(resourceCount === undefined ? {} : { resourceCount }),
     }, { status: passed ? 200 : 422, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("PMS configuration test failed", error);
