@@ -15,6 +15,8 @@ export type { HiltonOnQConnectionTestConfig, HiltonOnQConnectionTestResult } fro
 export { MarriottPmsAdapter } from "./marriott";
 export { MarriottFosseHttpTransport, MarriottFosseTransportError } from "./marriott";
 export type { MarriottFosseConfig, MarriottFosseEndpoint, MarriottFosseFetch } from "./marriott";
+export { MarriottFosseConnectionTestError, testMarriottFosseSandboxConnection } from "./marriott";
+export type { MarriottFosseConnectionTestConfig, MarriottFosseConnectionTestResult } from "./marriott";
 export { MarriottFsPmsHttpTransport, MarriottFsPmsTransportError } from "./marriott";
 export type { MarriottFsPmsConfig, MarriottFsPmsEndpoint, MarriottFsPmsFetch } from "./marriott";
 export { HotelKeyAdapter } from "./hotelkey";
