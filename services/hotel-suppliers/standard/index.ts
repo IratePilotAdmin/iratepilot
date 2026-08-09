@@ -1,5 +1,14 @@
 export { StandardPmsAdapter } from "./adapter";
 export {
+  StandardPmsConnectionTestError,
+  testStandardPmsConnection,
+} from "./connection-test";
+export type {
+  StandardPmsConnectionTestConfig,
+  StandardPmsConnectionTestFetch,
+  StandardPmsConnectionTestResult,
+} from "./connection-test";
+export {
   isStandardPmsProvider,
   standardPmsProviderIds,
 } from "./providers";

@@ -97,7 +97,9 @@ export type {
 export {
   isStandardPmsProvider,
   StandardPmsAdapter,
+  StandardPmsConnectionTestError,
   standardPmsProviderIds,
+  testStandardPmsConnection,
 } from "./standard";
 export type {
   StandardPmsAvailabilityRequest,
@@ -112,6 +114,9 @@ export type {
   StandardPmsStay,
   StandardPmsTransport,
   StandardPmsTransportRequest,
+  StandardPmsConnectionTestConfig,
+  StandardPmsConnectionTestFetch,
+  StandardPmsConnectionTestResult,
 } from "./standard";
 export type {
   ApaleoAvailabilityRequest, ApaleoCancellation, ApaleoCancelReservationRequest,
