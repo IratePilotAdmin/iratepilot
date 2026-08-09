@@ -58,6 +58,9 @@ export function AdminSettings() {
   const [emailTestMessage, setEmailTestMessage] = useState("");
   const [pmsProviders, setPmsProviders] = useState<PmsProviderReadiness[]>([]);
   const [priorityPmsReadiness, setPriorityPmsReadiness] = useState<PriorityPmsProductionReadiness[]>([]);
+  const [evidenceTrackingAvailable, setEvidenceTrackingAvailable] = useState(false);
+  const [evidenceBusy, setEvidenceBusy] = useState("");
+  const [evidenceMessage, setEvidenceMessage] = useState("");
   const [pmsConnections, setPmsConnections] = useState<PmsConnection[]>([]);
   const [selectedConnectionId, setSelectedConnectionId] = useState("");
   const [pmsMessage, setPmsMessage] = useState("Checking PMS connections…");
@@ -99,12 +102,36 @@ export function AdminSettings() {
         if (!response.ok) throw new Error(body.error);
         setPmsProviders(body.providers);
         setPriorityPmsReadiness(body.priorityProductionReadiness ?? []);
+        setEvidenceTrackingAvailable(body.evidenceTrackingAvailable === true);
         setPmsConnections(body.connections ?? []);
         setSelectedConnectionId((current) => current || body.connections?.[0]?.id || "");
         setPmsMessage("");
       })
       .catch((error: Error) => setPmsMessage(error.message));
   }, []);
+
+  async function updateLaunchEvidence(
+    providerId: string,
+    evidence: Partial<PriorityPmsProductionReadiness["evidence"]>,
+  ) {
+    setEvidenceBusy(providerId);
+    setEvidenceMessage("");
+    try {
+      const response = await fetch("/api/admin/integrations/pms", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ providerId, evidence }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Launch evidence could not be updated.");
+      setPriorityPmsReadiness((items) => items.map((item) => item.id === providerId ? body.readiness : item));
+      setEvidenceMessage(`${body.readiness.name} launch evidence was updated.`);
+    } catch (error) {
+      setEvidenceMessage(error instanceof Error ? error.message : "Launch evidence could not be updated.");
+    } finally {
+      setEvidenceBusy("");
+    }
+  }
 
   async function saveCredentials(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -189,6 +216,7 @@ export function AdminSettings() {
               <span className="text-xs uppercase tracking-wider text-slate-500">Production launch gate</span>
               <h3 className="mt-2 text-lg font-semibold">Priority PMS providers</h3>
               <p className="mt-1 text-sm text-slate-600">This strict audit requires valid production configuration, vendor approval, property mapping, and completed sandbox validation. Only configuration key names are shown; secret values never leave the server.</p>
+              <p className="mt-2 text-xs text-slate-500">Mark a gate complete only after its approval, mapping record, or sandbox test evidence has been independently verified.</p>
             </div>
             <div className="text-sm text-slate-600">
               <strong>{priorityPmsReadiness.filter((provider) => provider.status === "ready_for_live").length}</strong> of <strong>{priorityPmsReadiness.length}</strong> ready for live
@@ -208,8 +236,21 @@ export function AdminSettings() {
                 <span>Mapping: {provider.evidence.propertyMapped ? "complete" : "pending"}</span>
                 <span>Sandbox: {provider.evidence.sandboxValidated ? "passed" : "pending"}</span>
               </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id} onClick={() => updateLaunchEvidence(provider.id, { vendorApproved: !provider.evidence.vendorApproved })} type="button">
+                  {provider.evidence.vendorApproved ? "Revoke vendor approval" : "Confirm vendor approval"}
+                </button>
+                <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id || !provider.evidence.vendorApproved} onClick={() => updateLaunchEvidence(provider.id, { propertyMapped: !provider.evidence.propertyMapped })} type="button">
+                  {provider.evidence.propertyMapped ? "Reset property mapping" : "Confirm property mapping"}
+                </button>
+                <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id || !provider.evidence.vendorApproved || !provider.evidence.propertyMapped} onClick={() => updateLaunchEvidence(provider.id, { sandboxValidated: !provider.evidence.sandboxValidated })} type="button">
+                  {provider.evidence.sandboxValidated ? "Reset sandbox validation" : "Confirm sandbox validation"}
+                </button>
+              </div>
             </article>)}
           </div>
+          {!evidenceTrackingAvailable && <p className="mt-4 text-sm text-amber-700">Launch evidence tracking is unavailable until production migration 034 is applied.</p>}
+          {evidenceMessage && <p className="mt-4 text-sm" role="status">{evidenceMessage}</p>}
         </div>}
         {pmsMessage && <p className="p-6 text-sm text-slate-600" role="status">{pmsMessage}</p>}
         {pmsProviders.length > 0 && <div className="divide-y">
