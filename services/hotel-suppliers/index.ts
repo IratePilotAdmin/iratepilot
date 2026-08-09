@@ -19,6 +19,8 @@ export { MarriottFosseConnectionTestError, testMarriottFosseSandboxConnection } 
 export type { MarriottFosseConnectionTestConfig, MarriottFosseConnectionTestResult } from "./marriott";
 export { MarriottFsPmsHttpTransport, MarriottFsPmsTransportError } from "./marriott";
 export type { MarriottFsPmsConfig, MarriottFsPmsEndpoint, MarriottFsPmsFetch } from "./marriott";
+export { MarriottFsPmsConnectionTestError, testMarriottFsPmsSandboxConnection } from "./marriott";
+export type { MarriottFsPmsConnectionTestConfig, MarriottFsPmsConnectionTestResult } from "./marriott";
 export { HotelKeyAdapter } from "./hotelkey";
 export { HotelKeyHttpTransport, HotelKeyTransportError } from "./hotelkey";
 export type { HotelKeyConfig, HotelKeyEndpoint, HotelKeyFetch } from "./hotelkey";
