@@ -10,6 +10,7 @@ export const priorityPmsProviderIds = [
 export type PriorityPmsProviderId = typeof priorityPmsProviderIds[number];
 export type PriorityPmsLaunchStatus =
   | "configuration_required"
+  | "configuration_invalid"
   | "vendor_approval_required"
   | "property_mapping_required"
   | "sandbox_validation_required"
@@ -92,6 +93,54 @@ export const priorityPmsProductionManifest: readonly PriorityPmsProductionManife
 type Environment = Record<string, string | undefined>;
 type EvidenceByProvider = Partial<Record<PriorityPmsProviderId, PriorityPmsLaunchEvidence>>;
 
+
+const operationPathPattern = /_(?:AVAILABILITY|CREATE|GET|MODIFY|CANCEL|VALIDATION)_PATH$/;
+
+function isSecureUrl(value: string) {
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function isPositiveNumber(value: string) {
+  const result = Number(value);
+  return Number.isFinite(result) && result > 0;
+}
+
+function isSameOriginOperationPath(
+  environment: Environment,
+  key: string,
+  value: string,
+) {
+  const baseUrlKey = key.replace(operationPathPattern, "_BASE_URL");
+  const baseUrlValue = environment[baseUrlKey]?.trim();
+  if (!baseUrlValue) return false;
+
+  try {
+    const baseUrl = new URL(baseUrlValue);
+    return new URL(value, baseUrl).origin === baseUrl.origin;
+  } catch {
+    return false;
+  }
+}
+
+function isValidConfiguredValue(
+  environment: Environment,
+  key: string,
+  value: string,
+) {
+  if (key.endsWith("_BASE_URL") || key.endsWith("_TOKEN_URL")) {
+    return isSecureUrl(value);
+  }
+  if (key.endsWith("_TIMEOUT_MS")) return isPositiveNumber(value);
+  if (operationPathPattern.test(key)) {
+    return isSameOriginOperationPath(environment, key, value);
+  }
+  return true;
+}
+
 export function auditPriorityPmsProductionReadiness(
   environment: Environment,
   evidence: EvidenceByProvider = {},
@@ -100,16 +149,26 @@ export function auditPriorityPmsProductionReadiness(
     const missingEnvironmentKeys = provider.requiredEnvironmentKeys.filter(
       (key) => !environment[key]?.trim(),
     );
+    const configuredKeys = [
+      ...provider.requiredEnvironmentKeys,
+      ...provider.optionalEnvironmentKeys,
+    ].filter((key) => Boolean(environment[key]?.trim()));
+    const invalidEnvironmentKeys = configuredKeys.filter((key) => {
+      const value = environment[key]?.trim();
+      return value ? !isValidConfiguredValue(environment, key, value) : false;
+    });
     const providerEvidence = evidence[provider.id] ?? {};
     const status: PriorityPmsLaunchStatus = missingEnvironmentKeys.length > 0
       ? "configuration_required"
-      : !providerEvidence.vendorApproved
-        ? "vendor_approval_required"
-        : !providerEvidence.propertyMapped
-          ? "property_mapping_required"
-          : !providerEvidence.sandboxValidated
-            ? "sandbox_validation_required"
-            : "ready_for_live";
+      : invalidEnvironmentKeys.length > 0
+        ? "configuration_invalid"
+        : !providerEvidence.vendorApproved
+          ? "vendor_approval_required"
+          : !providerEvidence.propertyMapped
+            ? "property_mapping_required"
+            : !providerEvidence.sandboxValidated
+              ? "sandbox_validation_required"
+              : "ready_for_live";
 
     return {
       id: provider.id,
@@ -119,6 +178,7 @@ export function auditPriorityPmsProductionReadiness(
         (key) => Boolean(environment[key]?.trim()),
       ),
       missingEnvironmentKeys,
+      invalidEnvironmentKeys,
       evidence: {
         vendorApproved: providerEvidence.vendorApproved === true,
         propertyMapped: providerEvidence.propertyMapped === true,
