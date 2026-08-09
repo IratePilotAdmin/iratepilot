@@ -10,6 +10,8 @@ export type {
 } from "./hilton";
 export { HiltonOnQHttpTransport, HiltonOnQTransportError } from "./hilton";
 export type { HiltonOnQConfig, HiltonOnQEndpoint, HiltonOnQFetch } from "./hilton";
+export { HiltonOnQConnectionTestError, testHiltonOnQSandboxConnection } from "./hilton";
+export type { HiltonOnQConnectionTestConfig, HiltonOnQConnectionTestResult } from "./hilton";
 export { MarriottPmsAdapter } from "./marriott";
 export { MarriottFosseHttpTransport, MarriottFosseTransportError } from "./marriott";
 export type { MarriottFosseConfig, MarriottFosseEndpoint, MarriottFosseFetch } from "./marriott";

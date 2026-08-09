@@ -10,6 +10,7 @@ import {
   CloudbedsConnectionTestError,
   getPmsProvider,
   HiltonPepConnectionTestError,
+  HiltonOnQConnectionTestError,
   MaestroConnectionTestError,
   MewsConnectionTestError,
   OracleOperaConnectionTestError,
@@ -20,6 +21,7 @@ import {
   testApaleoSandboxConnection,
   testCloudbedsSandboxConnection,
   testHiltonPepSandboxConnection,
+  testHiltonOnQSandboxConnection,
   testMewsSandboxConnection,
   testMaestroSandboxConnection,
   testOracleOperaSandboxConnection,
@@ -202,6 +204,25 @@ export async function POST(request: Request) {
         detailCode = error instanceof HiltonPepConnectionTestError
           ? error.detailCode
           : "hilton_pep_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "hilton-onq") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testHiltonOnQSandboxConnection({
+          baseUrl: credentials.PMS_HILTON_ONQ_BASE_URL,
+          apiCredential: credentials.PMS_HILTON_ONQ_API_CREDENTIAL,
+          validationPath: credentials.PMS_HILTON_ONQ_VALIDATION_PATH,
+          credentialHeader: credentials.PMS_HILTON_ONQ_CREDENTIAL_HEADER,
+          credentialScheme: credentials.PMS_HILTON_ONQ_CREDENTIAL_SCHEME,
+        });
+        resourceCount = result.resourceCount;
+        detailCode = "hilton_onq_validation_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof HiltonOnQConnectionTestError
+          ? error.detailCode
+          : "hilton_onq_sandbox_unreachable";
       }
     } else if (configurationPassed && provider.id === "mews") {
       validationMode = "vendor_sandbox";

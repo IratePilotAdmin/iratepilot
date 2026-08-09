@@ -44,7 +44,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     capabilities: fullReservationCapabilities,
     certificationRequired: true,
     environmentPrefix: "PMS_HILTON_ONQ",
-    requiredConfiguration: standardConfiguration,
+    requiredConfiguration: ["BASE_URL", "API_CREDENTIAL", "VALIDATION_PATH"],
     documentationUrl: "https://pim.hilton.com/HiltonWebPim/Help/Facility_Details/facility_details_screen.htm",
     notes: "Legacy OnQ connectivity is property- and brand-controlled and may require a Hilton-approved connectivity intermediary.",
   },

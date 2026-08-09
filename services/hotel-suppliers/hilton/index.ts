@@ -5,6 +5,8 @@ export { HiltonPepConnectionTestError, testHiltonPepSandboxConnection } from "./
 export type { HiltonPepConnectionTestConfig, HiltonPepConnectionTestResult } from "./pep-connection-test";
 export { HiltonOnQHttpTransport, HiltonOnQTransportError } from "./onq-transport";
 export type { HiltonOnQConfig, HiltonOnQEndpoint, HiltonOnQFetch } from "./onq-transport";
+export { HiltonOnQConnectionTestError, testHiltonOnQSandboxConnection } from "./onq-connection-test";
+export type { HiltonOnQConnectionTestConfig, HiltonOnQConnectionTestResult } from "./onq-connection-test";
 export type {
   HiltonAvailabilityRequest,
   HiltonCancellation,
