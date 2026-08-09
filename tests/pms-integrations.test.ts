@@ -66,7 +66,6 @@ describe("PMS integration foundation", () => {
   });
 
   it.each([
-    ["cloudbeds", "PMS_CLOUDBEDS"],
     ["apaleo", "PMS_APALEO"],
   ])("validates complete %s configuration without exposing values", (providerId, prefix) => {
     const secret = "provider-secret-value";
@@ -112,6 +111,19 @@ describe("PMS integration foundation", () => {
       "PMS_MEWS_ACCESS_TOKEN",
       "PMS_MEWS_CLIENT",
     ]);
+  });
+
+  it("validates the Cloudbeds API key contract used by its transport", () => {
+    const result = buildPmsReadiness({
+      PMS_CLOUDBEDS_BASE_URL: "https://api.cloudbeds.com",
+      PMS_CLOUDBEDS_API_KEY: "cbat_test-key-value",
+    });
+    const cloudbeds = result.find((provider) => provider.id === "cloudbeds");
+
+    expect(cloudbeds?.status).toBe("ready_for_validation");
+    expect(cloudbeds?.missingConfiguration).toEqual([]);
+    expect(cloudbeds?.invalidConfiguration).toEqual([]);
+    expect(JSON.stringify(cloudbeds)).not.toContain("cbat_test-key-value");
   });
 
   it("rejects insecure endpoints and undersized secrets by key name only", () => {

@@ -22,6 +22,7 @@ describe("PMS credential vault", () => {
     expect(route).toContain('validationMode = "vendor_sandbox"');
     expect(route).toContain("liveVendorConnectionTested = true");
     expect(route).toContain("testMewsSandboxConnection");
+    expect(route).toContain("testCloudbedsSandboxConnection");
     expect(route).not.toMatch(/credentials[,}]/);
   });
 
