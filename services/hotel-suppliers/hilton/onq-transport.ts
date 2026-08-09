@@ -5,7 +5,7 @@ export type HiltonOnQConfig = {
   baseUrl: string;
   apiCredential?: string;
   getApiCredential?: () => Promise<string>;
-  endpoints: Record<HiltonOperation, HiltonOnQEndpoint>;
+  endpoints: Partial<Record<HiltonOperation, HiltonOnQEndpoint>>;
   credentialHeader?: string;
   credentialScheme?: string;
   timeoutMs?: number;
@@ -78,7 +78,10 @@ export class HiltonOnQHttpTransport implements HiltonPmsTransport {
     if (request.provider !== "hilton-onq") throw new Error("Hilton OnQ transport only accepts hilton-onq requests");
     const payload = payloadRecord(request.payload);
     const mapping = this.config.endpoints[request.operation];
-    const id = request.operation === "cancel_reservation" ? reservationId(payload) : "";
+    if (!mapping) throw new Error(`Hilton OnQ endpoint mapping is required for ${request.operation}`);
+    const id = ["get_reservation", "modify_reservation", "cancel_reservation"].includes(request.operation)
+      ? reservationId(payload)
+      : "";
     const path = mapping.path
       .replace("{propertyCode}", encodeURIComponent(request.propertyCode))
       .replace("{reservationId}", encodeURIComponent(id));

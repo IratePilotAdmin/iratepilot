@@ -3,6 +3,8 @@ import type {
   HiltonCancellation,
   HiltonCancelReservationRequest,
   HiltonCreateReservationRequest,
+  HiltonGetReservationRequest,
+  HiltonModifyReservationRequest,
   HiltonOffer,
   HiltonPmsMapper,
   HiltonPmsProvider,
@@ -37,6 +39,34 @@ export class HiltonPmsAdapter {
       payload: this.mapper.createReservationPayload(input),
     });
     return this.mapper.createReservationResponse(payload, input);
+  }
+
+  async getReservation(input: HiltonGetReservationRequest): Promise<HiltonReservation> {
+    if (!this.mapper.getReservationPayload || !this.mapper.getReservationResponse) {
+      throw new Error(`${this.provider} reservation retrieval is not configured`);
+    }
+    const payload = await this.transport.execute({
+      provider: this.provider,
+      propertyCode: input.propertyCode,
+      operation: "get_reservation",
+      requestId: input.externalReference ?? `get:${input.reservationId}`,
+      payload: this.mapper.getReservationPayload(input),
+    });
+    return this.mapper.getReservationResponse(payload, input);
+  }
+
+  async modifyReservation(input: HiltonModifyReservationRequest): Promise<HiltonReservation> {
+    if (!this.mapper.modifyReservationPayload || !this.mapper.modifyReservationResponse) {
+      throw new Error(`${this.provider} reservation modification is not configured`);
+    }
+    const payload = await this.transport.execute({
+      provider: this.provider,
+      propertyCode: input.propertyCode,
+      operation: "modify_reservation",
+      requestId: `modify:${input.externalReference}`,
+      payload: this.mapper.modifyReservationPayload(input),
+    });
+    return this.mapper.modifyReservationResponse(payload, input);
   }
 
   async cancelReservation(input: HiltonCancelReservationRequest): Promise<HiltonCancellation> {
