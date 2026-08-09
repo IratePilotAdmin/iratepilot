@@ -12,6 +12,11 @@ export { MarriottFsPmsHttpTransport, MarriottFsPmsTransportError } from "./fs-pm
 export type { MarriottFsPmsConfig, MarriottFsPmsEndpoint, MarriottFsPmsFetch } from "./fs-pms-transport";
 export { MarriottFsPmsConnectionTestError, testMarriottFsPmsSandboxConnection } from "./fs-pms-connection-test";
 export type { MarriottFsPmsConnectionTestConfig, MarriottFsPmsConnectionTestResult } from "./fs-pms-connection-test";
+export { MarriottFsPmsMapper } from "./fs-pms-mapper";
+export { createMarriottFsPmsSyncAdapter, loadMarriottFsPmsSyncConfig } from "./fs-pms-sync";
+export type { MarriottFsPmsSyncEnvironment } from "./fs-pms-sync";
+export { parseMarriottFsPmsEvent, verifyMarriottFsPmsWebhook } from "./fs-pms-webhook";
+export type { MarriottFsPmsEvent } from "./fs-pms-webhook";
 export type {
   MarriottAvailabilityRequest, MarriottCancellation, MarriottCancelReservationRequest,
   MarriottCreateReservationRequest, MarriottGetReservationRequest, MarriottModifyReservationRequest,
