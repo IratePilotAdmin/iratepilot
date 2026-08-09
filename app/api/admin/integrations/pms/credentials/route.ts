@@ -11,11 +11,13 @@ import {
   getPmsProvider,
   MewsConnectionTestError,
   OracleOperaConnectionTestError,
+  SihotConnectionTestError,
   StayntouchConnectionTestError,
   testApaleoSandboxConnection,
   testCloudbedsSandboxConnection,
   testMewsSandboxConnection,
   testOracleOperaSandboxConnection,
+  testSihotSandboxConnection,
   testStayntouchSandboxConnection,
   validatePmsConfiguration,
 } from "@/services/hotel-suppliers";
@@ -239,6 +241,25 @@ export async function POST(request: Request) {
         detailCode = error instanceof StayntouchConnectionTestError
           ? error.detailCode
           : "stayntouch_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "sihot") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testSihotSandboxConnection({
+          baseUrl: credentials.PMS_SIHOT_BASE_URL,
+          user: credentials.PMS_SIHOT_USER,
+          password: credentials.PMS_SIHOT_PASSWORD,
+          hotel: credentials.PMS_SIHOT_HOTEL,
+          productId: credentials.PMS_SIHOT_PRODUCT_ID,
+        });
+        hotelCount = result.hotelCount;
+        detailCode = "sihot_authentication_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof SihotConnectionTestError
+          ? error.detailCode
+          : "sihot_sandbox_unreachable";
       }
     }
     const testedAt = new Date().toISOString();

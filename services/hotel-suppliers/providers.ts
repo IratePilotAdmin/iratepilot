@@ -144,7 +144,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     id: "sihot", name: "SIHOT", vendor: "GUBSE",
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_SIHOT",
-    requiredConfiguration: standardConfiguration,
+    requiredConfiguration: ["BASE_URL", "USER", "PASSWORD", "HOTEL", "PRODUCT_ID"],
     documentationUrl: "https://partner.sihot.com/SIHOTAPI/",
     notes: "Requires SIHOT-approved interface access and property-specific mappings.",
   },

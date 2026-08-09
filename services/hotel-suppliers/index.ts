@@ -34,8 +34,18 @@ export type {
   StayntouchConnectionTestResult,
   StayntouchFetch,
 } from "./stayntouch";
-export { SihotHttpTransport, SihotTransportError } from "./sihot";
-export type { SihotConfig, SihotFetch } from "./sihot";
+export {
+  SihotConnectionTestError,
+  SihotHttpTransport,
+  SihotTransportError,
+  testSihotSandboxConnection,
+} from "./sihot";
+export type {
+  SihotConfig,
+  SihotConnectionTestConfig,
+  SihotConnectionTestResult,
+  SihotFetch,
+} from "./sihot";
 export { RmsCloudHttpTransport, RmsCloudTransportError } from "./rms-cloud";
 export type { RmsCloudConfig, RmsCloudFetch } from "./rms-cloud";
 export { MaestroHttpTransport, MaestroTransportError } from "./maestro";
