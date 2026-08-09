@@ -21,6 +21,7 @@ function isValidConfiguration(key: string, value: string) {
     || key.endsWith("_API_KEY") || key.endsWith("_TOKEN")) {
     return value.length >= 12;
   }
+  if (key.endsWith("_HOTEL")) return value.length >= 1;
   return value.length >= 3;
 }
 

@@ -154,6 +154,36 @@ describe("PMS integration foundation", () => {
     ]);
   });
 
+  it("validates SIHOT's documented hotel authentication contract", () => {
+    const result = buildPmsReadiness({
+      PMS_SIHOT_BASE_URL: "https://partner-api.sihot.com/PDOCS/API/CBS/",
+      PMS_SIHOT_USER: "integration-user",
+      PMS_SIHOT_PASSWORD: "integration-password",
+      PMS_SIHOT_HOTEL: "1",
+      PMS_SIHOT_PRODUCT_ID: "iratepilot-product",
+    });
+    const sihot = result.find((provider) => provider.id === "sihot");
+    expect(sihot?.status).toBe("ready_for_validation");
+    expect(sihot?.missingConfiguration).toEqual([]);
+    expect(JSON.stringify(sihot)).not.toContain("integration-password");
+  });
+
+  it("does not accept generic OAuth credentials for SIHOT", () => {
+    const result = buildPmsReadiness({
+      PMS_SIHOT_BASE_URL: "https://partner-api.sihot.com/PDOCS/API/CBS/",
+      PMS_SIHOT_CLIENT_ID: "wrong-client",
+      PMS_SIHOT_CLIENT_SECRET: "wrong-secret-value",
+    });
+    const sihot = result.find((provider) => provider.id === "sihot");
+    expect(sihot?.status).toBe("credentials_required");
+    expect(sihot?.missingConfiguration).toEqual([
+      "PMS_SIHOT_USER",
+      "PMS_SIHOT_PASSWORD",
+      "PMS_SIHOT_HOTEL",
+      "PMS_SIHOT_PRODUCT_ID",
+    ]);
+  });
+
   it("rejects insecure endpoints and undersized secrets by key name only", () => {
     const result = buildPmsReadiness({
       PMS_MEWS_BASE_URL: "http://partner.example.invalid",
