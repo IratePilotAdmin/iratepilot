@@ -7,6 +7,7 @@ import type {
   StandardPmsConnectionTestFetch,
   StandardPmsProviderId,
 } from "../services/hotel-suppliers/standard";
+import { getPmsProvider } from "../services/hotel-suppliers/providers";
 
 const remainingProviders = [
   "oracle-opera-5",
@@ -30,6 +31,10 @@ function config(providerId: StandardPmsProviderId) {
 }
 
 describe("remaining PMS connection validation", () => {
+  it.each(remainingProviders)("requires a read-only validation path for %s", (providerId) => {
+    expect(getPmsProvider(providerId)?.requiredConfiguration).toContain("VALIDATION_PATH");
+  });
+
   it.each(remainingProviders)("validates %s credentials and property scope", async (providerId) => {
     const fetcher = vi.fn(async () => new Response(JSON.stringify({ ok: true }), {
       status: 200,

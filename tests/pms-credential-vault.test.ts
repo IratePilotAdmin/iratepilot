@@ -27,6 +27,9 @@ describe("PMS credential vault", () => {
     expect(route).toContain("testOracleOperaSandboxConnection");
     expect(route).toContain("testStayntouchSandboxConnection");
     expect(route).toContain("testSihotSandboxConnection");
+    expect(route).toContain("testStandardPmsConnection");
+    expect(route).toContain("isStandardPmsProvider(provider.id)");
+    expect(route).toContain("propertyCode: selected.external_property_code");
     expect(route).not.toMatch(/credentials[,}]/);
   });
 

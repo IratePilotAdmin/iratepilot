@@ -10,6 +10,10 @@ const fullReservationCapabilities = [
 ] as const;
 
 const standardConfiguration = ["BASE_URL", "CLIENT_ID", "CLIENT_SECRET"] as const;
+const standardValidationConfiguration = [
+  ...standardConfiguration,
+  "VALIDATION_PATH",
+] as const;
 
 export const pmsProviders: readonly PmsProviderManifest[] = [
   {
@@ -88,7 +92,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     id: "oracle-opera-5", name: "Oracle OPERA 5", vendor: "Oracle Hospitality",
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_ORACLE_OPERA_5",
-    requiredConfiguration: standardConfiguration,
+    requiredConfiguration: standardValidationConfiguration,
     documentationUrl: "https://docs.oracle.com/cd/E98457_01/opera_5_6_core_help/20460.htm",
     notes: "Legacy OPERA 5 connectivity must use an Oracle-approved interface and property-authorized endpoint.",
   },
@@ -96,7 +100,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     id: "infor-hms", name: "Infor HMS", vendor: "Infor",
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_INFOR_HMS",
-    requiredConfiguration: standardConfiguration,
+    requiredConfiguration: standardValidationConfiguration,
     documentationUrl: "https://docs.infor.com/inforos/2026.x/en-us/useradminlib_cloud/apigatewayag_cloud/wps1514559141744.html",
     notes: "Activate after Infor or an authorized hotel partner supplies API access and property mappings.",
   },
@@ -104,7 +108,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     id: "agilysys-pms", name: "Agilysys PMS", vendor: "Agilysys",
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_AGILYSYS",
-    requiredConfiguration: standardConfiguration,
+    requiredConfiguration: standardValidationConfiguration,
     documentationUrl: "https://www.agilysys.com/en/products/pms/",
     notes: "Requires an approved Agilysys integration path and property authorization.",
   },
@@ -112,7 +116,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     id: "planet-protel", name: "Planet Protel", vendor: "Planet",
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_PLANET_PROTEL",
-    requiredConfiguration: standardConfiguration,
+    requiredConfiguration: standardValidationConfiguration,
     documentationUrl: "https://www.weareplanet.com/hotel-pms",
     notes: "Activate only with Planet-issued credentials, endpoint details, and hotel scope.",
   },
@@ -184,7 +188,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     id: "guestline", name: "Guestline", vendor: "Guestline",
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_GUESTLINE",
-    requiredConfiguration: standardConfiguration,
+    requiredConfiguration: standardValidationConfiguration,
     documentationUrl: "https://developers.guestline.com/",
     notes: "Activate after Guestline supplies approved connectivity and property mappings.",
   },
@@ -192,7 +196,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     id: "ezee-absolute", name: "eZee Absolute", vendor: "Yanolja Cloud Solution",
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_EZEE_ABSOLUTE",
-    requiredConfiguration: standardConfiguration,
+    requiredConfiguration: standardValidationConfiguration,
     documentationUrl: "https://www.yanoljacloudsolution.com/",
     notes: "Requires authorized eZee connectivity credentials and hotel scope.",
   },
@@ -200,7 +204,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     id: "clock-pms-plus", name: "Clock PMS+", vendor: "Clock Software",
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_CLOCK_PMS_PLUS",
-    requiredConfiguration: standardConfiguration,
+    requiredConfiguration: standardValidationConfiguration,
     documentationUrl: "https://api-docs.clock-software.com/",
     notes: "Activate after Clock Software approves the integration and property access.",
   },
@@ -208,7 +212,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     id: "hotelogix", name: "Hotelogix", vendor: "Hotelogix",
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_HOTELOGIX",
-    requiredConfiguration: standardConfiguration,
+    requiredConfiguration: standardValidationConfiguration,
     documentationUrl: "https://www.hotelogix.com/other-interfaces",
     notes: "Requires Hotelogix-approved API access and property mappings.",
   },
