@@ -11,6 +11,7 @@ import {
   getPmsProvider,
   HiltonPepConnectionTestError,
   HiltonOnQConnectionTestError,
+  HotelKeyConnectionTestError,
   MaestroConnectionTestError,
   MarriottFosseConnectionTestError,
   MarriottFsPmsConnectionTestError,
@@ -24,6 +25,7 @@ import {
   testCloudbedsSandboxConnection,
   testHiltonPepSandboxConnection,
   testHiltonOnQSandboxConnection,
+  testHotelKeySandboxConnection,
   testMewsSandboxConnection,
   testMaestroSandboxConnection,
   testMarriottFosseSandboxConnection,
@@ -265,6 +267,25 @@ export async function POST(request: Request) {
         detailCode = error instanceof MarriottFsPmsConnectionTestError
           ? error.detailCode
           : "marriott_fs_pms_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "hotelkey") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testHotelKeySandboxConnection({
+          baseUrl: credentials.PMS_HOTELKEY_BASE_URL,
+          apiCredential: credentials.PMS_HOTELKEY_API_CREDENTIAL,
+          validationPath: credentials.PMS_HOTELKEY_VALIDATION_PATH,
+          credentialHeader: credentials.PMS_HOTELKEY_CREDENTIAL_HEADER,
+          credentialScheme: credentials.PMS_HOTELKEY_CREDENTIAL_SCHEME,
+        });
+        resourceCount = result.resourceCount;
+        detailCode = "hotelkey_validation_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof HotelKeyConnectionTestError
+          ? error.detailCode
+          : "hotelkey_sandbox_unreachable";
       }
     } else if (configurationPassed && provider.id === "mews") {
       validationMode = "vendor_sandbox";

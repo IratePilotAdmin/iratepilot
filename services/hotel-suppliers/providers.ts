@@ -80,7 +80,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     capabilities: fullReservationCapabilities,
     certificationRequired: true,
     environmentPrefix: "PMS_HOTELKEY",
-    requiredConfiguration: standardConfiguration,
+    requiredConfiguration: ["BASE_URL", "API_CREDENTIAL", "VALIDATION_PATH"],
     documentationUrl: "https://www.hotelkeyapp.com/system-integrations",
     notes: "Activate after HotelKey approves the partnership and supplies production API documentation, credentials, and property mappings.",
   },

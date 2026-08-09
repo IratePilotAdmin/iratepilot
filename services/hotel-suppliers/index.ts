@@ -24,6 +24,8 @@ export type { MarriottFsPmsConnectionTestConfig, MarriottFsPmsConnectionTestResu
 export { HotelKeyAdapter } from "./hotelkey";
 export { HotelKeyHttpTransport, HotelKeyTransportError } from "./hotelkey";
 export type { HotelKeyConfig, HotelKeyEndpoint, HotelKeyFetch } from "./hotelkey";
+export { HotelKeyConnectionTestError, testHotelKeySandboxConnection } from "./hotelkey";
+export type { HotelKeyConnectionTestConfig, HotelKeyConnectionTestResult } from "./hotelkey";
 export { MewsAdapter } from "./mews";
 export { testMewsSandboxConnection, MewsConnectionTestError } from "./mews";
 export type { MewsConnectionTestResult } from "./mews";
