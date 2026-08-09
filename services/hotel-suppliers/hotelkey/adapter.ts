@@ -3,6 +3,8 @@ import type {
   HotelKeyCancellation,
   HotelKeyCancelReservationRequest,
   HotelKeyCreateReservationRequest,
+  HotelKeyGetReservationRequest,
+  HotelKeyModifyReservationRequest,
   HotelKeyMapper,
   HotelKeyOffer,
   HotelKeyReservation,
@@ -33,6 +35,26 @@ export class HotelKeyAdapter {
       payload: this.mapper.createReservationPayload(input),
     });
     return this.mapper.createReservationResponse(payload, input);
+  }
+
+  async getReservation(input: HotelKeyGetReservationRequest): Promise<HotelKeyReservation> {
+    const payload = await this.transport.execute({
+      propertyCode: input.propertyCode,
+      operation: "get_reservation",
+      requestId: `get:${input.externalReference ?? input.reservationId}`,
+      payload: this.mapper.getReservationPayload(input),
+    });
+    return this.mapper.getReservationResponse(payload, input);
+  }
+
+  async modifyReservation(input: HotelKeyModifyReservationRequest): Promise<HotelKeyReservation> {
+    const payload = await this.transport.execute({
+      propertyCode: input.propertyCode,
+      operation: "modify_reservation",
+      requestId: `modify:${input.externalReference}`,
+      payload: this.mapper.modifyReservationPayload(input),
+    });
+    return this.mapper.modifyReservationResponse(payload, input);
   }
 
   async cancelReservation(input: HotelKeyCancelReservationRequest): Promise<HotelKeyCancellation> {
