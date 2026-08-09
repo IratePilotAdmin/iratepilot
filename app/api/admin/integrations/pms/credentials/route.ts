@@ -10,9 +10,11 @@ import {
   CloudbedsConnectionTestError,
   getPmsProvider,
   MewsConnectionTestError,
+  OracleOperaConnectionTestError,
   testApaleoSandboxConnection,
   testCloudbedsSandboxConnection,
   testMewsSandboxConnection,
+  testOracleOperaSandboxConnection,
   validatePmsConfiguration,
 } from "@/services/hotel-suppliers";
 
@@ -147,7 +149,29 @@ export async function POST(request: Request) {
     let hotelCount: number | undefined;
     let propertyCount: number | undefined;
 
-    if (configurationPassed && provider.id === "mews") {
+    if (configurationPassed && provider.id === "oracle-opera") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testOracleOperaSandboxConnection({
+          baseUrl: credentials.PMS_ORACLE_OPERA_BASE_URL,
+          tokenUrl: credentials.PMS_ORACLE_OPERA_TOKEN_URL
+            || `${credentials.PMS_ORACLE_OPERA_BASE_URL}/oauth/v1/tokens`,
+          clientId: credentials.PMS_ORACLE_OPERA_CLIENT_ID,
+          clientSecret: credentials.PMS_ORACLE_OPERA_CLIENT_SECRET,
+          appKey: credentials.PMS_ORACLE_OPERA_APP_KEY,
+          hotelId: credentials.PMS_ORACLE_OPERA_HOTEL_ID,
+          timeoutMs: 15_000,
+        });
+        hotelCount = result.hotelCount;
+        detailCode = "oracle_opera_titles_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof OracleOperaConnectionTestError
+          ? error.detailCode
+          : "oracle_opera_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "mews") {
       validationMode = "vendor_sandbox";
       liveVendorConnectionTested = true;
       try {

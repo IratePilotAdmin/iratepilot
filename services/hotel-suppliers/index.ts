@@ -116,8 +116,15 @@ export {
   loadOracleOperaConfig,
   OracleOperaClient,
   OracleOperaClientError,
+  OracleOperaConnectionTestError,
+  testOracleOperaSandboxConnection,
 } from "./oracle-opera";
-export type { OracleOperaConfig, OracleOperaRequestOptions } from "./oracle-opera";
+export type {
+  OracleOperaConfig,
+  OracleOperaConnectionTestConfig,
+  OracleOperaConnectionTestResult,
+  OracleOperaRequestOptions,
+} from "./oracle-opera";
 export type {
   HotelSupplier,
   PmsAccessModel,

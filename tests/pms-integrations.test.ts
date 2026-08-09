@@ -48,6 +48,7 @@ describe("PMS integration foundation", () => {
     expect(opera?.missingConfiguration).toEqual([
       "PMS_ORACLE_OPERA_CLIENT_SECRET",
       "PMS_ORACLE_OPERA_APP_KEY",
+      "PMS_ORACLE_OPERA_HOTEL_ID",
     ]);
   });
 

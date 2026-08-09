@@ -24,6 +24,7 @@ describe("PMS credential vault", () => {
     expect(route).toContain("testMewsSandboxConnection");
     expect(route).toContain("testCloudbedsSandboxConnection");
     expect(route).toContain("testApaleoSandboxConnection");
+    expect(route).toContain("testOracleOperaSandboxConnection");
     expect(route).not.toMatch(/credentials[,}]/);
   });
 
