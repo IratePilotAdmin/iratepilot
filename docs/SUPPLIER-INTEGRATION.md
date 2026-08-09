@@ -37,3 +37,7 @@ Never prefix these variables with `NEXT_PUBLIC_`. The admin-only endpoint `GET /
 6. Enable production traffic behind a provider/property feature flag.
 
 No provider should be marked live merely because environment variables are present. `ready_for_validation` means credentials are complete enough to begin sandbox verification; it does not mean vendor certification or production approval is complete.
+
+## Oracle OPERA Cloud Distribution
+
+Customer shopping and booking use Oracle Hospitality Distribution Shop and Book v1, not the OHIP Property API token. Configure the separate `PMS_ORACLE_OPERA_DISTRIBUTION_*` server-only variables only after Oracle issues the channel code and integration user. The adapter supports offer shopping, reservation creation/retrieval/modification/cancellation, token reuse, idempotent request identifiers, and authenticated outbound-event ingestion. Production traffic remains blocked until Oracle certification, property channel mapping, and sandbox end-to-end verification are complete.

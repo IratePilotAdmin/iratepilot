@@ -13,6 +13,7 @@ const mapper: OracleOperaContractMapper = {
     ratePlanCode: "BAR",
     currency: "USD",
     totalAmount: 250,
+    nightlyRates: [{ start: input.arrivalDate, end: input.departureDate, amountAfterTax: 250 }],
     available: true,
     raw: payload,
   }],
@@ -73,7 +74,13 @@ describe("OracleOperaAdapter", () => {
       adults: 2,
       externalReference: "IRP-BOOKING-1",
       offerId: "offer-1",
+      roomTypeCode: "KING",
+      ratePlanCode: "BAR",
+      currency: "USD",
+      totalAmount: 250,
+      nightlyRates: [{ start: "2026-09-10", end: "2026-09-12", amountAfterTax: 250 }],
       guest: { firstName: "Test", lastName: "Traveler" },
+      payment: { methodCode: "5", guaranteeType: "5" },
     };
 
     const reservation = await adapter.createReservation(input);
