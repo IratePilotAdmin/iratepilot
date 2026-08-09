@@ -185,6 +185,19 @@ create table booking_financials (
   created_at timestamptz not null default now()
 );
 
+create or replace function public.apply_marketplace_commission()
+returns trigger language plpgsql security invoker set search_path = '' as $$
+begin
+  new.partner_commission := round(new.gross_room_revenue * 0.14, 2);
+  new.partner_net := new.gross_room_revenue - new.partner_commission;
+  return new;
+end;
+$$;
+
+create trigger apply_marketplace_commission_before_insert
+before insert on booking_financials
+for each row execute function public.apply_marketplace_commission();
+
 create table partner_payouts (
   id uuid primary key default uuid_generate_v4(),
   partner_id uuid not null references partners(id),
@@ -755,7 +768,7 @@ begin
       update profiles set reward_points = reward_points + v_points where id = v_booking.customer_id;
     end if;
     select partner_id into v_partner_id from properties where id = v_booking.property_id;
-    v_commission := round(v_booking.subtotal * 0.10, 2);
+    v_commission := round(v_booking.subtotal * 0.14, 2);
     insert into booking_financials (
       booking_id, partner_id, gross_room_revenue, partner_commission, partner_net, status
     ) values (
