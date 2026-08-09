@@ -9,7 +9,7 @@ export type HiltonPepConfig = {
   baseUrl: string;
   apiCredential?: string;
   getApiCredential?: () => Promise<string>;
-  endpoints: Record<HiltonOperation, HiltonPepEndpoint>;
+  endpoints: Partial<Record<HiltonOperation, HiltonPepEndpoint>>;
   credentialHeader?: string;
   credentialScheme?: string;
   timeoutMs?: number;
@@ -94,7 +94,10 @@ export class HiltonPepHttpTransport implements HiltonPmsTransport {
     }
     const payload = payloadRecord(request.payload);
     const mapping = this.config.endpoints[request.operation];
-    const id = request.operation === "cancel_reservation" ? reservationId(payload) : "";
+    if (!mapping) throw new Error(`Hilton PEP endpoint mapping is required for ${request.operation}`);
+    const id = ["get_reservation", "modify_reservation", "cancel_reservation"].includes(request.operation)
+      ? reservationId(payload)
+      : "";
     const path = mapping.path
       .replace("{propertyCode}", encodeURIComponent(request.propertyCode))
       .replace("{reservationId}", encodeURIComponent(id));
