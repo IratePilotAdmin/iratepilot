@@ -13,6 +13,7 @@ import {
   MewsConnectionTestError,
   OracleOperaConnectionTestError,
   RmsCloudConnectionTestError,
+  ShijiConnectionTestError,
   SihotConnectionTestError,
   StayntouchConnectionTestError,
   testApaleoSandboxConnection,
@@ -21,6 +22,7 @@ import {
   testMaestroSandboxConnection,
   testOracleOperaSandboxConnection,
   testRmsCloudSandboxConnection,
+  testShijiSandboxConnection,
   testSihotSandboxConnection,
   testStayntouchSandboxConnection,
   validatePmsConfiguration,
@@ -304,6 +306,25 @@ export async function POST(request: Request) {
         detailCode = error instanceof MaestroConnectionTestError
           ? error.detailCode
           : "maestro_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "shiji-pms") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const scheme = credentials.PMS_SHIJI_AUTHORIZATION_SCHEME;
+        const result = await testShijiSandboxConnection({
+          baseUrl: credentials.PMS_SHIJI_BASE_URL,
+          accessToken: credentials.PMS_SHIJI_ACCESS_TOKEN,
+          validationPath: credentials.PMS_SHIJI_VALIDATION_PATH,
+          authorizationScheme: scheme === "Basic" ? "Basic" : "Bearer",
+        });
+        resourceCount = result.resourceCount;
+        detailCode = "shiji_validation_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof ShijiConnectionTestError
+          ? error.detailCode
+          : "shiji_sandbox_unreachable";
       }
     }
     const testedAt = new Date().toISOString();

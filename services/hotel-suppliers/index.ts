@@ -57,7 +57,11 @@ export type {
   MaestroEndpoint, MaestroFetch,
 } from "./maestro";
 export { ShijiHttpTransport, ShijiTransportError } from "./shiji";
-export type { ShijiConfig, ShijiEndpoint, ShijiFetch } from "./shiji";
+export { ShijiConnectionTestError, testShijiSandboxConnection } from "./shiji";
+export type {
+  ShijiConfig, ShijiConnectionTestConfig, ShijiConnectionTestResult,
+  ShijiEndpoint, ShijiFetch,
+} from "./shiji";
 export { GuestlineHttpTransport, GuestlineTransportError } from "./guestline";
 export type { GuestlineConfig, GuestlineEndpoint, GuestlineFetch } from "./guestline";
 export { EzeeAbsoluteHttpTransport, EzeeAbsoluteTransportError } from "./ezee-absolute";
