@@ -6,9 +6,11 @@ import {
 } from "@/lib/integrations/pms-credentials";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
+  ApaleoConnectionTestError,
   CloudbedsConnectionTestError,
   getPmsProvider,
   MewsConnectionTestError,
+  testApaleoSandboxConnection,
   testCloudbedsSandboxConnection,
   testMewsSandboxConnection,
   validatePmsConfiguration,
@@ -143,6 +145,7 @@ export async function POST(request: Request) {
       : "configuration_invalid";
     let serviceCount: number | undefined;
     let hotelCount: number | undefined;
+    let propertyCount: number | undefined;
 
     if (configurationPassed && provider.id === "mews") {
       validationMode = "vendor_sandbox";
@@ -178,6 +181,23 @@ export async function POST(request: Request) {
           ? error.detailCode
           : "cloudbeds_sandbox_unreachable";
       }
+    } else if (configurationPassed && provider.id === "apaleo") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testApaleoSandboxConnection({
+          baseUrl: credentials.PMS_APALEO_BASE_URL,
+          clientId: credentials.PMS_APALEO_CLIENT_ID,
+          clientSecret: credentials.PMS_APALEO_CLIENT_SECRET,
+        });
+        propertyCount = result.propertyCount;
+        detailCode = "apaleo_properties_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof ApaleoConnectionTestError
+          ? error.detailCode
+          : "apaleo_sandbox_unreachable";
+      }
     }
     const testedAt = new Date().toISOString();
 
@@ -208,6 +228,7 @@ export async function POST(request: Request) {
       testedAt,
       ...(serviceCount === undefined ? {} : { serviceCount }),
       ...(hotelCount === undefined ? {} : { hotelCount }),
+      ...(propertyCount === undefined ? {} : { propertyCount }),
     }, { status: passed ? 200 : 422, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("PMS configuration test failed", error);

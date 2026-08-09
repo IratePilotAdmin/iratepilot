@@ -21,6 +21,8 @@ export { CloudbedsAdapter } from "./cloudbeds";
 export { CloudbedsConnectionTestError, testCloudbedsSandboxConnection } from "./cloudbeds";
 export type { CloudbedsConnectionTestResult } from "./cloudbeds";
 export { ApaleoAdapter } from "./apaleo";
+export { ApaleoConnectionTestError, testApaleoSandboxConnection } from "./apaleo";
+export type { ApaleoConnectionTestConfig, ApaleoConnectionTestResult } from "./apaleo";
 export { StayntouchHttpTransport, StayntouchTransportError } from "./stayntouch";
 export type { StayntouchConfig, StayntouchFetch } from "./stayntouch";
 export { SihotHttpTransport, SihotTransportError } from "./sihot";
