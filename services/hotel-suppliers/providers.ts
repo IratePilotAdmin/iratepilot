@@ -152,7 +152,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     id: "rms-cloud", name: "RMS Cloud", vendor: "RMS Cloud",
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
     certificationRequired: true, environmentPrefix: "PMS_RMS_CLOUD",
-    requiredConfiguration: standardConfiguration,
+    requiredConfiguration: ["BASE_URL", "AGENT_ID", "AGENT_PASSWORD", "CLIENT_ID", "CLIENT_PASSWORD", "PROPERTY_ID"],
     documentationUrl: "https://www.rmscloud.com/platform/api",
     notes: "Activate after RMS Cloud approves API access and property scope.",
   },
