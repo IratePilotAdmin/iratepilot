@@ -82,6 +82,11 @@ export const pmsConnectionSchema = z.object({
     "guestline", "ezee-absolute", "clock-pms-plus", "hotelogix",
   ]),
   externalPropertyCode: z.string().trim().min(1).max(120),
+  hotelAuthorized: z.boolean(),
+  roomTypeMapping: z.string().trim().max(4000),
+  ratePlanMapping: z.string().trim().max(4000),
+  taxFeeMapping: z.string().trim().max(4000),
+  cancellationPolicyMapping: z.string().trim().max(4000),
 });
 
 const roomFieldsSchema = z.object({
@@ -109,3 +114,4 @@ export const inventorySchema = z.object({
   availableUnits: z.coerce.number().int().min(inventoryLimits.minAvailableUnits).max(inventoryLimits.maxAvailableUnits),
   rate: z.coerce.number().min(inventoryLimits.minNightlyRate).max(inventoryLimits.maxNightlyRate)
 });
+
