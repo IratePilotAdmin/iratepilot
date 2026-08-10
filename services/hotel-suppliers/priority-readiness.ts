@@ -14,12 +14,18 @@ export type PriorityPmsLaunchStatus =
   | "vendor_approval_required"
   | "property_mapping_required"
   | "sandbox_validation_required"
-  | "ready_for_live";
+  | "webhook_validation_required"
+  | "production_smoke_required"
+  | "activation_required"
+  | "live";
 
 export type PriorityPmsLaunchEvidence = {
   vendorApproved?: boolean;
   propertyMapped?: boolean;
   sandboxValidated?: boolean;
+  webhookValidated?: boolean;
+  productionSmokeValidated?: boolean;
+  liveEnabled?: boolean;
 };
 
 export type PriorityPmsProductionManifest = {
@@ -168,7 +174,13 @@ export function auditPriorityPmsProductionReadiness(
             ? "property_mapping_required"
             : !providerEvidence.sandboxValidated
               ? "sandbox_validation_required"
-              : "ready_for_live";
+              : !providerEvidence.webhookValidated
+                ? "webhook_validation_required"
+                : !providerEvidence.productionSmokeValidated
+                  ? "production_smoke_required"
+                  : !providerEvidence.liveEnabled
+                    ? "activation_required"
+                    : "live";
 
     return {
       id: provider.id,
@@ -183,6 +195,9 @@ export function auditPriorityPmsProductionReadiness(
         vendorApproved: providerEvidence.vendorApproved === true,
         propertyMapped: providerEvidence.propertyMapped === true,
         sandboxValidated: providerEvidence.sandboxValidated === true,
+        webhookValidated: providerEvidence.webhookValidated === true,
+        productionSmokeValidated: providerEvidence.productionSmokeValidated === true,
+        liveEnabled: providerEvidence.liveEnabled === true,
       },
     };
   });
