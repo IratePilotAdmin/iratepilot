@@ -52,7 +52,16 @@ describe("priority PMS production readiness", () => {
     })[0]?.status).toBe("sandbox_validation_required");
     expect(auditPriorityPmsProductionReadiness(environment, {
       "oracle-opera": { vendorApproved: true, propertyMapped: true, sandboxValidated: true },
-    })[0]?.status).toBe("ready_for_live");
+    })[0]?.status).toBe("webhook_validation_required");
+    expect(auditPriorityPmsProductionReadiness(environment, {
+      "oracle-opera": { vendorApproved: true, propertyMapped: true, sandboxValidated: true, webhookValidated: true },
+    })[0]?.status).toBe("production_smoke_required");
+    expect(auditPriorityPmsProductionReadiness(environment, {
+      "oracle-opera": { vendorApproved: true, propertyMapped: true, sandboxValidated: true, webhookValidated: true, productionSmokeValidated: true },
+    })[0]?.status).toBe("activation_required");
+    expect(auditPriorityPmsProductionReadiness(environment, {
+      "oracle-opera": { vendorApproved: true, propertyMapped: true, sandboxValidated: true, webhookValidated: true, productionSmokeValidated: true, liveEnabled: true },
+    })[0]?.status).toBe("live");
   });
 
   it("rejects insecure and malformed URLs before declaring a provider live-ready", () => {

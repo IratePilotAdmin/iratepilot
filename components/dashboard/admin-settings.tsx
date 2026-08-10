@@ -32,6 +32,9 @@ type PriorityPmsProductionReadiness = {
     vendorApproved: boolean;
     propertyMapped: boolean;
     sandboxValidated: boolean;
+    webhookValidated: boolean;
+    productionSmokeValidated: boolean;
+    liveEnabled: boolean;
   };
 };
 
@@ -48,7 +51,10 @@ const priorityStatusStyle: Record<PriorityPmsLaunchStatus, string> = {
   vendor_approval_required: "text-amber-700",
   property_mapping_required: "text-amber-700",
   sandbox_validation_required: "text-amber-700",
-  ready_for_live: "text-emerald-700",
+  webhook_validation_required: "text-amber-700",
+  production_smoke_required: "text-amber-700",
+  activation_required: "text-blue-700",
+  live: "text-emerald-700",
 };
 
 export function AdminSettings() {
@@ -215,11 +221,11 @@ export function AdminSettings() {
             <div>
               <span className="text-xs uppercase tracking-wider text-slate-500">Production launch gate</span>
               <h3 className="mt-2 text-lg font-semibold">Priority PMS providers</h3>
-              <p className="mt-1 text-sm text-slate-600">This strict audit requires valid production configuration, vendor approval, property mapping, and completed sandbox validation. Only configuration key names are shown; secret values never leave the server.</p>
+              <p className="mt-1 text-sm text-slate-600">This strict audit requires valid production configuration, vendor approval, property mapping, sandbox validation, verified webhooks, and a production test-property smoke test. Only configuration key names are shown; secret values never leave the server.</p>
               <p className="mt-2 text-xs text-slate-500">Mark a gate complete only after its approval, mapping record, or sandbox test evidence has been independently verified.</p>
             </div>
             <div className="text-sm text-slate-600">
-              <strong>{priorityPmsReadiness.filter((provider) => provider.status === "ready_for_live").length}</strong> of <strong>{priorityPmsReadiness.length}</strong> ready for live
+              <strong>{priorityPmsReadiness.filter((provider) => provider.status === "live").length}</strong> of <strong>{priorityPmsReadiness.length}</strong> live
             </div>
           </div>
           <div className="mt-5 grid gap-3 xl:grid-cols-2">
@@ -235,6 +241,9 @@ export function AdminSettings() {
                 <span>Vendor: {provider.evidence.vendorApproved ? "approved" : "pending"}</span>
                 <span>Mapping: {provider.evidence.propertyMapped ? "complete" : "pending"}</span>
                 <span>Sandbox: {provider.evidence.sandboxValidated ? "passed" : "pending"}</span>
+                <span>Webhook: {provider.evidence.webhookValidated ? "passed" : "pending"}</span>
+                <span>Production smoke: {provider.evidence.productionSmokeValidated ? "passed" : "pending"}</span>
+                <span>Traffic: {provider.evidence.liveEnabled ? "enabled" : "disabled"}</span>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id} onClick={() => updateLaunchEvidence(provider.id, { vendorApproved: !provider.evidence.vendorApproved })} type="button">
@@ -246,10 +255,19 @@ export function AdminSettings() {
                 <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id || !provider.evidence.vendorApproved || !provider.evidence.propertyMapped} onClick={() => updateLaunchEvidence(provider.id, { sandboxValidated: !provider.evidence.sandboxValidated })} type="button">
                   {provider.evidence.sandboxValidated ? "Reset sandbox validation" : "Confirm sandbox validation"}
                 </button>
+                <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id || !provider.evidence.sandboxValidated} onClick={() => updateLaunchEvidence(provider.id, { webhookValidated: !provider.evidence.webhookValidated })} type="button">
+                  {provider.evidence.webhookValidated ? "Reset webhook validation" : "Confirm webhook validation"}
+                </button>
+                <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id || !provider.evidence.webhookValidated} onClick={() => updateLaunchEvidence(provider.id, { productionSmokeValidated: !provider.evidence.productionSmokeValidated })} type="button">
+                  {provider.evidence.productionSmokeValidated ? "Reset production smoke test" : "Confirm production smoke test"}
+                </button>
+                <button className={provider.evidence.liveEnabled ? "btn-secondary text-xs" : "btn-primary text-xs"} disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id || !provider.evidence.productionSmokeValidated} onClick={() => updateLaunchEvidence(provider.id, { liveEnabled: !provider.evidence.liveEnabled })} type="button">
+                  {provider.evidence.liveEnabled ? "Disable live traffic" : "Enable live traffic"}
+                </button>
               </div>
             </article>)}
           </div>
-          {!evidenceTrackingAvailable && <p className="mt-4 text-sm text-amber-700">Launch evidence tracking is unavailable until production migration 034 is applied.</p>}
+          {!evidenceTrackingAvailable && <p className="mt-4 text-sm text-amber-700">Launch evidence tracking is unavailable until production migrations 034 and 035 are applied.</p>}
           {evidenceMessage && <p className="mt-4 text-sm" role="status">{evidenceMessage}</p>}
         </div>}
         {pmsMessage && <p className="p-6 text-sm text-slate-600" role="status">{pmsMessage}</p>}

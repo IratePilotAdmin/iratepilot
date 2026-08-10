@@ -228,11 +228,17 @@ describe("PMS integration foundation", () => {
     expect(route).toContain('from("priority_pms_launch_evidence")');
     expect(route).toContain("Vendor approval must be recorded before property mapping.");
     expect(route).toContain("Vendor approval and property mapping are required before sandbox validation.");
+    expect(route).toContain("Sandbox validation is required before webhook validation.");
+    expect(route).toContain("Webhook validation is required before the production smoke test.");
+    expect(route).toContain("The production smoke test must pass before live traffic is enabled.");
     expect(route).toContain("updated_by: auth.user.id");
     expect(adminSettings).toContain("Confirm vendor approval");
     expect(adminSettings).toContain("Confirm property mapping");
     expect(adminSettings).toContain("Confirm sandbox validation");
-    expect(adminSettings).toContain("migration 034");
+    expect(adminSettings).toContain("Confirm webhook validation");
+    expect(adminSettings).toContain("Confirm production smoke test");
+    expect(adminSettings).toContain("Enable live traffic");
+    expect(adminSettings).toContain("migrations 034 and 035");
   });
 });
 
