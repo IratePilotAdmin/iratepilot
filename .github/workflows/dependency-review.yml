@@ -29,3 +29,9 @@ jobs:
           fail-on-severity: high
           fail-on-scopes: runtime
           show-patched-versions: true
+          # Expo Metro uses image-size only while bundling repository-controlled
+          # assets. No patched image-size release exists as of 2026-08-10, and
+          # forcing 2.x breaks Metro's synchronous asset inspection API.
+          # Keep this exception advisory-specific so every other high-severity
+          # runtime dependency continues to block pull requests.
+          allow-ghsas: GHSA-5p2g-fcmc-qvqq, GHSA-w3rx-r6r6-pgpr
