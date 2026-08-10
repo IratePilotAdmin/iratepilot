@@ -29,12 +29,25 @@ export async function GET() {
     if (propertiesResult.error) throw propertiesResult.error;
     if (credentialsResult.error) throw credentialsResult.error;
     const evidenceTrackingAvailable = !evidenceResult.error;
-    if (evidenceResult.error && evidenceResult.error.code !== "42P01") throw evidenceResult.error;
+    let evidenceRows = evidenceResult.data ?? [];
+    if (evidenceResult.error?.code === "42703") {
+      const legacyEvidenceResult = await admin.from("priority_pms_launch_evidence")
+        .select("provider_id,vendor_approved,property_mapped,sandbox_validated,updated_at");
+      if (legacyEvidenceResult.error) throw legacyEvidenceResult.error;
+      evidenceRows = (legacyEvidenceResult.data ?? []).map((item) => ({
+        ...item,
+        webhook_validated: false,
+        production_smoke_validated: false,
+        live_enabled: false,
+      }));
+    } else if (evidenceResult.error && evidenceResult.error.code !== "42P01") {
+      throw evidenceResult.error;
+    }
 
     const propertyNames = new Map((propertiesResult.data ?? []).map((property) => [property.id, property.name]));
     const configured = new Map((credentialsResult.data ?? []).map((credential) => [credential.connection_id, credential.updated_at]));
     const manifests = new Map(pmsProviders.map((provider) => [provider.id, provider]));
-    const evidence = Object.fromEntries((evidenceResult.data ?? []).map((item) => [item.provider_id, {
+    const evidence = Object.fromEntries(evidenceRows.map((item) => [item.provider_id, {
       vendorApproved: item.vendor_approved,
       propertyMapped: item.property_mapped,
       sandboxValidated: item.sandbox_validated,
@@ -95,7 +108,7 @@ export async function PATCH(request: Request) {
       .eq("provider_id", providerId)
       .maybeSingle();
     if (currentResult.error) {
-      if (currentResult.error.code === "42P01") {
+      if (currentResult.error.code === "42P01" || currentResult.error.code === "42703") {
         return NextResponse.json({ error: "Apply migrations 034 and 035 before recording launch evidence." }, { status: 503 });
       }
       throw currentResult.error;
