@@ -35,6 +35,11 @@ type PriorityPmsProductionReadiness = {
     webhookValidated: boolean;
     productionSmokeValidated: boolean;
     liveEnabled: boolean;
+    vendorApprovalReference: string;
+    approvedEnvironment: string;
+    propertyCode: string;
+    supportContact: string;
+    verificationNotes: string;
   };
 };
 
@@ -59,7 +64,7 @@ const priorityStatusStyle: Record<PriorityPmsLaunchStatus, string> = {
 
 export function AdminSettings() {
   const [data, setData] = useState<Response | null>(null);
-  const [message, setMessage] = useState("Checking platform readiness…");
+  const [message, setMessage] = useState("Checking platform readinessâ€¦");
   const [emailTestBusy, setEmailTestBusy] = useState(false);
   const [emailTestMessage, setEmailTestMessage] = useState("");
   const [pmsProviders, setPmsProviders] = useState<PmsProviderReadiness[]>([]);
@@ -69,7 +74,7 @@ export function AdminSettings() {
   const [evidenceMessage, setEvidenceMessage] = useState("");
   const [pmsConnections, setPmsConnections] = useState<PmsConnection[]>([]);
   const [selectedConnectionId, setSelectedConnectionId] = useState("");
-  const [pmsMessage, setPmsMessage] = useState("Checking PMS connections…");
+  const [pmsMessage, setPmsMessage] = useState("Checking PMS connectionsâ€¦");
   const [credentialBusy, setCredentialBusy] = useState(false);
   const [credentialMessage, setCredentialMessage] = useState("");
   const selectedConnection = useMemo(
@@ -139,6 +144,30 @@ export function AdminSettings() {
     }
   }
 
+  async function saveLaunchDetails(event: FormEvent<HTMLFormElement>, providerId: string) {
+    event.preventDefault();
+    setEvidenceBusy(providerId);
+    setEvidenceMessage("");
+    try {
+      const form = new FormData(event.currentTarget);
+      const details = Object.fromEntries(["vendorApprovalReference", "approvedEnvironment", "propertyCode", "supportContact", "verificationNotes"]
+        .map((key) => [key, form.get(key) ?? ""]));
+      const response = await fetch("/api/admin/integrations/pms", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ providerId, details }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Activation evidence details could not be saved.");
+      setPriorityPmsReadiness((items) => items.map((item) => item.id === providerId ? body.readiness : item));
+      setEvidenceMessage(`${body.readiness.name} activation evidence details were saved.`);
+    } catch (error) {
+      setEvidenceMessage(error instanceof Error ? error.message : "Activation evidence details could not be saved.");
+    } finally {
+      setEvidenceBusy("");
+    }
+  }
+
   async function saveCredentials(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedConnection) return;
@@ -201,7 +230,7 @@ export function AdminSettings() {
       <section className="card mt-6 p-6">
         <h2 className="text-xl font-semibold">Transactional email test</h2>
         <p className="mt-2 text-sm text-slate-600">Send one operational test message to the signed-in administrator. This creates no booking, payment, refund, or partner transfer.</p>
-        <button className="btn-primary mt-4" disabled={emailTestBusy} onClick={sendEmailTest}>{emailTestBusy ? "Sending…" : "Send test email"}</button>
+        <button className="btn-primary mt-4" disabled={emailTestBusy} onClick={sendEmailTest}>{emailTestBusy ? "Sendingâ€¦" : "Send test email"}</button>
         {emailTestMessage && <p className="mt-3 text-sm" role="status">{emailTestMessage}</p>}
       </section>
 
@@ -265,6 +294,20 @@ export function AdminSettings() {
                   {provider.evidence.liveEnabled ? "Disable live traffic" : "Enable live traffic"}
                 </button>
               </div>
+              <details className="mt-4 border-t pt-3">
+                <summary className="cursor-pointer text-sm font-medium">Vendor evidence details</summary>
+                <form className="mt-3 grid gap-3" onSubmit={(event) => saveLaunchDetails(event, provider.id)}>
+                  <p className="text-xs text-slate-500">Record non-secret references only. Never enter passwords, API keys, tokens, or webhook secrets here.</p>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <label className="text-xs font-medium">Approval or certification reference<input className="input mt-1" defaultValue={provider.evidence.vendorApprovalReference} maxLength={500} name="vendorApprovalReference" /></label>
+                    <label className="text-xs font-medium">Approved environment<input className="input mt-1" defaultValue={provider.evidence.approvedEnvironment} maxLength={200} name="approvedEnvironment" /></label>
+                    <label className="text-xs font-medium">Property or portfolio code<input className="input mt-1" defaultValue={provider.evidence.propertyCode} maxLength={200} name="propertyCode" /></label>
+                    <label className="text-xs font-medium">Support or escalation contact<input className="input mt-1" defaultValue={provider.evidence.supportContact} maxLength={500} name="supportContact" /></label>
+                  </div>
+                  <label className="text-xs font-medium">Verification notes<textarea className="input mt-1 min-h-24" defaultValue={provider.evidence.verificationNotes} maxLength={4000} name="verificationNotes" /></label>
+                  <button className="btn-secondary w-fit text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id} type="submit">Save evidence details</button>
+                </form>
+              </details>
             </article>)}
           </div>
           {!evidenceTrackingAvailable && <p className="mt-4 text-sm text-amber-700">Launch evidence tracking is unavailable until production migrations 034 and 035 are applied.</p>}
@@ -298,7 +341,7 @@ export function AdminSettings() {
         {pmsConnections.length === 0 ? <p className="mt-4 text-sm text-slate-500">A partner must declare a hotel PMS before credentials can be configured.</p> : <form key={selectedConnectionId} className="mt-5 grid gap-4" onSubmit={saveCredentials}>
           <label className="text-sm font-medium">Hotel connection
             <select className="input mt-2" value={selectedConnectionId} onChange={(event) => { setSelectedConnectionId(event.target.value); setCredentialMessage(""); }} required>
-              {pmsConnections.map((connection) => <option key={connection.id} value={connection.id}>{connection.property_name} — {connection.provider_id}</option>)}
+              {pmsConnections.map((connection) => <option key={connection.id} value={connection.id}>{connection.property_name} â€” {connection.provider_id}</option>)}
             </select>
           </label>
           {selectedConnection && <>
@@ -311,7 +354,7 @@ export function AdminSettings() {
               <input className="input mt-2" name={key} type="password" autoComplete="new-password" maxLength={4096} required />
             </label>)}</div>
             <div className="flex flex-wrap gap-3">
-              <button className="btn-primary" disabled={credentialBusy} type="submit">{credentialBusy ? "Working…" : "Encrypt and save"}</button>
+              <button className="btn-primary" disabled={credentialBusy} type="submit">{credentialBusy ? "Workingâ€¦" : "Encrypt and save"}</button>
               <button className="btn-secondary" disabled={credentialBusy || !selectedConnection.credentials_configured} onClick={testCredentials} type="button">Validate stored configuration</button>
             </div>
           </>}
@@ -329,3 +372,4 @@ export function AdminSettings() {
     </>}
   </>;
 }
+
