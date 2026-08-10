@@ -26,6 +26,11 @@ export type PriorityPmsLaunchEvidence = {
   webhookValidated?: boolean;
   productionSmokeValidated?: boolean;
   liveEnabled?: boolean;
+  vendorApprovalReference?: string;
+  approvedEnvironment?: string;
+  propertyCode?: string;
+  supportContact?: string;
+  verificationNotes?: string;
 };
 
 export type PriorityPmsProductionManifest = {
@@ -198,7 +203,13 @@ export function auditPriorityPmsProductionReadiness(
         webhookValidated: providerEvidence.webhookValidated === true,
         productionSmokeValidated: providerEvidence.productionSmokeValidated === true,
         liveEnabled: providerEvidence.liveEnabled === true,
+        vendorApprovalReference: providerEvidence.vendorApprovalReference ?? "",
+        approvedEnvironment: providerEvidence.approvedEnvironment ?? "",
+        propertyCode: providerEvidence.propertyCode ?? "",
+        supportContact: providerEvidence.supportContact ?? "",
+        verificationNotes: providerEvidence.verificationNotes ?? "",
       },
     };
   });
 }
+
