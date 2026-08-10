@@ -247,5 +247,18 @@ describe("PMS integration foundation", () => {
     expect(route).toContain("webhook_validated: false");
     expect(route).toContain('currentResult.error.code === "42703"');
   });
+
+  it("records non-secret vendor evidence details without weakening launch gates", () => {
+    expect(route).toContain("vendor_approval_reference");
+    expect(route).toContain("approved_environment");
+    expect(route).toContain("property_code");
+    expect(route).toContain("support_contact");
+    expect(route).toContain("verification_notes");
+    expect(route).toContain("Evidence details must contain supported text fields.");
+    expect(adminSettings).toContain("Vendor evidence details");
+    expect(adminSettings).toContain("Never enter passwords, API keys, tokens, or webhook secrets here.");
+    expect(adminSettings).toContain("Save evidence details");
+  });
 });
+
 
