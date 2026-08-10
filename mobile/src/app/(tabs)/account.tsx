@@ -74,6 +74,7 @@ export default function AccountScreen() {
           </Pressable>
         )}
         <Pressable accessibilityRole="link" onPress={() => openWebPath("/privacy")}><Text style={styles.link}>Privacy policy</Text></Pressable>
+        {user ? <Pressable accessibilityRole="link" onPress={() => openWebPath("/account-deletion")}><Text style={styles.dangerLink}>Request account deletion</Text></Pressable> : null}
         <Pressable accessibilityRole="link" onPress={() => openWebPath("/terms")}><Text style={styles.link}>Terms of service</Text></Pressable>
       </View>
     </SafeAreaView>
@@ -96,4 +97,5 @@ const styles = StyleSheet.create({
   primary: { alignItems: "center", backgroundColor: "#6d28d9", borderRadius: 14, marginBottom: 22, marginTop: 22, padding: 16 },
   primaryText: { color: "#ffffff", fontSize: 16, fontWeight: "800" },
   link: { color: "#475569", fontSize: 14, marginTop: 12, textDecorationLine: "underline" },
+  dangerLink: { color: "#b91c1c", fontSize: 14, marginTop: 12, textDecorationLine: "underline" },
 });
