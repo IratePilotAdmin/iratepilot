@@ -23,7 +23,7 @@ export async function GET() {
       admin.from("property_pms_connections").select("id,property_id,provider_id,external_property_code,connection_status,last_validated_at").order("updated_at", { ascending: false }),
       admin.from("properties").select("id,name"),
       admin.from("property_pms_credentials").select("connection_id,updated_at"),
-      admin.from("priority_pms_launch_evidence").select("provider_id,vendor_approved,property_mapped,sandbox_validated,webhook_validated,production_smoke_validated,live_enabled,updated_at"),
+      admin.from("priority_pms_launch_evidence").select("provider_id,vendor_approved,property_mapped,sandbox_validated,webhook_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact,verification_notes,updated_at"),
     ]);
     if (connectionsResult.error) throw connectionsResult.error;
     if (propertiesResult.error) throw propertiesResult.error;
@@ -31,6 +31,20 @@ export async function GET() {
     const evidenceTrackingAvailable = !evidenceResult.error;
     let evidenceRows = evidenceResult.data ?? [];
     if (evidenceResult.error?.code === "42703") {
+      const launchEvidenceResult = await admin.from("priority_pms_launch_evidence")
+        .select("provider_id,vendor_approved,property_mapped,sandbox_validated,webhook_validated,production_smoke_validated,live_enabled,updated_at");
+      if (!launchEvidenceResult.error) {
+        evidenceRows = (launchEvidenceResult.data ?? []).map((item) => ({
+          ...item,
+          vendor_approval_reference: null,
+          approved_environment: null,
+          property_code: null,
+          support_contact: null,
+          verification_notes: null,
+        }));
+      } else if (launchEvidenceResult.error.code !== "42703") {
+        throw launchEvidenceResult.error;
+      } else {
       const legacyEvidenceResult = await admin.from("priority_pms_launch_evidence")
         .select("provider_id,vendor_approved,property_mapped,sandbox_validated,updated_at");
       if (legacyEvidenceResult.error) throw legacyEvidenceResult.error;
@@ -39,7 +53,13 @@ export async function GET() {
         webhook_validated: false,
         production_smoke_validated: false,
         live_enabled: false,
+        vendor_approval_reference: null,
+        approved_environment: null,
+        property_code: null,
+        support_contact: null,
+        verification_notes: null,
       }));
+      }
     } else if (evidenceResult.error && evidenceResult.error.code !== "42P01") {
       throw evidenceResult.error;
     }
@@ -54,6 +74,11 @@ export async function GET() {
       webhookValidated: item.webhook_validated,
       productionSmokeValidated: item.production_smoke_validated,
       liveEnabled: item.live_enabled,
+      vendorApprovalReference: item.vendor_approval_reference ?? "",
+      approvedEnvironment: item.approved_environment ?? "",
+      propertyCode: item.property_code ?? "",
+      supportContact: item.support_contact ?? "",
+      verificationNotes: item.verification_notes ?? "",
     }])) as Partial<Record<PriorityPmsProviderId, PriorityPmsLaunchEvidence>>;
 
     return NextResponse.json(
@@ -90,15 +115,27 @@ export async function PATCH(request: Request) {
     const body = await request.json() as {
       providerId?: string;
       evidence?: Partial<Record<keyof PriorityPmsLaunchEvidence, unknown>>;
+      details?: Record<string, unknown>;
     };
     if (!body.providerId || !priorityPmsProviderIds.includes(body.providerId as PriorityPmsProviderId)) {
       return NextResponse.json({ error: "A supported priority PMS provider is required." }, { status: 400 });
     }
     const patch = body.evidence ?? {};
+    const details = body.details ?? {};
     const allowedKeys = ["vendorApproved", "propertyMapped", "sandboxValidated", "webhookValidated", "productionSmokeValidated", "liveEnabled"] as const;
-    if (Object.keys(patch).length === 0 || Object.keys(patch).some((key) => !allowedKeys.includes(key as typeof allowedKeys[number]))
+    const allowedDetailKeys = ["vendorApprovalReference", "approvedEnvironment", "propertyCode", "supportContact", "verificationNotes"] as const;
+    if ((Object.keys(patch).length === 0 && Object.keys(details).length === 0)
+      || Object.keys(patch).some((key) => !allowedKeys.includes(key as typeof allowedKeys[number]))
       || Object.values(patch).some((value) => typeof value !== "boolean")) {
       return NextResponse.json({ error: "Evidence must contain supported boolean launch gates." }, { status: 400 });
+    }
+    if (Object.keys(details).some((key) => !allowedDetailKeys.includes(key as typeof allowedDetailKeys[number]))
+      || Object.values(details).some((value) => typeof value !== "string")) {
+      return NextResponse.json({ error: "Evidence details must contain supported text fields." }, { status: 400 });
+    }
+    const detailLimits = { vendorApprovalReference: 500, approvedEnvironment: 200, propertyCode: 200, supportContact: 500, verificationNotes: 4000 } as const;
+    if (Object.entries(details).some(([key, value]) => (value as string).trim().length > detailLimits[key as keyof typeof detailLimits])) {
+      return NextResponse.json({ error: "One or more evidence details exceed the permitted length." }, { status: 400 });
     }
 
     const providerId = body.providerId as PriorityPmsProviderId;
@@ -175,9 +212,14 @@ export async function PATCH(request: Request) {
       webhook_validated: next.webhookValidated,
       production_smoke_validated: next.productionSmokeValidated,
       live_enabled: next.liveEnabled,
+      vendor_approval_reference: typeof details.vendorApprovalReference === "string" ? details.vendorApprovalReference.trim() || null : undefined,
+      approved_environment: typeof details.approvedEnvironment === "string" ? details.approvedEnvironment.trim() || null : undefined,
+      property_code: typeof details.propertyCode === "string" ? details.propertyCode.trim() || null : undefined,
+      support_contact: typeof details.supportContact === "string" ? details.supportContact.trim() || null : undefined,
+      verification_notes: typeof details.verificationNotes === "string" ? details.verificationNotes.trim() || null : undefined,
       updated_by: auth.user.id,
       updated_at: new Date().toISOString(),
-    }).select("provider_id,vendor_approved,property_mapped,sandbox_validated,webhook_validated,production_smoke_validated,live_enabled,updated_at").single();
+    }).select("provider_id,vendor_approved,property_mapped,sandbox_validated,webhook_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact,verification_notes,updated_at").single();
     if (updateResult.error) throw updateResult.error;
 
     const evidence = {
@@ -187,6 +229,11 @@ export async function PATCH(request: Request) {
       webhookValidated: updateResult.data.webhook_validated,
       productionSmokeValidated: updateResult.data.production_smoke_validated,
       liveEnabled: updateResult.data.live_enabled,
+      vendorApprovalReference: updateResult.data.vendor_approval_reference ?? "",
+      approvedEnvironment: updateResult.data.approved_environment ?? "",
+      propertyCode: updateResult.data.property_code ?? "",
+      supportContact: updateResult.data.support_contact ?? "",
+      verificationNotes: updateResult.data.verification_notes ?? "",
     };
     const readiness = auditPriorityPmsProductionReadiness(process.env, { [providerId]: evidence })
       .find((provider) => provider.id === providerId);
@@ -198,3 +245,4 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "PMS launch evidence could not be updated." }, { status: 503 });
   }
 }
+
