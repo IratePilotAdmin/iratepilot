@@ -20,4 +20,14 @@ describe("partner PMS connections", () => {
     expect(route).toContain('connection_status: "credentials_pending"');
     expect(route).toContain("last_validated_at: null");
   });
+
+  it("collects pilot authorization and non-secret hotel mappings", () => {
+    for (const field of ["hotel_authorized", "room_type_mapping", "rate_plan_mapping", "tax_fee_mapping", "cancellation_policy_mapping"]) {
+      expect(route).toContain(field);
+    }
+    expect(component).toContain("Pilot-hotel authorization and mappings");
+    expect(component).toContain("hotel owner or authorized manager approved");
+    expect(component).toContain("do not include payment data");
+  });
 });
+
