@@ -45,6 +45,16 @@ export type HiltonReservation = {
   raw: unknown;
 };
 
+export type HiltonGetReservationRequest = {
+  propertyCode: string;
+  reservationId: string;
+  externalReference?: string;
+};
+
+export type HiltonModifyReservationRequest = HiltonCreateReservationRequest & {
+  reservationId: string;
+};
+
 export type HiltonCancelReservationRequest = {
   propertyCode: string;
   reservationId: string;
@@ -60,7 +70,12 @@ export type HiltonCancellation = {
   raw: unknown;
 };
 
-export type HiltonOperation = "availability" | "create_reservation" | "cancel_reservation";
+export type HiltonOperation =
+  | "availability"
+  | "create_reservation"
+  | "get_reservation"
+  | "modify_reservation"
+  | "cancel_reservation";
 
 export type HiltonTransportRequest = {
   provider: HiltonPmsProvider;
@@ -79,6 +94,10 @@ export interface HiltonPmsMapper {
   availabilityResponse(payload: unknown, input: HiltonAvailabilityRequest): HiltonOffer[];
   createReservationPayload(input: HiltonCreateReservationRequest): unknown;
   createReservationResponse(payload: unknown, input: HiltonCreateReservationRequest): HiltonReservation;
+  getReservationPayload?(input: HiltonGetReservationRequest): unknown;
+  getReservationResponse?(payload: unknown, input: HiltonGetReservationRequest): HiltonReservation;
+  modifyReservationPayload?(input: HiltonModifyReservationRequest): unknown;
+  modifyReservationResponse?(payload: unknown, input: HiltonModifyReservationRequest): HiltonReservation;
   cancelReservationPayload(input: HiltonCancelReservationRequest): unknown;
   cancelReservationResponse(payload: unknown, input: HiltonCancelReservationRequest): HiltonCancellation;
 }

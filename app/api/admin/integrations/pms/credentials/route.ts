@@ -6,7 +6,38 @@ import {
 } from "@/lib/integrations/pms-credentials";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
+  ApaleoConnectionTestError,
+  CloudbedsConnectionTestError,
   getPmsProvider,
+  HiltonPepConnectionTestError,
+  HiltonOnQConnectionTestError,
+  HotelKeyConnectionTestError,
+  isStandardPmsProvider,
+  MaestroConnectionTestError,
+  MarriottFosseConnectionTestError,
+  MarriottFsPmsConnectionTestError,
+  MewsConnectionTestError,
+  OracleOperaConnectionTestError,
+  RmsCloudConnectionTestError,
+  ShijiConnectionTestError,
+  SihotConnectionTestError,
+  StayntouchConnectionTestError,
+  StandardPmsConnectionTestError,
+  testApaleoSandboxConnection,
+  testCloudbedsSandboxConnection,
+  testHiltonPepSandboxConnection,
+  testHiltonOnQSandboxConnection,
+  testHotelKeySandboxConnection,
+  testMewsSandboxConnection,
+  testMaestroSandboxConnection,
+  testMarriottFosseSandboxConnection,
+  testMarriottFsPmsSandboxConnection,
+  testOracleOperaSandboxConnection,
+  testRmsCloudSandboxConnection,
+  testShijiSandboxConnection,
+  testSihotSandboxConnection,
+  testStayntouchSandboxConnection,
+  testStandardPmsConnection,
   validatePmsConfiguration,
 } from "@/services/hotel-suppliers";
 
@@ -32,7 +63,7 @@ function credentialRecord(value: unknown) {
 async function connection(admin: ReturnType<typeof createAdminClient>, id: string) {
   const result = await admin
     .from("property_pms_connections")
-    .select("id,provider_id")
+    .select("id,provider_id,external_property_code")
     .eq("id", id)
     .maybeSingle();
   if (result.error) throw result.error;
@@ -129,22 +160,319 @@ export async function POST(request: Request) {
       keyVersion: stored.data.key_version,
     });
     const validation = validatePmsConfiguration(provider, credentials);
-    const passed = validation.missingConfiguration.length === 0
+    const configurationPassed = validation.missingConfiguration.length === 0
       && validation.invalidConfiguration.length === 0;
+    let passed = configurationPassed;
+    let validationMode: "configuration_only" | "vendor_sandbox" = "configuration_only";
+    let liveVendorConnectionTested = false;
+    let detailCode = configurationPassed
+      ? "encrypted_configuration_valid"
+      : "configuration_invalid";
+    let serviceCount: number | undefined;
+    let hotelCount: number | undefined;
+    let propertyCount: number | undefined;
+    let resourceCount: number | undefined;
+
+    if (configurationPassed && provider.id === "oracle-opera") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testOracleOperaSandboxConnection({
+          baseUrl: credentials.PMS_ORACLE_OPERA_BASE_URL,
+          tokenUrl: credentials.PMS_ORACLE_OPERA_TOKEN_URL
+            || `${credentials.PMS_ORACLE_OPERA_BASE_URL}/oauth/v1/tokens`,
+          clientId: credentials.PMS_ORACLE_OPERA_CLIENT_ID,
+          clientSecret: credentials.PMS_ORACLE_OPERA_CLIENT_SECRET,
+          appKey: credentials.PMS_ORACLE_OPERA_APP_KEY,
+          hotelId: credentials.PMS_ORACLE_OPERA_HOTEL_ID,
+          timeoutMs: 15_000,
+        });
+        hotelCount = result.hotelCount;
+        detailCode = "oracle_opera_titles_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof OracleOperaConnectionTestError
+          ? error.detailCode
+          : "oracle_opera_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "hilton-pep") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testHiltonPepSandboxConnection({
+          baseUrl: credentials.PMS_HILTON_PEP_BASE_URL,
+          apiCredential: credentials.PMS_HILTON_PEP_API_CREDENTIAL,
+          validationPath: credentials.PMS_HILTON_PEP_VALIDATION_PATH,
+          credentialHeader: credentials.PMS_HILTON_PEP_CREDENTIAL_HEADER,
+          credentialScheme: credentials.PMS_HILTON_PEP_CREDENTIAL_SCHEME,
+        });
+        resourceCount = result.resourceCount;
+        detailCode = "hilton_pep_validation_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof HiltonPepConnectionTestError
+          ? error.detailCode
+          : "hilton_pep_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "hilton-onq") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testHiltonOnQSandboxConnection({
+          baseUrl: credentials.PMS_HILTON_ONQ_BASE_URL,
+          apiCredential: credentials.PMS_HILTON_ONQ_API_CREDENTIAL,
+          validationPath: credentials.PMS_HILTON_ONQ_VALIDATION_PATH,
+          credentialHeader: credentials.PMS_HILTON_ONQ_CREDENTIAL_HEADER,
+          credentialScheme: credentials.PMS_HILTON_ONQ_CREDENTIAL_SCHEME,
+        });
+        resourceCount = result.resourceCount;
+        detailCode = "hilton_onq_validation_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof HiltonOnQConnectionTestError
+          ? error.detailCode
+          : "hilton_onq_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "marriott-fosse") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testMarriottFosseSandboxConnection({
+          baseUrl: credentials.PMS_MARRIOTT_FOSSE_BASE_URL,
+          apiCredential: credentials.PMS_MARRIOTT_FOSSE_API_CREDENTIAL,
+          validationPath: credentials.PMS_MARRIOTT_FOSSE_VALIDATION_PATH,
+          credentialHeader: credentials.PMS_MARRIOTT_FOSSE_CREDENTIAL_HEADER,
+          credentialScheme: credentials.PMS_MARRIOTT_FOSSE_CREDENTIAL_SCHEME,
+        });
+        resourceCount = result.resourceCount;
+        detailCode = "marriott_fosse_validation_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof MarriottFosseConnectionTestError
+          ? error.detailCode
+          : "marriott_fosse_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "marriott-fs-pms") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testMarriottFsPmsSandboxConnection({
+          baseUrl: credentials.PMS_MARRIOTT_FS_PMS_BASE_URL,
+          apiCredential: credentials.PMS_MARRIOTT_FS_PMS_API_CREDENTIAL,
+          validationPath: credentials.PMS_MARRIOTT_FS_PMS_VALIDATION_PATH,
+          credentialHeader: credentials.PMS_MARRIOTT_FS_PMS_CREDENTIAL_HEADER,
+          credentialScheme: credentials.PMS_MARRIOTT_FS_PMS_CREDENTIAL_SCHEME,
+        });
+        resourceCount = result.resourceCount;
+        detailCode = "marriott_fs_pms_validation_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof MarriottFsPmsConnectionTestError
+          ? error.detailCode
+          : "marriott_fs_pms_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "hotelkey") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testHotelKeySandboxConnection({
+          baseUrl: credentials.PMS_HOTELKEY_BASE_URL,
+          apiCredential: credentials.PMS_HOTELKEY_API_CREDENTIAL,
+          validationPath: credentials.PMS_HOTELKEY_VALIDATION_PATH,
+          credentialHeader: credentials.PMS_HOTELKEY_CREDENTIAL_HEADER,
+          credentialScheme: credentials.PMS_HOTELKEY_CREDENTIAL_SCHEME,
+        });
+        resourceCount = result.resourceCount;
+        detailCode = "hotelkey_validation_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof HotelKeyConnectionTestError
+          ? error.detailCode
+          : "hotelkey_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "mews") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testMewsSandboxConnection({
+          baseUrl: credentials.PMS_MEWS_BASE_URL,
+          clientToken: credentials.PMS_MEWS_CLIENT_TOKEN,
+          accessToken: credentials.PMS_MEWS_ACCESS_TOKEN,
+          client: credentials.PMS_MEWS_CLIENT,
+        });
+        serviceCount = result.serviceCount;
+        detailCode = "mews_services_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof MewsConnectionTestError
+          ? error.detailCode
+          : "mews_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "cloudbeds") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testCloudbedsSandboxConnection({
+          baseUrl: credentials.PMS_CLOUDBEDS_BASE_URL,
+          apiKey: credentials.PMS_CLOUDBEDS_API_KEY,
+        });
+        hotelCount = result.hotelCount;
+        detailCode = "cloudbeds_hotels_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof CloudbedsConnectionTestError
+          ? error.detailCode
+          : "cloudbeds_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "apaleo") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testApaleoSandboxConnection({
+          baseUrl: credentials.PMS_APALEO_BASE_URL,
+          clientId: credentials.PMS_APALEO_CLIENT_ID,
+          clientSecret: credentials.PMS_APALEO_CLIENT_SECRET,
+        });
+        propertyCount = result.propertyCount;
+        detailCode = "apaleo_properties_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof ApaleoConnectionTestError
+          ? error.detailCode
+          : "apaleo_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "stayntouch") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testStayntouchSandboxConnection({
+          baseUrl: credentials.PMS_STAYNTOUCH_BASE_URL,
+          accessToken: credentials.PMS_STAYNTOUCH_ACCESS_TOKEN,
+        });
+        hotelCount = result.hotelCount;
+        detailCode = "stayntouch_hotels_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof StayntouchConnectionTestError
+          ? error.detailCode
+          : "stayntouch_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "sihot") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testSihotSandboxConnection({
+          baseUrl: credentials.PMS_SIHOT_BASE_URL,
+          user: credentials.PMS_SIHOT_USER,
+          password: credentials.PMS_SIHOT_PASSWORD,
+          hotel: credentials.PMS_SIHOT_HOTEL,
+          productId: credentials.PMS_SIHOT_PRODUCT_ID,
+        });
+        hotelCount = result.hotelCount;
+        detailCode = "sihot_authentication_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof SihotConnectionTestError
+          ? error.detailCode
+          : "sihot_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "rms-cloud") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testRmsCloudSandboxConnection({
+          baseUrl: credentials.PMS_RMS_CLOUD_BASE_URL,
+          agentId: credentials.PMS_RMS_CLOUD_AGENT_ID,
+          agentPassword: credentials.PMS_RMS_CLOUD_AGENT_PASSWORD,
+          clientId: credentials.PMS_RMS_CLOUD_CLIENT_ID,
+          clientPassword: credentials.PMS_RMS_CLOUD_CLIENT_PASSWORD,
+          propertyId: credentials.PMS_RMS_CLOUD_PROPERTY_ID,
+        });
+        propertyCount = result.propertyCount;
+        detailCode = "rms_cloud_property_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof RmsCloudConnectionTestError
+          ? error.detailCode
+          : "rms_cloud_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "maestro-pms") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testMaestroSandboxConnection({
+          baseUrl: credentials.PMS_MAESTRO_BASE_URL,
+          accessToken: credentials.PMS_MAESTRO_ACCESS_TOKEN,
+          validationPath: credentials.PMS_MAESTRO_VALIDATION_PATH,
+          authorizationHeader: credentials.PMS_MAESTRO_AUTHORIZATION_HEADER,
+          authorizationScheme: credentials.PMS_MAESTRO_AUTHORIZATION_SCHEME,
+        });
+        resourceCount = result.resourceCount;
+        detailCode = "maestro_validation_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof MaestroConnectionTestError
+          ? error.detailCode
+          : "maestro_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "shiji-pms") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const scheme = credentials.PMS_SHIJI_AUTHORIZATION_SCHEME;
+        const result = await testShijiSandboxConnection({
+          baseUrl: credentials.PMS_SHIJI_BASE_URL,
+          accessToken: credentials.PMS_SHIJI_ACCESS_TOKEN,
+          validationPath: credentials.PMS_SHIJI_VALIDATION_PATH,
+          authorizationScheme: scheme === "Basic" ? "Basic" : "Bearer",
+        });
+        resourceCount = result.resourceCount;
+        detailCode = "shiji_validation_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof ShijiConnectionTestError
+          ? error.detailCode
+          : "shiji_sandbox_unreachable";
+      }
+    } else if (configurationPassed && isStandardPmsProvider(provider.id)) {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      const prefix = provider.environmentPrefix;
+      try {
+        await testStandardPmsConnection({
+          providerId: provider.id,
+          baseUrl: credentials[`${prefix}_BASE_URL`],
+          apiCredential: credentials[`${prefix}_CLIENT_SECRET`],
+          validationPath: credentials[`${prefix}_VALIDATION_PATH`],
+          credentialHeader: credentials[`${prefix}_CREDENTIAL_HEADER`],
+          credentialScheme: credentials[`${prefix}_CREDENTIAL_SCHEME`],
+          propertyCode: selected.external_property_code,
+          timeoutMs: 15_000,
+        });
+        resourceCount = 1;
+        detailCode = `${provider.id.replaceAll("-", "_")}_validation_read_succeeded`;
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof StandardPmsConnectionTestError
+          ? error.detailCode
+          : `${provider.id.replaceAll("-", "_")}_connection_unreachable`;
+      }
+    }
     const testedAt = new Date().toISOString();
 
     const event = await admin.from("pms_connection_test_events").insert({
       connection_id: selected.id,
-      validation_mode: "configuration_only",
+      validation_mode: validationMode,
       result: passed ? "passed" : "failed",
-      detail_code: passed ? "encrypted_configuration_valid" : "configuration_invalid",
+      detail_code: detailCode,
       tested_by: auth.user.id,
       created_at: testedAt,
     });
     if (event.error) throw event.error;
-    if (passed) {
+    if (passed && liveVendorConnectionTested) {
       const updated = await admin.from("property_pms_connections").update({
         connection_status: "sandbox",
+        last_validated_at: testedAt,
         updated_at: testedAt,
       }).eq("id", selected.id);
       if (updated.error) throw updated.error;
@@ -154,9 +482,13 @@ export async function POST(request: Request) {
       connectionId: selected.id,
       providerId: provider.id,
       passed,
-      validationMode: "configuration_only",
-      liveVendorConnectionTested: false,
+      validationMode,
+      liveVendorConnectionTested,
       testedAt,
+      ...(serviceCount === undefined ? {} : { serviceCount }),
+      ...(hotelCount === undefined ? {} : { hotelCount }),
+      ...(propertyCount === undefined ? {} : { propertyCount }),
+      ...(resourceCount === undefined ? {} : { resourceCount }),
     }, { status: passed ? 200 : 422, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("PMS configuration test failed", error);

@@ -1,5 +1,10 @@
 export type MarriottPmsProvider = "marriott-fosse" | "marriott-fs-pms";
-export type MarriottOperation = "availability" | "create_reservation" | "cancel_reservation";
+export type MarriottOperation =
+  | "availability"
+  | "create_reservation"
+  | "get_reservation"
+  | "modify_reservation"
+  | "cancel_reservation";
 
 export type MarriottStay = {
   arrivalDate: string;
@@ -41,6 +46,16 @@ export type MarriottReservation = {
   raw: unknown;
 };
 
+export type MarriottGetReservationRequest = {
+  propertyCode: string;
+  reservationId: string;
+  externalReference?: string;
+};
+
+export type MarriottModifyReservationRequest = MarriottCreateReservationRequest & {
+  reservationId: string;
+};
+
 export type MarriottCancelReservationRequest = {
   propertyCode: string;
   reservationId: string;
@@ -73,6 +88,10 @@ export interface MarriottPmsMapper {
   availabilityResponse(payload: unknown, input: MarriottAvailabilityRequest): MarriottOffer[];
   createReservationPayload(input: MarriottCreateReservationRequest): unknown;
   createReservationResponse(payload: unknown, input: MarriottCreateReservationRequest): MarriottReservation;
+  getReservationPayload?(input: MarriottGetReservationRequest): unknown;
+  getReservationResponse?(payload: unknown, input: MarriottGetReservationRequest): MarriottReservation;
+  modifyReservationPayload?(input: MarriottModifyReservationRequest): unknown;
+  modifyReservationResponse?(payload: unknown, input: MarriottModifyReservationRequest): MarriottReservation;
   cancelReservationPayload(input: MarriottCancelReservationRequest): unknown;
   cancelReservationResponse(payload: unknown, input: MarriottCancelReservationRequest): MarriottCancellation;
 }
