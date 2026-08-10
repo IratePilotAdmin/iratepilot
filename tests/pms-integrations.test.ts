@@ -240,5 +240,12 @@ describe("PMS integration foundation", () => {
     expect(adminSettings).toContain("Enable live traffic");
     expect(adminSettings).toContain("migrations 034 and 035");
   });
+
+  it("keeps the readiness dashboard available while migration 035 is pending", () => {
+    expect(route).toContain('evidenceResult.error?.code === "42703"');
+    expect(route).toContain('select("provider_id,vendor_approved,property_mapped,sandbox_validated,updated_at")');
+    expect(route).toContain("webhook_validated: false");
+    expect(route).toContain('currentResult.error.code === "42703"');
+  });
 });
 
