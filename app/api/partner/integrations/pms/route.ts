@@ -43,7 +43,12 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   const parsed = pmsConnectionSchema.safeParse(await request.json());
-  if (!parsed.success) return NextResponse.json({ error: "Choose a property, PMS provider, and valid property code." }, { status: 400 });
+  if (!parsed.success) {
+    const mappingIssue = parsed.error.issues.find((issue) => issue.message.includes("placeholder"));
+    return NextResponse.json({
+      error: mappingIssue?.message || "Choose a property, PMS provider, and valid property code.",
+    }, { status: 400 });
+  }
 
   try {
     const auth = await requireRole(["partner"]);
