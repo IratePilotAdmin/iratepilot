@@ -12,6 +12,7 @@ export type PriorityPmsLaunchStatus =
   | "configuration_required"
   | "configuration_invalid"
   | "vendor_approval_required"
+  | "activation_details_required"
   | "property_mapping_required"
   | "sandbox_validation_required"
   | "webhook_validation_required"
@@ -104,6 +105,13 @@ export const priorityPmsProductionManifest: readonly PriorityPmsProductionManife
 type Environment = Record<string, string | undefined>;
 type EvidenceByProvider = Partial<Record<PriorityPmsProviderId, PriorityPmsLaunchEvidence>>;
 
+const placeholderEvidencePattern = /(?:^|\b)(?:test hotel|example|placeholder|tbd|unknown|n\/a)(?:\b|$)/i;
+
+export function isVerifiedActivationDetail(value: string | undefined) {
+  const normalized = value?.trim() ?? "";
+  return normalized.length > 1 && !placeholderEvidencePattern.test(normalized);
+}
+
 
 const operationPathPattern = /_(?:AVAILABILITY|CREATE|GET|MODIFY|CANCEL|VALIDATION)_PATH$/;
 
@@ -169,12 +177,37 @@ export function auditPriorityPmsProductionReadiness(
       return value ? !isValidConfiguredValue(environment, key, value) : false;
     });
     const providerEvidence = evidence[provider.id] ?? {};
+    const activationChecklist = {
+      productionConfigurationValid: missingEnvironmentKeys.length === 0 && invalidEnvironmentKeys.length === 0,
+      vendorApprovalDocumented: providerEvidence.vendorApproved === true
+        && isVerifiedActivationDetail(providerEvidence.vendorApprovalReference),
+      approvedEnvironmentDocumented: isVerifiedActivationDetail(providerEvidence.approvedEnvironment),
+      realPropertyCodeDocumented: isVerifiedActivationDetail(providerEvidence.propertyCode),
+      supportContactDocumented: isVerifiedActivationDetail(providerEvidence.supportContact),
+      propertyMappingConfirmed: providerEvidence.propertyMapped === true,
+      sandboxValidationPassed: providerEvidence.sandboxValidated === true,
+      webhookValidationPassed: providerEvidence.webhookValidated === true,
+      productionSmokePassed: providerEvidence.productionSmokeValidated === true,
+      liveTrafficEnabled: providerEvidence.liveEnabled === true,
+    };
+    const activationDetailsComplete = activationChecklist.vendorApprovalDocumented
+      && activationChecklist.approvedEnvironmentDocumented
+      && activationChecklist.realPropertyCodeDocumented
+      && activationChecklist.supportContactDocumented;
+    const readyForRealPropertyActivation = activationChecklist.productionConfigurationValid
+      && activationDetailsComplete
+      && activationChecklist.propertyMappingConfirmed
+      && activationChecklist.sandboxValidationPassed
+      && activationChecklist.webhookValidationPassed
+      && activationChecklist.productionSmokePassed;
     const status: PriorityPmsLaunchStatus = missingEnvironmentKeys.length > 0
       ? "configuration_required"
       : invalidEnvironmentKeys.length > 0
         ? "configuration_invalid"
         : !providerEvidence.vendorApproved
           ? "vendor_approval_required"
+          : !activationDetailsComplete
+            ? "activation_details_required"
           : !providerEvidence.propertyMapped
             ? "property_mapping_required"
             : !providerEvidence.sandboxValidated
@@ -196,6 +229,8 @@ export function auditPriorityPmsProductionReadiness(
       ),
       missingEnvironmentKeys,
       invalidEnvironmentKeys,
+      activationChecklist,
+      readyForRealPropertyActivation,
       evidence: {
         vendorApproved: providerEvidence.vendorApproved === true,
         propertyMapped: providerEvidence.propertyMapped === true,

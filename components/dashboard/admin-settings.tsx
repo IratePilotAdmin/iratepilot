@@ -28,6 +28,8 @@ type PriorityPmsProductionReadiness = {
   configuredEnvironmentKeys: string[];
   missingEnvironmentKeys: string[];
   invalidEnvironmentKeys: string[];
+  readyForRealPropertyActivation: boolean;
+  activationChecklist: Record<string, boolean>;
   evidence: {
     vendorApproved: boolean;
     propertyMapped: boolean;
@@ -54,6 +56,7 @@ const priorityStatusStyle: Record<PriorityPmsLaunchStatus, string> = {
   configuration_required: "text-amber-700",
   configuration_invalid: "text-red-700",
   vendor_approval_required: "text-amber-700",
+  activation_details_required: "text-amber-700",
   property_mapping_required: "text-amber-700",
   sandbox_validation_required: "text-amber-700",
   webhook_validation_required: "text-amber-700",
@@ -273,6 +276,17 @@ export function AdminSettings() {
                 <span>Webhook: {provider.evidence.webhookValidated ? "passed" : "pending"}</span>
                 <span>Production smoke: {provider.evidence.productionSmokeValidated ? "passed" : "pending"}</span>
                 <span>Traffic: {provider.evidence.liveEnabled ? "enabled" : "disabled"}</span>
+              </div>
+              <div className="mt-4 rounded-lg bg-slate-50 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Real-property activation checklist</p>
+                <ul className="mt-2 grid gap-1 text-xs sm:grid-cols-2">
+                  {Object.entries(provider.activationChecklist).map(([key, complete]) => <li className={complete ? "text-emerald-700" : "text-amber-700"} key={key}>
+                    {complete ? "✓" : "○"} {key.replaceAll(/([A-Z])/g, " $1").toLowerCase()}
+                  </li>)}
+                </ul>
+                <p className={`mt-3 text-xs font-semibold ${provider.readyForRealPropertyActivation ? "text-emerald-700" : "text-amber-700"}`}>
+                  {provider.readyForRealPropertyActivation ? "Ready for controlled live activation" : "Live activation remains blocked"}
+                </p>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id} onClick={() => updateLaunchEvidence(provider.id, { vendorApproved: !provider.evidence.vendorApproved })} type="button">

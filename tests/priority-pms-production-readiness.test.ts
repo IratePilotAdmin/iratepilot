@@ -46,22 +46,49 @@ describe("priority PMS production readiness", () => {
     expect(auditPriorityPmsProductionReadiness(environment)[0]?.status).toBe("vendor_approval_required");
     expect(auditPriorityPmsProductionReadiness(environment, {
       "oracle-opera": { vendorApproved: true },
-    })[0]?.status).toBe("property_mapping_required");
+    })[0]?.status).toBe("activation_details_required");
+    const activationDetails = {
+      vendorApprovalReference: "OHIP-APPROVAL-42",
+      approvedEnvironment: "Production tenant",
+      propertyCode: "MSYIR",
+      supportContact: "hospitality-support@oracle.com",
+    };
     expect(auditPriorityPmsProductionReadiness(environment, {
-      "oracle-opera": { vendorApproved: true, propertyMapped: true },
+      "oracle-opera": { vendorApproved: true, ...activationDetails, propertyMapped: true },
     })[0]?.status).toBe("sandbox_validation_required");
     expect(auditPriorityPmsProductionReadiness(environment, {
-      "oracle-opera": { vendorApproved: true, propertyMapped: true, sandboxValidated: true },
+      "oracle-opera": { vendorApproved: true, ...activationDetails, propertyMapped: true, sandboxValidated: true },
     })[0]?.status).toBe("webhook_validation_required");
     expect(auditPriorityPmsProductionReadiness(environment, {
-      "oracle-opera": { vendorApproved: true, propertyMapped: true, sandboxValidated: true, webhookValidated: true },
+      "oracle-opera": { vendorApproved: true, ...activationDetails, propertyMapped: true, sandboxValidated: true, webhookValidated: true },
     })[0]?.status).toBe("production_smoke_required");
     expect(auditPriorityPmsProductionReadiness(environment, {
-      "oracle-opera": { vendorApproved: true, propertyMapped: true, sandboxValidated: true, webhookValidated: true, productionSmokeValidated: true },
+      "oracle-opera": { vendorApproved: true, ...activationDetails, propertyMapped: true, sandboxValidated: true, webhookValidated: true, productionSmokeValidated: true },
     })[0]?.status).toBe("activation_required");
     expect(auditPriorityPmsProductionReadiness(environment, {
-      "oracle-opera": { vendorApproved: true, propertyMapped: true, sandboxValidated: true, webhookValidated: true, productionSmokeValidated: true, liveEnabled: true },
+      "oracle-opera": { vendorApproved: true, ...activationDetails, propertyMapped: true, sandboxValidated: true, webhookValidated: true, productionSmokeValidated: true, liveEnabled: true },
     })[0]?.status).toBe("live");
+  });
+
+  it("rejects placeholder activation evidence for a real property", () => {
+    const [oracle] = auditPriorityPmsProductionReadiness(configuredEnvironment(), {
+      "oracle-opera": {
+        vendorApproved: true,
+        vendorApprovalReference: "TBD",
+        approvedEnvironment: "test",
+        propertyCode: "Test Hotel",
+        supportContact: "unknown",
+      },
+    });
+
+    expect(oracle.status).toBe("activation_details_required");
+    expect(oracle.readyForRealPropertyActivation).toBe(false);
+    expect(oracle.activationChecklist).toMatchObject({
+      productionConfigurationValid: true,
+      vendorApprovalDocumented: false,
+      realPropertyCodeDocumented: false,
+      supportContactDocumented: false,
+    });
   });
 
   it("rejects insecure and malformed URLs before declaring a provider live-ready", () => {

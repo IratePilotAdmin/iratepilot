@@ -6,6 +6,7 @@ import {
   buildPmsReadiness,
   pmsProviders,
   priorityPmsProviderIds,
+  isVerifiedActivationDetail,
 } from "@/services/hotel-suppliers";
 import type { PriorityPmsLaunchEvidence, PriorityPmsProviderId } from "@/services/hotel-suppliers";
 
@@ -141,7 +142,7 @@ export async function PATCH(request: Request) {
     const providerId = body.providerId as PriorityPmsProviderId;
     const admin = createAdminClient();
     const currentResult = await admin.from("priority_pms_launch_evidence")
-      .select("vendor_approved,property_mapped,sandbox_validated,webhook_validated,production_smoke_validated,live_enabled")
+      .select("vendor_approved,property_mapped,sandbox_validated,webhook_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact,verification_notes")
       .eq("provider_id", providerId)
       .maybeSingle();
     if (currentResult.error) {
@@ -158,6 +159,11 @@ export async function PATCH(request: Request) {
       webhook_validated: false,
       production_smoke_validated: false,
       live_enabled: false,
+      vendor_approval_reference: null,
+      approved_environment: null,
+      property_code: null,
+      support_contact: null,
+      verification_notes: null,
     };
     const next = {
       vendorApproved: patch.vendorApproved as boolean | undefined ?? current.vendor_approved,
@@ -202,6 +208,15 @@ export async function PATCH(request: Request) {
     }
     if (patch.liveEnabled === true && !next.productionSmokeValidated) {
       return NextResponse.json({ error: "The production smoke test must pass before live traffic is enabled." }, { status: 409 });
+    }
+    const nextDetails = {
+      vendorApprovalReference: typeof details.vendorApprovalReference === "string" ? details.vendorApprovalReference : current.vendor_approval_reference,
+      approvedEnvironment: typeof details.approvedEnvironment === "string" ? details.approvedEnvironment : current.approved_environment,
+      propertyCode: typeof details.propertyCode === "string" ? details.propertyCode : current.property_code,
+      supportContact: typeof details.supportContact === "string" ? details.supportContact : current.support_contact,
+    };
+    if (patch.liveEnabled === true && Object.values(nextDetails).some((value) => !isVerifiedActivationDetail(value ?? ""))) {
+      return NextResponse.json({ error: "Verified vendor approval, environment, real property code, and support contact details are required before live traffic is enabled." }, { status: 409 });
     }
 
     const updateResult = await admin.from("priority_pms_launch_evidence").upsert({
