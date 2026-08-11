@@ -12,7 +12,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.iratepilot.app",
-      "icon": "./assets/icon.png"
+      "icon": "./assets/icon.png",
+      "infoPlist": {
+        "NSCameraUsageDescription": "iRatePilot uses the camera only when you choose to capture an image for your travel or property information."
+      }
     },
     "android": {
       "package": "com.iratepilot.app",
