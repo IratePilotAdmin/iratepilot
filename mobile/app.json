@@ -12,7 +12,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.iratepilot.app",
-      "icon": "./assets/icon.png"
+      "icon": "./assets/icon.png",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "iRatePilot uses the camera only when you choose to scan payment card details during secure checkout."
+      }
     },
     "android": {
       "package": "com.iratepilot.app",
