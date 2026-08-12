@@ -15,26 +15,35 @@ import {
 import { useAuth } from "@/providers/AuthProvider";
 
 export default function SignInScreen() {
-  const { signIn, signUp } = useAuth();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const { requestPasswordReset, signIn, signUp } = useAuth();
+  const [mode, setMode] = useState<"signin" | "signup" | "recovery">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function submit() {
-    if (!email.trim() || password.length < 8) {
+    if (!email.trim() || (mode !== "recovery" && password.length < 8)) {
       setMessage("Enter a valid email and a password with at least 8 characters.");
       return;
     }
 
     setSubmitting(true);
     setMessage(null);
-    const error = mode === "signin" ? await signIn(email, password) : await signUp(email, password);
+    const error = mode === "recovery"
+      ? await requestPasswordReset(email)
+      : mode === "signin"
+        ? await signIn(email, password)
+        : await signUp(email, password);
     setSubmitting(false);
 
     if (error) {
       setMessage(error);
+      return;
+    }
+
+    if (mode === "recovery") {
+      setMessage("If an account exists for that email, a password-reset link is on its way.");
       return;
     }
 
@@ -52,8 +61,8 @@ export default function SignInScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.page}>
         <View>
           <Text style={styles.brand}>iRatePilot</Text>
-          <Text style={styles.title}>{mode === "signin" ? "Welcome back" : "Create your account"}</Text>
-          <Text style={styles.body}>Use the same secure customer account as iratepilot.com.</Text>
+          <Text style={styles.title}>{mode === "signin" ? "Welcome back" : mode === "signup" ? "Create your account" : "Reset your password"}</Text>
+          <Text style={styles.body}>{mode === "recovery" ? "We will email you a secure link to choose a new password." : "Use the same secure customer account as iratepilot.com."}</Text>
           <TextInput
             autoCapitalize="none"
             autoComplete="email"
@@ -63,21 +72,28 @@ export default function SignInScreen() {
             style={styles.input}
             value={email}
           />
-          <TextInput
-            autoCapitalize="none"
-            autoComplete={mode === "signin" ? "current-password" : "new-password"}
-            onChangeText={setPassword}
-            placeholder="Password"
-            secureTextEntry
-            style={styles.input}
-            value={password}
-          />
+          {mode !== "recovery" ? (
+            <TextInput
+              autoCapitalize="none"
+              autoComplete={mode === "signin" ? "current-password" : "new-password"}
+              onChangeText={setPassword}
+              placeholder="Password"
+              secureTextEntry
+              style={styles.input}
+              value={password}
+            />
+          ) : null}
           {message ? <Text accessibilityRole="alert" style={styles.message}>{message}</Text> : null}
           <Pressable accessibilityRole="button" disabled={submitting} onPress={submit} style={styles.primary}>
-            {submitting ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.primaryText}>{mode === "signin" ? "Sign in" : "Create account"}</Text>}
+            {submitting ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.primaryText}>{mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : "Send reset link"}</Text>}
           </Pressable>
+          {mode === "signin" ? (
+            <Pressable accessibilityRole="button" onPress={() => { setMessage(null); setMode("recovery"); }} style={styles.switch}>
+              <Text style={styles.switchText}>Forgot password?</Text>
+            </Pressable>
+          ) : null}
           <Pressable accessibilityRole="button" onPress={() => { setMessage(null); setMode(mode === "signin" ? "signup" : "signin"); }} style={styles.switch}>
-            <Text style={styles.switchText}>{mode === "signin" ? "New to iRatePilot? Create an account" : "Already have an account? Sign in"}</Text>
+            <Text style={styles.switchText}>{mode === "signin" ? "New to iRatePilot? Create an account" : "Back to sign in"}</Text>
           </Pressable>
           <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.cancel}>
             <Text style={styles.cancelText}>Cancel</Text>

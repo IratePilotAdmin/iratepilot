@@ -3,6 +3,7 @@ export { getPmsProvider, pmsProviders } from "./providers";
 export { buildPmsReadiness, validatePmsConfiguration } from "./readiness";
 export {
   auditPriorityPmsProductionReadiness,
+  isVerifiedActivationDetail,
   priorityPmsProductionManifest,
   priorityPmsProviderIds,
 } from "./priority-readiness";

@@ -72,6 +72,15 @@ export const propertySchema = z.object({
   country: z.string().trim().min(2).max(100)
 }).merge(propertyContentSchema);
 
+const pmsMappingSchema = z.string().trim().max(4000).refine((value) => {
+  if (!value) return true;
+  const normalized = value.toLowerCase().replace(/[’']/g, "'");
+  return ![
+    "hotelkey's applicable codes",
+    "your policy name mapped to its hotelkey code",
+  ].includes(normalized);
+}, "Replace example or placeholder text with verified PMS mapping codes.");
+
 export const pmsConnectionSchema = z.object({
   propertyId: z.string().uuid(),
   providerId: z.enum([
@@ -82,6 +91,11 @@ export const pmsConnectionSchema = z.object({
     "guestline", "ezee-absolute", "clock-pms-plus", "hotelogix",
   ]),
   externalPropertyCode: z.string().trim().min(1).max(120),
+  hotelAuthorized: z.boolean(),
+  roomTypeMapping: pmsMappingSchema,
+  ratePlanMapping: pmsMappingSchema,
+  taxFeeMapping: pmsMappingSchema,
+  cancellationPolicyMapping: pmsMappingSchema,
 });
 
 const roomFieldsSchema = z.object({
@@ -109,3 +123,4 @@ export const inventorySchema = z.object({
   availableUnits: z.coerce.number().int().min(inventoryLimits.minAvailableUnits).max(inventoryLimits.maxAvailableUnits),
   rate: z.coerce.number().min(inventoryLimits.minNightlyRate).max(inventoryLimits.maxNightlyRate)
 });
+

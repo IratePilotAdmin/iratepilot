@@ -25,7 +25,7 @@ export async function GET() {
 
     const [propertiesResult, connectionsResult] = await Promise.all([
       auth.supabase.from("properties").select("id,name,active").eq("partner_id", partner.id).order("name"),
-      auth.supabase.from("property_pms_connections").select("property_id,provider_id,external_property_code,connection_status,last_validated_at,updated_at"),
+      auth.supabase.from("property_pms_connections").select("property_id,provider_id,external_property_code,hotel_authorized,room_type_mapping,rate_plan_mapping,tax_fee_mapping,cancellation_policy_mapping,connection_status,last_validated_at,updated_at"),
     ]);
     if (propertiesResult.error) throw propertiesResult.error;
     if (connectionsResult.error) throw connectionsResult.error;
@@ -43,7 +43,12 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   const parsed = pmsConnectionSchema.safeParse(await request.json());
-  if (!parsed.success) return NextResponse.json({ error: "Choose a property, PMS provider, and valid property code." }, { status: 400 });
+  if (!parsed.success) {
+    const mappingIssue = parsed.error.issues.find((issue) => issue.message.includes("placeholder"));
+    return NextResponse.json({
+      error: mappingIssue?.message || "Choose a property, PMS provider, and valid property code.",
+    }, { status: 400 });
+  }
 
   try {
     const auth = await requireRole(["partner"]);
@@ -58,10 +63,15 @@ export async function PUT(request: Request) {
       property_id: parsed.data.propertyId,
       provider_id: parsed.data.providerId,
       external_property_code: parsed.data.externalPropertyCode,
+      hotel_authorized: parsed.data.hotelAuthorized,
+      room_type_mapping: parsed.data.roomTypeMapping || null,
+      rate_plan_mapping: parsed.data.ratePlanMapping || null,
+      tax_fee_mapping: parsed.data.taxFeeMapping || null,
+      cancellation_policy_mapping: parsed.data.cancellationPolicyMapping || null,
       connection_status: "credentials_pending",
       last_validated_at: null,
       updated_at: new Date().toISOString(),
-    }, { onConflict: "property_id" }).select("property_id,provider_id,external_property_code,connection_status,last_validated_at,updated_at").single();
+    }, { onConflict: "property_id" }).select("property_id,provider_id,external_property_code,hotel_authorized,room_type_mapping,rate_plan_mapping,tax_fee_mapping,cancellation_policy_mapping,connection_status,last_validated_at,updated_at").single();
     if (error) throw error;
     return NextResponse.json({ data, message: "PMS details saved. iRatePilot will coordinate credentials and validation without storing secrets here." });
   } catch (error) {
@@ -69,3 +79,4 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "The PMS connection could not be saved." }, { status: 503 });
   }
 }
+

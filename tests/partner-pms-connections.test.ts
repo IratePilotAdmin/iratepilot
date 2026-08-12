@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { pmsConnectionSchema } from "../lib/validation";
 
 const route = readFileSync(new URL("../app/api/partner/integrations/pms/route.ts", import.meta.url), "utf8");
 const component = readFileSync(new URL("../components/dashboard/partner-pms-connections.tsx", import.meta.url), "utf8");
@@ -20,4 +21,37 @@ describe("partner PMS connections", () => {
     expect(route).toContain('connection_status: "credentials_pending"');
     expect(route).toContain("last_validated_at: null");
   });
+
+  it("collects pilot authorization and non-secret hotel mappings", () => {
+    for (const field of ["hotel_authorized", "room_type_mapping", "rate_plan_mapping", "tax_fee_mapping", "cancellation_policy_mapping"]) {
+      expect(route).toContain(field);
+    }
+    expect(component).toContain("Pilot-hotel authorization and mappings");
+    expect(component).toContain("hotel owner or authorized manager approved");
+    expect(component).toContain("do not include payment data");
+  });
+
+  it("rejects placeholder mapping descriptions while allowing pending blank mappings", () => {
+    const declaration = {
+      propertyId: "11111111-1111-4111-8111-111111111111",
+      providerId: "hotelkey" as const,
+      externalPropertyCode: "128",
+      hotelAuthorized: true,
+      roomTypeMapping: "",
+      ratePlanMapping: "",
+      taxFeeMapping: "",
+      cancellationPolicyMapping: "",
+    };
+
+    expect(pmsConnectionSchema.safeParse(declaration).success).toBe(true);
+    expect(pmsConnectionSchema.safeParse({
+      ...declaration,
+      taxFeeMapping: "HotelKey’s applicable codes",
+    }).success).toBe(false);
+    expect(pmsConnectionSchema.safeParse({
+      ...declaration,
+      cancellationPolicyMapping: "your policy name mapped to its HotelKey code",
+    }).success).toBe(false);
+  });
 });
+

@@ -28,10 +28,20 @@ type PriorityPmsProductionReadiness = {
   configuredEnvironmentKeys: string[];
   missingEnvironmentKeys: string[];
   invalidEnvironmentKeys: string[];
+  readyForRealPropertyActivation: boolean;
+  activationChecklist: Record<string, boolean>;
   evidence: {
     vendorApproved: boolean;
     propertyMapped: boolean;
     sandboxValidated: boolean;
+    webhookValidated: boolean;
+    productionSmokeValidated: boolean;
+    liveEnabled: boolean;
+    vendorApprovalReference: string;
+    approvedEnvironment: string;
+    propertyCode: string;
+    supportContact: string;
+    verificationNotes: string;
   };
 };
 
@@ -46,14 +56,18 @@ const priorityStatusStyle: Record<PriorityPmsLaunchStatus, string> = {
   configuration_required: "text-amber-700",
   configuration_invalid: "text-red-700",
   vendor_approval_required: "text-amber-700",
+  activation_details_required: "text-amber-700",
   property_mapping_required: "text-amber-700",
   sandbox_validation_required: "text-amber-700",
-  ready_for_live: "text-emerald-700",
+  webhook_validation_required: "text-amber-700",
+  production_smoke_required: "text-amber-700",
+  activation_required: "text-blue-700",
+  live: "text-emerald-700",
 };
 
 export function AdminSettings() {
   const [data, setData] = useState<Response | null>(null);
-  const [message, setMessage] = useState("Checking platform readiness…");
+  const [message, setMessage] = useState("Checking platform readinessâ€¦");
   const [emailTestBusy, setEmailTestBusy] = useState(false);
   const [emailTestMessage, setEmailTestMessage] = useState("");
   const [pmsProviders, setPmsProviders] = useState<PmsProviderReadiness[]>([]);
@@ -63,7 +77,7 @@ export function AdminSettings() {
   const [evidenceMessage, setEvidenceMessage] = useState("");
   const [pmsConnections, setPmsConnections] = useState<PmsConnection[]>([]);
   const [selectedConnectionId, setSelectedConnectionId] = useState("");
-  const [pmsMessage, setPmsMessage] = useState("Checking PMS connections…");
+  const [pmsMessage, setPmsMessage] = useState("Checking PMS connectionsâ€¦");
   const [credentialBusy, setCredentialBusy] = useState(false);
   const [credentialMessage, setCredentialMessage] = useState("");
   const selectedConnection = useMemo(
@@ -133,6 +147,30 @@ export function AdminSettings() {
     }
   }
 
+  async function saveLaunchDetails(event: FormEvent<HTMLFormElement>, providerId: string) {
+    event.preventDefault();
+    setEvidenceBusy(providerId);
+    setEvidenceMessage("");
+    try {
+      const form = new FormData(event.currentTarget);
+      const details = Object.fromEntries(["vendorApprovalReference", "approvedEnvironment", "propertyCode", "supportContact", "verificationNotes"]
+        .map((key) => [key, form.get(key) ?? ""]));
+      const response = await fetch("/api/admin/integrations/pms", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ providerId, details }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Activation evidence details could not be saved.");
+      setPriorityPmsReadiness((items) => items.map((item) => item.id === providerId ? body.readiness : item));
+      setEvidenceMessage(`${body.readiness.name} activation evidence details were saved.`);
+    } catch (error) {
+      setEvidenceMessage(error instanceof Error ? error.message : "Activation evidence details could not be saved.");
+    } finally {
+      setEvidenceBusy("");
+    }
+  }
+
   async function saveCredentials(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedConnection) return;
@@ -195,7 +233,7 @@ export function AdminSettings() {
       <section className="card mt-6 p-6">
         <h2 className="text-xl font-semibold">Transactional email test</h2>
         <p className="mt-2 text-sm text-slate-600">Send one operational test message to the signed-in administrator. This creates no booking, payment, refund, or partner transfer.</p>
-        <button className="btn-primary mt-4" disabled={emailTestBusy} onClick={sendEmailTest}>{emailTestBusy ? "Sending…" : "Send test email"}</button>
+        <button className="btn-primary mt-4" disabled={emailTestBusy} onClick={sendEmailTest}>{emailTestBusy ? "Sendingâ€¦" : "Send test email"}</button>
         {emailTestMessage && <p className="mt-3 text-sm" role="status">{emailTestMessage}</p>}
       </section>
 
@@ -215,11 +253,11 @@ export function AdminSettings() {
             <div>
               <span className="text-xs uppercase tracking-wider text-slate-500">Production launch gate</span>
               <h3 className="mt-2 text-lg font-semibold">Priority PMS providers</h3>
-              <p className="mt-1 text-sm text-slate-600">This strict audit requires valid production configuration, vendor approval, property mapping, and completed sandbox validation. Only configuration key names are shown; secret values never leave the server.</p>
+              <p className="mt-1 text-sm text-slate-600">This strict audit requires valid production configuration, vendor approval, property mapping, sandbox validation, verified webhooks, and a production test-property smoke test. Only configuration key names are shown; secret values never leave the server.</p>
               <p className="mt-2 text-xs text-slate-500">Mark a gate complete only after its approval, mapping record, or sandbox test evidence has been independently verified.</p>
             </div>
             <div className="text-sm text-slate-600">
-              <strong>{priorityPmsReadiness.filter((provider) => provider.status === "ready_for_live").length}</strong> of <strong>{priorityPmsReadiness.length}</strong> ready for live
+              <strong>{priorityPmsReadiness.filter((provider) => provider.status === "live").length}</strong> of <strong>{priorityPmsReadiness.length}</strong> live
             </div>
           </div>
           <div className="mt-5 grid gap-3 xl:grid-cols-2">
@@ -235,6 +273,20 @@ export function AdminSettings() {
                 <span>Vendor: {provider.evidence.vendorApproved ? "approved" : "pending"}</span>
                 <span>Mapping: {provider.evidence.propertyMapped ? "complete" : "pending"}</span>
                 <span>Sandbox: {provider.evidence.sandboxValidated ? "passed" : "pending"}</span>
+                <span>Webhook: {provider.evidence.webhookValidated ? "passed" : "pending"}</span>
+                <span>Production smoke: {provider.evidence.productionSmokeValidated ? "passed" : "pending"}</span>
+                <span>Traffic: {provider.evidence.liveEnabled ? "enabled" : "disabled"}</span>
+              </div>
+              <div className="mt-4 rounded-lg bg-slate-50 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Real-property activation checklist</p>
+                <ul className="mt-2 grid gap-1 text-xs sm:grid-cols-2">
+                  {Object.entries(provider.activationChecklist).map(([key, complete]) => <li className={complete ? "text-emerald-700" : "text-amber-700"} key={key}>
+                    {complete ? "✓" : "○"} {key.replaceAll(/([A-Z])/g, " $1").toLowerCase()}
+                  </li>)}
+                </ul>
+                <p className={`mt-3 text-xs font-semibold ${provider.readyForRealPropertyActivation ? "text-emerald-700" : "text-amber-700"}`}>
+                  {provider.readyForRealPropertyActivation ? "Ready for controlled live activation" : "Live activation remains blocked"}
+                </p>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id} onClick={() => updateLaunchEvidence(provider.id, { vendorApproved: !provider.evidence.vendorApproved })} type="button">
@@ -246,10 +298,33 @@ export function AdminSettings() {
                 <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id || !provider.evidence.vendorApproved || !provider.evidence.propertyMapped} onClick={() => updateLaunchEvidence(provider.id, { sandboxValidated: !provider.evidence.sandboxValidated })} type="button">
                   {provider.evidence.sandboxValidated ? "Reset sandbox validation" : "Confirm sandbox validation"}
                 </button>
+                <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id || !provider.evidence.sandboxValidated} onClick={() => updateLaunchEvidence(provider.id, { webhookValidated: !provider.evidence.webhookValidated })} type="button">
+                  {provider.evidence.webhookValidated ? "Reset webhook validation" : "Confirm webhook validation"}
+                </button>
+                <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id || !provider.evidence.webhookValidated} onClick={() => updateLaunchEvidence(provider.id, { productionSmokeValidated: !provider.evidence.productionSmokeValidated })} type="button">
+                  {provider.evidence.productionSmokeValidated ? "Reset production smoke test" : "Confirm production smoke test"}
+                </button>
+                <button className={provider.evidence.liveEnabled ? "btn-secondary text-xs" : "btn-primary text-xs"} disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id || !provider.evidence.productionSmokeValidated} onClick={() => updateLaunchEvidence(provider.id, { liveEnabled: !provider.evidence.liveEnabled })} type="button">
+                  {provider.evidence.liveEnabled ? "Disable live traffic" : "Enable live traffic"}
+                </button>
               </div>
+              <details className="mt-4 border-t pt-3">
+                <summary className="cursor-pointer text-sm font-medium">Vendor evidence details</summary>
+                <form className="mt-3 grid gap-3" onSubmit={(event) => saveLaunchDetails(event, provider.id)}>
+                  <p className="text-xs text-slate-500">Record non-secret references only. Never enter passwords, API keys, tokens, or webhook secrets here.</p>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <label className="text-xs font-medium">Approval or certification reference<input className="input mt-1" defaultValue={provider.evidence.vendorApprovalReference} maxLength={500} name="vendorApprovalReference" /></label>
+                    <label className="text-xs font-medium">Approved environment<input className="input mt-1" defaultValue={provider.evidence.approvedEnvironment} maxLength={200} name="approvedEnvironment" /></label>
+                    <label className="text-xs font-medium">Property or portfolio code<input className="input mt-1" defaultValue={provider.evidence.propertyCode} maxLength={200} name="propertyCode" /></label>
+                    <label className="text-xs font-medium">Support or escalation contact<input className="input mt-1" defaultValue={provider.evidence.supportContact} maxLength={500} name="supportContact" /></label>
+                  </div>
+                  <label className="text-xs font-medium">Verification notes<textarea className="input mt-1 min-h-24" defaultValue={provider.evidence.verificationNotes} maxLength={4000} name="verificationNotes" /></label>
+                  <button className="btn-secondary w-fit text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id} type="submit">Save evidence details</button>
+                </form>
+              </details>
             </article>)}
           </div>
-          {!evidenceTrackingAvailable && <p className="mt-4 text-sm text-amber-700">Launch evidence tracking is unavailable until production migration 034 is applied.</p>}
+          {!evidenceTrackingAvailable && <p className="mt-4 text-sm text-amber-700">Launch evidence tracking is unavailable until production migrations 034 and 035 are applied.</p>}
           {evidenceMessage && <p className="mt-4 text-sm" role="status">{evidenceMessage}</p>}
         </div>}
         {pmsMessage && <p className="p-6 text-sm text-slate-600" role="status">{pmsMessage}</p>}
@@ -280,7 +355,7 @@ export function AdminSettings() {
         {pmsConnections.length === 0 ? <p className="mt-4 text-sm text-slate-500">A partner must declare a hotel PMS before credentials can be configured.</p> : <form key={selectedConnectionId} className="mt-5 grid gap-4" onSubmit={saveCredentials}>
           <label className="text-sm font-medium">Hotel connection
             <select className="input mt-2" value={selectedConnectionId} onChange={(event) => { setSelectedConnectionId(event.target.value); setCredentialMessage(""); }} required>
-              {pmsConnections.map((connection) => <option key={connection.id} value={connection.id}>{connection.property_name} — {connection.provider_id}</option>)}
+              {pmsConnections.map((connection) => <option key={connection.id} value={connection.id}>{connection.property_name} â€” {connection.provider_id}</option>)}
             </select>
           </label>
           {selectedConnection && <>
@@ -293,7 +368,7 @@ export function AdminSettings() {
               <input className="input mt-2" name={key} type="password" autoComplete="new-password" maxLength={4096} required />
             </label>)}</div>
             <div className="flex flex-wrap gap-3">
-              <button className="btn-primary" disabled={credentialBusy} type="submit">{credentialBusy ? "Working…" : "Encrypt and save"}</button>
+              <button className="btn-primary" disabled={credentialBusy} type="submit">{credentialBusy ? "Workingâ€¦" : "Encrypt and save"}</button>
               <button className="btn-secondary" disabled={credentialBusy || !selectedConnection.credentials_configured} onClick={testCredentials} type="button">Validate stored configuration</button>
             </div>
           </>}
@@ -311,3 +386,4 @@ export function AdminSettings() {
     </>}
   </>;
 }
+

@@ -9,6 +9,7 @@ type AuthContextValue = {
   user: User | null;
   signIn: (email: string, password: string) => Promise<string | null>;
   signUp: (email: string, password: string) => Promise<string | null>;
+  requestPasswordReset: (email: string) => Promise<string | null>;
   signOut: () => Promise<void>;
 };
 
@@ -49,6 +50,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
       },
       signUp: async (email, password) => {
         const { error } = await supabase.auth.signUp({ email: email.trim(), password });
+        return error?.message ?? null;
+      },
+      requestPasswordReset: async (email) => {
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+          redirectTo: "https://www.iratepilot.com/auth/callback?next=%2Freset-password",
+        });
         return error?.message ?? null;
       },
       signOut: async () => {

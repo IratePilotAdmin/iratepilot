@@ -84,7 +84,7 @@ export default function ExploreScreen() {
             onPress={() => router.push({ pathname: "/hotels/[slug]", params: { slug: hotel.slug } })}
             style={styles.hotelCard}
           >
-            <Image accessibilityLabel={hotel.name} source={{ uri: hotel.image }} style={styles.image} />
+            <Image accessibilityLabel={hotel.name} alt={hotel.name} source={{ uri: hotel.image }} style={styles.image} />
             <View style={styles.hotelBody}>
               <Text style={styles.stars}>{hotel.stars}-star verified</Text>
               <Text style={styles.hotelName}>{hotel.name}</Text>

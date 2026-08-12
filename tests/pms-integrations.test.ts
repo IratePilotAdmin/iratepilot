@@ -228,11 +228,37 @@ describe("PMS integration foundation", () => {
     expect(route).toContain('from("priority_pms_launch_evidence")');
     expect(route).toContain("Vendor approval must be recorded before property mapping.");
     expect(route).toContain("Vendor approval and property mapping are required before sandbox validation.");
+    expect(route).toContain("Sandbox validation is required before webhook validation.");
+    expect(route).toContain("Webhook validation is required before the production smoke test.");
+    expect(route).toContain("The production smoke test must pass before live traffic is enabled.");
     expect(route).toContain("updated_by: auth.user.id");
     expect(adminSettings).toContain("Confirm vendor approval");
     expect(adminSettings).toContain("Confirm property mapping");
     expect(adminSettings).toContain("Confirm sandbox validation");
-    expect(adminSettings).toContain("migration 034");
+    expect(adminSettings).toContain("Confirm webhook validation");
+    expect(adminSettings).toContain("Confirm production smoke test");
+    expect(adminSettings).toContain("Enable live traffic");
+    expect(adminSettings).toContain("migrations 034 and 035");
+  });
+
+  it("keeps the readiness dashboard available while migration 035 is pending", () => {
+    expect(route).toContain('evidenceResult.error?.code === "42703"');
+    expect(route).toContain('select("provider_id,vendor_approved,property_mapped,sandbox_validated,updated_at")');
+    expect(route).toContain("webhook_validated: false");
+    expect(route).toContain('currentResult.error.code === "42703"');
+  });
+
+  it("records non-secret vendor evidence details without weakening launch gates", () => {
+    expect(route).toContain("vendor_approval_reference");
+    expect(route).toContain("approved_environment");
+    expect(route).toContain("property_code");
+    expect(route).toContain("support_contact");
+    expect(route).toContain("verification_notes");
+    expect(route).toContain("Evidence details must contain supported text fields.");
+    expect(adminSettings).toContain("Vendor evidence details");
+    expect(adminSettings).toContain("Never enter passwords, API keys, tokens, or webhook secrets here.");
+    expect(adminSettings).toContain("Save evidence details");
   });
 });
+
 
