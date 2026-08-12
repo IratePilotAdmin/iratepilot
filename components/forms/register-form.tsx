@@ -14,7 +14,6 @@ export function RegisterForm({ configured, nextPath }: { configured: boolean; ne
 
   async function signUpWithGoogle() {
     if (!configured) return;
-    const formElement = event.currentTarget;
     setLoading(true);
     setMessage("");
     try {
@@ -33,6 +32,7 @@ export function RegisterForm({ configured, nextPath }: { configured: boolean; ne
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!configured) return;
+    const formElement = event.currentTarget;
     setLoading(true);
     setMessage("");
     const form = new FormData(formElement);
