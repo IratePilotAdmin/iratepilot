@@ -14,6 +14,7 @@ export function RegisterForm({ configured, nextPath }: { configured: boolean; ne
 
   async function signUpWithGoogle() {
     if (!configured) return;
+    const formElement = event.currentTarget;
     setLoading(true);
     setMessage("");
     try {
@@ -34,7 +35,7 @@ export function RegisterForm({ configured, nextPath }: { configured: boolean; ne
     if (!configured) return;
     setLoading(true);
     setMessage("");
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formElement);
     try {
       const supabase = createClient();
       const { data, error } = await supabase.auth.signUp({
