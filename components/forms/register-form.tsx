@@ -52,7 +52,7 @@ export function RegisterForm({ configured, nextPath }: { configured: boolean; ne
         return;
       }
       setMessage("Check your email to confirm your account.");
-      event.currentTarget.reset();
+      formElement.reset();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Registration failed.");
     } finally {
