@@ -123,7 +123,7 @@ export default function HotelDetailsScreen() {
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.back}><Text style={styles.backText}>‹ Back to search</Text></Pressable>
-        <Image accessibilityLabel={hotel.name} source={{ uri: hotel.image }} style={styles.image} />
+        <Image accessibilityLabel={hotel.name} alt={hotel.name} source={{ uri: hotel.image }} style={styles.image} />
         <Text style={styles.badge}>{hotel.stars}-star verified</Text>
         <Text style={styles.title}>{hotel.name}</Text>
         <Text style={styles.location}>{hotel.city}, {hotel.country}</Text>
