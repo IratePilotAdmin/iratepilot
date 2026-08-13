@@ -40,6 +40,17 @@ type SynxisResponse = {
   }>;
   summary: { total: number; succeeded: number; failed: number; inFlight: number; stale: number };
   requestJournalAvailable: boolean;
+  exportReceipts: Array<{
+    id: string;
+    schemaVersion: number;
+    checksum: string;
+    packetGeneratedAt: string;
+    evidenceEventCount: number;
+    requestReceiptCount: number;
+    exportedBy: string;
+    exportedAt: string;
+  }>;
+  exportReceiptLedgerAvailable: boolean;
   updatedAt: string | null;
 };
 
@@ -188,11 +199,12 @@ export function SynxisCrsReadiness() {
       </div>
       {data && <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-500">
         <span>Evidence ledger: {data.evidenceTrackingAvailable ? "available" : "migration required"}</span>
+        <span>Issuance ledger: {data.exportReceiptLedgerAvailable ? "available" : "migration required"}</span>
         <span>Activation details: {data.activationDetailsComplete ? "verified" : "incomplete"}</span>
         <span>Traffic: {data.readiness.liveTrafficAllowed ? "live" : "disabled"}</span>
       </div>}
       {data && <div className="mt-4">
-        {data.evidenceTrackingAvailable && data.historyAvailable && data.requestJournalAvailable
+        {data.evidenceTrackingAvailable && data.historyAvailable && data.requestJournalAvailable && data.exportReceiptLedgerAvailable
           ? <div className="flex flex-wrap items-end gap-3">
             <a className="btn-secondary inline-flex text-xs" download href="/api/admin/integrations/crs/synxis/export">Download certification packet</a>
             <form className="flex flex-wrap items-end gap-2" onSubmit={verifyPacket}>
@@ -245,6 +257,26 @@ export function SynxisCrsReadiness() {
           <label className="text-xs font-medium">Verification notes<textarea className="input mt-1 min-h-24" defaultValue={data.evidence.verificationNotes} maxLength={4000} name="verificationNotes" /></label>
           <button className="btn-secondary w-fit text-xs" disabled={busy || !data.evidenceTrackingAvailable} type="submit">Save evidence details</button>
         </form>
+      </details>
+
+      <details className="mt-5 rounded-lg border p-4">
+        <summary className="cursor-pointer text-sm font-semibold">Certification packet issuance</summary>
+        {!data.exportReceiptLedgerAvailable ? <p className="mt-3 text-sm text-amber-700">Apply migration 043 to enable packet downloads and issuance history.</p>
+          : data.exportReceipts.length === 0 ? <p className="mt-3 text-sm text-slate-500">No certification packets have been issued yet.</p>
+            : <div className="mt-4 overflow-x-auto">
+              <table className="min-w-full text-left text-xs">
+                <thead className="border-b text-slate-500"><tr><th className="px-2 py-2">Issued</th><th className="px-2 py-2">Administrator</th><th className="px-2 py-2">Checksum</th><th className="px-2 py-2">Schema</th><th className="px-2 py-2">Audit events</th><th className="px-2 py-2">Request receipts</th></tr></thead>
+                <tbody className="divide-y">{data.exportReceipts.map((receipt) => <tr key={receipt.id}>
+                  <td className="whitespace-nowrap px-2 py-2"><time dateTime={receipt.exportedAt}>{new Date(receipt.exportedAt).toLocaleString()}</time></td>
+                  <td className="whitespace-nowrap px-2 py-2">{receipt.exportedBy}</td>
+                  <td className="px-2 py-2 font-mono" title={receipt.checksum}>{receipt.checksum.slice(0, 12)}…</td>
+                  <td className="px-2 py-2">{receipt.schemaVersion}</td>
+                  <td className="px-2 py-2">{receipt.evidenceEventCount}</td>
+                  <td className="px-2 py-2">{receipt.requestReceiptCount}</td>
+                </tr>)}</tbody>
+              </table>
+              <p className="mt-3 text-xs text-slate-500">Showing the latest 25 non-secret issuance receipts. Packet bodies and evidence contents are not stored.</p>
+            </div>}
       </details>
 
       <details className="mt-5 rounded-lg border p-4">

@@ -56,6 +56,10 @@ returned, the server records an immutable, non-secret issuance receipt containin
 schema, counts, timestamps, and exporting administrator. Packet verification then distinguishes an
 unchanged packet from an unchanged packet whose issuance is also recorded by iRatePilot. Packet
 bodies, evidence contents, and credentials are never stored in this ledger.
+Phase 15 makes migration 043 readiness explicit in Admin Settings and shows the latest 25 issuance
+receipts. The download control remains locked until the issuance ledger can be queried, preventing
+an administrator from starting an export that the server must reject. The history displays only
+checksum, schema, counts, timestamps, and administrator attribution.
 
 ## Configuration
 
