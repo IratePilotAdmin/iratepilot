@@ -159,8 +159,11 @@ export type {
   PlanetProtelFetch, PlanetProtelSyncEnvironment,
 } from "./planet-protel";
 export { OracleOpera5Transport, OracleOpera5TransportError } from "./oracle-opera-5";
+export { OracleOpera5BookingMapper, createOracleOpera5SyncAdapter, loadOracleOpera5SyncConfig } from "./oracle-opera-5";
 export type {
-  OracleOpera5Config, OracleOpera5Endpoint, OracleOpera5Fetch, OracleOpera5SoapHeaders,
+  OracleOpera5BookingMapperConfig, OracleOpera5Config, OracleOpera5Endpoint,
+  OracleOpera5EnvelopeBuilder, OracleOpera5Fetch, OracleOpera5ResponseParser,
+  OracleOpera5SoapHeaderProvider, OracleOpera5SoapHeaders, OracleOpera5SyncEnvironment,
 } from "./oracle-opera-5";
 export {
   isStandardPmsProvider,
