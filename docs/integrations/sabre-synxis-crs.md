@@ -98,6 +98,12 @@ authenticated account email to match, the invitation to be pending and unexpired
 to remain approved. Acceptance promotes the non-admin profile to partner, activates the assigned
 integration-only membership, and consumes the invitation in one transaction. Email jobs use a
 deterministic outbox deduplication key so safe retries do not queue duplicate invitations.
+Phase 23 adds migration `202608130048_partner_team_access_lifecycle.sql` and owner-only access
+lifecycle controls. Approved partner owners can revoke pending invitations and immediately disable
+active manager integration access. Both changes execute through locked database functions, verify
+ownership again in PostgreSQL, and append immutable audit events. Invitations and memberships are
+retained rather than deleted, and disabling a membership clears its integration permission so the
+existing resolver and RLS policies stop access immediately.
 
 ## Configuration
 
@@ -152,6 +158,8 @@ Complete these gates in order:
     integration-only access to general, revenue, or sales manager accounts.
 17. Apply migration `202608130047_partner_team_invitations.sql` before partner owners send
     email-bound manager invitations.
+18. Apply migration `202608130048_partner_team_access_lifecycle.sql` before owners manage
+    invitation revocation or manager deactivation.
 
 Configuration alone never permits live traffic.
 

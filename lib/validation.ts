@@ -123,6 +123,17 @@ export const partnerTeamInvitationAcceptanceSchema = z.object({
   invitationId: z.string().uuid(),
 });
 
+export const partnerTeamAccessActionSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("revoke_invitation"),
+    invitationId: z.string().uuid(),
+  }),
+  z.object({
+    action: z.literal("disable_member"),
+    memberId: z.string().uuid(),
+  }),
+]);
+
 const roomFieldsSchema = z.object({
   name: z.string().trim().min(2).max(120),
   maxGuests: z.coerce.number().int().min(inventoryLimits.minGuests).max(inventoryLimits.maxGuests),
