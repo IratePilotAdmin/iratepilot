@@ -4,6 +4,15 @@ export type SynxisAuthenticationProfile = "htng-1.1" | "ws-security";
 export type SynxisEnvironment = "certification" | "production";
 export type SynxisTrafficMode = "certification" | "production_smoke" | "live";
 export type SynxisTrafficAuthorizer = (mode: SynxisTrafficMode) => Promise<void>;
+export type SynxisExecutionJournal = {
+  begin(receipt: {
+    requestId: string;
+    attemptNumber: number;
+    operation: SynxisAriOperation;
+    trafficMode: SynxisTrafficMode;
+  }): Promise<string>;
+  complete(id: string, status: "succeeded" | "failed", httpStatus?: number): Promise<void>;
+};
 export type SynxisFetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
 export type SynxisCredentials = {
@@ -22,6 +31,7 @@ export type SynxisTransportConfig = {
   environment: SynxisEnvironment;
   trafficMode: SynxisTrafficMode;
   authorizeTraffic: SynxisTrafficAuthorizer;
+  executionJournal: SynxisExecutionJournal;
   timeoutMs?: number;
 };
 
@@ -29,6 +39,7 @@ export type SynxisTransportRequest = {
   operation: SynxisAriOperation;
   requestId: string;
   body: string;
+  attemptNumber?: number;
 };
 
 export class SynxisTransportError extends Error {
@@ -42,6 +53,8 @@ export class SynxisTransportError extends Error {
     this.name = "SynxisTransportError";
   }
 }
+
+class SynxisReceiptCompletionError extends Error {}
 
 function xml(value: string) {
   return value
@@ -61,6 +74,11 @@ function validate(config: SynxisTransportConfig) {
   }
   if (typeof config.authorizeTraffic !== "function") {
     throw new Error("SynXis persisted traffic authorizer is required");
+  }
+  if (!config.executionJournal
+    || typeof config.executionJournal.begin !== "function"
+    || typeof config.executionJournal.complete !== "function") {
+    throw new Error("SynXis execution journal is required");
   }
   if (config.environment === "certification" && config.trafficMode !== "certification") {
     throw new Error("SynXis certification endpoints require certification traffic mode");
@@ -92,6 +110,11 @@ function expectedRoot(operation: SynxisAriOperation) {
 function assertBody(request: SynxisTransportRequest) {
   const root = expectedRoot(request.operation);
   if (!request.requestId.trim()) throw new Error("SynXis request ID is required");
+  if (!Number.isInteger(request.attemptNumber ?? 1)
+    || (request.attemptNumber ?? 1) < 1
+    || (request.attemptNumber ?? 1) > 3) {
+    throw new Error("SynXis attempt number must be between 1 and 3");
+  }
   if (!request.body.includes(`<${root}`) || !request.body.includes(`</${root}>`)) {
     throw new Error(`SynXis ${request.operation} body must contain ${root}`);
   }
@@ -162,6 +185,18 @@ export class SynxisSoapTransport {
     return credentials;
   }
 
+  private async completeReceipt(
+    id: string,
+    status: "succeeded" | "failed",
+    httpStatus?: number,
+  ) {
+    try {
+      await this.config.executionJournal.complete(id, status, httpStatus);
+    } catch {
+      throw new SynxisReceiptCompletionError();
+    }
+  }
+
   async execute(request: SynxisTransportRequest): Promise<string> {
     assertBody(request);
     await this.config.authorizeTraffic(this.config.trafficMode);
@@ -170,54 +205,82 @@ export class SynxisSoapTransport {
     if (endpoint.origin !== this.baseUrl.origin) {
       throw new Error("SynXis endpoint must remain on the configured origin");
     }
-    const action = this.config.soapActions[request.operation];
-    const credentials = await this.credentials();
-    const envelope = this.config.authenticationProfile === "ws-security"
-      ? wsSecurityEnvelope(request.body, credentials, action, endpoint, request.requestId)
-      : htng11Envelope(request.body, credentials);
+    const attemptId = await this.config.executionJournal.begin({
+      requestId: request.requestId,
+      attemptNumber: request.attemptNumber ?? 1,
+      operation: request.operation,
+      trafficMode: this.config.trafficMode,
+    });
 
-    const headers: Record<string, string> = {
-      accept: this.config.soapVersion === "1.2" ? "application/soap+xml" : "text/xml",
-      "x-iratepilot-request-id": request.requestId,
-    };
-    if (this.config.soapVersion === "1.2") {
-      headers["content-type"] = `application/soap+xml; charset=utf-8; action="${action}"`;
-    } else {
-      headers["content-type"] = "text/xml; charset=utf-8";
-      headers.soapaction = action;
-    }
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs ?? 20_000);
     try {
-      const response = await this.fetcher(endpoint, {
-        method: "POST",
-        headers,
-        body: envelope,
-        signal: controller.signal,
-      });
-      const responseXml = await response.text();
-      if (!response.ok || /<(?:\w+:)?Fault\b/i.test(responseXml)) {
+      const action = this.config.soapActions[request.operation];
+      const credentials = await this.credentials();
+      const envelope = this.config.authenticationProfile === "ws-security"
+        ? wsSecurityEnvelope(request.body, credentials, action, endpoint, request.requestId)
+        : htng11Envelope(request.body, credentials);
+      const headers: Record<string, string> = {
+        accept: this.config.soapVersion === "1.2" ? "application/soap+xml" : "text/xml",
+        "x-iratepilot-request-id": request.requestId,
+      };
+      if (this.config.soapVersion === "1.2") {
+        headers["content-type"] = `application/soap+xml; charset=utf-8; action="${action}"`;
+      } else {
+        headers["content-type"] = "text/xml; charset=utf-8";
+        headers.soapaction = action;
+      }
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs ?? 20_000);
+      try {
+        const response = await this.fetcher(endpoint, {
+          method: "POST",
+          headers,
+          body: envelope,
+          signal: controller.signal,
+        });
+        const responseXml = await response.text();
+        if (!response.ok || /<(?:\w+:)?Fault\b/i.test(responseXml)) {
+          throw new SynxisTransportError(
+            "SynXis SOAP request failed",
+            response.ok ? 502 : response.status,
+            request.operation,
+            request.requestId,
+          );
+        }
+        await this.completeReceipt(attemptId, "succeeded", response.status);
+        return responseXml;
+      } finally {
+        clearTimeout(timeout);
+      }
+    } catch (error) {
+      if (error instanceof SynxisReceiptCompletionError) {
         throw new SynxisTransportError(
-          "SynXis SOAP request failed",
-          response.ok ? 502 : response.status,
+          "SynXis request receipt completion failed",
+          500,
           request.operation,
           request.requestId,
         );
       }
-      return responseXml;
-    } catch (error) {
-      if (error instanceof SynxisTransportError) throw error;
-      if (error instanceof Error && error.name === "AbortError") {
-        throw new SynxisTransportError(
+      const transportError = error instanceof SynxisTransportError
+        ? error
+        : error instanceof Error && error.name === "AbortError"
+          ? new SynxisTransportError(
           "SynXis request timed out", 504, request.operation, request.requestId,
+          )
+          : new SynxisTransportError(
+            "SynXis request failed", 502, request.operation, request.requestId,
+          );
+      try {
+        await this.completeReceipt(attemptId, "failed", transportError.status);
+      } catch {
+        throw new SynxisTransportError(
+          "SynXis request receipt completion failed",
+          500,
+          request.operation,
+          request.requestId,
         );
       }
-      throw new SynxisTransportError(
-        "SynXis request failed", 502, request.operation, request.requestId,
-      );
-    } finally {
-      clearTimeout(timeout);
+      throw transportError;
     }
   }
 }

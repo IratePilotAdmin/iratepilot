@@ -35,6 +35,11 @@ must never contain connector secrets. Phase 9 replaces caller-supplied approval 
 required runtime authorizer. Every SOAP execution re-reads the persisted launch evidence before
 credentials are loaded or a network request begins. Certification, production-smoke, and live
 traffic modes each require their corresponding ordered gates, and database errors fail closed.
+Phase 10 adds migration `202608130042_synxis_request_journal.sql`. Each transport attempt must
+create a unique non-secret receipt before credentials or network access, then transition it once to
+success or failure. Duplicate request/attempt pairs, missing journal storage, and completion-write
+failures stop execution without an automatic retry. SOAP bodies and credential values are never
+stored in the journal.
 
 ## Configuration
 
@@ -75,6 +80,9 @@ Complete these gates in order:
 11. Construct every SOAP transport with `createSynxisRuntimeAuthorizer()` and the explicit
     `certification`, `production_smoke`, or `live` traffic mode. Never substitute a caller-supplied
     boolean or a cached approval value for the persisted check.
+12. Apply migration `202608130042_synxis_request_journal.sql` and construct the transport with
+    `createSynxisRequestJournal()`. Retain request IDs and attempt receipts for Sabre certification
+    reconciliation; never add XML payloads or credentials to the journal.
 
 Configuration alone never permits live traffic.
 

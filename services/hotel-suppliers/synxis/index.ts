@@ -126,6 +126,7 @@ export type {
   SynxisAuthenticationProfile,
   SynxisCredentials,
   SynxisEnvironment,
+  SynxisExecutionJournal,
   SynxisFetch,
   SynxisSoapVersion,
   SynxisTransportConfig,
@@ -136,6 +137,12 @@ export type {
 
 export { assertSynxisTrafficAuthorized } from "./runtime-gate";
 export type { SynxisRuntimeEvidence } from "./runtime-gate";
+
+export { SynxisRequestJournal } from "./request-journal";
+export type {
+  SynxisAttemptReceipt,
+  SynxisJournalRpcClient,
+} from "./request-journal";
 
 export {
   parseSynxisAcknowledgement,

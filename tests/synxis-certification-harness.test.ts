@@ -80,6 +80,8 @@ describe("SynXis certification execution", () => {
       warnings: [],
     });
     expect(execute).toHaveBeenCalledTimes(2);
+    expect(execute).toHaveBeenNthCalledWith(1, expect.objectContaining({ attemptNumber: 1 }));
+    expect(execute).toHaveBeenNthCalledWith(2, expect.objectContaining({ attemptNumber: 2 }));
     expect(sleep).toHaveBeenCalledWith(250);
   });
 

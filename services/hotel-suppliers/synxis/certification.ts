@@ -134,7 +134,10 @@ export class SynxisCertificationClient {
     while (attempt < this.maxAttempts) {
       attempt += 1;
       try {
-        const response = await this.limiter.schedule(() => this.config.transport.execute(request));
+        const response = await this.limiter.schedule(() => this.config.transport.execute({
+          ...request,
+          attemptNumber: attempt,
+        }));
         return parseSynxisAcknowledgement(response);
       } catch (error) {
         if (!retryable(error) || attempt >= this.maxAttempts) throw error;

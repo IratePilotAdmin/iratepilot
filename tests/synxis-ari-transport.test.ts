@@ -46,6 +46,10 @@ const config: SynxisTransportConfig = {
   environment: "certification",
   trafficMode: "certification",
   authorizeTraffic: async () => undefined,
+  executionJournal: {
+    begin: async () => "attempt-1",
+    complete: async () => undefined,
+  },
 };
 
 describe("SynXis ARI mapping", () => {
@@ -153,6 +157,49 @@ describe("SynxisSoapTransport", () => {
 
     expect(fetcher).not.toHaveBeenCalled();
     expect(credentials).not.toHaveBeenCalled();
+  });
+
+  it("creates a receipt before credentials or network access", async () => {
+    const order: string[] = [];
+    const transport = new SynxisSoapTransport({
+      ...config,
+      authorizeTraffic: async () => { order.push("authorize"); },
+      executionJournal: {
+        begin: async () => { order.push("journal"); return "attempt-1"; },
+        complete: async () => { order.push("complete"); },
+      },
+      credentials: undefined,
+      getCredentials: async () => { order.push("credentials"); return { username: "user", password: "password" }; },
+    }, async () => { order.push("fetch"); return new Response("<Success/>"); });
+    await transport.execute(request);
+    expect(order).toEqual(["authorize", "journal", "credentials", "fetch", "complete"]);
+  });
+
+  it("blocks the network when the request receipt cannot be created", async () => {
+    const fetcher = vi.fn<SynxisFetch>();
+    await expect(new SynxisSoapTransport({
+      ...config,
+      executionJournal: {
+        begin: async () => { throw new Error("receipt unavailable"); },
+        complete: async () => undefined,
+      },
+    }, fetcher).execute(request)).rejects.toThrow("receipt unavailable");
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("marks an uncertain receipt completion as non-retryable", async () => {
+    const error = await new SynxisSoapTransport({
+      ...config,
+      executionJournal: {
+        begin: async () => "attempt-1",
+        complete: async () => { throw new Error("database response lost"); },
+      },
+    }, async () => new Response("<Success/>")).execute(request).catch((value) => value);
+    expect(error).toBeInstanceOf(SynxisTransportError);
+    expect(error).toMatchObject({
+      status: 500,
+      message: "SynXis request receipt completion failed",
+    });
   });
 
   it("rejects insecure, cross-origin, and incompatible transport configuration", async () => {
