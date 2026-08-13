@@ -122,6 +122,7 @@ describe("PMS integration foundation", () => {
     const result = buildPmsReadiness({
       PMS_CLOUDBEDS_BASE_URL: "https://api.cloudbeds.com",
       PMS_CLOUDBEDS_API_KEY: "cbat_test-key-value",
+      PMS_CLOUDBEDS_SOURCE_ID: "source-123",
     });
     const cloudbeds = result.find((provider) => provider.id === "cloudbeds");
 
