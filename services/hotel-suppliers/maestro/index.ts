@@ -5,4 +5,4 @@ export type { MaestroConnectionTestConfig, MaestroConnectionTestResult } from ".
 export { MaestroBookingMapper } from "./mapper";
 export type { MaestroBookingMapperConfig } from "./mapper";
 export { createMaestroSyncAdapter, loadMaestroSyncConfig } from "./sync";
-export type { MaestroSyncAdapter, MaestroSyncEnvironment } from "./sync";
+export type { MaestroSyncEnvironment } from "./sync";
