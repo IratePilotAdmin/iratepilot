@@ -54,11 +54,15 @@ describe("StayntouchHttpTransport", () => {
   it("cancels through the documented reservation action", async () => {
     const fetcher = vi.fn<StayntouchFetch>(async () => new Response("{}", { status: 200 }));
     const transport = new StayntouchHttpTransport(config, fetcher);
-    await transport.execute(request("cancel_reservation"));
+    await transport.execute({
+      ...request("cancel_reservation"),
+      payload: { reservation_id: 9001, reason: "guest request", refund_deposit: false },
+    });
     const [url, init] = fetcher.mock.calls[0] ?? [];
     expect(String(url)).toBe("https://api.stayntouch.com/connect/reservations/9001/cancel");
     expect(init?.method).toBe("POST");
-    expect(init?.body).toBeUndefined();
+    expect(init?.headers).toEqual(expect.objectContaining({ "content-type": "application/json" }));
+    expect(JSON.parse(String(init?.body))).toEqual({ reason: "guest request", refund_deposit: false });
   });
 
   it("supports refreshable OAuth tokens and rejects other providers", async () => {

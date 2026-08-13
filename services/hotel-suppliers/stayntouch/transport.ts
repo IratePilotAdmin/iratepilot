@@ -162,7 +162,11 @@ export class StayntouchHttpTransport implements StandardPmsTransport {
           signal: controller.signal,
         };
       } else {
-        init = { method: "POST", headers, signal: controller.signal };
+        headers["content-type"] = "application/json";
+        const body = Object.fromEntries(
+          Object.entries(payload).filter(([key]) => !["reservationId", "reservation_id", "id"].includes(key)),
+        );
+        init = { method: "POST", headers, body: JSON.stringify(body), signal: controller.signal };
       }
 
       const response = await this.fetcher(endpoint, init);

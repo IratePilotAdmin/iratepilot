@@ -11,3 +11,7 @@ export type {
   StayntouchConnectionTestConfig,
   StayntouchConnectionTestResult,
 } from "./connection-test";
+export { StayntouchBookingMapper } from "./mapper";
+export type { StayntouchBookingMapperConfig } from "./mapper";
+export { createStayntouchSyncAdapter, loadStayntouchSyncConfig } from "./sync";
+export type { StayntouchSyncEnvironment } from "./sync";
