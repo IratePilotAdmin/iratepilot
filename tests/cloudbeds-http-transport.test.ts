@@ -32,7 +32,7 @@ describe("CloudbedsHttpTransport", () => {
     );
     expect(init?.method).toBe("GET");
     expect(init?.headers).toEqual(expect.objectContaining({
-      authorization: "Bearer cbat_property_secret",
+      "x-api-key": "cbat_property_secret",
       "x-iratepilot-request-id": "IRP-200",
     }));
   });
@@ -98,3 +98,4 @@ describe("CloudbedsHttpTransport", () => {
     expect(JSON.stringify(error)).not.toContain(config.apiKey);
   });
 });
+
