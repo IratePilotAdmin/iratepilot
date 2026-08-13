@@ -1,5 +1,6 @@
 import { PartnerPmsConnections } from "@/components/dashboard/partner-pms-connections";
 import { PartnerSynxisOnboarding } from "@/components/dashboard/partner-synxis-onboarding";
+import { PartnerTeamInvitations } from "@/components/dashboard/partner-team-invitations";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { partnerNavigation } from "@/data/navigation";
 
@@ -9,5 +10,6 @@ export default function Page() {
     <p className="mt-2 text-slate-600">Map each hotel to its PMS and separately request CRS distribution onboarding.</p>
     <PartnerPmsConnections />
     <PartnerSynxisOnboarding />
+    <PartnerTeamInvitations />
   </DashboardShell>;
 }

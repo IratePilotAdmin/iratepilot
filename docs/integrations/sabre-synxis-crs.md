@@ -91,6 +91,13 @@ that partner, and requires a delegated member's submitted representative role to
 role. This permission cannot manage credentials, certification evidence, request status, or live
 traffic. Membership provisioning remains admin-controlled; self-service invitations are not part
 of this phase.
+Phase 22 adds migration `202608130047_partner_team_invitations.sql`, an owner-only invitation
+form, durable transactional-email delivery, and atomic acceptance. Invitations contain no secret
+bearer token: the public invitation UUID only selects a record, while the database requires the
+authenticated account email to match, the invitation to be pending and unexpired, and the partner
+to remain approved. Acceptance promotes the non-admin profile to partner, activates the assigned
+integration-only membership, and consumes the invitation in one transaction. Email jobs use a
+deterministic outbox deduplication key so safe retries do not queue duplicate invitations.
 
 ## Configuration
 
@@ -143,6 +150,8 @@ Complete these gates in order:
     property-level SynXis requests from approved partner accounts.
 16. Apply migration `202608130046_partner_team_integration_access.sql` before granting active
     integration-only access to general, revenue, or sales manager accounts.
+17. Apply migration `202608130047_partner_team_invitations.sql` before partner owners send
+    email-bound manager invitations.
 
 Configuration alone never permits live traffic.
 

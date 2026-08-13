@@ -114,6 +114,15 @@ export const synxisOnboardingRequestSchema = z.object({
   ),
 });
 
+export const partnerTeamInvitationSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(254),
+  memberRole: z.enum(["general_manager", "revenue_manager", "sales_manager"]),
+});
+
+export const partnerTeamInvitationAcceptanceSchema = z.object({
+  invitationId: z.string().uuid(),
+});
+
 const roomFieldsSchema = z.object({
   name: z.string().trim().min(2).max(120),
   maxGuests: z.coerce.number().int().min(inventoryLimits.minGuests).max(inventoryLimits.maxGuests),
