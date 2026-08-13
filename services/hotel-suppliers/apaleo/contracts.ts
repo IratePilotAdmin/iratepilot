@@ -1,5 +1,8 @@
 export type ApaleoOperation = "availability" | "create_reservation" | "cancel_reservation";
-export type ApaleoStay = { arrivalDate: string; departureDate: string; adults: number; children?: number; rooms?: number };
+export type ApaleoStay = {
+  arrivalDate: string; departureDate: string; adults: number; children?: number;
+  childrenAges?: number[]; rooms?: number;
+};
 export type ApaleoAvailabilityRequest = ApaleoStay & { propertyCode: string; currency?: string };
 export type ApaleoOffer = {
   offerId: string; propertyCode: string; roomTypeCode: string; ratePlanCode: string;

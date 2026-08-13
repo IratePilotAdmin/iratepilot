@@ -46,6 +46,7 @@ export { CloudbedsBookingMapper, createCloudbedsSyncAdapter, loadCloudbedsSyncCo
 export { CloudbedsConnectionTestError, testCloudbedsSandboxConnection } from "./cloudbeds";
 export type { CloudbedsConnectionTestResult } from "./cloudbeds";
 export { ApaleoAdapter } from "./apaleo";
+export { ApaleoBookingMapper, createApaleoSyncAdapter, loadApaleoSyncConfig } from "./apaleo";
 export { ApaleoConnectionTestError, testApaleoSandboxConnection } from "./apaleo";
 export type { ApaleoConnectionTestConfig, ApaleoConnectionTestResult } from "./apaleo";
 export { StayntouchHttpTransport, StayntouchTransportError } from "./stayntouch";
@@ -194,6 +195,5 @@ export type {
   PmsProviderReadiness,
   SupplierHotel,
 } from "./types";
-
 
 
