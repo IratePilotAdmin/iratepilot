@@ -17,7 +17,7 @@ export async function GET() {
     const ids = (properties || []).map((property) => property.id);
     if (!ids.length) return NextResponse.json({ data: [] });
     const { data, error } = await auth.supabase.from("bookings")
-      .select("id,confirmation_code,check_in,check_out,guests,subtotal,fees,total,status,created_at,properties(name),rooms(name),profiles(full_name)")
+      .select("id,confirmation_code,check_in,check_out,guests,subtotal,fees,total,status,cancellation_reason,created_at,properties(name),rooms(name),profiles(full_name),booking_status_history(status,note,created_at)")
       .in("property_id", ids).order("created_at", { ascending: false }).limit(500);
     if (error) throw error;
     const bookingIds = (data || []).map((booking) => booking.id);

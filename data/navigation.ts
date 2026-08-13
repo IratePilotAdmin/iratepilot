@@ -11,6 +11,7 @@ export const partnerNavigation = [
   { href: "/partner/onboarding", label: "Onboarding" },
   { href: "/partner/analytics", label: "Analytics" },
   { href: "/partner/properties", label: "Properties" },
+  { href: "/partner/integrations", label: "PMS connections" },
   { href: "/partner/reservations", label: "Reservations" },
   { href: "/partner/messages", label: "Guest messages" },
   { href: "/partner/rates", label: "Rates & inventory" },

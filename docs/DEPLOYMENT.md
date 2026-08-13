@@ -1,34 +1,58 @@
-# iRatePilot Deployment
+# Deployment
 
-## Consolidated OTA phase
+Push to GitHub, import into Vercel, add environment variables, run database migrations, and configure your production domain.
 
-The consolidated OTA feature stack is represented by the latest feature branch and must remain in draft until its database rollout is completed.
+## Private-pilot release gate
 
-### Required order
+Before merging a release branch into `main`:
 
-1. Back up the production Supabase database.
-2. Review production data for duplicate open bookings, duplicate pending partner applications, invalid room or inventory values, and unapproved partners with active properties.
-3. Apply Supabase migrations `202608020001` through `202608020025` in filename order.
-4. Run `supabase/verify_schema.sql` and resolve every reported failure.
-5. Configure required Vercel environment variables, including Supabase, Stripe test mode, Resend, and `CRON_SECRET`.
-6. Deploy the consolidated branch to a Vercel preview.
-7. Test partner application, approval, property creation, room setup, dated inventory, customer registration, search, booking request, partner approval, Stripe test payment, confirmation, messaging, cancellation, and refund.
-8. Merge the consolidated pull request only after preview verification.
-9. Deploy `main` and repeat the critical smoke tests.
+1. Confirm the production Vercel environment includes `NEXT_PUBLIC_APP_URL`, the Supabase URL and public key, `SUPABASE_SERVICE_ROLE_KEY`, `PILOT_MODE=true`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL` (or `EMAIL_FROM`), and `CRON_SECRET`.
+2. Keep `NEXT_PUBLIC_PUBLIC_BOOKING=false`, `NEXT_PUBLIC_ENABLE_TEST_CHECKOUT=false`, and `ENABLE_TEST_CHECKOUT=false` until the corresponding live-booking or test-payment review is complete.
+3. Link the Supabase CLI to the intended production project and run `supabase migration list`. Do not deploy the application when repository migrations are missing from the remote history.
+4. Apply pending migrations in filename order with `supabase db push`, then run `supabase migration list` again and verify that local and remote histories match.
+5. Verify `/api/health`, partner sign-in, administrator sign-in, property submission, room and inventory setup, and a customer booking request on the release preview.
+6. Merge only after GitHub CI, dependency review, CodeQL, and the Vercel preview are green.
 
-### Production restrictions
-
-- Keep Stripe in test mode until legal, tax, payout, refund, and hotel agreements are approved.
-- Do not publish demonstration inventory as real hotel availability.
-- Do not enable automated payouts until Stripe Connect onboarding and reconciliation are verified.
-- Do not apply migrations out of order.
-
-## Email worker
+Do not paste database passwords, service-role keys, Stripe secrets, email API keys, or `CRON_SECRET` into issues, pull requests, logs, or tracked environment files.
 
 Generate a high-entropy `CRON_SECRET` in Vercel for the transactional email worker. Vercel Cron sends it as `Authorization: Bearer <CRON_SECRET>` to `/api/email/process`. Apply migration `202608020020_secure_email_worker.sql` before enabling the production schedule.
 
+Apply migration `202608020021_enforce_future_partner_inventory.sql` before enabling partner rate and inventory management in production. It prevents approved partners from creating or changing inventory for dates that have already passed.
+
 The repository uses a Hobby-compatible daily schedule at 08:00 UTC. During the private pilot, urgent queues can be drained by sending an authenticated `POST /api/email/process` for each job. Upgrade the Vercel plan before increasing the automated cadence.
 
-## Partner inventory
+## Verified deployment baseline
 
-Apply migration `202608020021_enforce_future_partner_inventory.sql` before enabling partner rate and inventory management in production. It prevents approved partners from creating or changing inventory for dates that have already passed.
+Audit date: 2026-08-05
+
+- `iratepilot.com` permanently redirects to `www.iratepilot.com`.
+- The public domains currently serve production deployment `dpl_6FVBKbz2yS76gRuvj9fcY3ByFSgy` from `main` commit `5a90b82931795a13d545c77201590905cf487649`.
+- Release PR #137 currently targets preview deployment `dpl_9rLKQ8gJ6yXTWydAr9sersVhRPb9` from commit `3f0bb9ffc0edf9e34ba7378b4b54b6e23ed7ac30`.
+- GitHub CI, Dependency Review, CodeQL, and the Vercel preview succeeded for that release commit.
+- Preview smoke tests passed for `/`, `/partner`, `/admin` (expected sign-in redirect), and `/mobile`, with no browser-console or Vercel runtime errors.
+- The current production deployment returns `404` for `/mobile` because that route is part of the unmerged release; this is expected to resolve only after the approved release is promoted.
+
+Do not manually alias the preview deployment to the production domains. Complete the production database reconciliation, verify the required production environment-variable names and scopes without exposing their values, merge PR #137, and then confirm that Vercel promotes the resulting `main` deployment.
+
+## Verified environment-variable inventory
+
+Audit date: 2026-08-05
+
+The Vercel project has the core Supabase, Stripe, Resend, cron, pilot-mode, and booking-control variable names configured for Production. Secret values were not opened or copied during this audit.
+
+The following keys from `.env.example` are missing from the Vercel project:
+
+- `NEXT_PUBLIC_APP_URL` — set the production value to the canonical public origin, `https://www.iratepilot.com`.
+- `STRIPE_BASIC_PRICE_ID` — required before offering the Basic traveler membership.
+- `OPENAI_API_KEY` — required before enabling the AI travel planner.
+
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` is not required because `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is configured.
+
+The non-secret release-gate values were verified separately:
+
+- `PILOT_MODE=true` — correct for the private pilot.
+- `NEXT_PUBLIC_PUBLIC_BOOKING=false` — public booking remains disabled.
+- `NEXT_PUBLIC_ENABLE_TEST_CHECKOUT=true` — **release blocker; set the Production value to `false`.**
+- `ENABLE_TEST_CHECKOUT=true` — **release blocker; set the Production value to `false`.**
+
+After changing either test-checkout variable, redeploy the release candidate and verify that both browser and server test-payment paths reject test checkout before promoting to production.

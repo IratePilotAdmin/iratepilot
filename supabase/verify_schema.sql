@@ -112,4 +112,22 @@ select
     'anon',
     'public.cancel_unpaid_confirmed_booking(uuid,text)',
     'execute'
-  ) as anonymous_unpaid_booking_cancellation_blocked;
+  ) as anonymous_unpaid_booking_cancellation_blocked,
+  to_regprocedure(
+    'public.complete_approved_booking_test_payment(uuid,uuid,text,integer)'
+  ) is not null as approved_booking_test_payment_ready,
+  has_function_privilege(
+    'service_role',
+    'public.complete_approved_booking_test_payment(uuid,uuid,text,integer)',
+    'execute'
+  ) as service_role_approved_booking_test_payment_ready,
+  not has_function_privilege(
+    'authenticated',
+    'public.complete_approved_booking_test_payment(uuid,uuid,text,integer)',
+    'execute'
+  ) as authenticated_approved_booking_test_payment_blocked,
+  not has_function_privilege(
+    'anon',
+    'public.complete_approved_booking_test_payment(uuid,uuid,text,integer)',
+    'execute'
+  ) as anonymous_approved_booking_test_payment_blocked;

@@ -42,8 +42,8 @@ describe("booking-scoped customer and partner messages", () => {
   });
 
   it("replaces both placeholders with a shared booking message center", () => {
-    expect(partnerPage).toContain('<BookingMessageCenter mode="partner" />');
-    expect(customerPage).toContain('<BookingMessageCenter mode="customer" />');
+    expect(partnerPage).toContain('<BookingMessageCenter mode="partner" initialBookingId={booking} />');
+    expect(customerPage).toContain('<BookingMessageCenter mode="customer" initialBookingId={booking} />');
     expect(partnerPage).not.toContain("ready for database and supplier integration");
     expect(customerPage).not.toContain("Starter account module");
   });

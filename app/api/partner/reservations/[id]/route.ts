@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/require-role";
 import { reservationReviewSchema } from "@/lib/validation";
+import { queueBookingNotification } from "@/lib/email/booking-notifications";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,6 +20,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         return NextResponse.json({ error: "An approved partner account is required to review reservations." }, { status: 403 });
       }
     }
+    const { data: booking } = await auth.supabase.from("bookings")
+      .select("id,customer_id,confirmation_code")
+      .eq("id", id).single();
     const { data, error } = await auth.supabase.rpc("review_booking", {
       p_booking_id: id, p_decision: parsed.data.decision, p_reason: parsed.data.reason || null
     });
@@ -29,6 +33,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       : reviewed?.status === "confirmed"
         ? "Reservation approved and inventory held."
         : "Request expired because check-in has already begun. No inventory was held.";
+    if (booking && (parsed.data.decision === "reject" || reviewed?.status === "confirmed")) {
+      await queueBookingNotification({
+        event: parsed.data.decision === "reject" ? "declined" : "approved",
+        bookingId: booking.id,
+        confirmationCode: booking.confirmation_code,
+        customerId: booking.customer_id,
+      });
+    }
     return NextResponse.json({ data, message }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Reservation decision failed", error);

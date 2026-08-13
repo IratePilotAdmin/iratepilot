@@ -1,6 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { TripStatusTimeline } from "@/components/bookings/trip-status-timeline";
+import { getBookingStatusLabel, type BookingStatusHistoryEntry } from "@/lib/bookings/status-history";
 import { buildPartnerReservationQueue } from "@/lib/partner/reservation-queue";
 
 type Reservation = {
@@ -13,7 +16,9 @@ type Reservation = {
   fees: number;
   total: number;
   status: string;
+  cancellation_reason?: string | null;
   created_at: string;
+  booking_status_history?: BookingStatusHistoryEntry[];
   properties?: { name?: string } | null;
   rooms?: { name?: string } | null;
   profiles?: { full_name?: string } | null;
@@ -86,8 +91,8 @@ export function PartnerReservations() {
     {limited && <p className="border-b bg-amber-50 p-4 text-sm text-amber-900">Showing the 500 most recently created reservations. Use status filters to focus the operational queue.</p>}
     {message && <p role="status" className="p-6 text-sm text-slate-500">{message}</p>}
     <div className="divide-y">{visibleItems.map((item) => <article key={item.id} className="grid gap-5 p-6 lg:grid-cols-[1fr_auto] lg:items-start">
-      <div><strong>{item.properties?.name} — {item.rooms?.name}</strong><p className="mt-1 text-sm text-slate-500">{item.profiles?.full_name || "Traveler"} · {item.check_in} to {item.check_out} · {item.guests} guests</p><p className="mt-2 text-xs uppercase tracking-wider text-slate-500">{item.confirmation_code} · {item.status}</p>{item.financial && <dl className="mt-5 grid gap-2 rounded-xl bg-slate-50 p-4 text-sm sm:grid-cols-3"><div><dt className="text-slate-500">Room revenue</dt><dd className="font-semibold">{money(item.subtotal)}</dd></div><div><dt className="text-slate-500">iRatePilot commission (10%)</dt><dd className="font-semibold">−{money(item.financial.partner_commission)}</dd></div><div><dt className="text-slate-500">Estimated hotel payout</dt><dd className="font-semibold">{money(item.financial.partner_net)}</dd></div></dl>}<p className="mt-3 text-xs text-slate-500">Traveler service fee: {money(item.fees)} · Traveler total: {money(item.total)}</p></div>
-      {item.status === "pending" ? <div className="flex gap-2"><button disabled={Boolean(reviewingId)} onClick={() => decide(item.id, "approve")} className="btn-primary">{reviewingId === item.id ? "Saving…" : "Approve"}</button><button disabled={Boolean(reviewingId)} onClick={() => decide(item.id, "reject")} className="btn-secondary">Decline</button></div> : <span className="badge">{item.financial?.status || item.status}</span>}
+      <div><strong>{item.properties?.name} — {item.rooms?.name}</strong><p className="mt-1 text-sm text-slate-500">{item.profiles?.full_name || "Traveler"} · {item.check_in} to {item.check_out} · {item.guests} guests</p><p className="mt-2 text-xs uppercase tracking-wider text-slate-500">{item.confirmation_code} · {getBookingStatusLabel(item.status)}</p>{item.cancellation_reason && <div className="mt-4 border-l-2 border-red-500 bg-red-50 p-3 text-sm text-red-900"><strong>Cancellation context</strong><p className="mt-1 leading-6">{item.cancellation_reason}</p></div>}{item.financial && <dl className="mt-5 grid gap-2 rounded-xl bg-slate-50 p-4 text-sm sm:grid-cols-3"><div><dt className="text-slate-500">Room revenue</dt><dd className="font-semibold">{money(item.subtotal)}</dd></div><div><dt className="text-slate-500">iRatePilot commission (14%)</dt><dd className="font-semibold">−{money(item.financial.partner_commission)}</dd></div><div><dt className="text-slate-500">Estimated hotel payout</dt><dd className="font-semibold">{money(item.financial.partner_net)}</dd></div></dl>}<p className="mt-3 text-xs text-slate-500">Traveler service fee: {money(item.fees)} · Traveler total: {money(item.total)}</p><TripStatusTimeline entries={item.booking_status_history || []} /></div>
+      <div className="flex flex-wrap gap-2 lg:justify-end">{item.status === "pending" ? <><button disabled={Boolean(reviewingId)} onClick={() => decide(item.id, "approve")} className="btn-primary">{reviewingId === item.id ? "Saving…" : "Approve"}</button><button disabled={Boolean(reviewingId)} onClick={() => decide(item.id, "reject")} className="btn-secondary">Decline</button></> : <span className="badge">{getBookingStatusLabel(item.financial?.status || item.status)}</span>}<Link href={`/partner/messages?booking=${encodeURIComponent(item.id)}`} className="btn-secondary">Message traveler</Link></div>
     </article>)}</div>
     {!message && !visibleItems.length && <p className="p-6 text-sm text-slate-500">No reservations match this status.</p>}
     </div>

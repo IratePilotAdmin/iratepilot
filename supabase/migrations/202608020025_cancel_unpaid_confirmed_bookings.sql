@@ -14,6 +14,10 @@ declare
   v_points integer;
   v_is_admin boolean;
 begin
+  if auth.uid() is null and auth.role() <> 'service_role' then
+    raise exception 'Authentication required';
+  end if;
+
   select * into v_booking
   from public.bookings
   where id = p_booking_id
@@ -107,6 +111,9 @@ end;
 $$;
 
 revoke all on function public.cancel_unpaid_confirmed_booking(uuid, text) from public;
+revoke all on function public.cancel_unpaid_confirmed_booking(uuid, text) from anon;
+revoke all on function public.cancel_unpaid_confirmed_booking(uuid, text) from authenticated;
+revoke all on function public.cancel_unpaid_confirmed_booking(uuid, text) from service_role;
 grant execute on function public.cancel_unpaid_confirmed_booking(uuid, text) to authenticated;
 grant execute on function public.cancel_unpaid_confirmed_booking(uuid, text) to service_role;
 

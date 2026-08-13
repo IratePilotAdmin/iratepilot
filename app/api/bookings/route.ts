@@ -1,29 +1,40 @@
 import { NextResponse } from "next/server";
 import { differenceInCalendarDays, parseISO, startOfDay } from "date-fns";
 import { fees } from "@/config/fees";
-import { createClient } from "@/lib/supabase/server";
+import { createRequestClient } from "@/lib/supabase/request";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { bookingSchema } from "@/lib/validation";
 import { calculateVerifiedStayPricing } from "@/lib/bookings/stay-pricing";
 import { hasActiveMembership } from "@/lib/memberships/eligibility";
+import { queueBookingNotification } from "@/lib/email/booking-notifications";
+import { getApprovedBookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const supabase = await createClient();
+    const supabase = await createRequestClient(request);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
     const { data, error } = await supabase.from("bookings")
-      .select("id,confirmation_code,check_in,check_out,guests,subtotal,fees,total,status,cancellation_reason,created_at,properties(name,city,country),rooms(name),booking_status_history(status,note,created_at),booking_cancellation_requests(id,status,reason,refund_amount,stripe_refund_id)")
+      .select("id,confirmation_code,check_in,check_out,guests,subtotal,fees,total,status,cancellation_reason,created_at,stripe_payment_intent_id,properties(name,city,country),rooms(name),booking_status_history(status,note,created_at),booking_cancellation_requests(id,status,reason,refund_amount,stripe_refund_id)")
       .eq("customer_id", user.id).order("created_at", { ascending: false });
     if (error) throw error;
-    return NextResponse.json({ data });
+    return NextResponse.json({ data: (data || []).map(({ stripe_payment_intent_id, ...booking }) => ({
+      ...booking,
+      payment_collected: Boolean(stripe_payment_intent_id),
+    })), paymentMode: getApprovedBookingPaymentMode() });
   } catch {
     return NextResponse.json({ error: "Trips are not configured." }, { status: 503 });
   }
 }
 
 export async function POST(request: Request) {
-  if (process.env.PILOT_MODE !== "true") return NextResponse.json({ error: "Private booking requests are disabled." }, { status: 503 });
+  const approvedPaymentMode = getApprovedBookingPaymentMode();
+  const requestMode = process.env.PILOT_MODE === "true"
+    ? "private_request"
+    : approvedPaymentMode === "live"
+      ? "commercial_request"
+      : null;
+  if (!requestMode) return NextResponse.json({ error: "Booking requests are disabled." }, { status: 503 });
   const parsed = bookingSchema.safeParse(await request.json());
   if (!parsed.success) return NextResponse.json({ error: "Check the property, room, dates, and guest count." }, { status: 400 });
 
@@ -35,7 +46,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const supabase = await createClient();
+    const supabase = await createRequestClient(request);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
 
@@ -63,7 +74,7 @@ export async function POST(request: Request) {
       return NextResponse.json({
         data: existingResult.data,
         duplicate: true,
-        mode: "private_request",
+        mode: requestMode,
         message: "Your existing booking request was returned. No duplicate request was created."
       });
     }
@@ -104,16 +115,23 @@ export async function POST(request: Request) {
         return NextResponse.json({
           data: concurrentResult.data,
           duplicate: true,
-          mode: "private_request",
+          mode: requestMode,
           message: "Your existing booking request was returned. No duplicate request was created."
         });
       }
     }
     if (error) throw error;
+    await queueBookingNotification({
+      event: "request_received",
+      bookingId: data.id,
+      confirmationCode: data.confirmation_code,
+      customerId: user.id,
+      recipientEmail: user.email,
+    });
     return NextResponse.json({
       data,
-      mode: "private_request",
-      message: "Booking request created for manual partner review. No payment was collected."
+      mode: requestMode,
+      message: "Booking request created for partner review. No payment was collected."
     }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "The booking request could not be created." }, { status: 503 });

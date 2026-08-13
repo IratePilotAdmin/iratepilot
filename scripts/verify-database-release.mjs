@@ -5,7 +5,7 @@ const root = process.cwd();
 const migrationsDir = path.join(root, "supabase", "migrations");
 const verifierPath = path.join(root, "supabase", "verify_schema.sql");
 
-const expectedSequence = Array.from({ length: 25 }, (_, index) =>
+const expectedSequence = Array.from({ length: 26 }, (_, index) =>
   `20260802${String(index + 1).padStart(4, "0")}`,
 );
 
@@ -50,6 +50,7 @@ const requiredVerifierTokens = [
   "public.send_booking_message(uuid,text)",
   "public.finalize_test_booking_refund(uuid,text,numeric)",
   "public.cancel_unpaid_confirmed_booking(uuid,text)",
+  "public.complete_approved_booking_test_payment(uuid,uuid,text,integer)",
   "cancellation_processing_status_ready",
   "booking_messages_ready",
   "anonymous_booking_message_send_blocked",

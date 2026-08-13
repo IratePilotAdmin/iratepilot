@@ -35,4 +35,12 @@ describe("customer trip history", () => {
     expect(timeline).toContain("Status history (");
     expect(trips).not.toContain("stripe_refund_id");
   });
+
+  it("uses an accessible inline cancellation form instead of a blocking browser prompt", () => {
+    expect(trips).toContain("cancellationBookingId === trip.id");
+    expect(trips).toContain("Why would you like to cancel?");
+    expect(trips).toContain('type="submit"');
+    expect(trips).toContain("Keep reservation");
+    expect(trips).not.toContain("window.prompt");
+  });
 });

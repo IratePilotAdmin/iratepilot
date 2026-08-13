@@ -32,9 +32,10 @@ export function RegisterForm({ configured, nextPath }: { configured: boolean; ne
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!configured) return;
+    const formElement = event.currentTarget;
     setLoading(true);
     setMessage("");
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formElement);
     try {
       const supabase = createClient();
       const { data, error } = await supabase.auth.signUp({
@@ -52,7 +53,7 @@ export function RegisterForm({ configured, nextPath }: { configured: boolean; ne
         return;
       }
       setMessage("Check your email to confirm your account.");
-      event.currentTarget.reset();
+      formElement.reset();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Registration failed.");
     } finally {

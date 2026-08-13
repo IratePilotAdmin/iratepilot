@@ -3,6 +3,7 @@ import { ArrowRight, BarChart3, Building2, Check, Headphones, Sparkles } from "l
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { PartnerApplicationForm } from "@/components/forms/partner-application-form";
+import { RevenueAiMarketing } from "@/components/partner/revenue-ai-marketing";
 import { partnerEnterprisePlan, partnerPlans, type PartnerPlan } from "@/config/partner-plans";
 
 export default function PartnerPage() {
@@ -35,7 +36,7 @@ export default function PartnerPage() {
               <span className="section-kicker">iRatePilot Management</span>
               <h2 className="mt-5 text-5xl leading-tight">AI tools that scale with your property.</h2>
               <p className="mt-5 max-w-lg text-lg leading-8 text-neutral-600">
-                Monthly software for pricing, operations, and partner support. Marketplace bookings carry a separate 10% partner commission.
+                Monthly software for pricing, operations, and partner support. Marketplace bookings carry a separate 14% partner commission.
               </p>
               <div className="mt-8 grid gap-4">
                 <div className="partner-benefit"><Sparkles /><div><strong>AI-assisted pricing</strong><p>Recommendations, forecasting, and manager-controlled decisions.</p></div></div>
@@ -63,9 +64,11 @@ export default function PartnerPage() {
             </div>
           </div>
           <p className="management-disclosure">
-            Subscriptions cover iRatePilot Management software. The 10% marketplace commission applies only to completed bookings generated through iRatePilot Travel. Taxes and payment-processing terms may also apply.
+            Subscriptions cover iRatePilot Management software. The 14% marketplace commission applies only to completed bookings generated through iRatePilot Travel. Taxes and payment-processing terms may also apply.
           </p>
         </section>
+
+        <RevenueAiMarketing />
 
         <section className="border-y border-neutral-200 bg-[#f7f6f3]">
           <div className="container-page grid gap-8 py-20 md:grid-cols-3">

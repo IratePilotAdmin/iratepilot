@@ -6,12 +6,19 @@ import {
   completePaidTestBooking,
   isCompletableBookingIntent,
   PaidBookingFinalizationError,
-  refundUnfinalizedTestBooking,
+  refundUnfinalizedBookingPayment,
 } from "@/lib/bookings/complete-paid-test-booking";
+import {
+  ApprovedBookingPaymentFinalizationError,
+  completeApprovedBookingPayment,
+  isApprovedBookingPaymentIntent,
+} from "@/lib/bookings/complete-approved-booking-test-payment";
 import { getSubscriptionAccessStatus, getSubscriptionRenewsAt } from "@/lib/stripe/subscription-lifecycle";
 import { isRetryableStripeWebhookClaim } from "@/lib/stripe/webhook-retry";
 import { getVerifiedPartnerSubscriptionPlan } from "@/lib/stripe/partner-subscription-pricing";
 import { getVerifiedMembershipSubscriptionTier } from "@/lib/stripe/membership-subscription-pricing";
+import { queueBookingNotification } from "@/lib/email/booking-notifications";
+import { getApprovedBookingMetadataMode, getStripeWebhookMode } from "@/lib/stripe/booking-payment-mode";
 
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
@@ -25,9 +32,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Webhook signature verification failed." }, { status: 400 });
   }
 
-  if (process.env.PILOT_MODE !== "true" || !process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_")) {
-    return NextResponse.json({ error: "Only pilot test webhooks are enabled." }, { status: 503 });
-  }
+  const webhookMode = getStripeWebhookMode();
+  if (!webhookMode) return NextResponse.json({ error: "Stripe webhooks are disabled." }, { status: 503 });
 
   const admin = createAdminClient();
   const eventCreatedAt = new Date(event.created * 1000).toISOString();
@@ -177,14 +183,31 @@ export async function POST(request: Request) {
     if (event.type === "payment_intent.succeeded") {
       const intent = event.data.object as Stripe.PaymentIntent;
       objectId = intent.id;
-      if (intent.metadata?.mode === "booking_test") {
+      if (webhookMode === "test" && intent.metadata?.mode === "booking_test") {
         if (!isCompletableBookingIntent(intent)) throw new Error("Stripe test booking metadata is incomplete.");
         try {
           const completion = await completePaidTestBooking(intent);
           financialId = completion.financialId;
         } catch (error) {
           if (!(error instanceof PaidBookingFinalizationError)) throw error;
-          const refund = await refundUnfinalizedTestBooking(intent.id);
+          const refund = await refundUnfinalizedBookingPayment(intent.id);
+          bookingRefund = { id: refund.id, status: refund.status };
+        }
+      }
+      if (intent.metadata?.mode === getApprovedBookingMetadataMode(webhookMode)) {
+        if (!isApprovedBookingPaymentIntent(intent, undefined, webhookMode)) throw new Error("Approved-booking payment metadata is incomplete.");
+        try {
+          const booking = await completeApprovedBookingPayment(intent);
+          await queueBookingNotification({
+            event: "payment_confirmed",
+            bookingId: booking.id,
+            confirmationCode: booking.confirmation_code,
+            customerId: intent.metadata.userId,
+            paymentMode: webhookMode,
+          });
+        } catch (error) {
+          if (!(error instanceof ApprovedBookingPaymentFinalizationError)) throw error;
+          const refund = await refundUnfinalizedBookingPayment(intent.id);
           bookingRefund = { id: refund.id, status: refund.status };
         }
       }
@@ -237,7 +260,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       received: true,
       eventType: event.type,
-      mode: "pilot_test",
+      mode: webhookMode,
       ...(bookingRefund ? { bookingRefund } : {}),
     });
   } catch (error) {
