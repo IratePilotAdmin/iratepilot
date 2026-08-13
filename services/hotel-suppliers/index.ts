@@ -82,8 +82,20 @@ export type {
   SihotFetch,
   SihotSyncEnvironment,
 } from "./sihot";
-export { RmsCloudHttpTransport, RmsCloudTransportError } from "./rms-cloud";
-export type { RmsCloudConfig, RmsCloudFetch } from "./rms-cloud";
+export {
+  createRmsCloudSyncAdapter,
+  loadRmsCloudSyncConfig,
+  RmsCloudBookingMapper,
+  RmsCloudHttpTransport,
+  RmsCloudSyncAdapter,
+  RmsCloudTransportError,
+} from "./rms-cloud";
+export type {
+  RmsCloudBookingMapperConfig,
+  RmsCloudConfig,
+  RmsCloudFetch,
+  RmsCloudSyncEnvironment,
+} from "./rms-cloud";
 export { RmsCloudConnectionTestError, testRmsCloudSandboxConnection } from "./rms-cloud";
 export type { RmsCloudConnectionTestConfig, RmsCloudConnectionTestResult } from "./rms-cloud";
 export { MaestroHttpTransport, MaestroTransportError } from "./maestro";

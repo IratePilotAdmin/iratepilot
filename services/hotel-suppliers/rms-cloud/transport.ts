@@ -93,6 +93,57 @@ export class RmsCloudHttpTransport implements StandardPmsTransport {
     return value;
   }
 
+  async executeEndpoint(
+    method: "GET" | "POST" | "PUT",
+    path: string,
+    requestId: string,
+    body?: Record<string, unknown>,
+    operation: StandardPmsOperation = "create_reservation",
+  ): Promise<unknown> {
+    const endpoint = new URL(path, this.baseUrl);
+    if (endpoint.origin !== this.baseUrl.origin) {
+      throw new Error("RMS Cloud operation path must remain on the configured origin");
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+    try {
+      const response = await this.fetcher(endpoint, {
+        method,
+        headers: {
+          authtoken: await this.authToken(),
+          "content-type": "application/json",
+          accept: "application/json",
+          "x-iratepilot-request-id": requestId,
+        },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+        signal: controller.signal,
+      });
+      const responsePayload = response.status === 204
+        ? undefined
+        : await response.json().catch(() => undefined);
+      if (!response.ok) {
+        const details = responseDetails(responsePayload);
+        throw new RmsCloudTransportError(
+          details.message || `RMS Cloud request failed with status ${response.status}`,
+          response.status,
+          operation,
+          requestId,
+          details.code,
+        );
+      }
+      return responsePayload;
+    } catch (error) {
+      if (error instanceof RmsCloudTransportError) throw error;
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new RmsCloudTransportError("RMS Cloud request timed out", 504, operation, requestId);
+      }
+      throw new RmsCloudTransportError("RMS Cloud request failed", 502, operation, requestId);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   async execute(request: StandardPmsTransportRequest): Promise<unknown> {
     if (request.providerId !== "rms-cloud") {
       throw new Error("RMS Cloud transport only accepts rms-cloud requests");
@@ -103,11 +154,6 @@ export class RmsCloudHttpTransport implements StandardPmsTransport {
     if (request.operation === "cancel_reservation") {
       path = path.replace("{reservationId}", encodeURIComponent(reservationId(payload)));
     }
-    const endpoint = new URL(path, this.baseUrl);
-    if (endpoint.origin !== this.baseUrl.origin) {
-      throw new Error("RMS Cloud operation path must remain on the configured origin");
-    }
-
     let body: Record<string, unknown>;
     if (request.operation === "availability") {
       body = { propertyId: Number(request.propertyCode), ...payload };
@@ -121,42 +167,12 @@ export class RmsCloudHttpTransport implements StandardPmsTransport {
       };
     }
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
-    try {
-      const response = await this.fetcher(endpoint, {
-        method: request.operation === "cancel_reservation" ? "PUT" : "POST",
-        headers: {
-          authtoken: await this.authToken(),
-          "content-type": "application/json",
-          accept: "application/json",
-          "x-iratepilot-request-id": request.requestId,
-        },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      });
-      const responsePayload = response.status === 204
-        ? undefined
-        : await response.json().catch(() => undefined);
-      if (!response.ok) {
-        const details = responseDetails(responsePayload);
-        throw new RmsCloudTransportError(
-          details.message || `RMS Cloud request failed with status ${response.status}`,
-          response.status,
-          request.operation,
-          request.requestId,
-          details.code,
-        );
-      }
-      return responsePayload;
-    } catch (error) {
-      if (error instanceof RmsCloudTransportError) throw error;
-      if (error instanceof Error && error.name === "AbortError") {
-        throw new RmsCloudTransportError("RMS Cloud request timed out", 504, request.operation, request.requestId);
-      }
-      throw new RmsCloudTransportError("RMS Cloud request failed", 502, request.operation, request.requestId);
-    } finally {
-      clearTimeout(timeout);
-    }
+    return this.executeEndpoint(
+      request.operation === "cancel_reservation" ? "PUT" : "POST",
+      path,
+      request.requestId,
+      body,
+      request.operation,
+    );
   }
 }
