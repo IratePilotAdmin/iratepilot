@@ -28,6 +28,10 @@ certified contract is available. Phase 7 adds the SynXis certification panel to 
 including ordered gate controls, non-secret evidence fields, configuration warnings, and an exact
 confirmation phrase for the final live switch. The API independently rejects live activation when
 production configuration is missing or invalid, so the browser cannot bypass that safeguard.
+Phase 8 adds migration `202608130041_synxis_crs_evidence_audit.sql`, which records every evidence
+change through a database trigger, blocks update/delete operations against audit events, and shows
+the latest 25 events in Admin Settings. Audit snapshots contain certification evidence only and
+must never contain connector secrets.
 
 ## Configuration
 
@@ -64,6 +68,7 @@ Complete these gates in order:
 8. Migration `202608130040_synxis_crs_launch_evidence.sql` is applied and the non-secret
    approval references are recorded through the admin-only evidence endpoint.
 9. An administrator explicitly enables live traffic.
+10. Preserve migration 041 audit history for the certification record and any future investigation.
 
 Configuration alone never permits live traffic.
 

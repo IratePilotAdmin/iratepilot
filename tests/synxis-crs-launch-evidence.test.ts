@@ -13,6 +13,14 @@ const route = readFileSync(
   new URL("../app/api/admin/integrations/crs/synxis/route.ts", import.meta.url),
   "utf8",
 );
+const auditMigration = readFileSync(
+  new URL("../supabase/migrations/202608130041_synxis_crs_evidence_audit.sql", import.meta.url),
+  "utf8",
+);
+const auditRollback = readFileSync(
+  new URL("../supabase/rollbacks/202608130041_synxis_crs_evidence_audit.rollback.sql", import.meta.url),
+  "utf8",
+);
 
 describe("SynXis CRS launch evidence persistence", () => {
   it("enforces every certification gate in order at the database layer", () => {
@@ -58,5 +66,30 @@ describe("SynXis CRS launch evidence persistence", () => {
   it("never reads or returns connector secrets directly", () => {
     expect(route).not.toContain("CRS_SYNXIS_USERNAME");
     expect(route).not.toContain("CRS_SYNXIS_PASSWORD");
+  });
+
+  it("records immutable audit snapshots from a database trigger", () => {
+    expect(auditMigration).toContain("create table if not exists public.synxis_crs_evidence_audit");
+    expect(auditMigration).toContain("after insert or update on public.synxis_crs_launch_evidence");
+    expect(auditMigration).toContain("to_jsonb(new) - 'updated_by' - 'updated_at'");
+    expect(auditMigration).toContain("before update or delete on public.synxis_crs_evidence_audit");
+    expect(auditMigration).toContain("SynXis CRS evidence audit events are immutable");
+    expect(auditMigration).toContain("actor_name text not null");
+    expect(auditMigration).toContain("coalesce(v_actor_name, 'Administrator')");
+    expect(auditMigration).not.toContain("actor_id uuid references");
+    expect(auditMigration).toContain("revoke all on table public.synxis_crs_evidence_audit from public, anon, authenticated");
+  });
+
+  it("refuses to roll back recorded certification history", () => {
+    expect(auditRollback).toContain("Refusing rollback: SynXis CRS evidence audit history exists");
+    expect(auditRollback).toContain("exists (select 1 from public.synxis_crs_evidence_audit)");
+  });
+
+  it("returns recent audit history without making the evidence endpoint unavailable before migration 041", () => {
+    expect(route).toContain('from("synxis_crs_evidence_audit")');
+    expect(route).toContain("Promise.all([");
+    expect(route).toContain('result.error?.code === "42P01"');
+    expect(route).toContain("historyAvailable");
+    expect(route).toContain("auditLimit = 25");
   });
 });

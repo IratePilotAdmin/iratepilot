@@ -38,4 +38,12 @@ describe("SynXis admin certification dashboard", () => {
     expect(dashboard).toContain("Live activation is locked");
     expect(dashboard).toContain("Do not enter usernames, passwords, API keys, access tokens, or webhook secrets.");
   });
+
+  it("shows the immutable certification activity timeline", () => {
+    expect(dashboard).toContain("Certification activity");
+    expect(dashboard).toContain("data.historyAvailable");
+    expect(dashboard).toContain("Apply migration 041");
+    expect(dashboard).toContain("event.changedFields");
+    expect(dashboard).toContain("dateTime={event.createdAt}");
+  });
 });

@@ -17,6 +17,14 @@ type SynxisResponse = {
   evidenceTrackingAvailable: boolean;
   activationDetailsComplete: boolean;
   liveActivationAllowed: boolean;
+  history: Array<{
+    id: string;
+    eventType: string;
+    changedFields: string[];
+    actor: string;
+    createdAt: string;
+  }>;
+  historyAvailable: boolean;
   updatedAt: string | null;
 };
 
@@ -40,6 +48,20 @@ const gates = [
   { key: "sandboxValidated", label: "Sandbox validation", requires: ["propertyMapped"] },
   { key: "productionSmokeValidated", label: "Production smoke test", requires: ["sandboxValidated"] },
 ] as const;
+
+const auditFieldLabels: Record<string, string> = {
+  vendor_approved: "vendor approval",
+  certification_environment_approved: "certification environment",
+  property_mapped: "property mapping",
+  sandbox_validated: "sandbox validation",
+  production_smoke_validated: "production smoke test",
+  live_enabled: "live traffic",
+  vendor_approval_reference: "approval reference",
+  approved_environment: "approved environment",
+  property_code: "property code",
+  support_contact: "support contact",
+  verification_notes: "verification notes",
+};
 
 export function SynxisCrsReadiness() {
   const [data, setData] = useState<SynxisResponse | null>(null);
@@ -149,6 +171,22 @@ export function SynxisCrsReadiness() {
           <label className="text-xs font-medium">Verification notes<textarea className="input mt-1 min-h-24" defaultValue={data.evidence.verificationNotes} maxLength={4000} name="verificationNotes" /></label>
           <button className="btn-secondary w-fit text-xs" disabled={busy || !data.evidenceTrackingAvailable} type="submit">Save evidence details</button>
         </form>
+      </details>
+
+      <details className="mt-5 rounded-lg border p-4">
+        <summary className="cursor-pointer text-sm font-semibold">Certification activity</summary>
+        {!data.historyAvailable ? <p className="mt-3 text-sm text-amber-700">Apply migration 041 to begin the immutable audit history.</p>
+          : data.history.length === 0 ? <p className="mt-3 text-sm text-slate-500">No certification evidence changes have been recorded yet.</p>
+            : <ol className="mt-4 divide-y">
+              {data.history.map((event) => <li className="py-3 first:pt-0 last:pb-0" key={event.id}>
+                <div className="flex flex-wrap items-start justify-between gap-2 text-sm">
+                  <strong>{event.eventType === "evidence_created" ? "Evidence record created" : "Evidence updated"}</strong>
+                  <time className="text-xs text-slate-500" dateTime={event.createdAt}>{new Date(event.createdAt).toLocaleString()}</time>
+                </div>
+                <p className="mt-1 text-xs text-slate-500">By {event.actor}</p>
+                <p className="mt-1 text-xs text-slate-600">Changed: {event.changedFields.map((field) => auditFieldLabels[field] ?? field.replaceAll("_", " ")).join(", ")}</p>
+              </li>)}
+            </ol>}
       </details>
 
       <div className={`mt-5 rounded-lg border p-4 ${data.readiness.liveTrafficAllowed ? "border-emerald-300 bg-emerald-50" : "border-red-200 bg-red-50"}`}>

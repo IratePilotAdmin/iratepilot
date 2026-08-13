@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 
 const providerId = "sabre-synxis";
 const liveConfirmation = "ENABLE SABRE SYNXIS LIVE TRAFFIC";
+const auditLimit = 25;
 const evidenceColumns = "vendor_approved,certification_environment_approved,property_mapped,sandbox_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact,verification_notes,updated_at";
 const emptyEvidence = {
   vendorApproved: false,
@@ -59,10 +60,30 @@ function noStore(body: unknown, init?: { status?: number }) {
   });
 }
 
+type AuditRow = {
+  id: string;
+  event_type: string;
+  changed_fields: string[] | null;
+  actor_name: string;
+  created_at: string;
+};
+
+function mapHistory(rows: AuditRow[]) {
+  return rows.map((row) => ({
+    id: row.id,
+    eventType: row.event_type,
+    changedFields: row.changed_fields ?? [],
+    actor: row.actor_name.trim() || "Administrator",
+    createdAt: row.created_at,
+  }));
+}
+
 function buildResponse(
   evidence: ReturnType<typeof mapEvidence>,
   evidenceTrackingAvailable: boolean,
   updatedAt: unknown,
+  history: ReturnType<typeof mapHistory> = [],
+  historyAvailable = false,
 ) {
   const readiness = buildSynxisReadiness(process.env, evidence);
   const activationDetailsComplete = [
@@ -79,8 +100,21 @@ function buildResponse(
     liveActivationAllowed: evidenceTrackingAvailable
       && activationDetailsComplete
       && readiness.status === "activation_required",
+    history,
+    historyAvailable,
     updatedAt,
   };
+}
+
+async function loadAuditHistory(admin: ReturnType<typeof createAdminClient>) {
+  const result = await admin.from("synxis_crs_evidence_audit")
+    .select("id,event_type,changed_fields,actor_name,created_at")
+    .eq("provider_id", providerId)
+    .order("created_at", { ascending: false })
+    .limit(auditLimit);
+  if (result.error?.code === "42P01") return { history: [], available: false };
+  if (result.error) throw result.error;
+  return { history: mapHistory((result.data ?? []) as unknown as AuditRow[]), available: true };
 }
 
 export async function GET() {
@@ -88,20 +122,23 @@ export async function GET() {
     const auth = await requireRole(["admin"]);
     if ("error" in auth) return noStore({ error: auth.error }, { status: auth.status });
 
-    const result = await createAdminClient()
-      .from("synxis_crs_launch_evidence")
-      .select(evidenceColumns)
-      .eq("provider_id", providerId)
-      .maybeSingle();
+    const admin = createAdminClient();
+    const [result, audit] = await Promise.all([
+      admin.from("synxis_crs_launch_evidence")
+        .select(evidenceColumns)
+        .eq("provider_id", providerId)
+        .maybeSingle(),
+      loadAuditHistory(admin),
+    ]);
 
     if (result.error?.code === "42P01") {
       const evidence = { ...emptyEvidence };
-      return noStore(buildResponse(evidence, false, null));
+      return noStore(buildResponse(evidence, false, null, audit.history, audit.available));
     }
     if (result.error) throw result.error;
 
     const evidence = mapEvidence(result.data);
-    return noStore(buildResponse(evidence, true, result.data?.updated_at ?? null));
+    return noStore(buildResponse(evidence, true, result.data?.updated_at ?? null, audit.history, audit.available));
   } catch (error) {
     console.error("SynXis CRS launch evidence read failed", error);
     return noStore({ error: "SynXis CRS launch evidence could not be loaded." }, { status: 503 });
@@ -256,7 +293,14 @@ export async function PATCH(request: Request) {
     if (updateResult.error) throw updateResult.error;
 
     const evidence = mapEvidence(updateResult.data);
-    return noStore(buildResponse(evidence, true, updateResult.data.updated_at));
+    const audit = await loadAuditHistory(admin);
+    return noStore(buildResponse(
+      evidence,
+      true,
+      updateResult.data.updated_at,
+      audit.history,
+      audit.available,
+    ));
   } catch (error) {
     console.error("SynXis CRS launch evidence update failed", error);
     return noStore({ error: "SynXis CRS launch evidence could not be updated." }, { status: 503 });
