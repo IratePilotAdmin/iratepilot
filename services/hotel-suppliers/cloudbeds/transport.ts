@@ -109,7 +109,7 @@ export class CloudbedsHttpTransport implements CloudbedsTransport {
     const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
     try {
       const headers = {
-        authorization: `Bearer ${this.config.apiKey}`,
+        "x-api-key": this.config.apiKey,
         "x-iratepilot-request-id": request.requestId,
       };
       let init: RequestInit;
@@ -159,3 +159,4 @@ export class CloudbedsHttpTransport implements CloudbedsTransport {
     }
   }
 }
+
