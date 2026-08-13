@@ -66,15 +66,21 @@ export type {
 } from "./stayntouch";
 export {
   SihotConnectionTestError,
+  SihotBookingMapper,
   SihotHttpTransport,
   SihotTransportError,
+  SihotSyncAdapter,
+  createSihotSyncAdapter,
+  loadSihotSyncConfig,
   testSihotSandboxConnection,
 } from "./sihot";
 export type {
+  SihotBookingMapperConfig,
   SihotConfig,
   SihotConnectionTestConfig,
   SihotConnectionTestResult,
   SihotFetch,
+  SihotSyncEnvironment,
 } from "./sihot";
 export { RmsCloudHttpTransport, RmsCloudTransportError } from "./rms-cloud";
 export type { RmsCloudConfig, RmsCloudFetch } from "./rms-cloud";
