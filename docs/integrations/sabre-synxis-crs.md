@@ -68,6 +68,10 @@ Phase 17 adds migration `202608130044_synxis_certification_packet_schema_v2.sql`
 packets use schema 2, which requires an embedded receipt UUID; the ledger records that binding
 requirement. Schema 1 remains supported for legacy packets. Admin Settings deliberately queries the
 migration-044 marker so schema-2 exports stay locked until the database contract is ready.
+Phase 18 adds packet freshness verification. After integrity and issuance are confirmed, the
+verifier checks the newest evidence audit event and request receipt in parallel. A packet is marked
+superseded when either occurred after packet generation, prompting the administrator to export a
+new packet before certification handoff. Freshness lookup failures fail closed.
 
 ## Configuration
 

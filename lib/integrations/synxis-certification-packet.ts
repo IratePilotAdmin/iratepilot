@@ -106,6 +106,7 @@ export function verifySynxisCertificationPacket(
     || !/^[a-f0-9]{64}$/.test(checksum)
     || typeof schemaVersion !== "number"
     || typeof generatedAt !== "string"
+    || !Number.isFinite(Date.parse(generatedAt))
     || !provider
     || typeof provider !== "object"
     || Array.isArray(provider)

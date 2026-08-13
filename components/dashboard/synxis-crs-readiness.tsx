@@ -170,15 +170,17 @@ export function SynxisCrsReadiness() {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Certification packet could not be verified.");
-      setPacketVerification(result.valid && result.issuance?.recorded
-        ? `Checksum and iRatePilot issuance verified${result.issuance.receiptId ? ` for receipt ${result.issuance.receiptId}` : " using the legacy checksum record"}. Exported by ${result.issuance.exportedBy} on ${new Date(result.issuance.exportedAt).toLocaleString()}.`
+      setPacketVerification(result.valid && result.issuance?.recorded && result.freshness?.assessed && !result.freshness.current
+        ? `Integrity and issuance are verified, but this packet was superseded by newer certification activity on ${new Date(result.freshness.newerActivityAt).toLocaleString()}. Download a new packet before handoff.`
+        : result.valid && result.issuance?.recorded
+          ? `Checksum, iRatePilot issuance, and freshness verified${result.issuance.receiptId ? ` for receipt ${result.issuance.receiptId}` : " using the legacy checksum record"}. Exported by ${result.issuance.exportedBy} on ${new Date(result.issuance.exportedAt).toLocaleString()}.`
         : result.valid
           ? `Checksum verified for schema ${result.schemaVersion}, but no iRatePilot issuance receipt was found.`
-        : result.reason === "checksum_mismatch"
-          ? "Checksum mismatch. Do not use this packet; its contents changed after export."
-          : result.reason === "unsupported_schema"
-            ? `Schema ${result.schemaVersion} is not supported by this verifier.`
-            : "This is not a valid iRatePilot SynXis certification packet.");
+          : result.reason === "checksum_mismatch"
+            ? "Checksum mismatch. Do not use this packet; its contents changed after export."
+            : result.reason === "unsupported_schema"
+              ? `Schema ${result.schemaVersion} is not supported by this verifier.`
+              : "This is not a valid iRatePilot SynXis certification packet.");
     } catch (error) {
       setPacketVerification(error instanceof Error ? error.message : "Certification packet could not be verified.");
     } finally {

@@ -1,5 +1,6 @@
 import { requireRole } from "@/lib/auth/require-role";
 import { verifySynxisCertificationPacket } from "@/lib/integrations/synxis-certification-packet";
+import { buildSynxisCertificationFreshness } from "@/lib/integrations/synxis-certification-freshness";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -43,7 +44,8 @@ export async function POST(request: Request) {
     return Response.json({ ...verification, issuance: { recorded: false } }, { headers: responseHeaders });
   }
 
-  let receiptQuery = createAdminClient()
+  const admin = createAdminClient();
+  let receiptQuery = admin
     .from("synxis_certification_export_receipts")
     .select("exporter_name,exported_at,receipt_binding_required")
     .eq("provider_id", "sabre-synxis");
@@ -61,17 +63,50 @@ export async function POST(request: Request) {
     return errorResponse("Certification packet issuance could not be verified.", 503);
   }
 
+  const receipt = receiptResult.data;
+  if (!receipt || (verification.schemaVersion === 2 && receipt.receipt_binding_required !== true)) {
+    return Response.json({
+      ...verification,
+      issuance: { recorded: false },
+      freshness: { assessed: false },
+    }, { headers: responseHeaders });
+  }
+
+  const [evidenceResult, requestResult] = await Promise.all([
+    admin.from("synxis_crs_evidence_audit")
+      .select("created_at")
+      .eq("provider_id", "sabre-synxis")
+      .gt("created_at", verification.generatedAt as string)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    admin.from("synxis_request_journal")
+      .select("started_at")
+      .gt("started_at", verification.generatedAt as string)
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  const freshnessErrors = [evidenceResult.error, requestResult.error].filter(Boolean);
+  if (freshnessErrors.length > 0) {
+    console.error("SynXis certification freshness lookup failed", freshnessErrors[0]);
+    return errorResponse("Certification packet freshness could not be verified.", 503);
+  }
+  const freshness = buildSynxisCertificationFreshness(
+    verification.generatedAt as string,
+    evidenceResult.data?.created_at ?? null,
+    requestResult.data?.started_at ?? null,
+  );
+
   return Response.json({
     ...verification,
-    issuance: receiptResult.data
-      && (verification.schemaVersion !== 2 || receiptResult.data.receipt_binding_required === true)
-      ? {
+    issuance: {
         recorded: true,
         receiptId: verification.issuanceReceiptId,
         matchedBy: verification.issuanceReceiptId ? "receipt_id_and_checksum" : "legacy_checksum",
-        exportedBy: receiptResult.data.exporter_name,
-        exportedAt: receiptResult.data.exported_at,
-      }
-      : { recorded: false },
+        exportedBy: receipt.exporter_name,
+        exportedAt: receipt.exported_at,
+      },
+    freshness: { assessed: true, ...freshness },
   }, { headers: responseHeaders });
 }

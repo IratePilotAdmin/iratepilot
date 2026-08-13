@@ -47,9 +47,11 @@ describe("SynXis certification export receipts", () => {
   it("reports issuance only after a valid checksum and a matching receipt", () => {
     expect(verifyRoute).toContain("if (!verification.valid || !verification.checksum)");
     expect(verifyRoute).toContain('.eq("checksum", verification.checksum)');
-    expect(verifyRoute).toContain("issuance: receiptResult.data");
+    expect(verifyRoute).toContain("recorded: true");
+    expect(verifyRoute).toContain("exportedBy: receipt.exporter_name");
+    expect(verifyRoute).toContain("freshness: { assessed: true, ...freshness }");
     expect(verifyRoute).toContain("Apply SynXis migrations through 044");
-    expect(dashboard).toContain("Checksum and iRatePilot issuance verified");
+    expect(dashboard).toContain("Checksum, iRatePilot issuance, and freshness verified");
     expect(dashboard).toContain("no iRatePilot issuance receipt was found");
     expect(dashboard).toContain("migrations 040–044");
   });
