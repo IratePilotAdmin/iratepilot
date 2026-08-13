@@ -126,7 +126,8 @@ export { GuestlineHttpTransport, GuestlineTransportError } from "./guestline";
 export { GuestlineBookingMapper, createGuestlineSyncAdapter, loadGuestlineSyncConfig } from "./guestline";
 export type { GuestlineBookingMapperConfig, GuestlineConfig, GuestlineEndpoint, GuestlineFetch, GuestlineSyncEnvironment } from "./guestline";
 export { EzeeAbsoluteHttpTransport, EzeeAbsoluteTransportError } from "./ezee-absolute";
-export type { EzeeAbsoluteConfig, EzeeAbsoluteEndpoint, EzeeAbsoluteFetch } from "./ezee-absolute";
+export { EzeeAbsoluteBookingMapper, createEzeeAbsoluteSyncAdapter, loadEzeeAbsoluteSyncConfig } from "./ezee-absolute";
+export type { EzeeAbsoluteBookingMapperConfig, EzeeAbsoluteConfig, EzeeAbsoluteEndpoint, EzeeAbsoluteFetch, EzeeAbsoluteSyncEnvironment } from "./ezee-absolute";
 export { ClockPmsHttpTransport, ClockPmsTransportError } from "./clock-pms-plus";
 export type {
   ClockPmsAuthRequest, ClockPmsConfig, ClockPmsEndpoint, ClockPmsFetch,
