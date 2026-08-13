@@ -147,7 +147,11 @@ export type {
   InforHmsFetch, InforHmsSyncEnvironment,
 } from "./infor-hms";
 export { AgilysysPmsHttpTransport, AgilysysPmsTransportError } from "./agilysys-pms";
-export type { AgilysysPmsConfig, AgilysysPmsEndpoint, AgilysysPmsFetch } from "./agilysys-pms";
+export { AgilysysPmsBookingMapper, createAgilysysPmsSyncAdapter, loadAgilysysPmsSyncConfig } from "./agilysys-pms";
+export type {
+  AgilysysPmsBookingMapperConfig, AgilysysPmsConfig, AgilysysPmsEndpoint,
+  AgilysysPmsFetch, AgilysysPmsSyncEnvironment,
+} from "./agilysys-pms";
 export { PlanetProtelHttpTransport, PlanetProtelTransportError } from "./planet-protel";
 export type { PlanetProtelConfig, PlanetProtelEndpoint, PlanetProtelFetch } from "./planet-protel";
 export { OracleOpera5Transport, OracleOpera5TransportError } from "./oracle-opera-5";
