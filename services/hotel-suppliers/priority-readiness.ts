@@ -5,6 +5,22 @@ export const priorityPmsProviderIds = [
   "marriott-fosse",
   "marriott-fs-pms",
   "hotelkey",
+  "oracle-opera-5",
+  "infor-hms",
+  "agilysys-pms",
+  "planet-protel",
+  "hotelogix",
+  "mews",
+  "stayntouch",
+  "cloudbeds",
+  "sihot",
+  "rms-cloud",
+  "maestro-pms",
+  "shiji-pms",
+  "guestline",
+  "ezee-absolute",
+  "apaleo",
+  "clock-pms-plus",
 ] as const;
 
 export type PriorityPmsProviderId = typeof priorityPmsProviderIds[number];
@@ -100,6 +116,115 @@ export const priorityPmsProductionManifest: readonly PriorityPmsProductionManife
     requiredEnvironmentKeys: keys(prefix, commonBookingSuffixes),
     optionalEnvironmentKeys: keys(prefix, commonOptionalSuffixes),
   })),
+  {
+    id: "oracle-opera-5",
+    name: "Oracle OPERA 5",
+    requiredEnvironmentKeys: [
+      "PMS_OPERA5_BASE_URL", "PMS_OPERA5_AVAILABILITY_PATH", "PMS_OPERA5_AVAILABILITY_SOAP_ACTION",
+      "PMS_OPERA5_CREATE_RESERVATION_PATH", "PMS_OPERA5_CREATE_RESERVATION_SOAP_ACTION",
+      "PMS_OPERA5_CANCEL_RESERVATION_PATH", "PMS_OPERA5_CANCEL_RESERVATION_SOAP_ACTION", "PMS_OPERA5_CURRENCY",
+    ],
+    optionalEnvironmentKeys: ["PMS_OPERA5_TIMEOUT_MS", "PMS_OPERA5_BOOKING_SOURCE_CODE"],
+  },
+  ...([
+    ["infor-hms", "Infor HMS", "PMS_INFOR_HMS", "ACCESS_TOKEN"],
+    ["agilysys-pms", "Agilysys PMS", "PMS_AGILYSYS", "API_CREDENTIAL"],
+    ["planet-protel", "Planet Protel", "PMS_PLANET_PROTEL", "API_CREDENTIAL"],
+    ["hotelogix", "Hotelogix", "PMS_HOTELOGIX", "API_KEY"],
+  ] as const).map(([id, name, prefix, credential]) => ({
+    id,
+    name,
+    requiredEnvironmentKeys: [
+      `${prefix}_BASE_URL`, `${prefix}_${credential}`, `${prefix}_AVAILABILITY_PATH`,
+      `${prefix}_CREATE_RESERVATION_PATH`, `${prefix}_CANCEL_RESERVATION_PATH`, `${prefix}_CURRENCY`,
+    ],
+    optionalEnvironmentKeys: [
+      `${prefix}_AUTHORIZATION_HEADER`, `${prefix}_AUTHORIZATION_SCHEME`, `${prefix}_TIMEOUT_MS`,
+      `${prefix}_AVAILABILITY_METHOD`, `${prefix}_CREATE_RESERVATION_METHOD`,
+      `${prefix}_CANCEL_RESERVATION_METHOD`, `${prefix}_BOOKING_SOURCE_CODE`,
+    ],
+  })),
+  {
+    id: "mews",
+    name: "Mews",
+    requiredEnvironmentKeys: [
+      "PMS_MEWS_CLIENT_TOKEN", "PMS_MEWS_ACCESS_TOKEN", "PMS_MEWS_CLIENT", "PMS_MEWS_SERVICE_ID",
+      "PMS_MEWS_RESOURCE_CATEGORY_ID", "PMS_MEWS_RATE_ID", "PMS_MEWS_ADULT_AGE_CATEGORY_ID",
+    ],
+    optionalEnvironmentKeys: [
+      "PMS_MEWS_BASE_URL", "PMS_MEWS_TIMEOUT_MS", "PMS_MEWS_CHILD_AGE_CATEGORY_ID",
+      "PMS_MEWS_CHECK_IN_TIME", "PMS_MEWS_CHECK_OUT_TIME",
+    ],
+  },
+  {
+    id: "stayntouch",
+    name: "Stayntouch",
+    requiredEnvironmentKeys: ["PMS_STAYNTOUCH_ACCESS_TOKEN", "PMS_STAYNTOUCH_CURRENCY"],
+    optionalEnvironmentKeys: [
+      "PMS_STAYNTOUCH_BASE_URL", "PMS_STAYNTOUCH_API_VERSION", "PMS_STAYNTOUCH_TIMEOUT_MS",
+      "PMS_STAYNTOUCH_BOOKING_ORIGIN_CODE", "PMS_STAYNTOUCH_RESERVATION_TYPE_CODE",
+      "PMS_STAYNTOUCH_SOURCE_CODE", "PMS_STAYNTOUCH_MARKET_SEGMENT_CODE",
+    ],
+  },
+  {
+    id: "cloudbeds",
+    name: "Cloudbeds",
+    requiredEnvironmentKeys: ["PMS_CLOUDBEDS_API_KEY", "PMS_CLOUDBEDS_SOURCE_ID"],
+    optionalEnvironmentKeys: ["PMS_CLOUDBEDS_BASE_URL", "PMS_CLOUDBEDS_TIMEOUT_MS", "PMS_CLOUDBEDS_PAYMENT_METHOD"],
+  },
+  {
+    id: "sihot",
+    name: "SIHOT",
+    requiredEnvironmentKeys: [
+      "PMS_SIHOT_BASE_URL", "PMS_SIHOT_SECURITY_ID", "PMS_SIHOT_CURRENCY", "PMS_SIHOT_CATEGORIES",
+      "PMS_SIHOT_SERVICE_CODES", "PMS_SIHOT_ORDERER_OBJECT_ID", "PMS_SIHOT_RESERVATION_TYPE",
+    ],
+    optionalEnvironmentKeys: ["PMS_SIHOT_TIMEOUT_MS", "PMS_SIHOT_GUEST_TYPE", "PMS_SIHOT_CANCELLATION_REASON"],
+  },
+  {
+    id: "rms-cloud",
+    name: "RMS Cloud",
+    requiredEnvironmentKeys: [
+      "PMS_RMS_CLOUD_AUTH_TOKEN", "PMS_RMS_CLOUD_CURRENCY", "PMS_RMS_CLOUD_AGENT_ID",
+      "PMS_RMS_CLOUD_CATEGORY_IDS", "PMS_RMS_CLOUD_BOOKING_SOURCE_ID", "PMS_RMS_CLOUD_RESERVATION_TYPE_ID",
+    ],
+    optionalEnvironmentKeys: ["PMS_RMS_CLOUD_BASE_URL", "PMS_RMS_CLOUD_TIMEOUT_MS"],
+  },
+  ...([
+    ["maestro-pms", "Maestro PMS", "PMS_MAESTRO"],
+    ["shiji-pms", "Shiji PMS", "PMS_SHIJI"],
+    ["guestline", "Guestline", "PMS_GUESTLINE"],
+    ["ezee-absolute", "eZee Absolute", "PMS_EZEE_ABSOLUTE"],
+  ] as const).map(([id, name, prefix]) => ({
+    id,
+    name,
+    requiredEnvironmentKeys: [
+      `${prefix}_BASE_URL`, `${prefix}_ACCESS_TOKEN`, `${prefix}_AVAILABILITY_PATH`,
+      `${prefix}_CREATE_RESERVATION_PATH`, `${prefix}_CANCEL_RESERVATION_PATH`, `${prefix}_CURRENCY`,
+    ],
+    optionalEnvironmentKeys: [
+      `${prefix}_TIMEOUT_MS`, `${prefix}_AVAILABILITY_METHOD`, `${prefix}_CREATE_RESERVATION_METHOD`,
+      `${prefix}_CANCEL_RESERVATION_METHOD`, `${prefix}_BOOKING_SOURCE_CODE`,
+    ],
+  })),
+  {
+    id: "apaleo",
+    name: "Apaleo",
+    requiredEnvironmentKeys: ["PMS_APALEO_CLIENT_ID", "PMS_APALEO_CLIENT_SECRET"],
+    optionalEnvironmentKeys: ["PMS_APALEO_BASE_URL", "PMS_APALEO_IDENTITY_URL", "PMS_APALEO_TIMEOUT_MS"],
+  },
+  {
+    id: "clock-pms-plus",
+    name: "Clock PMS+",
+    requiredEnvironmentKeys: [
+      "PMS_CLOCK_BASE_URL", "PMS_CLOCK_API_USER", "PMS_CLOCK_API_KEY", "PMS_CLOCK_AVAILABILITY_PATH",
+      "PMS_CLOCK_CREATE_RESERVATION_PATH", "PMS_CLOCK_CANCEL_RESERVATION_PATH", "PMS_CLOCK_CURRENCY",
+    ],
+    optionalEnvironmentKeys: [
+      "PMS_CLOCK_TIMEOUT_MS", "PMS_CLOCK_AVAILABILITY_METHOD", "PMS_CLOCK_CREATE_RESERVATION_METHOD",
+      "PMS_CLOCK_CANCEL_RESERVATION_METHOD", "PMS_CLOCK_BOOKING_SOURCE_CODE",
+    ],
+  },
 ];
 
 type Environment = Record<string, string | undefined>;
@@ -113,7 +238,7 @@ export function isVerifiedActivationDetail(value: string | undefined) {
 }
 
 
-const operationPathPattern = /_(?:AVAILABILITY|CREATE|GET|MODIFY|CANCEL|VALIDATION)_PATH$/;
+const operationPathPattern = /_(?:AVAILABILITY|CREATE_RESERVATION|GET_RESERVATION|MODIFY_RESERVATION|CANCEL_RESERVATION|CREATE|GET|MODIFY|CANCEL|VALIDATION)_PATH$/;
 
 function isSecureUrl(value: string) {
   try {
@@ -150,7 +275,7 @@ function isValidConfiguredValue(
   key: string,
   value: string,
 ) {
-  if (key.endsWith("_BASE_URL") || key.endsWith("_TOKEN_URL")) {
+  if (key.endsWith("_BASE_URL") || key.endsWith("_TOKEN_URL") || key.endsWith("_IDENTITY_URL")) {
     return isSecureUrl(value);
   }
   if (key.endsWith("_TIMEOUT_MS")) return isPositiveNumber(value);
