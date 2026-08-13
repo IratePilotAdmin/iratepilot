@@ -251,7 +251,7 @@ describe("PMS integration foundation", () => {
     expect(adminSettings).toContain("Confirm webhook validation");
     expect(adminSettings).toContain("Confirm production smoke test");
     expect(adminSettings).toContain("Enable live traffic");
-    expect(adminSettings).toContain("migrations 034 and 035");
+    expect(adminSettings).toContain("migrations 034, 035, 036, and 038");
   });
 
   it("keeps the readiness dashboard available while migration 035 is pending", () => {
