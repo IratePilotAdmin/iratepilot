@@ -77,6 +77,13 @@ when checksum integrity, schema-2 receipt binding, iRatePilot issuance, freshnes
 evidence and request-journal sections are all verified. Legacy, unissued, superseded, malformed, or
 truncated packets remain inspectable but are clearly blocked from handoff. This assessment stores
 no uploaded packet content and does not alter the production activation gates.
+Phase 20 adds a separate per-property SynXis onboarding request in Partner Center. An approved
+partner account can submit a non-secret SynXis Hotel ID and record whether the authorized hotel
+representative is an owner, general manager, revenue manager, or sales manager. Migration
+`202608130045_synxis_property_onboarding_requests.sql` restricts partners to their own properties
+and to the vendor-approval-pending state; administrators retain the later workflow. Requests never
+accept credentials and cannot activate traffic. The declared representative role is an attestation,
+not a delegated iRatePilot login; team-member accounts require a separate RBAC phase.
 
 ## Configuration
 
@@ -125,6 +132,8 @@ Complete these gates in order:
     intentionally blocked once any receipt exists.
 14. Apply migration `202608130044_synxis_certification_packet_schema_v2.sql` to enable new packet
     exports. Schema-2 receipt IDs and checksums must match the same immutable issuance row.
+15. Apply migration `202608130045_synxis_property_onboarding_requests.sql` before accepting
+    property-level SynXis requests from approved partner accounts.
 
 Configuration alone never permits live traffic.
 
