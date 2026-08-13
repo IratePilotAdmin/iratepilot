@@ -107,8 +107,13 @@ export {
 } from "./maestro";
 export { MaestroConnectionTestError, testMaestroSandboxConnection } from "./maestro";
 export type {
-  MaestroConfig, MaestroConnectionTestConfig, MaestroConnectionTestResult,
-  MaestroBookingMapperConfig, MaestroEndpoint, MaestroFetch, MaestroSyncEnvironment,
+  MaestroBookingMapperConfig,
+  MaestroConfig,
+  MaestroConnectionTestConfig,
+  MaestroConnectionTestResult,
+  MaestroEndpoint,
+  MaestroFetch,
+  MaestroSyncEnvironment,
 } from "./maestro";
 export { ShijiHttpTransport, ShijiTransportError } from "./shiji";
 export { ShijiBookingMapper, createShijiSyncAdapter, loadShijiSyncConfig } from "./shiji";
