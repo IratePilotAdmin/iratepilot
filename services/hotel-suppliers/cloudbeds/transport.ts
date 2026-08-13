@@ -56,7 +56,7 @@ function payloadRecord(payload: unknown): Record<string, unknown> {
 function appendValue(target: URLSearchParams | FormData, key: string, value: unknown) {
   if (value === undefined || value === null) return;
   if (Array.isArray(value)) {
-    value.forEach((item) => appendValue(target, key, item));
+    target.append(key, JSON.stringify(value));
     return;
   }
   const serialized = typeof value === "object" ? JSON.stringify(value) : String(value);
