@@ -18,9 +18,13 @@ export type SynxisAcknowledgement = {
   warnings: SynxisResponseIssue[];
 };
 
+export type SynxisOperationLimiter = {
+  schedule<T>(operation: () => Promise<T>): Promise<T>;
+};
+
 export type SynxisCertificationClientConfig = {
   transport: SynxisAriTransport;
-  limiter?: SynxisRateLimiter;
+  limiter: SynxisOperationLimiter;
   maxAttempts?: number;
   sleep?: (milliseconds: number) => Promise<void>;
 };
@@ -111,12 +115,12 @@ function retryDelay(attempt: number) {
 }
 
 export class SynxisCertificationClient {
-  private readonly limiter: SynxisRateLimiter;
+  private readonly limiter: SynxisOperationLimiter;
   private readonly maxAttempts: number;
   private readonly sleep: (milliseconds: number) => Promise<void>;
 
   constructor(private readonly config: SynxisCertificationClientConfig) {
-    this.limiter = config.limiter ?? new SynxisRateLimiter();
+    this.limiter = config.limiter;
     this.maxAttempts = config.maxAttempts ?? 3;
     this.sleep = config.sleep ?? ((milliseconds) =>
       new Promise((resolve) => setTimeout(resolve, milliseconds)));

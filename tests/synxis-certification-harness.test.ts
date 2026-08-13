@@ -88,6 +88,7 @@ describe("SynXis certification execution", () => {
       '<OTA_HotelInvCountNotifRS><Errors><Error Code="INV-4"/></Errors></OTA_HotelInvCountNotifRS>');
     const payloadClient = new SynxisCertificationClient({
       transport: { execute: rejectedPayload },
+      limiter: new SynxisRateLimiter(5, () => 0, async () => undefined),
       maxAttempts: 3,
     });
     await expect(payloadClient.execute(request)).rejects.toThrow("(INV-4)");
@@ -98,6 +99,7 @@ describe("SynXis certification execution", () => {
     });
     const forbiddenClient = new SynxisCertificationClient({
       transport: { execute: forbidden },
+      limiter: new SynxisRateLimiter(5, () => 0, async () => undefined),
       maxAttempts: 3,
     });
     await expect(forbiddenClient.execute(request)).rejects.toMatchObject({ status: 403 });
@@ -107,6 +109,7 @@ describe("SynXis certification execution", () => {
   it("allows at most three attempts", () => {
     expect(() => new SynxisCertificationClient({
       transport: { execute: async () => "<Success/>" },
+      limiter: new SynxisRateLimiter(5, () => 0, async () => undefined),
       maxAttempts: 4,
     })).toThrow("between 1 and 3");
   });

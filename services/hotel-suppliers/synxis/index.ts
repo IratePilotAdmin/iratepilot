@@ -142,5 +142,12 @@ export type {
   SynxisAcknowledgement,
   SynxisAriTransport,
   SynxisCertificationClientConfig,
+  SynxisOperationLimiter,
   SynxisResponseIssue,
 } from "./certification";
+
+export {
+  createSynxisDistributedRateLimiter,
+  SynxisDistributedRateLimiter,
+} from "./distributed-rate-limit";
+export type { SynxisRateLimitRpcClient } from "./distributed-rate-limit";
