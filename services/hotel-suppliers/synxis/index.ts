@@ -130,7 +130,12 @@ export type {
   SynxisSoapVersion,
   SynxisTransportConfig,
   SynxisTransportRequest,
+  SynxisTrafficAuthorizer,
+  SynxisTrafficMode,
 } from "./transport";
+
+export { assertSynxisTrafficAuthorized } from "./runtime-gate";
+export type { SynxisRuntimeEvidence } from "./runtime-gate";
 
 export {
   parseSynxisAcknowledgement,

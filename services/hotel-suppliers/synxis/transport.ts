@@ -2,6 +2,8 @@ export type SynxisAriOperation = "rate_push" | "inventory_push";
 export type SynxisSoapVersion = "1.1" | "1.2";
 export type SynxisAuthenticationProfile = "htng-1.1" | "ws-security";
 export type SynxisEnvironment = "certification" | "production";
+export type SynxisTrafficMode = "certification" | "production_smoke" | "live";
+export type SynxisTrafficAuthorizer = (mode: SynxisTrafficMode) => Promise<void>;
 export type SynxisFetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
 export type SynxisCredentials = {
@@ -18,8 +20,8 @@ export type SynxisTransportConfig = {
   credentials?: SynxisCredentials;
   getCredentials?: () => Promise<SynxisCredentials>;
   environment: SynxisEnvironment;
-  certificationApproved: boolean;
-  productionEnabled?: boolean;
+  trafficMode: SynxisTrafficMode;
+  authorizeTraffic: SynxisTrafficAuthorizer;
   timeoutMs?: number;
 };
 
@@ -56,6 +58,15 @@ function validate(config: SynxisTransportConfig) {
   if (!config.endpointPath.trim()) throw new Error("SynXis endpoint path is required");
   if (!config.credentials && !config.getCredentials) {
     throw new Error("SynXis credentials or credential provider is required");
+  }
+  if (typeof config.authorizeTraffic !== "function") {
+    throw new Error("SynXis persisted traffic authorizer is required");
+  }
+  if (config.environment === "certification" && config.trafficMode !== "certification") {
+    throw new Error("SynXis certification endpoints require certification traffic mode");
+  }
+  if (config.environment === "production" && config.trafficMode === "certification") {
+    throw new Error("SynXis production endpoints require production smoke or live traffic mode");
   }
   for (const operation of ["rate_push", "inventory_push"] as const) {
     if (!config.soapActions[operation]?.trim()) {
@@ -152,13 +163,8 @@ export class SynxisSoapTransport {
   }
 
   async execute(request: SynxisTransportRequest): Promise<string> {
-    if (!this.config.certificationApproved) {
-      throw new Error("SynXis traffic requires documented Sabre certification approval");
-    }
-    if (this.config.environment === "production" && !this.config.productionEnabled) {
-      throw new Error("SynXis production traffic is disabled");
-    }
     assertBody(request);
+    await this.config.authorizeTraffic(this.config.trafficMode);
 
     const endpoint = new URL(this.config.endpointPath, this.baseUrl);
     if (endpoint.origin !== this.baseUrl.origin) {

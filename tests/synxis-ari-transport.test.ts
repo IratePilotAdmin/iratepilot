@@ -44,7 +44,8 @@ const config: SynxisTransportConfig = {
     password: "property-password",
   },
   environment: "certification",
-  certificationApproved: true,
+  trafficMode: "certification",
+  authorizeTraffic: async () => undefined,
 };
 
 describe("SynXis ARI mapping", () => {
@@ -139,21 +140,19 @@ describe("SynxisSoapTransport", () => {
     expect(String(init?.body)).toContain("<userName>property-user</userName>");
   });
 
-  it("fails closed before certification and production activation", async () => {
+  it("fails closed when the persisted runtime gate rejects traffic", async () => {
     const fetcher = vi.fn<SynxisFetch>(async () => new Response("<Success/>"));
+    const credentials = vi.fn(async () => ({ username: "user", password: "password" }));
 
     await expect(new SynxisSoapTransport({
       ...config,
-      certificationApproved: false,
-    }, fetcher).execute(request)).rejects.toThrow("certification approval");
-
-    await expect(new SynxisSoapTransport({
-      ...config,
-      environment: "production",
-      productionEnabled: false,
-    }, fetcher).execute(request)).rejects.toThrow("production traffic is disabled");
+      credentials: undefined,
+      getCredentials: credentials,
+      authorizeTraffic: async () => { throw new Error("persisted launch gate denied"); },
+    }, fetcher).execute(request)).rejects.toThrow("persisted launch gate denied");
 
     expect(fetcher).not.toHaveBeenCalled();
+    expect(credentials).not.toHaveBeenCalled();
   });
 
   it("rejects insecure, cross-origin, and incompatible transport configuration", async () => {
@@ -166,6 +165,11 @@ describe("SynxisSoapTransport", () => {
       ...config,
       soapVersion: "1.1",
     })).toThrow("WS-Security ARI requires SOAP 1.2");
+
+    expect(() => new SynxisSoapTransport({
+      ...config,
+      environment: "production",
+    })).toThrow("production smoke or live traffic mode");
 
     const transport = new SynxisSoapTransport({
       ...config,

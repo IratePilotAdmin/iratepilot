@@ -31,7 +31,10 @@ production configuration is missing or invalid, so the browser cannot bypass tha
 Phase 8 adds migration `202608130041_synxis_crs_evidence_audit.sql`, which records every evidence
 change through a database trigger, blocks update/delete operations against audit events, and shows
 the latest 25 events in Admin Settings. Audit snapshots contain certification evidence only and
-must never contain connector secrets.
+must never contain connector secrets. Phase 9 replaces caller-supplied approval booleans with a
+required runtime authorizer. Every SOAP execution re-reads the persisted launch evidence before
+credentials are loaded or a network request begins. Certification, production-smoke, and live
+traffic modes each require their corresponding ordered gates, and database errors fail closed.
 
 ## Configuration
 
@@ -69,6 +72,9 @@ Complete these gates in order:
    approval references are recorded through the admin-only evidence endpoint.
 9. An administrator explicitly enables live traffic.
 10. Preserve migration 041 audit history for the certification record and any future investigation.
+11. Construct every SOAP transport with `createSynxisRuntimeAuthorizer()` and the explicit
+    `certification`, `production_smoke`, or `live` traffic mode. Never substitute a caller-supplied
+    boolean or a cached approval value for the persisted check.
 
 Configuration alone never permits live traffic.
 
