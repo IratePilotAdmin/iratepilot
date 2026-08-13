@@ -107,13 +107,8 @@ export {
 } from "./maestro";
 export { MaestroConnectionTestError, testMaestroSandboxConnection } from "./maestro";
 export type {
-  MaestroBookingMapperConfig,
-  MaestroConfig,
-  MaestroConnectionTestConfig,
-  MaestroConnectionTestResult,
-  MaestroEndpoint,
-  MaestroFetch,
-  MaestroSyncEnvironment,
+  MaestroConfig, MaestroConnectionTestConfig, MaestroConnectionTestResult,
+  MaestroBookingMapperConfig, MaestroEndpoint, MaestroFetch, MaestroSyncEnvironment,
 } from "./maestro";
 export { ShijiHttpTransport, ShijiTransportError } from "./shiji";
 export { ShijiBookingMapper, createShijiSyncAdapter, loadShijiSyncConfig } from "./shiji";
@@ -135,7 +130,11 @@ export type {
   ClockPmsEndpoint, ClockPmsFetch, ClockPmsSyncEnvironment,
 } from "./clock-pms-plus";
 export { HotelogixHttpTransport, HotelogixTransportError } from "./hotelogix";
-export type { HotelogixConfig, HotelogixEndpoint, HotelogixFetch } from "./hotelogix";
+export { HotelogixBookingMapper, createHotelogixSyncAdapter, loadHotelogixSyncConfig } from "./hotelogix";
+export type {
+  HotelogixBookingMapperConfig, HotelogixConfig, HotelogixEndpoint,
+  HotelogixFetch, HotelogixSyncEnvironment,
+} from "./hotelogix";
 export { InforHmsHttpTransport, InforHmsTransportError } from "./infor-hms";
 export type { InforHmsConfig, InforHmsEndpoint, InforHmsFetch } from "./infor-hms";
 export { AgilysysPmsHttpTransport, AgilysysPmsTransportError } from "./agilysys-pms";
