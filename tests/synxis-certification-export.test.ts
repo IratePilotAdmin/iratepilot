@@ -64,6 +64,6 @@ describe("SynXis certification packet", () => {
   it("offers the export only when all persistence migrations are available", () => {
     expect(dashboard).toContain("Download certification packet");
     expect(dashboard).toContain('href="/api/admin/integrations/crs/synxis/export"');
-    expect(dashboard).toContain("migrations 040–042");
+    expect(dashboard).toContain("migrations 040–043");
   });
 });

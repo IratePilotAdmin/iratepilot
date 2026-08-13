@@ -1,5 +1,6 @@
 import { requireRole } from "@/lib/auth/require-role";
 import { verifySynxisCertificationPacket } from "@/lib/integrations/synxis-certification-packet";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -38,5 +39,32 @@ export async function POST(request: Request) {
   }
 
   const verification = verifySynxisCertificationPacket(packet);
-  return Response.json(verification, { headers: responseHeaders });
+  if (!verification.valid || !verification.checksum) {
+    return Response.json({ ...verification, issuance: { recorded: false } }, { headers: responseHeaders });
+  }
+
+  const receiptResult = await createAdminClient()
+    .from("synxis_certification_export_receipts")
+    .select("exporter_name,exported_at")
+    .eq("provider_id", "sabre-synxis")
+    .eq("checksum", verification.checksum)
+    .maybeSingle();
+  if (receiptResult.error?.code === "42P01") {
+    return errorResponse("Apply SynXis migration 043 before verifying packet issuance.", 503);
+  }
+  if (receiptResult.error) {
+    console.error("SynXis certification receipt lookup failed", receiptResult.error);
+    return errorResponse("Certification packet issuance could not be verified.", 503);
+  }
+
+  return Response.json({
+    ...verification,
+    issuance: receiptResult.data
+      ? {
+        recorded: true,
+        exportedBy: receiptResult.data.exporter_name,
+        exportedAt: receiptResult.data.exported_at,
+      }
+      : { recorded: false },
+  }, { headers: responseHeaders });
 }

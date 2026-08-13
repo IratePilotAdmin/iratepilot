@@ -158,8 +158,10 @@ export function SynxisCrsReadiness() {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Certification packet could not be verified.");
-      setPacketVerification(result.valid
-        ? `Checksum verified for schema ${result.schemaVersion}. This confirms integrity, not authorship.`
+      setPacketVerification(result.valid && result.issuance?.recorded
+        ? `Checksum and iRatePilot issuance verified. Exported by ${result.issuance.exportedBy} on ${new Date(result.issuance.exportedAt).toLocaleString()}.`
+        : result.valid
+          ? `Checksum verified for schema ${result.schemaVersion}, but no iRatePilot issuance receipt was found.`
         : result.reason === "checksum_mismatch"
           ? "Checksum mismatch. Do not use this packet; its contents changed after export."
           : result.reason === "unsupported_schema"
@@ -200,7 +202,7 @@ export function SynxisCrsReadiness() {
               <button className="btn-secondary text-xs" disabled={busy} type="submit">Verify checksum</button>
             </form>
           </div>
-          : <span className="text-xs text-amber-700">Certification export unlocks after migrations 040–042 are applied.</span>}
+          : <span className="text-xs text-amber-700">Certification export unlocks after migrations 040–043 are applied.</span>}
         {packetVerification && <p className="mt-2 text-xs text-slate-600" role="status">{packetVerification}</p>}
       </div>}
     </div>

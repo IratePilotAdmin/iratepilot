@@ -68,6 +68,21 @@ export async function GET() {
       requestReceipts: requestsResult.data ?? [],
       requestReceiptsTotal: requestsResult.count ?? 0,
     });
+    const receiptResult = await admin.from("synxis_certification_export_receipts").insert({
+      provider_id: "sabre-synxis",
+      schema_version: packet.schemaVersion,
+      checksum: packet.integrity.checksum,
+      packet_generated_at: packet.generatedAt,
+      evidence_event_count: packet.evidenceHistory.total,
+      request_receipt_count: packet.requestJournal.total,
+      exported_by: auth.user.id,
+      exporter_name: auth.profile.full_name?.trim() || "Administrator",
+    });
+    if (receiptResult.error?.code === "42P01") {
+      return errorResponse("Apply SynXis migration 043 before exporting a certification packet.", 503);
+    }
+    if (receiptResult.error) throw receiptResult.error;
+
     const date = packet.generatedAt.slice(0, 10);
     return new Response(`${JSON.stringify(packet, null, 2)}\n`, {
       headers: {

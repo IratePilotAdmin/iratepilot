@@ -67,6 +67,7 @@ describe("SynXis certification packet verifier", () => {
     expect(route).toContain('"Cache-Control": "private, no-store"');
     expect(route).toContain('"X-Content-Type-Options": "nosniff"');
     expect(dashboard).toContain("Verify checksum");
-    expect(dashboard).toContain("This confirms integrity, not authorship.");
+    expect(dashboard).toContain("Checksum and iRatePilot issuance verified");
+    expect(dashboard).toContain("no iRatePilot issuance receipt was found");
   });
 });

@@ -51,6 +51,11 @@ Phase 13 adds an admin-only packet verifier in Admin Settings. It accepts export
 to 2 MB, validates the provider and schema, and recomputes the SHA-256 checksum. A successful check
 confirms that packet contents have not changed since export; it does not prove who created or
 approved the packet.
+Phase 14 adds migration `202608130043_synxis_certification_export_receipts.sql`. Before a packet is
+returned, the server records an immutable, non-secret issuance receipt containing its checksum,
+schema, counts, timestamps, and exporting administrator. Packet verification then distinguishes an
+unchanged packet from an unchanged packet whose issuance is also recorded by iRatePilot. Packet
+bodies, evidence contents, and credentials are never stored in this ledger.
 
 ## Configuration
 
@@ -94,6 +99,9 @@ Complete these gates in order:
 12. Apply migration `202608130042_synxis_request_journal.sql` and construct the transport with
     `createSynxisRequestJournal()`. Retain request IDs and attempt receipts for Sabre certification
     reconciliation; never add XML payloads or credentials to the journal.
+13. Apply migration `202608130043_synxis_certification_export_receipts.sql` before downloading a
+    certification packet. Preserve issuance receipts with the certification record; rollback is
+    intentionally blocked once any receipt exists.
 
 Configuration alone never permits live traffic.
 
