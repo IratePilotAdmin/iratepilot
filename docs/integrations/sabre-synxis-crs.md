@@ -12,9 +12,10 @@ certification, property mapping, sandbox validation, and a production smoke test
 - Receive and reconcile reservation delivery events.
 - Preserve request IDs, audit results, retry transient failures, and never log credentials.
 
-The first implementation commit provides the provider contract and a fail-closed readiness gate.
-The authenticated SOAP transport and Sabre-certified payload mappers must be completed against
-the WSDL and interface package provisioned to iRatePilot by Sabre.
+Phase 2 adds hardened SOAP 1.1 HTNG and SOAP 1.2 WS-Security transport profiles, plus OTA
+rate-amount and inventory XML mappers. The configured endpoint and SOAP actions must still be
+reconciled against the WSDL and interface package provisioned to iRatePilot by Sabre. Reservation
+delivery remains out of scope until that certified contract is available.
 
 ## Configuration
 
@@ -43,7 +44,7 @@ Complete these gates in order:
 2. Sabre provisions iRatePilot's certification environment and interface package.
 3. The real SynXis Hotel ID, room codes, rate codes, and channel codes are mapped.
 4. Product query, delta rate push, inventory push, and reservation delivery pass in certification.
-5. Replay, duplicate, timeout, retry, and credential-redaction tests pass.
+5. Replay, duplicate, timeout, retry, credential-redaction, and the Sabre 5-TPS system-level limit are validated.
 6. A controlled production smoke test passes for the pilot property.
 7. An administrator explicitly enables live traffic.
 
