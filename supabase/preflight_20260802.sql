@@ -68,7 +68,7 @@ select
   p.id,
   p.name,
   p.active,
-  p.photo_url,
+  p.image_url,
   p.description,
   count(distinct r.id) filter (where r.active = true) as active_rooms,
   count(distinct i.id) filter (
@@ -80,8 +80,8 @@ from public.properties p
 left join public.rooms r on r.property_id = p.id
 left join public.inventory i on i.room_id = r.id
 where p.active = true
-group by p.id, p.name, p.active, p.photo_url, p.description
-having nullif(trim(coalesce(p.photo_url, '')), '') is null
+group by p.id, p.name, p.active, p.image_url, p.description
+having nullif(trim(coalesce(p.image_url, '')), '') is null
     or char_length(trim(coalesce(p.description, ''))) < 80
     or count(distinct r.id) filter (where r.active = true) = 0
     or count(distinct i.id) filter (
