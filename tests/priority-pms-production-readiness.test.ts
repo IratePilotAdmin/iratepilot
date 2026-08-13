@@ -19,14 +19,24 @@ function configuredEnvironment() {
   );
 }
 
-describe("priority PMS production readiness", () => {
-  it("defines a complete launch contract for all six priority providers", () => {
+describe("unified PMS production readiness", () => {
+  it("defines a launch contract for every completed provider", () => {
     expect(priorityPmsProductionManifest.map(({ id }) => id)).toEqual(priorityPmsProviderIds);
+    expect(priorityPmsProviderIds).toHaveLength(22);
     for (const provider of priorityPmsProductionManifest) {
-      expect(provider.requiredEnvironmentKeys).toContainEqual(expect.stringMatching(/_BASE_URL$/));
-      expect(provider.requiredEnvironmentKeys).toContainEqual(expect.stringMatching(/_WEBHOOK_SECRET$/));
+      expect(provider.requiredEnvironmentKeys.length).toBeGreaterThan(0);
       expect(new Set(provider.requiredEnvironmentKeys).size).toBe(provider.requiredEnvironmentKeys.length);
+      expect(new Set(provider.optionalEnvironmentKeys).size).toBe(provider.optionalEnvironmentKeys.length);
     }
+  });
+
+  it("tracks the real adapter contract for representative public and legacy connectors", () => {
+    expect(priorityPmsProductionManifest.find(({ id }) => id === "mews")?.requiredEnvironmentKeys)
+      .toEqual(expect.arrayContaining(["PMS_MEWS_CLIENT_TOKEN", "PMS_MEWS_SERVICE_ID", "PMS_MEWS_RATE_ID"]));
+    expect(priorityPmsProductionManifest.find(({ id }) => id === "oracle-opera-5")?.requiredEnvironmentKeys)
+      .toEqual(expect.arrayContaining(["PMS_OPERA5_BASE_URL", "PMS_OPERA5_CREATE_RESERVATION_SOAP_ACTION"]));
+    expect(priorityPmsProductionManifest.find(({ id }) => id === "rms-cloud")?.requiredEnvironmentKeys)
+      .toEqual(expect.arrayContaining(["PMS_RMS_CLOUD_AUTH_TOKEN", "PMS_RMS_CLOUD_CATEGORY_IDS"]));
   });
 
   it("reports configuration without returning secret values", () => {

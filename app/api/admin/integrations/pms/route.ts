@@ -119,7 +119,7 @@ export async function PATCH(request: Request) {
       details?: Record<string, unknown>;
     };
     if (!body.providerId || !priorityPmsProviderIds.includes(body.providerId as PriorityPmsProviderId)) {
-      return NextResponse.json({ error: "A supported priority PMS provider is required." }, { status: 400 });
+      return NextResponse.json({ error: "A supported PMS provider is required." }, { status: 400 });
     }
     const patch = body.evidence ?? {};
     const details = body.details ?? {};
@@ -147,7 +147,7 @@ export async function PATCH(request: Request) {
       .maybeSingle();
     if (currentResult.error) {
       if (currentResult.error.code === "42P01" || currentResult.error.code === "42703") {
-        return NextResponse.json({ error: "Apply migrations 034 and 035 before recording launch evidence." }, { status: 503 });
+        return NextResponse.json({ error: "Apply PMS launch-evidence migrations through 038 before recording launch evidence." }, { status: 503 });
       }
       throw currentResult.error;
     }
