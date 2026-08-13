@@ -43,6 +43,10 @@ stored in the journal.
 Phase 11 adds the latest 50 request receipts to Admin Settings with status counts, HTTP status,
 attempt number, traffic mode, and elapsed time. Receipts left in `started` for five minutes are
 flagged for manual vendor-outcome reconciliation before any retry is considered.
+Phase 12 adds an admin-only certification packet download. The JSON export includes readiness,
+non-secret evidence, audit history, and request receipts, marks bounded sections when truncated,
+and includes a SHA-256 checksum. Environment values, credentials, tokens, and SOAP bodies are
+explicitly excluded.
 
 ## Configuration
 

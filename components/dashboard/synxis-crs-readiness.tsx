@@ -152,6 +152,11 @@ export function SynxisCrsReadiness() {
         <span>Activation details: {data.activationDetailsComplete ? "verified" : "incomplete"}</span>
         <span>Traffic: {data.readiness.liveTrafficAllowed ? "live" : "disabled"}</span>
       </div>}
+      {data && <div className="mt-4">
+        {data.evidenceTrackingAvailable && data.historyAvailable && data.requestJournalAvailable
+          ? <a className="btn-secondary inline-flex text-xs" download href="/api/admin/integrations/crs/synxis/export">Download certification packet</a>
+          : <span className="text-xs text-amber-700">Certification export unlocks after migrations 040–042 are applied.</span>}
+      </div>}
     </div>
 
     {data && <div className="p-6">
