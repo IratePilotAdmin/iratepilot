@@ -25,6 +25,21 @@ type SynxisResponse = {
     createdAt: string;
   }>;
   historyAvailable: boolean;
+  requests: Array<{
+    id: string;
+    requestId: string;
+    attemptNumber: number;
+    operation: "rate_push" | "inventory_push";
+    trafficMode: "certification" | "production_smoke" | "live";
+    status: "started" | "succeeded" | "failed";
+    httpStatus: number | null;
+    startedAt: string;
+    completedAt: string | null;
+    durationMs: number | null;
+    stale: boolean;
+  }>;
+  summary: { total: number; succeeded: number; failed: number; inFlight: number; stale: number };
+  requestJournalAvailable: boolean;
   updatedAt: string | null;
 };
 
@@ -61,6 +76,12 @@ const auditFieldLabels: Record<string, string> = {
   property_code: "property code",
   support_contact: "support contact",
   verification_notes: "verification notes",
+};
+
+const requestStatusStyle = {
+  started: "text-blue-700",
+  succeeded: "text-emerald-700",
+  failed: "text-red-700",
 };
 
 export function SynxisCrsReadiness() {
@@ -187,6 +208,43 @@ export function SynxisCrsReadiness() {
                 <p className="mt-1 text-xs text-slate-600">Changed: {event.changedFields.map((field) => auditFieldLabels[field] ?? field.replaceAll("_", " ")).join(", ")}</p>
               </li>)}
             </ol>}
+      </details>
+
+      <details className="mt-5 rounded-lg border p-4">
+        <summary className="cursor-pointer text-sm font-semibold">SynXis request monitor</summary>
+        {!data.requestJournalAvailable ? <p className="mt-3 text-sm text-amber-700">Apply migration 042 to begin transport monitoring.</p>
+          : <div className="mt-4">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+              {([
+                ["Recent attempts", data.summary.total],
+                ["Succeeded", data.summary.succeeded],
+                ["Failed", data.summary.failed],
+                ["In flight", data.summary.inFlight],
+                ["Stale over 5 min", data.summary.stale],
+              ] as const).map(([label, value]) => <div className="rounded-lg bg-slate-50 p-3" key={label}>
+                <span className="text-xs text-slate-500">{label}</span>
+                <strong className="mt-1 block text-lg">{value}</strong>
+              </div>)}
+            </div>
+            {data.summary.stale > 0 && <p className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800" role="alert">One or more request receipts are still started after five minutes. Verify the vendor outcome before retrying.</p>}
+            {data.requests.length === 0 ? <p className="mt-4 text-sm text-slate-500">No SynXis transport attempts have been recorded yet.</p>
+              : <div className="mt-4 overflow-x-auto">
+                <table className="min-w-full text-left text-xs">
+                  <thead className="border-b text-slate-500"><tr><th className="px-2 py-2">Started</th><th className="px-2 py-2">Request</th><th className="px-2 py-2">Operation</th><th className="px-2 py-2">Mode</th><th className="px-2 py-2">Attempt</th><th className="px-2 py-2">Status</th><th className="px-2 py-2">HTTP</th><th className="px-2 py-2">Latency</th></tr></thead>
+                  <tbody className="divide-y">{data.requests.map((request) => <tr className={request.stale ? "bg-red-50" : ""} key={request.id}>
+                    <td className="whitespace-nowrap px-2 py-2"><time dateTime={request.startedAt}>{new Date(request.startedAt).toLocaleString()}</time></td>
+                    <td className="max-w-52 truncate px-2 py-2 font-mono" title={request.requestId}>{request.requestId}</td>
+                    <td className="whitespace-nowrap px-2 py-2">{request.operation.replaceAll("_", " ")}</td>
+                    <td className="whitespace-nowrap px-2 py-2">{request.trafficMode.replaceAll("_", " ")}</td>
+                    <td className="px-2 py-2">{request.attemptNumber}</td>
+                    <td className={`whitespace-nowrap px-2 py-2 font-semibold ${requestStatusStyle[request.status]}`}>{request.stale ? "stale" : request.status}</td>
+                    <td className="px-2 py-2">{request.httpStatus ?? "—"}</td>
+                    <td className="whitespace-nowrap px-2 py-2">{request.durationMs === null ? "—" : `${request.durationMs} ms`}</td>
+                  </tr>)}</tbody>
+                </table>
+              </div>}
+            <p className="mt-3 text-xs text-slate-500">Showing the latest 50 non-secret receipts. SOAP payloads and credentials are never included.</p>
+          </div>}
       </details>
 
       <div className={`mt-5 rounded-lg border p-4 ${data.readiness.liveTrafficAllowed ? "border-emerald-300 bg-emerald-50" : "border-red-200 bg-red-50"}`}>

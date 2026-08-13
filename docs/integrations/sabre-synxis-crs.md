@@ -40,6 +40,9 @@ create a unique non-secret receipt before credentials or network access, then tr
 success or failure. Duplicate request/attempt pairs, missing journal storage, and completion-write
 failures stop execution without an automatic retry. SOAP bodies and credential values are never
 stored in the journal.
+Phase 11 adds the latest 50 request receipts to Admin Settings with status counts, HTTP status,
+attempt number, traffic mode, and elapsed time. Receipts left in `started` for five minutes are
+flagged for manual vendor-outcome reconciliation before any retry is considered.
 
 ## Configuration
 

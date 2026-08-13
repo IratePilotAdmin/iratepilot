@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  buildSynxisRequestMonitor,
+  type SynxisRequestJournalRow,
+} from "@/lib/integrations/synxis-request-monitor";
 import { isVerifiedActivationDetail } from "@/services/hotel-suppliers/priority-readiness";
 import {
   buildSynxisReadiness,
@@ -12,6 +16,7 @@ export const dynamic = "force-dynamic";
 const providerId = "sabre-synxis";
 const liveConfirmation = "ENABLE SABRE SYNXIS LIVE TRAFFIC";
 const auditLimit = 25;
+const requestLimit = 50;
 const evidenceColumns = "vendor_approved,certification_environment_approved,property_mapped,sandbox_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact,verification_notes,updated_at";
 const emptyEvidence = {
   vendorApproved: false,
@@ -84,6 +89,8 @@ function buildResponse(
   updatedAt: unknown,
   history: ReturnType<typeof mapHistory> = [],
   historyAvailable = false,
+  requestMonitor: ReturnType<typeof buildSynxisRequestMonitor> = buildSynxisRequestMonitor([]),
+  requestJournalAvailable = false,
 ) {
   const readiness = buildSynxisReadiness(process.env, evidence);
   const activationDetailsComplete = [
@@ -102,7 +109,24 @@ function buildResponse(
       && readiness.status === "activation_required",
     history,
     historyAvailable,
+    ...requestMonitor,
+    requestJournalAvailable,
     updatedAt,
+  };
+}
+
+async function loadRequestMonitor(admin: ReturnType<typeof createAdminClient>) {
+  const result = await admin.from("synxis_request_journal")
+    .select("id,request_id,attempt_number,operation,traffic_mode,status,http_status,started_at,completed_at")
+    .order("started_at", { ascending: false })
+    .limit(requestLimit);
+  if (result.error?.code === "42P01") {
+    return { monitor: buildSynxisRequestMonitor([]), available: false };
+  }
+  if (result.error) throw result.error;
+  return {
+    monitor: buildSynxisRequestMonitor((result.data ?? []) as SynxisRequestJournalRow[]),
+    available: true,
   };
 }
 
@@ -123,22 +147,29 @@ export async function GET() {
     if ("error" in auth) return noStore({ error: auth.error }, { status: auth.status });
 
     const admin = createAdminClient();
-    const [result, audit] = await Promise.all([
+    const [result, audit, journal] = await Promise.all([
       admin.from("synxis_crs_launch_evidence")
         .select(evidenceColumns)
         .eq("provider_id", providerId)
         .maybeSingle(),
       loadAuditHistory(admin),
+      loadRequestMonitor(admin),
     ]);
 
     if (result.error?.code === "42P01") {
       const evidence = { ...emptyEvidence };
-      return noStore(buildResponse(evidence, false, null, audit.history, audit.available));
+      return noStore(buildResponse(
+        evidence, false, null, audit.history, audit.available,
+        journal.monitor, journal.available,
+      ));
     }
     if (result.error) throw result.error;
 
     const evidence = mapEvidence(result.data);
-    return noStore(buildResponse(evidence, true, result.data?.updated_at ?? null, audit.history, audit.available));
+    return noStore(buildResponse(
+      evidence, true, result.data?.updated_at ?? null, audit.history, audit.available,
+      journal.monitor, journal.available,
+    ));
   } catch (error) {
     console.error("SynXis CRS launch evidence read failed", error);
     return noStore({ error: "SynXis CRS launch evidence could not be loaded." }, { status: 503 });
@@ -293,13 +324,18 @@ export async function PATCH(request: Request) {
     if (updateResult.error) throw updateResult.error;
 
     const evidence = mapEvidence(updateResult.data);
-    const audit = await loadAuditHistory(admin);
+    const [audit, journal] = await Promise.all([
+      loadAuditHistory(admin),
+      loadRequestMonitor(admin),
+    ]);
     return noStore(buildResponse(
       evidence,
       true,
       updateResult.data.updated_at,
       audit.history,
       audit.available,
+      journal.monitor,
+      journal.available,
     ));
   } catch (error) {
     console.error("SynXis CRS launch evidence update failed", error);
