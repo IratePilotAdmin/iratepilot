@@ -252,7 +252,7 @@ export function AdminSettings() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <span className="text-xs uppercase tracking-wider text-slate-500">Production launch gate</span>
-              <h3 className="mt-2 text-lg font-semibold">Priority PMS providers</h3>
+              <h3 className="mt-2 text-lg font-semibold">PMS production readiness</h3>
               <p className="mt-1 text-sm text-slate-600">This strict audit requires valid production configuration, vendor approval, property mapping, sandbox validation, verified webhooks, and a production test-property smoke test. Only configuration key names are shown; secret values never leave the server.</p>
               <p className="mt-2 text-xs text-slate-500">Mark a gate complete only after its approval, mapping record, or sandbox test evidence has been independently verified.</p>
             </div>
@@ -324,7 +324,7 @@ export function AdminSettings() {
               </details>
             </article>)}
           </div>
-          {!evidenceTrackingAvailable && <p className="mt-4 text-sm text-amber-700">Launch evidence tracking is unavailable until production migrations 034 and 035 are applied.</p>}
+          {!evidenceTrackingAvailable && <p className="mt-4 text-sm text-amber-700">Launch evidence tracking is unavailable until production migrations 034, 035, 036, and 038 are applied.</p>}
           {evidenceMessage && <p className="mt-4 text-sm" role="status">{evidenceMessage}</p>}
         </div>}
         {pmsMessage && <p className="p-6 text-sm text-slate-600" role="status">{pmsMessage}</p>}
