@@ -52,6 +52,17 @@ type SynxisResponse = {
     receiptBindingRequired: boolean;
   }>;
   exportReceiptLedgerAvailable: boolean;
+  propertyOperations: {
+    ready: boolean;
+    requiredThroughMigration: number;
+    gates: Array<{
+      key: "propertyOnboarding" | "managerAccess" | "managerInvitations" | "accessAuditing";
+      label: string;
+      migration: number;
+      available: boolean;
+      count: number | null;
+    }>;
+  };
   updatedAt: string | null;
 };
 
@@ -232,7 +243,7 @@ export function SynxisCrsReadiness() {
               <button className="btn-secondary text-xs" disabled={busy} type="submit">Check handoff eligibility</button>
             </form>
           </div>
-          : <span className="text-xs text-amber-700">Certification export unlocks after migrations 040–044 are applied.</span>}
+          : <span className="text-xs text-amber-700">Certification export unlocks after migrations 040â€“044 are applied.</span>}
         {packetVerification && <p className="mt-2 text-xs text-slate-600" role="status">{packetVerification}</p>}
       </div>}
     </div>
@@ -243,6 +254,28 @@ export function SynxisCrsReadiness() {
         {data.readiness.missingEnvironmentKeys.length > 0 && <p className="mt-2 break-words text-xs text-amber-800">Missing keys: {data.readiness.missingEnvironmentKeys.join(", ")}</p>}
         {data.readiness.invalidEnvironmentKeys.length > 0 && <p className="mt-2 break-words text-xs text-red-700">Invalid keys: {data.readiness.invalidEnvironmentKeys.join(", ")}</p>}
       </div>}
+
+      <div className={`mt-5 rounded-lg border p-4 ${data.propertyOperations.ready ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <strong className={data.propertyOperations.ready ? "text-emerald-900" : "text-amber-900"}>Hotel onboarding operations</strong>
+            <p className="mt-1 text-xs text-slate-600">Read-only deployment gate for property requests and owner-managed revenue, sales, and general manager access.</p>
+          </div>
+          <span className={`text-xs font-semibold ${data.propertyOperations.ready ? "text-emerald-700" : "text-amber-700"}`}>
+            {data.propertyOperations.ready ? "Ready" : `Apply migrations through ${data.propertyOperations.requiredThroughMigration}`}
+          </span>
+        </div>
+        <ol className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {data.propertyOperations.gates.map((gate) => <li className="rounded-md border bg-white p-3" key={gate.key}>
+            <span className="text-xs text-slate-500">Migration {gate.migration}</span>
+            <strong className="mt-1 block text-sm">{gate.label}</strong>
+            <p className={`mt-1 text-xs ${gate.available ? "text-emerald-700" : "text-amber-700"}`}>
+              {gate.available ? `Available Â· ${gate.count ?? 0} record${gate.count === 1 ? "" : "s"}` : "Not deployed"}
+            </p>
+          </li>)}
+        </ol>
+        <p className="mt-3 text-xs text-slate-500">Counts only. No hotel identifiers, manager emails, invitations, or audit details are returned.</p>
+      </div>
 
       <ol className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
         {gates.map((gate, index) => {
@@ -279,16 +312,16 @@ export function SynxisCrsReadiness() {
 
       <details className="mt-5 rounded-lg border p-4">
         <summary className="cursor-pointer text-sm font-semibold">Certification packet issuance</summary>
-        {!data.exportReceiptLedgerAvailable ? <p className="mt-3 text-sm text-amber-700">Apply migrations 043–044 to enable schema-2 packet downloads and issuance history.</p>
+        {!data.exportReceiptLedgerAvailable ? <p className="mt-3 text-sm text-amber-700">Apply migrations 043â€“044 to enable schema-2 packet downloads and issuance history.</p>
           : data.exportReceipts.length === 0 ? <p className="mt-3 text-sm text-slate-500">No certification packets have been issued yet.</p>
             : <div className="mt-4 overflow-x-auto">
               <table className="min-w-full text-left text-xs">
                 <thead className="border-b text-slate-500"><tr><th className="px-2 py-2">Issued</th><th className="px-2 py-2">Receipt</th><th className="px-2 py-2">Administrator</th><th className="px-2 py-2">Checksum</th><th className="px-2 py-2">Schema</th><th className="px-2 py-2">Audit events</th><th className="px-2 py-2">Request receipts</th></tr></thead>
                 <tbody className="divide-y">{data.exportReceipts.map((receipt) => <tr key={receipt.id}>
                   <td className="whitespace-nowrap px-2 py-2"><time dateTime={receipt.exportedAt}>{new Date(receipt.exportedAt).toLocaleString()}</time></td>
-                  <td className="px-2 py-2 font-mono" title={receipt.id}>{receipt.id.slice(0, 8)}…</td>
+                  <td className="px-2 py-2 font-mono" title={receipt.id}>{receipt.id.slice(0, 8)}â€¦</td>
                   <td className="whitespace-nowrap px-2 py-2">{receipt.exportedBy}</td>
-                  <td className="px-2 py-2 font-mono" title={receipt.checksum}>{receipt.checksum.slice(0, 12)}…</td>
+                  <td className="px-2 py-2 font-mono" title={receipt.checksum}>{receipt.checksum.slice(0, 12)}â€¦</td>
                   <td className="px-2 py-2">{receipt.schemaVersion}</td>
                   <td className="px-2 py-2">{receipt.evidenceEventCount}</td>
                   <td className="px-2 py-2">{receipt.requestReceiptCount}</td>
@@ -342,8 +375,8 @@ export function SynxisCrsReadiness() {
                     <td className="whitespace-nowrap px-2 py-2">{request.trafficMode.replaceAll("_", " ")}</td>
                     <td className="px-2 py-2">{request.attemptNumber}</td>
                     <td className={`whitespace-nowrap px-2 py-2 font-semibold ${requestStatusStyle[request.status]}`}>{request.stale ? "stale" : request.status}</td>
-                    <td className="px-2 py-2">{request.httpStatus ?? "—"}</td>
-                    <td className="whitespace-nowrap px-2 py-2">{request.durationMs === null ? "—" : `${request.durationMs} ms`}</td>
+                    <td className="px-2 py-2">{request.httpStatus ?? "â€”"}</td>
+                    <td className="whitespace-nowrap px-2 py-2">{request.durationMs === null ? "â€”" : `${request.durationMs} ms`}</td>
                   </tr>)}</tbody>
                 </table>
               </div>}
@@ -375,3 +408,4 @@ export function SynxisCrsReadiness() {
     {message && <p className="border-t p-4 text-sm text-slate-600" role="status">{message}</p>}
   </section>;
 }
+

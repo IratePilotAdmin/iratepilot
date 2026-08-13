@@ -104,6 +104,12 @@ active manager integration access. Both changes execute through locked database 
 ownership again in PostgreSQL, and append immutable audit events. Invitations and memberships are
 retained rather than deleted, and disabling a membership clears its integration permission so the
 existing resolver and RLS policies stop access immediately.
+Phase 24 adds a final read-only deployment gate to Admin Settings. The protected SynXis status
+endpoint checks migrations 045 through 048 in parallel and returns only availability and aggregate
+record counts for property onboarding, active manager access, pending invitations, and immutable
+access events. Missing tables or columns fail closed and identify the required migration; hotel
+identifiers, manager emails, invitation records, and audit details are never returned. This gate
+does not send invitations, grant or revoke access, change onboarding status, or enable traffic.
 
 ## Configuration
 
@@ -169,3 +175,4 @@ Configuration alone never permits live traffic.
 - [Property Connect integration guide](https://developer.sabre.com/sites/default/files/2019-11/FAQ%20Property%20Connect%20Integration%20Guide%20for%20Vendors%20V10.13.pdf)
 - [Generic ARI Push specification](https://developer.sabre.com/sites/default/files/resources/1718/SHS_Generic_ARI_Push_Specification_v10.29.0.pdf)
 - [Query Products specification](https://developer.sabre.com/sites/default/files/2019-08/Query%20Products%20Specification_v1.1.pdf)
+

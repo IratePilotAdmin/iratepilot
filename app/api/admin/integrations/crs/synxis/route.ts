@@ -18,6 +18,17 @@ const liveConfirmation = "ENABLE SABRE SYNXIS LIVE TRAFFIC";
 const auditLimit = 25;
 const requestLimit = 50;
 const exportReceiptLimit = 25;
+const propertyOperationsMigrations = [
+  { key: "propertyOnboarding", label: "Property onboarding", migration: 45 },
+  { key: "managerAccess", label: "Manager integration access", migration: 46 },
+  { key: "managerInvitations", label: "Manager invitations", migration: 47 },
+  { key: "accessAuditing", label: "Access lifecycle auditing", migration: 48 },
+] as const;
+const unavailablePropertyOperations = {
+  ready: false,
+  requiredThroughMigration: 48,
+  gates: propertyOperationsMigrations.map((gate) => ({ ...gate, available: false, count: null })),
+};
 const evidenceColumns = "vendor_approved,certification_environment_approved,property_mapped,sandbox_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact,verification_notes,updated_at";
 const emptyEvidence = {
   vendorApproved: false,
@@ -110,6 +121,39 @@ function mapExportReceipts(rows: ExportReceiptRow[]) {
   }));
 }
 
+type CountResult = {
+  count: number | null;
+  error: { code?: string } | null;
+};
+
+async function loadPropertyOperationsReadiness(admin: ReturnType<typeof createAdminClient>) {
+  const results = await Promise.all([
+    admin.from("property_synxis_onboarding_requests").select("id", { count: "exact", head: true }),
+    admin.from("partner_team_members").select("id", { count: "exact", head: true }).eq("status", "active"),
+    admin.from("partner_team_invitations").select("id", { count: "exact", head: true }).eq("status", "pending"),
+    admin.from("partner_team_access_events").select("id", { count: "exact", head: true }),
+  ]) as CountResult[];
+
+  const gates = propertyOperationsMigrations.map((definition, index) => {
+    const result = results[index];
+    const unavailable = result.error?.code === "42P01" || result.error?.code === "42703";
+    if (result.error && !unavailable) throw result.error;
+    return {
+      key: definition.key,
+      label: definition.label,
+      migration: definition.migration,
+      available: !unavailable,
+      count: unavailable ? null : result.count ?? 0,
+    };
+  });
+
+  return {
+    ready: gates.every((gate) => gate.available),
+    requiredThroughMigration: 48,
+    gates,
+  };
+}
+
 function buildResponse(
   evidence: ReturnType<typeof mapEvidence>,
   evidenceTrackingAvailable: boolean,
@@ -120,6 +164,7 @@ function buildResponse(
   requestJournalAvailable = false,
   exportReceipts: ReturnType<typeof mapExportReceipts> = [],
   exportReceiptLedgerAvailable = false,
+  propertyOperations: Awaited<ReturnType<typeof loadPropertyOperationsReadiness>> = unavailablePropertyOperations,
 ) {
   const readiness = buildSynxisReadiness(process.env, evidence);
   const activationDetailsComplete = [
@@ -142,6 +187,7 @@ function buildResponse(
     requestJournalAvailable,
     exportReceipts,
     exportReceiptLedgerAvailable,
+    propertyOperations,
     updatedAt,
   };
 }
@@ -194,7 +240,7 @@ export async function GET() {
     if ("error" in auth) return noStore({ error: auth.error }, { status: auth.status });
 
     const admin = createAdminClient();
-    const [result, audit, journal, exports] = await Promise.all([
+    const [result, audit, journal, exports, propertyOperations] = await Promise.all([
       admin.from("synxis_crs_launch_evidence")
         .select(evidenceColumns)
         .eq("provider_id", providerId)
@@ -202,6 +248,7 @@ export async function GET() {
       loadAuditHistory(admin),
       loadRequestMonitor(admin),
       loadExportReceipts(admin),
+      loadPropertyOperationsReadiness(admin),
     ]);
 
     if (result.error?.code === "42P01") {
@@ -209,6 +256,7 @@ export async function GET() {
       return noStore(buildResponse(
         evidence, false, null, audit.history, audit.available,
         journal.monitor, journal.available, exports.receipts, exports.available,
+        propertyOperations,
       ));
     }
     if (result.error) throw result.error;
@@ -217,6 +265,7 @@ export async function GET() {
     return noStore(buildResponse(
       evidence, true, result.data?.updated_at ?? null, audit.history, audit.available,
       journal.monitor, journal.available, exports.receipts, exports.available,
+      propertyOperations,
     ));
   } catch (error) {
     console.error("SynXis CRS launch evidence read failed", error);
@@ -372,10 +421,11 @@ export async function PATCH(request: Request) {
     if (updateResult.error) throw updateResult.error;
 
     const evidence = mapEvidence(updateResult.data);
-    const [audit, journal, exports] = await Promise.all([
+    const [audit, journal, exports, propertyOperations] = await Promise.all([
       loadAuditHistory(admin),
       loadRequestMonitor(admin),
       loadExportReceipts(admin),
+      loadPropertyOperationsReadiness(admin),
     ]);
     return noStore(buildResponse(
       evidence,
@@ -387,9 +437,11 @@ export async function PATCH(request: Request) {
       journal.available,
       exports.receipts,
       exports.available,
+      propertyOperations,
     ));
   } catch (error) {
     console.error("SynXis CRS launch evidence update failed", error);
     return noStore({ error: "SynXis CRS launch evidence could not be updated." }, { status: 503 });
   }
 }
+
