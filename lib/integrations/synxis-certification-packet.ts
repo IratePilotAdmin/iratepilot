@@ -14,7 +14,7 @@ export type SynxisCertificationPacketInput = {
 
 export function buildSynxisCertificationPacket(input: SynxisCertificationPacketInput) {
   const payload = {
-    schemaVersion: 1,
+    schemaVersion: input.issuanceReceiptId ? 2 : 1,
     provider: {
       id: "sabre-synxis",
       name: "Sabre SynXis Central Reservation System",
@@ -115,7 +115,7 @@ export function verifySynxisCertificationPacket(
         || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(issuanceReceiptId)))
   ) return invalidPacket();
 
-  if (schemaVersion !== 1) {
+  if (schemaVersion !== 1 && schemaVersion !== 2) {
     return {
       valid: false,
       reason: "unsupported_schema",
@@ -125,6 +125,7 @@ export function verifySynxisCertificationPacket(
       issuanceReceiptId: typeof issuanceReceiptId === "string" ? issuanceReceiptId : null,
     };
   }
+  if (schemaVersion === 2 && typeof issuanceReceiptId !== "string") return invalidPacket();
 
   const { integrity: _integrity, ...payload } = packet;
   void _integrity;

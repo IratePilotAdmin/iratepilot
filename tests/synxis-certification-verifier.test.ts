@@ -57,7 +57,7 @@ describe("SynXis certification packet verifier", () => {
     expect(verifySynxisCertificationPacket(foreign).reason).toBe("invalid_packet");
 
     const unsupported = packet() as unknown as Record<string, unknown>;
-    unsupported.schemaVersion = 2;
+    unsupported.schemaVersion = 3;
     expect(verifySynxisCertificationPacket(unsupported).reason).toBe("unsupported_schema");
   });
 

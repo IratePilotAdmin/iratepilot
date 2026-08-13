@@ -93,6 +93,7 @@ type ExportReceiptRow = {
   request_receipt_count: number;
   exporter_name: string;
   exported_at: string;
+  receipt_binding_required: boolean;
 };
 
 function mapExportReceipts(rows: ExportReceiptRow[]) {
@@ -105,6 +106,7 @@ function mapExportReceipts(rows: ExportReceiptRow[]) {
     requestReceiptCount: row.request_receipt_count,
     exportedBy: row.exporter_name.trim() || "Administrator",
     exportedAt: row.exported_at,
+    receiptBindingRequired: row.receipt_binding_required,
   }));
 }
 
@@ -172,11 +174,13 @@ async function loadAuditHistory(admin: ReturnType<typeof createAdminClient>) {
 
 async function loadExportReceipts(admin: ReturnType<typeof createAdminClient>) {
   const result = await admin.from("synxis_certification_export_receipts")
-    .select("id,schema_version,checksum,packet_generated_at,evidence_event_count,request_receipt_count,exporter_name,exported_at")
+    .select("id,schema_version,checksum,packet_generated_at,evidence_event_count,request_receipt_count,exporter_name,exported_at,receipt_binding_required")
     .eq("provider_id", providerId)
     .order("exported_at", { ascending: false })
     .limit(exportReceiptLimit);
-  if (result.error?.code === "42P01") return { receipts: [], available: false };
+  if (result.error?.code === "42P01" || result.error?.code === "42703") {
+    return { receipts: [], available: false };
+  }
   if (result.error) throw result.error;
   return {
     receipts: mapExportReceipts((result.data ?? []) as unknown as ExportReceiptRow[]),

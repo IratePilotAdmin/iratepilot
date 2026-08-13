@@ -75,6 +75,7 @@ export async function GET() {
       id: issuanceReceiptId,
       provider_id: "sabre-synxis",
       schema_version: packet.schemaVersion,
+      receipt_binding_required: true,
       checksum: packet.integrity.checksum,
       packet_generated_at: packet.generatedAt,
       evidence_event_count: packet.evidenceHistory.total,
@@ -82,8 +83,8 @@ export async function GET() {
       exported_by: auth.user.id,
       exporter_name: auth.profile.full_name?.trim() || "Administrator",
     });
-    if (receiptResult.error?.code === "42P01") {
-      return errorResponse("Apply SynXis migration 043 before exporting a certification packet.", 503);
+    if (receiptResult.error?.code === "42P01" || receiptResult.error?.code === "42703") {
+      return errorResponse("Apply SynXis migrations through 044 before exporting a certification packet.", 503);
     }
     if (receiptResult.error) throw receiptResult.error;
 

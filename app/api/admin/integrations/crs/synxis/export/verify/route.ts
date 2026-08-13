@@ -45,7 +45,7 @@ export async function POST(request: Request) {
 
   let receiptQuery = createAdminClient()
     .from("synxis_certification_export_receipts")
-    .select("exporter_name,exported_at")
+    .select("exporter_name,exported_at,receipt_binding_required")
     .eq("provider_id", "sabre-synxis");
   if (verification.issuanceReceiptId) {
     receiptQuery = receiptQuery.eq("id", verification.issuanceReceiptId);
@@ -53,8 +53,8 @@ export async function POST(request: Request) {
   const receiptResult = await receiptQuery
     .eq("checksum", verification.checksum)
     .maybeSingle();
-  if (receiptResult.error?.code === "42P01") {
-    return errorResponse("Apply SynXis migration 043 before verifying packet issuance.", 503);
+  if (receiptResult.error?.code === "42P01" || receiptResult.error?.code === "42703") {
+    return errorResponse("Apply SynXis migrations through 044 before verifying packet issuance.", 503);
   }
   if (receiptResult.error) {
     console.error("SynXis certification receipt lookup failed", receiptResult.error);
@@ -64,6 +64,7 @@ export async function POST(request: Request) {
   return Response.json({
     ...verification,
     issuance: receiptResult.data
+      && (verification.schemaVersion !== 2 || receiptResult.data.receipt_binding_required === true)
       ? {
         recorded: true,
         receiptId: verification.issuanceReceiptId,

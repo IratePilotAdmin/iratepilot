@@ -49,6 +49,7 @@ type SynxisResponse = {
     requestReceiptCount: number;
     exportedBy: string;
     exportedAt: string;
+    receiptBindingRequired: boolean;
   }>;
   exportReceiptLedgerAvailable: boolean;
   updatedAt: string | null;
@@ -214,7 +215,7 @@ export function SynxisCrsReadiness() {
               <button className="btn-secondary text-xs" disabled={busy} type="submit">Verify checksum</button>
             </form>
           </div>
-          : <span className="text-xs text-amber-700">Certification export unlocks after migrations 040–043 are applied.</span>}
+          : <span className="text-xs text-amber-700">Certification export unlocks after migrations 040–044 are applied.</span>}
         {packetVerification && <p className="mt-2 text-xs text-slate-600" role="status">{packetVerification}</p>}
       </div>}
     </div>
@@ -261,7 +262,7 @@ export function SynxisCrsReadiness() {
 
       <details className="mt-5 rounded-lg border p-4">
         <summary className="cursor-pointer text-sm font-semibold">Certification packet issuance</summary>
-        {!data.exportReceiptLedgerAvailable ? <p className="mt-3 text-sm text-amber-700">Apply migration 043 to enable packet downloads and issuance history.</p>
+        {!data.exportReceiptLedgerAvailable ? <p className="mt-3 text-sm text-amber-700">Apply migrations 043–044 to enable schema-2 packet downloads and issuance history.</p>
           : data.exportReceipts.length === 0 ? <p className="mt-3 text-sm text-slate-500">No certification packets have been issued yet.</p>
             : <div className="mt-4 overflow-x-auto">
               <table className="min-w-full text-left text-xs">

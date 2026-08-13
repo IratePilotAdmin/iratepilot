@@ -64,6 +64,10 @@ Phase 16 embeds the issuance receipt UUID into every new packet before its check
 The verifier requires both receipt ID and checksum to match the same immutable ledger row. Existing
 schema-1 packets without an embedded receipt ID remain verifiable through their unique checksum and
 are explicitly identified as legacy checksum matches.
+Phase 17 adds migration `202608130044_synxis_certification_packet_schema_v2.sql`. New receipt-bound
+packets use schema 2, which requires an embedded receipt UUID; the ledger records that binding
+requirement. Schema 1 remains supported for legacy packets. Admin Settings deliberately queries the
+migration-044 marker so schema-2 exports stay locked until the database contract is ready.
 
 ## Configuration
 
@@ -110,6 +114,8 @@ Complete these gates in order:
 13. Apply migration `202608130043_synxis_certification_export_receipts.sql` before downloading a
     certification packet. Preserve issuance receipts with the certification record; rollback is
     intentionally blocked once any receipt exists.
+14. Apply migration `202608130044_synxis_certification_packet_schema_v2.sql` to enable new packet
+    exports. Schema-2 receipt IDs and checksums must match the same immutable issuance row.
 
 Configuration alone never permits live traffic.
 

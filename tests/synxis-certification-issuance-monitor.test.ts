@@ -17,7 +17,7 @@ describe("SynXis certification issuance monitor", () => {
     expect(route).toContain("loadExportReceipts(admin)");
     expect(route).toContain("Promise.all([");
     expect(route).toContain(".limit(exportReceiptLimit)");
-    expect(route).toContain('select("id,schema_version,checksum,packet_generated_at,evidence_event_count,request_receipt_count,exporter_name,exported_at")');
+    expect(route).toContain('select("id,schema_version,checksum,packet_generated_at,evidence_event_count,request_receipt_count,exporter_name,exported_at,receipt_binding_required")');
     expect(route).not.toContain("evidence_snapshot");
   });
 
@@ -27,7 +27,7 @@ describe("SynXis certification issuance monitor", () => {
     expect(route).toContain("exports.available");
     expect(dashboard).toContain("Issuance ledger:");
     expect(dashboard).toContain("data.exportReceiptLedgerAvailable");
-    expect(dashboard).toContain("Apply migration 043");
+    expect(dashboard).toContain("Apply migrations 043–044");
   });
 
   it("shows the latest non-secret issuance receipts and gates download availability", () => {

@@ -40,7 +40,7 @@ describe("SynXis certification export receipts", () => {
     expect(responseAt).toBeGreaterThan(insertAt);
     expect(exportRoute).toContain("packet.integrity.checksum");
     expect(exportRoute).toContain("auth.user.id");
-    expect(exportRoute).toContain("Apply SynXis migration 043");
+    expect(exportRoute).toContain("Apply SynXis migrations through 044");
     expect(exportRoute).not.toContain("evidence_snapshot");
   });
 
@@ -48,9 +48,9 @@ describe("SynXis certification export receipts", () => {
     expect(verifyRoute).toContain("if (!verification.valid || !verification.checksum)");
     expect(verifyRoute).toContain('.eq("checksum", verification.checksum)');
     expect(verifyRoute).toContain("issuance: receiptResult.data");
-    expect(verifyRoute).toContain("Apply SynXis migration 043");
+    expect(verifyRoute).toContain("Apply SynXis migrations through 044");
     expect(dashboard).toContain("Checksum and iRatePilot issuance verified");
     expect(dashboard).toContain("no iRatePilot issuance receipt was found");
-    expect(dashboard).toContain("migrations 040–043");
+    expect(dashboard).toContain("migrations 040–044");
   });
 });
