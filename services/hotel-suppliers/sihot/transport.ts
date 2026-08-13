@@ -159,4 +159,56 @@ export class SihotHttpTransport implements StandardPmsTransport {
       clearTimeout(timeout);
     }
   }
+
+  async executeService(
+    path: string,
+    requestId: string,
+    envelopeKey: string,
+    payload: Record<string, unknown>,
+  ): Promise<unknown> {
+    const endpoint = new URL(path, this.baseUrl);
+    if (endpoint.origin !== this.baseUrl.origin) {
+      throw new Error("SIHOT service path must remain on the configured origin");
+    }
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+    try {
+      const response = await this.fetcher(endpoint, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          accept: "application/json",
+          "x-iratepilot-request-id": requestId,
+        },
+        body: JSON.stringify({
+          TransactionID: requestId,
+          Authentication: { SecurityID: await this.securityId() },
+          [envelopeKey]: payload,
+        }),
+        signal: controller.signal,
+      });
+      const responsePayload = response.status === 204
+        ? undefined
+        : await response.json().catch(() => undefined);
+      const details = resultDetails(responsePayload);
+      if (!response.ok || details.success === false) {
+        throw new SihotTransportError(
+          details.message || `SIHOT request failed with status ${response.status}`,
+          response.ok ? 422 : response.status,
+          "availability",
+          requestId,
+          details.code,
+        );
+      }
+      return responsePayload;
+    } catch (error) {
+      if (error instanceof SihotTransportError) throw error;
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new SihotTransportError("SIHOT request timed out", 504, "availability", requestId);
+      }
+      throw new SihotTransportError("SIHOT request failed", 502, "availability", requestId);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
 }
