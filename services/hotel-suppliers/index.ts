@@ -153,7 +153,11 @@ export type {
   AgilysysPmsFetch, AgilysysPmsSyncEnvironment,
 } from "./agilysys-pms";
 export { PlanetProtelHttpTransport, PlanetProtelTransportError } from "./planet-protel";
-export type { PlanetProtelConfig, PlanetProtelEndpoint, PlanetProtelFetch } from "./planet-protel";
+export { PlanetProtelBookingMapper, createPlanetProtelSyncAdapter, loadPlanetProtelSyncConfig } from "./planet-protel";
+export type {
+  PlanetProtelBookingMapperConfig, PlanetProtelConfig, PlanetProtelEndpoint,
+  PlanetProtelFetch, PlanetProtelSyncEnvironment,
+} from "./planet-protel";
 export { OracleOpera5Transport, OracleOpera5TransportError } from "./oracle-opera-5";
 export type {
   OracleOpera5Config, OracleOpera5Endpoint, OracleOpera5Fetch, OracleOpera5SoapHeaders,
