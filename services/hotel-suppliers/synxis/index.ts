@@ -131,3 +131,16 @@ export type {
   SynxisTransportConfig,
   SynxisTransportRequest,
 } from "./transport";
+
+export {
+  parseSynxisAcknowledgement,
+  SynxisCertificationClient,
+  SynxisRateLimiter,
+  synxisOperationIsAri,
+} from "./certification";
+export type {
+  SynxisAcknowledgement,
+  SynxisAriTransport,
+  SynxisCertificationClientConfig,
+  SynxisResponseIssue,
+} from "./certification";
