@@ -175,4 +175,3 @@ Configuration alone never permits live traffic.
 - [Property Connect integration guide](https://developer.sabre.com/sites/default/files/2019-11/FAQ%20Property%20Connect%20Integration%20Guide%20for%20Vendors%20V10.13.pdf)
 - [Generic ARI Push specification](https://developer.sabre.com/sites/default/files/resources/1718/SHS_Generic_ARI_Push_Specification_v10.29.0.pdf)
 - [Query Products specification](https://developer.sabre.com/sites/default/files/2019-08/Query%20Products%20Specification_v1.1.pdf)
-

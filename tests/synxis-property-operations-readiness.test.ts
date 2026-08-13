@@ -33,4 +33,3 @@ describe("SynXis property operations deployment readiness", () => {
     expect(dashboard).toContain("Counts only. No hotel identifiers, manager emails, invitations, or audit details are returned.");
   });
 });
-
