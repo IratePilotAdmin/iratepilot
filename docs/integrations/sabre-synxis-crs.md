@@ -19,7 +19,12 @@ acknowledgements and retries only transient transport failures up to three attem
 adds a Supabase/Postgres reservation coordinator that spaces starts at no more than five
 transactions per second across every application instance. The certification client requires
 an explicit limiter, preventing a caller from silently falling back to process-local control.
-Reservation delivery remains out of scope until that certified contract is available.
+Phase 6 adds a private certification-evidence ledger and an admin-only API at
+`/api/admin/integrations/crs/synxis`. Migration
+`202608130040_synxis_crs_launch_evidence.sql` enforces the approval sequence in the database;
+neither an API mistake nor a direct write can set `live_enabled` before the preceding gates and
+non-secret activation details are present. Reservation delivery remains out of scope until that
+certified contract is available.
 
 ## Configuration
 
@@ -53,7 +58,9 @@ Complete these gates in order:
 6. Replay, duplicate, timeout, retry, credential-redaction, and the Sabre 5-TPS system-level
    limit are validated across concurrent application instances.
 7. A controlled production smoke test passes for the pilot property.
-8. An administrator explicitly enables live traffic.
+8. Migration `202608130040_synxis_crs_launch_evidence.sql` is applied and the non-secret
+   approval references are recorded through the admin-only evidence endpoint.
+9. An administrator explicitly enables live traffic.
 
 Configuration alone never permits live traffic.
 
