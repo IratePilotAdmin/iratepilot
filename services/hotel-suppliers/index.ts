@@ -113,7 +113,6 @@ export type {
   MaestroConnectionTestResult,
   MaestroEndpoint,
   MaestroFetch,
-  MaestroSyncAdapter,
   MaestroSyncEnvironment,
 } from "./maestro";
 export { ShijiHttpTransport, ShijiTransportError } from "./shiji";
