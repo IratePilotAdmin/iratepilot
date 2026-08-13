@@ -116,10 +116,11 @@ export type {
   MaestroSyncEnvironment,
 } from "./maestro";
 export { ShijiHttpTransport, ShijiTransportError } from "./shiji";
+export { ShijiBookingMapper, createShijiSyncAdapter, loadShijiSyncConfig } from "./shiji";
 export { ShijiConnectionTestError, testShijiSandboxConnection } from "./shiji";
 export type {
-  ShijiConfig, ShijiConnectionTestConfig, ShijiConnectionTestResult,
-  ShijiEndpoint, ShijiFetch,
+  ShijiBookingMapperConfig, ShijiConfig, ShijiConnectionTestConfig,
+  ShijiConnectionTestResult, ShijiEndpoint, ShijiFetch, ShijiSyncEnvironment,
 } from "./shiji";
 export { GuestlineHttpTransport, GuestlineTransportError } from "./guestline";
 export type { GuestlineConfig, GuestlineEndpoint, GuestlineFetch } from "./guestline";
