@@ -1,5 +1,6 @@
 export type MewsOperation =
   | "availability"
+  | "add_customer"
   | "create_reservation"
   | "cancel_reservation";
 
@@ -72,7 +73,9 @@ export interface MewsTransport {
 export interface MewsMapper {
   availabilityPayload(input: MewsAvailabilityRequest): unknown;
   availabilityResponse(payload: unknown, input: MewsAvailabilityRequest): MewsOffer[];
-  createReservationPayload(input: MewsCreateReservationRequest): unknown;
+  addCustomerPayload(input: MewsCreateReservationRequest): unknown;
+  addCustomerResponse(payload: unknown): string;
+  createReservationPayload(input: MewsCreateReservationRequest, customerId: string): unknown;
   createReservationResponse(payload: unknown, input: MewsCreateReservationRequest): MewsReservation;
   cancelReservationPayload(input: MewsCancelReservationRequest): unknown;
   cancelReservationResponse(payload: unknown, input: MewsCancelReservationRequest): MewsCancellation;

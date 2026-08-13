@@ -92,6 +92,10 @@ describe("PMS integration foundation", () => {
       PMS_MEWS_CLIENT_TOKEN: "client-token-value",
       PMS_MEWS_ACCESS_TOKEN: "access-token-value",
       PMS_MEWS_CLIENT: "iRatePilot 1.0.0",
+      PMS_MEWS_SERVICE_ID: "service-identifier",
+      PMS_MEWS_RESOURCE_CATEGORY_ID: "resource-category-identifier",
+      PMS_MEWS_RATE_ID: "rate-identifier",
+      PMS_MEWS_ADULT_AGE_CATEGORY_ID: "adult-age-category-identifier",
     });
     const mews = result.find((provider) => provider.id === "mews");
 
@@ -115,6 +119,10 @@ describe("PMS integration foundation", () => {
       "PMS_MEWS_CLIENT_TOKEN",
       "PMS_MEWS_ACCESS_TOKEN",
       "PMS_MEWS_CLIENT",
+      "PMS_MEWS_SERVICE_ID",
+      "PMS_MEWS_RESOURCE_CATEGORY_ID",
+      "PMS_MEWS_RATE_ID",
+      "PMS_MEWS_ADULT_AGE_CATEGORY_ID",
     ]);
   });
 
@@ -195,6 +203,10 @@ describe("PMS integration foundation", () => {
       PMS_MEWS_CLIENT_TOKEN: "short",
       PMS_MEWS_ACCESS_TOKEN: "also-short",
       PMS_MEWS_CLIENT: "iRatePilot",
+      PMS_MEWS_SERVICE_ID: "service-identifier",
+      PMS_MEWS_RESOURCE_CATEGORY_ID: "resource-category-identifier",
+      PMS_MEWS_RATE_ID: "rate-identifier",
+      PMS_MEWS_ADULT_AGE_CATEGORY_ID: "adult-age-category-identifier",
     });
     const mews = result.find((provider) => provider.id === "mews");
 

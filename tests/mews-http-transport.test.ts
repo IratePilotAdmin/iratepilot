@@ -12,7 +12,7 @@ const config = {
   client: "iRatePilot 1.0.0",
 };
 
-function request(operation: "availability" | "create_reservation" | "cancel_reservation") {
+function request(operation: "availability" | "add_customer" | "create_reservation" | "cancel_reservation") {
   return {
     propertyCode: "hotel-1",
     operation,
@@ -32,7 +32,7 @@ describe("MewsHttpTransport", () => {
     await transport.execute(request("availability"));
 
     const [url, init] = fetcher.mock.calls[0] ?? [];
-    expect(String(url)).toBe("https://api.mews-demo.test/api/connector/v1/services/getAvailability");
+    expect(String(url)).toBe("https://api.mews-demo.test/api/connector/v1/reservations/price");
     expect(init?.method).toBe("POST");
     expect(init?.headers).toEqual(expect.objectContaining({
       "content-type": "application/json",
@@ -47,6 +47,7 @@ describe("MewsHttpTransport", () => {
   });
 
   it.each([
+    ["add_customer", "/api/connector/v1/customers/add"],
     ["create_reservation", "/api/connector/v1/reservations/add"],
     ["cancel_reservation", "/api/connector/v1/reservations/cancel"],
   ] as const)("routes %s to the allowlisted endpoint", async (operation, path) => {

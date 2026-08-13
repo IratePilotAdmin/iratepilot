@@ -5,7 +5,8 @@ import type {
 } from "./contracts";
 
 const defaultOperationPaths: Record<MewsOperation, string> = {
-  availability: "/api/connector/v1/services/getAvailability",
+  availability: "/api/connector/v1/reservations/price",
+  add_customer: "/api/connector/v1/customers/add",
   create_reservation: "/api/connector/v1/reservations/add",
   cancel_reservation: "/api/connector/v1/reservations/cancel",
 };
