@@ -123,7 +123,8 @@ export type {
   ShijiConnectionTestResult, ShijiEndpoint, ShijiFetch, ShijiSyncEnvironment,
 } from "./shiji";
 export { GuestlineHttpTransport, GuestlineTransportError } from "./guestline";
-export type { GuestlineConfig, GuestlineEndpoint, GuestlineFetch } from "./guestline";
+export { GuestlineBookingMapper, createGuestlineSyncAdapter, loadGuestlineSyncConfig } from "./guestline";
+export type { GuestlineBookingMapperConfig, GuestlineConfig, GuestlineEndpoint, GuestlineFetch, GuestlineSyncEnvironment } from "./guestline";
 export { EzeeAbsoluteHttpTransport, EzeeAbsoluteTransportError } from "./ezee-absolute";
 export type { EzeeAbsoluteConfig, EzeeAbsoluteEndpoint, EzeeAbsoluteFetch } from "./ezee-absolute";
 export { ClockPmsHttpTransport, ClockPmsTransportError } from "./clock-pms-plus";
