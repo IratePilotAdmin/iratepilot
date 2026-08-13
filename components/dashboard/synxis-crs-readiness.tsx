@@ -89,6 +89,7 @@ export function SynxisCrsReadiness() {
   const [message, setMessage] = useState("Checking SynXis certification readiness...");
   const [busy, setBusy] = useState(false);
   const [livePhrase, setLivePhrase] = useState("");
+  const [packetVerification, setPacketVerification] = useState("");
 
   useEffect(() => {
     fetch("/api/admin/integrations/crs/synxis", { cache: "no-store" })
@@ -135,6 +136,42 @@ export function SynxisCrsReadiness() {
     await patch({ details }, "SynXis evidence details were saved.");
   }
 
+  async function verifyPacket(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const file = form.get("packet");
+    if (!(file instanceof File) || file.size === 0) {
+      setPacketVerification("Select a certification packet to verify.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setPacketVerification("The certification packet must be 2 MB or smaller.");
+      return;
+    }
+    setBusy(true);
+    setPacketVerification("Verifying packet...");
+    try {
+      const response = await fetch("/api/admin/integrations/crs/synxis/export/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: await file.text(),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Certification packet could not be verified.");
+      setPacketVerification(result.valid
+        ? `Checksum verified for schema ${result.schemaVersion}. This confirms integrity, not authorship.`
+        : result.reason === "checksum_mismatch"
+          ? "Checksum mismatch. Do not use this packet; its contents changed after export."
+          : result.reason === "unsupported_schema"
+            ? `Schema ${result.schemaVersion} is not supported by this verifier.`
+            : "This is not a valid iRatePilot SynXis certification packet.");
+    } catch (error) {
+      setPacketVerification(error instanceof Error ? error.message : "Certification packet could not be verified.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return <section className="card mt-6 overflow-hidden">
     <div className="border-b p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -154,8 +191,17 @@ export function SynxisCrsReadiness() {
       </div>}
       {data && <div className="mt-4">
         {data.evidenceTrackingAvailable && data.historyAvailable && data.requestJournalAvailable
-          ? <a className="btn-secondary inline-flex text-xs" download href="/api/admin/integrations/crs/synxis/export">Download certification packet</a>
+          ? <div className="flex flex-wrap items-end gap-3">
+            <a className="btn-secondary inline-flex text-xs" download href="/api/admin/integrations/crs/synxis/export">Download certification packet</a>
+            <form className="flex flex-wrap items-end gap-2" onSubmit={verifyPacket}>
+              <label className="text-xs font-medium">Verify a saved packet
+                <input accept="application/json,.json" className="mt-1 block max-w-64 text-xs" name="packet" type="file" />
+              </label>
+              <button className="btn-secondary text-xs" disabled={busy} type="submit">Verify checksum</button>
+            </form>
+          </div>
           : <span className="text-xs text-amber-700">Certification export unlocks after migrations 040–042 are applied.</span>}
+        {packetVerification && <p className="mt-2 text-xs text-slate-600" role="status">{packetVerification}</p>}
       </div>}
     </div>
 

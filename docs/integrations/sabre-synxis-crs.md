@@ -47,6 +47,10 @@ Phase 12 adds an admin-only certification packet download. The JSON export inclu
 non-secret evidence, audit history, and request receipts, marks bounded sections when truncated,
 and includes a SHA-256 checksum. Environment values, credentials, tokens, and SOAP bodies are
 explicitly excluded.
+Phase 13 adds an admin-only packet verifier in Admin Settings. It accepts exported JSON packets up
+to 2 MB, validates the provider and schema, and recomputes the SHA-256 checksum. A successful check
+confirms that packet contents have not changed since export; it does not prove who created or
+approved the packet.
 
 ## Configuration
 
