@@ -3,6 +3,7 @@ import type { SynxisReadiness } from "../../services/hotel-suppliers/synxis";
 
 export type SynxisCertificationPacketInput = {
   generatedAt: string;
+  issuanceReceiptId?: string;
   readiness: SynxisReadiness;
   evidence: Record<string, boolean | string>;
   evidenceHistory: Array<Record<string, unknown>>;
@@ -20,6 +21,7 @@ export function buildSynxisCertificationPacket(input: SynxisCertificationPacketI
       category: "crs",
     },
     generatedAt: input.generatedAt,
+    ...(input.issuanceReceiptId ? { issuance: { receiptId: input.issuanceReceiptId } } : {}),
     readiness: input.readiness,
     evidence: input.evidence,
     evidenceHistory: {
@@ -62,6 +64,7 @@ export type SynxisCertificationPacketVerification = {
   schemaVersion: number | null;
   generatedAt: string | null;
   checksum: string | null;
+  issuanceReceiptId: string | null;
 };
 
 function invalidPacket(): SynxisCertificationPacketVerification {
@@ -71,6 +74,7 @@ function invalidPacket(): SynxisCertificationPacketVerification {
     schemaVersion: null,
     generatedAt: null,
     checksum: null,
+    issuanceReceiptId: null,
   };
 }
 
@@ -90,6 +94,12 @@ export function verifySynxisCertificationPacket(
   const schemaVersion = packet.schemaVersion;
   const generatedAt = packet.generatedAt;
   const provider = packet.provider;
+  const issuance = packet.issuance;
+  const issuanceReceiptId = issuance === undefined
+    ? null
+    : issuance && typeof issuance === "object" && !Array.isArray(issuance)
+      ? (issuance as Record<string, unknown>).receiptId
+      : undefined;
   if (
     integrityRecord.algorithm !== "sha256"
     || typeof checksum !== "string"
@@ -100,10 +110,20 @@ export function verifySynxisCertificationPacket(
     || typeof provider !== "object"
     || Array.isArray(provider)
     || (provider as Record<string, unknown>).id !== "sabre-synxis"
+    || (issuanceReceiptId !== null
+      && (typeof issuanceReceiptId !== "string"
+        || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(issuanceReceiptId)))
   ) return invalidPacket();
 
   if (schemaVersion !== 1) {
-    return { valid: false, reason: "unsupported_schema", schemaVersion, generatedAt, checksum };
+    return {
+      valid: false,
+      reason: "unsupported_schema",
+      schemaVersion,
+      generatedAt,
+      checksum,
+      issuanceReceiptId: typeof issuanceReceiptId === "string" ? issuanceReceiptId : null,
+    };
   }
 
   const { integrity: _integrity, ...payload } = packet;
@@ -117,5 +137,6 @@ export function verifySynxisCertificationPacket(
     schemaVersion,
     generatedAt,
     checksum,
+    issuanceReceiptId: typeof issuanceReceiptId === "string" ? issuanceReceiptId : null,
   };
 }

@@ -43,10 +43,14 @@ export async function POST(request: Request) {
     return Response.json({ ...verification, issuance: { recorded: false } }, { headers: responseHeaders });
   }
 
-  const receiptResult = await createAdminClient()
+  let receiptQuery = createAdminClient()
     .from("synxis_certification_export_receipts")
     .select("exporter_name,exported_at")
-    .eq("provider_id", "sabre-synxis")
+    .eq("provider_id", "sabre-synxis");
+  if (verification.issuanceReceiptId) {
+    receiptQuery = receiptQuery.eq("id", verification.issuanceReceiptId);
+  }
+  const receiptResult = await receiptQuery
     .eq("checksum", verification.checksum)
     .maybeSingle();
   if (receiptResult.error?.code === "42P01") {
@@ -62,6 +66,8 @@ export async function POST(request: Request) {
     issuance: receiptResult.data
       ? {
         recorded: true,
+        receiptId: verification.issuanceReceiptId,
+        matchedBy: verification.issuanceReceiptId ? "receipt_id_and_checksum" : "legacy_checksum",
         exportedBy: receiptResult.data.exporter_name,
         exportedAt: receiptResult.data.exported_at,
       }

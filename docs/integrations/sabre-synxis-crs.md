@@ -60,6 +60,10 @@ Phase 15 makes migration 043 readiness explicit in Admin Settings and shows the 
 receipts. The download control remains locked until the issuance ledger can be queried, preventing
 an administrator from starting an export that the server must reject. The history displays only
 checksum, schema, counts, timestamps, and administrator attribution.
+Phase 16 embeds the issuance receipt UUID into every new packet before its checksum is calculated.
+The verifier requires both receipt ID and checksum to match the same immutable ledger row. Existing
+schema-1 packets without an embedded receipt ID remain verifiable through their unique checksum and
+are explicitly identified as legacy checksum matches.
 
 ## Configuration
 

@@ -170,7 +170,7 @@ export function SynxisCrsReadiness() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Certification packet could not be verified.");
       setPacketVerification(result.valid && result.issuance?.recorded
-        ? `Checksum and iRatePilot issuance verified. Exported by ${result.issuance.exportedBy} on ${new Date(result.issuance.exportedAt).toLocaleString()}.`
+        ? `Checksum and iRatePilot issuance verified${result.issuance.receiptId ? ` for receipt ${result.issuance.receiptId}` : " using the legacy checksum record"}. Exported by ${result.issuance.exportedBy} on ${new Date(result.issuance.exportedAt).toLocaleString()}.`
         : result.valid
           ? `Checksum verified for schema ${result.schemaVersion}, but no iRatePilot issuance receipt was found.`
         : result.reason === "checksum_mismatch"
@@ -265,9 +265,10 @@ export function SynxisCrsReadiness() {
           : data.exportReceipts.length === 0 ? <p className="mt-3 text-sm text-slate-500">No certification packets have been issued yet.</p>
             : <div className="mt-4 overflow-x-auto">
               <table className="min-w-full text-left text-xs">
-                <thead className="border-b text-slate-500"><tr><th className="px-2 py-2">Issued</th><th className="px-2 py-2">Administrator</th><th className="px-2 py-2">Checksum</th><th className="px-2 py-2">Schema</th><th className="px-2 py-2">Audit events</th><th className="px-2 py-2">Request receipts</th></tr></thead>
+                <thead className="border-b text-slate-500"><tr><th className="px-2 py-2">Issued</th><th className="px-2 py-2">Receipt</th><th className="px-2 py-2">Administrator</th><th className="px-2 py-2">Checksum</th><th className="px-2 py-2">Schema</th><th className="px-2 py-2">Audit events</th><th className="px-2 py-2">Request receipts</th></tr></thead>
                 <tbody className="divide-y">{data.exportReceipts.map((receipt) => <tr key={receipt.id}>
                   <td className="whitespace-nowrap px-2 py-2"><time dateTime={receipt.exportedAt}>{new Date(receipt.exportedAt).toLocaleString()}</time></td>
+                  <td className="px-2 py-2 font-mono" title={receipt.id}>{receipt.id.slice(0, 8)}…</td>
                   <td className="whitespace-nowrap px-2 py-2">{receipt.exportedBy}</td>
                   <td className="px-2 py-2 font-mono" title={receipt.checksum}>{receipt.checksum.slice(0, 12)}…</td>
                   <td className="px-2 py-2">{receipt.schemaVersion}</td>

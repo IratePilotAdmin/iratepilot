@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildSynxisCertificationPacket } from "@/lib/integrations/synxis-certification-packet";
@@ -59,8 +60,10 @@ export async function GET() {
       verificationNotes: row?.verification_notes ?? "",
       updatedAt: row?.updated_at ?? "",
     };
+    const issuanceReceiptId = randomUUID();
     const packet = buildSynxisCertificationPacket({
       generatedAt: new Date().toISOString(),
+      issuanceReceiptId,
       readiness: buildSynxisReadiness(process.env, evidence),
       evidence,
       evidenceHistory: historyResult.data ?? [],
@@ -69,6 +72,7 @@ export async function GET() {
       requestReceiptsTotal: requestsResult.count ?? 0,
     });
     const receiptResult = await admin.from("synxis_certification_export_receipts").insert({
+      id: issuanceReceiptId,
       provider_id: "sabre-synxis",
       schema_version: packet.schemaVersion,
       checksum: packet.integrity.checksum,
