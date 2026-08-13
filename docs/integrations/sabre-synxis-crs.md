@@ -110,6 +110,12 @@ record counts for property onboarding, active manager access, pending invitation
 access events. Missing tables or columns fail closed and identify the required migration; hotel
 identifiers, manager emails, invitation records, and audit details are never returned. This gate
 does not send invitations, grant or revoke access, change onboarding status, or enable traffic.
+Phase 25 adds all migration-039-through-048 object markers to the production database preflight.
+This read-only inventory is required before migration-history repair or deployment because the
+current production database was previously provisioned outside a reliable CLI migration history.
+Object existence is not treated as proof that policies, grants, constraints, or function bodies
+match the repository; those contracts still require comparison before any migration is marked or
+applied.
 
 ## Configuration
 

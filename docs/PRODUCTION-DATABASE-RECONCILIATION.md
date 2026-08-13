@@ -2,6 +2,12 @@
 
 Audit date: 2026-08-05
 
+Phase 25 extends `supabase/production_preflight.sql` with read-only existence checks for every
+SynXis deployment boundary from migrations 039 through 048. Run the updated query before deciding
+whether any SynXis migration is pending. A non-null object name (and `true` for the schema-v2
+column) confirms existence only; policies, grants, constraints, function bodies, and migration
+history must still be compared with the repository before repairing history or applying SQL.
+
 ## Verified production state
 
 - The Supabase project is active and stores approximately 28 MB.
@@ -25,6 +31,9 @@ This indicates that the production schema was applied outside the Supabase CLI a
 6. Apply migration 025, verify its function grants, then test unpaid confirmed-booking cancellation and inventory restoration.
 7. Re-run the preflight and confirm that all three messaging/cancellation fields resolve to non-null values.
 8. Run customer, partner, and administrator end-to-end tests before merging release PR #137.
+9. For SynXis, save the migration-039-through-048 preflight fields privately and compare every
+   existing object with its repository migration. Do not replay a migration merely because the
+   migration-history table is missing or incomplete.
 
 Database repair or migration execution must not proceed from an autosaved SQL editor buffer containing unrelated statements. Use a clean CLI session or a newly verified empty editor, and inspect the exact SQL immediately before execution.
 
