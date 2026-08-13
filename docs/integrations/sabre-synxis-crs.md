@@ -24,7 +24,10 @@ Phase 6 adds a private certification-evidence ledger and an admin-only API at
 `202608130040_synxis_crs_launch_evidence.sql` enforces the approval sequence in the database;
 neither an API mistake nor a direct write can set `live_enabled` before the preceding gates and
 non-secret activation details are present. Reservation delivery remains out of scope until that
-certified contract is available.
+certified contract is available. Phase 7 adds the SynXis certification panel to Admin Settings,
+including ordered gate controls, non-secret evidence fields, configuration warnings, and an exact
+confirmation phrase for the final live switch. The API independently rejects live activation when
+production configuration is missing or invalid, so the browser cannot bypass that safeguard.
 
 ## Configuration
 

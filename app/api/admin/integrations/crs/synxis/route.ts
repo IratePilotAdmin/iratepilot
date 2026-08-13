@@ -10,6 +10,7 @@ import {
 export const dynamic = "force-dynamic";
 
 const providerId = "sabre-synxis";
+const liveConfirmation = "ENABLE SABRE SYNXIS LIVE TRAFFIC";
 const evidenceColumns = "vendor_approved,certification_environment_approved,property_mapped,sandbox_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact,verification_notes,updated_at";
 const emptyEvidence = {
   vendorApproved: false,
@@ -58,6 +59,30 @@ function noStore(body: unknown, init?: { status?: number }) {
   });
 }
 
+function buildResponse(
+  evidence: ReturnType<typeof mapEvidence>,
+  evidenceTrackingAvailable: boolean,
+  updatedAt: unknown,
+) {
+  const readiness = buildSynxisReadiness(process.env, evidence);
+  const activationDetailsComplete = [
+    evidence.vendorApprovalReference,
+    evidence.approvedEnvironment,
+    evidence.propertyCode,
+    evidence.supportContact,
+  ].every(isVerifiedActivationDetail);
+  return {
+    evidence,
+    readiness,
+    evidenceTrackingAvailable,
+    activationDetailsComplete,
+    liveActivationAllowed: evidenceTrackingAvailable
+      && activationDetailsComplete
+      && readiness.status === "activation_required",
+    updatedAt,
+  };
+}
+
 export async function GET() {
   try {
     const auth = await requireRole(["admin"]);
@@ -71,22 +96,12 @@ export async function GET() {
 
     if (result.error?.code === "42P01") {
       const evidence = { ...emptyEvidence };
-      return noStore({
-        evidence,
-        readiness: buildSynxisReadiness(process.env, evidence),
-        evidenceTrackingAvailable: false,
-        updatedAt: null,
-      });
+      return noStore(buildResponse(evidence, false, null));
     }
     if (result.error) throw result.error;
 
     const evidence = mapEvidence(result.data);
-    return noStore({
-      evidence,
-      readiness: buildSynxisReadiness(process.env, evidence),
-      evidenceTrackingAvailable: true,
-      updatedAt: result.data?.updated_at ?? null,
-    });
+    return noStore(buildResponse(evidence, true, result.data?.updated_at ?? null));
   } catch (error) {
     console.error("SynXis CRS launch evidence read failed", error);
     return noStore({ error: "SynXis CRS launch evidence could not be loaded." }, { status: 503 });
@@ -101,6 +116,7 @@ export async function PATCH(request: Request) {
     const body = await request.json() as {
       evidence?: Partial<Record<keyof SynxisActivationEvidence, unknown>>;
       details?: Partial<Record<keyof SynxisEvidenceDetails, unknown>>;
+      confirmation?: unknown;
     };
     const patch = body.evidence ?? {};
     const details = body.details ?? {};
@@ -177,6 +193,9 @@ export async function PATCH(request: Request) {
     if (patch.liveEnabled === true && !next.productionSmokeValidated) {
       return noStore({ error: "The production smoke test must pass before live traffic is enabled." }, { status: 409 });
     }
+    if (patch.liveEnabled === true && body.confirmation !== liveConfirmation) {
+      return noStore({ error: `Type ${liveConfirmation} to confirm live traffic activation.` }, { status: 409 });
+    }
 
     if (!next.vendorApproved) {
       next.certificationEnvironmentApproved = false;
@@ -210,6 +229,13 @@ export async function PATCH(request: Request) {
       && Object.values(nextDetails).some((value) => !isVerifiedActivationDetail(value))) {
       return noStore({ error: "Verified vendor approval, certification environment, real property code, and support contact details are required before live traffic is enabled." }, { status: 409 });
     }
+    const preActivationReadiness = buildSynxisReadiness(process.env, {
+      ...next,
+      liveEnabled: false,
+    });
+    if (patch.liveEnabled === true && preActivationReadiness.status !== "activation_required") {
+      return noStore({ error: "Production configuration must be complete and valid before live traffic is enabled." }, { status: 409 });
+    }
 
     const updateResult = await admin.from("synxis_crs_launch_evidence").upsert({
       provider_id: providerId,
@@ -230,12 +256,7 @@ export async function PATCH(request: Request) {
     if (updateResult.error) throw updateResult.error;
 
     const evidence = mapEvidence(updateResult.data);
-    return noStore({
-      evidence,
-      readiness: buildSynxisReadiness(process.env, evidence),
-      evidenceTrackingAvailable: true,
-      updatedAt: updateResult.data.updated_at,
-    });
+    return noStore(buildResponse(evidence, true, updateResult.data.updated_at));
   } catch (error) {
     console.error("SynXis CRS launch evidence update failed", error);
     return noStore({ error: "SynXis CRS launch evidence could not be updated." }, { status: 503 });

@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { ReadinessItem } from "@/lib/admin/platform-readiness";
 import type { PmsProviderReadiness, PriorityPmsLaunchStatus } from "@/services/hotel-suppliers";
+import { SynxisCrsReadiness } from "@/components/dashboard/synxis-crs-readiness";
 
 type Response = {
   items: ReadinessItem[];
@@ -236,6 +237,8 @@ export function AdminSettings() {
         <button className="btn-primary mt-4" disabled={emailTestBusy} onClick={sendEmailTest}>{emailTestBusy ? "Sendingâ€¦" : "Send test email"}</button>
         {emailTestMessage && <p className="mt-3 text-sm" role="status">{emailTestMessage}</p>}
       </section>
+
+      <SynxisCrsReadiness />
 
       <section className="card mt-6 overflow-hidden">
         <div className="border-b p-6">

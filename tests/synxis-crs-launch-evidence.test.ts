@@ -49,6 +49,8 @@ describe("SynXis CRS launch evidence persistence", () => {
     expect(route).toContain("Property mapping is required before sandbox validation.");
     expect(route).toContain("Sandbox validation is required before the production smoke test.");
     expect(route).toContain("The production smoke test must pass before live traffic is enabled.");
+    expect(route).toContain("ENABLE SABRE SYNXIS LIVE TRAFFIC");
+    expect(route).toContain("Production configuration must be complete and valid before live traffic is enabled.");
     expect(route).toContain("isVerifiedActivationDetail");
     expect(route).toContain("Apply SynXis CRS launch-evidence migration 040");
   });
