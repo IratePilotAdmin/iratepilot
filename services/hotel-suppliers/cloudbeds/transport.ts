@@ -56,7 +56,7 @@ function payloadRecord(payload: unknown): Record<string, unknown> {
 function appendValue(target: URLSearchParams | FormData, key: string, value: unknown) {
   if (value === undefined || value === null) return;
   if (Array.isArray(value)) {
-    value.forEach((item) => appendValue(target, key, item));
+    target.append(key, JSON.stringify(value));
     return;
   }
   const serialized = typeof value === "object" ? JSON.stringify(value) : String(value);
@@ -109,7 +109,7 @@ export class CloudbedsHttpTransport implements CloudbedsTransport {
     const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
     try {
       const headers = {
-        authorization: `Bearer ${this.config.apiKey}`,
+        "x-api-key": this.config.apiKey,
         "x-iratepilot-request-id": request.requestId,
       };
       let init: RequestInit;
@@ -159,3 +159,4 @@ export class CloudbedsHttpTransport implements CloudbedsTransport {
     }
   }
 }
+

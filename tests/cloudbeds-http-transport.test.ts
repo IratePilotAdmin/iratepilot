@@ -32,7 +32,7 @@ describe("CloudbedsHttpTransport", () => {
     );
     expect(init?.method).toBe("GET");
     expect(init?.headers).toEqual(expect.objectContaining({
-      authorization: "Bearer cbat_property_secret",
+      "x-api-key": "cbat_property_secret",
       "x-iratepilot-request-id": "IRP-200",
     }));
   });
@@ -42,7 +42,14 @@ describe("CloudbedsHttpTransport", () => {
     const transport = new CloudbedsHttpTransport(config, fetcher);
     await transport.execute({
       ...request("create_reservation"),
-      payload: { propertyID: "12345", guestFirstName: "Ada", guestLastName: "Lovelace" },
+      payload: {
+        propertyID: "12345",
+        guestFirstName: "Ada",
+        guestLastName: "Lovelace",
+        rooms: [{ roomTypeID: "KING", roomRateID: "BAR-KING", quantity: 1 }],
+        adults: [{ roomTypeID: "KING", quantity: 2 }],
+        children: [{ roomTypeID: "KING", quantity: 0 }],
+      },
     });
 
     const [url, init] = fetcher.mock.calls[0] ?? [];
@@ -52,6 +59,15 @@ describe("CloudbedsHttpTransport", () => {
     const body = init?.body as FormData;
     expect(body.get("propertyID")).toBe("12345");
     expect(body.get("guestFirstName")).toBe("Ada");
+    expect(body.getAll("rooms")).toEqual([
+      JSON.stringify([{ roomTypeID: "KING", roomRateID: "BAR-KING", quantity: 1 }]),
+    ]);
+    expect(body.getAll("adults")).toEqual([
+      JSON.stringify([{ roomTypeID: "KING", quantity: 2 }]),
+    ]);
+    expect(body.getAll("children")).toEqual([
+      JSON.stringify([{ roomTypeID: "KING", quantity: 0 }]),
+    ]);
   });
 
   it("cancels through putReservation with an enforced canceled status", async () => {
@@ -98,3 +114,4 @@ describe("CloudbedsHttpTransport", () => {
     expect(JSON.stringify(error)).not.toContain(config.apiKey);
   });
 });
+

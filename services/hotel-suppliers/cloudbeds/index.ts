@@ -1,4 +1,8 @@
 export { CloudbedsAdapter } from "./adapter";
+export { CloudbedsBookingMapper } from "./mapper";
+export type { CloudbedsBookingMapperConfig } from "./mapper";
+export { createCloudbedsSyncAdapter, loadCloudbedsSyncConfig } from "./sync";
+export type { CloudbedsSyncEnvironment } from "./sync";
 export {
   CloudbedsHttpTransport,
   CloudbedsTransportError,
@@ -22,3 +26,4 @@ export type {
   CloudbedsTransport,
   CloudbedsTransportRequest,
 } from "./contracts";
+
