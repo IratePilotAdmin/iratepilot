@@ -141,7 +141,11 @@ export type {
   HotelogixFetch, HotelogixSyncEnvironment,
 } from "./hotelogix";
 export { InforHmsHttpTransport, InforHmsTransportError } from "./infor-hms";
-export type { InforHmsConfig, InforHmsEndpoint, InforHmsFetch } from "./infor-hms";
+export { InforHmsBookingMapper, createInforHmsSyncAdapter, loadInforHmsSyncConfig } from "./infor-hms";
+export type {
+  InforHmsBookingMapperConfig, InforHmsConfig, InforHmsEndpoint,
+  InforHmsFetch, InforHmsSyncEnvironment,
+} from "./infor-hms";
 export { AgilysysPmsHttpTransport, AgilysysPmsTransportError } from "./agilysys-pms";
 export type { AgilysysPmsConfig, AgilysysPmsEndpoint, AgilysysPmsFetch } from "./agilysys-pms";
 export { PlanetProtelHttpTransport, PlanetProtelTransportError } from "./planet-protel";
