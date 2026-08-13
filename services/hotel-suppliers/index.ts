@@ -51,6 +51,7 @@ export { ApaleoBookingMapper, createApaleoSyncAdapter, loadApaleoSyncConfig } fr
 export { ApaleoConnectionTestError, testApaleoSandboxConnection } from "./apaleo";
 export type { ApaleoConnectionTestConfig, ApaleoConnectionTestResult } from "./apaleo";
 export { StayntouchHttpTransport, StayntouchTransportError } from "./stayntouch";
+export { StayntouchBookingMapper, createStayntouchSyncAdapter, loadStayntouchSyncConfig } from "./stayntouch";
 export {
   StayntouchConnectionTestError,
   testStayntouchSandboxConnection,
@@ -60,6 +61,8 @@ export type {
   StayntouchConnectionTestConfig,
   StayntouchConnectionTestResult,
   StayntouchFetch,
+  StayntouchBookingMapperConfig,
+  StayntouchSyncEnvironment,
 } from "./stayntouch";
 export {
   SihotConnectionTestError,
