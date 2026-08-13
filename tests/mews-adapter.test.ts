@@ -10,7 +10,9 @@ function setup() {
       offerId: "offer-1", propertyCode: input.propertyCode, roomTypeCode: "KING",
       ratePlanCode: "BAR", currency: "USD", totalAmount: 250, available: true, raw: {},
     }]),
-    createReservationPayload: vi.fn((input) => ({ offerId: input.offerId })),
+    addCustomerPayload: vi.fn((input) => ({ email: input.guest.email })),
+    addCustomerResponse: vi.fn(() => "customer-1"),
+    createReservationPayload: vi.fn((input, customerId) => ({ offerId: input.offerId, customerId })),
     createReservationResponse: vi.fn((_payload, input) => ({
       propertyCode: input.propertyCode, reservationId: "reservation-1",
       confirmationNumber: "MEWS-1", externalReference: input.externalReference,
@@ -48,6 +50,10 @@ describe("MewsAdapter", () => {
     });
     expect(transport.execute).toHaveBeenCalledWith(expect.objectContaining({
       operation: "create_reservation", requestId: "IRP-100",
+      payload: { offerId: "offer-1", customerId: "customer-1" },
+    }));
+    expect(transport.execute).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      operation: "add_customer", requestId: "customer:IRP-100",
     }));
   });
 

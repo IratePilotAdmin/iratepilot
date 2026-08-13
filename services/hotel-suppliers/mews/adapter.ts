@@ -26,11 +26,18 @@ export class MewsAdapter {
   }
 
   async createReservation(input: MewsCreateReservationRequest): Promise<MewsReservation> {
+    const customerPayload = await this.transport.execute({
+      propertyCode: input.propertyCode,
+      operation: "add_customer",
+      requestId: `customer:${input.externalReference}`,
+      payload: this.mapper.addCustomerPayload(input),
+    });
+    const customerId = this.mapper.addCustomerResponse(customerPayload);
     const payload = await this.transport.execute({
       propertyCode: input.propertyCode,
       operation: "create_reservation",
       requestId: input.externalReference,
-      payload: this.mapper.createReservationPayload(input),
+      payload: this.mapper.createReservationPayload(input, customerId),
     });
     return this.mapper.createReservationResponse(payload, input);
   }
