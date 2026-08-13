@@ -117,3 +117,17 @@ export function buildSynxisReadiness(
     liveTrafficAllowed: status === "live",
   };
 }
+
+export { buildSynxisInventoryXml, buildSynxisRateAmountXml } from "./ari";
+export { SynxisSoapTransport, SynxisTransportError } from "./transport";
+export type { SynxisInventoryInput, SynxisRateAmountInput } from "./ari";
+export type {
+  SynxisAriOperation,
+  SynxisAuthenticationProfile,
+  SynxisCredentials,
+  SynxisEnvironment,
+  SynxisFetch,
+  SynxisSoapVersion,
+  SynxisTransportConfig,
+  SynxisTransportRequest,
+} from "./transport";
