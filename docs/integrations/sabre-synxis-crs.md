@@ -72,6 +72,11 @@ Phase 18 adds packet freshness verification. After integrity and issuance are co
 verifier checks the newest evidence audit event and request receipt in parallel. A packet is marked
 superseded when either occurred after packet generation, prompting the administrator to export a
 new packet before certification handoff. Freshness lookup failures fail closed.
+Phase 19 adds an explicit certification-handoff eligibility decision. A packet is eligible only
+when checksum integrity, schema-2 receipt binding, iRatePilot issuance, freshness, and complete
+evidence and request-journal sections are all verified. Legacy, unissued, superseded, malformed, or
+truncated packets remain inspectable but are clearly blocked from handoff. This assessment stores
+no uploaded packet content and does not alter the production activation gates.
 
 ## Configuration
 

@@ -96,6 +96,17 @@ const requestStatusStyle = {
   failed: "text-red-700",
 };
 
+const handoffBlockerLabels: Record<string, string> = {
+  integrity_unverified: "packet integrity is not verified",
+  legacy_schema: "schema 2 receipt binding is required",
+  issuance_unverified: "no matching iRatePilot issuance receipt exists",
+  freshness_unverified: "freshness could not be verified",
+  superseded: "newer certification activity superseded this packet",
+  packet_sections_invalid: "required packet sections are invalid",
+  evidence_history_incomplete: "evidence history is truncated",
+  request_journal_incomplete: "request history is truncated",
+};
+
 export function SynxisCrsReadiness() {
   const [data, setData] = useState<SynxisResponse | null>(null);
   const [message, setMessage] = useState("Checking SynXis certification readiness...");
@@ -170,7 +181,11 @@ export function SynxisCrsReadiness() {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Certification packet could not be verified.");
-      setPacketVerification(result.valid && result.issuance?.recorded && result.freshness?.assessed && !result.freshness.current
+      setPacketVerification(result.handoff?.eligible
+        ? `Handoff eligible: checksum, schema-2 receipt binding, issuance, freshness, and packet completeness verified for receipt ${result.issuance.receiptId}. Exported by ${result.issuance.exportedBy} on ${new Date(result.issuance.exportedAt).toLocaleString()}.`
+        : result.valid && result.issuance?.recorded && result.handoff?.blockers?.length
+          ? `Not handoff eligible: ${result.handoff.blockers.map((blocker: string) => handoffBlockerLabels[blocker] ?? blocker).join("; ")}.`
+        : result.valid && result.issuance?.recorded && result.freshness?.assessed && !result.freshness.current
         ? `Integrity and issuance are verified, but this packet was superseded by newer certification activity on ${new Date(result.freshness.newerActivityAt).toLocaleString()}. Download a new packet before handoff.`
         : result.valid && result.issuance?.recorded
           ? `Checksum, iRatePilot issuance, and freshness verified${result.issuance.receiptId ? ` for receipt ${result.issuance.receiptId}` : " using the legacy checksum record"}. Exported by ${result.issuance.exportedBy} on ${new Date(result.issuance.exportedAt).toLocaleString()}.`
@@ -214,7 +229,7 @@ export function SynxisCrsReadiness() {
               <label className="text-xs font-medium">Verify a saved packet
                 <input accept="application/json,.json" className="mt-1 block max-w-64 text-xs" name="packet" type="file" />
               </label>
-              <button className="btn-secondary text-xs" disabled={busy} type="submit">Verify checksum</button>
+              <button className="btn-secondary text-xs" disabled={busy} type="submit">Check handoff eligibility</button>
             </form>
           </div>
           : <span className="text-xs text-amber-700">Certification export unlocks after migrations 040–044 are applied.</span>}

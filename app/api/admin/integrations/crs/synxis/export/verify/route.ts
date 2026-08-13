@@ -1,6 +1,7 @@
 import { requireRole } from "@/lib/auth/require-role";
 import { verifySynxisCertificationPacket } from "@/lib/integrations/synxis-certification-packet";
 import { buildSynxisCertificationFreshness } from "@/lib/integrations/synxis-certification-freshness";
+import { assessSynxisCertificationHandoff } from "@/lib/integrations/synxis-certification-handoff";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -41,7 +42,18 @@ export async function POST(request: Request) {
 
   const verification = verifySynxisCertificationPacket(packet);
   if (!verification.valid || !verification.checksum) {
-    return Response.json({ ...verification, issuance: { recorded: false } }, { headers: responseHeaders });
+    return Response.json({
+      ...verification,
+      issuance: { recorded: false },
+      freshness: { assessed: false },
+      handoff: assessSynxisCertificationHandoff({
+        packet,
+        checksumValid: false,
+        schemaVersion: verification.schemaVersion,
+        issuanceRecorded: false,
+        freshness: { assessed: false },
+      }),
+    }, { headers: responseHeaders });
   }
 
   const admin = createAdminClient();
@@ -69,6 +81,13 @@ export async function POST(request: Request) {
       ...verification,
       issuance: { recorded: false },
       freshness: { assessed: false },
+      handoff: assessSynxisCertificationHandoff({
+        packet,
+        checksumValid: true,
+        schemaVersion: verification.schemaVersion,
+        issuanceRecorded: false,
+        freshness: { assessed: false },
+      }),
     }, { headers: responseHeaders });
   }
 
@@ -108,5 +127,12 @@ export async function POST(request: Request) {
         exportedAt: receipt.exported_at,
       },
     freshness: { assessed: true, ...freshness },
+    handoff: assessSynxisCertificationHandoff({
+      packet,
+      checksumValid: true,
+      schemaVersion: verification.schemaVersion,
+      issuanceRecorded: true,
+      freshness: { assessed: true, current: freshness.current },
+    }),
   }, { headers: responseHeaders });
 }
