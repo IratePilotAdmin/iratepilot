@@ -84,6 +84,13 @@ representative is an owner, general manager, revenue manager, or sales manager. 
 and to the vendor-approval-pending state; administrators retain the later workflow. Requests never
 accept credentials and cannot activate traffic. The declared representative role is an attestation,
 not a delegated iRatePilot login; team-member accounts require a separate RBAC phase.
+Phase 21 adds migration `202608130046_partner_team_integration_access.sql` and an integration-only
+partner-team permission for active general, revenue, and sales managers. The SynXis partner API
+resolves either the approved partner owner or an active team membership, scopes property access to
+that partner, and requires a delegated member's submitted representative role to match the assigned
+role. This permission cannot manage credentials, certification evidence, request status, or live
+traffic. Membership provisioning remains admin-controlled; self-service invitations are not part
+of this phase.
 
 ## Configuration
 
@@ -134,6 +141,8 @@ Complete these gates in order:
     exports. Schema-2 receipt IDs and checksums must match the same immutable issuance row.
 15. Apply migration `202608130045_synxis_property_onboarding_requests.sql` before accepting
     property-level SynXis requests from approved partner accounts.
+16. Apply migration `202608130046_partner_team_integration_access.sql` before granting active
+    integration-only access to general, revenue, or sales manager accounts.
 
 Configuration alone never permits live traffic.
 

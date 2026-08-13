@@ -15,6 +15,7 @@ type Property = {
   active: boolean;
   synxisRequest: SynxisRequest | null;
 };
+type AccessRole = "owner" | "general_manager" | "revenue_manager" | "sales_manager";
 
 const requesterRoles = [
   ["hotel_owner", "Hotel owner"],
@@ -28,6 +29,7 @@ export function PartnerSynxisOnboarding() {
   const [propertyId, setPropertyId] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [accessRole, setAccessRole] = useState<AccessRole | null>(null);
   const selected = useMemo(
     () => properties.find((property) => property.id === propertyId),
     [properties, propertyId],
@@ -37,6 +39,7 @@ export function PartnerSynxisOnboarding() {
     const response = await fetch("/api/partner/integrations/crs/synxis", { cache: "no-store" });
     const body = await response.json();
     if (!response.ok) return setMessage(body.error || "SynXis requests could not be loaded.");
+    setAccessRole(body.accessRole);
     setProperties(body.properties);
     setPropertyId((current) => current || body.properties[0]?.id || "");
   }, []);
@@ -46,6 +49,9 @@ export function PartnerSynxisOnboarding() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
+  const availableRequesterRoles = accessRole === "owner"
+    ? requesterRoles
+    : requesterRoles.filter(([value]) => value === accessRole);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -92,6 +98,7 @@ export function PartnerSynxisOnboarding() {
       <div>
         <h2 className="text-xl font-semibold">Request SynXis onboarding</h2>
         <p className="mt-1 text-sm text-slate-500">Submit non-secret identifiers only. Never enter passwords, API keys, tokens, or SOAP credentials.</p>
+        {accessRole && <p className="mt-2 text-xs text-slate-500">Signed-in integration role: {accessRole.replaceAll("_", " ")}</p>}
       </div>
       <label className="text-sm font-medium">Property
         <select className="input mt-2" required value={propertyId} onChange={(event) => setPropertyId(event.target.value)}>
@@ -106,7 +113,7 @@ export function PartnerSynxisOnboarding() {
       <label className="text-sm font-medium">Requesting hotel representative
         <select className="input mt-2" defaultValue={selected?.synxisRequest?.requester_role || ""} name="requesterRole" required>
           <option value="">Select role</option>
-          {requesterRoles.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          {availableRequesterRoles.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </select>
       </label>
       <label className="flex items-start gap-3 text-sm">

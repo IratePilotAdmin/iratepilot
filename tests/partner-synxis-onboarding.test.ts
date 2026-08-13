@@ -33,10 +33,12 @@ describe("partner SynXis property onboarding", () => {
     expect(component).toContain("Never enter passwords, API keys, tokens, or SOAP credentials.");
   });
 
-  it("requires an approved partner, verifies property ownership, and stays pending", () => {
+  it("requires scoped integration access, verifies property ownership, and stays pending", () => {
     expect(route).toContain('requireRole(["partner"])');
-    expect(route).toContain('status === "approved"');
-    expect(route).toContain('.eq("partner_id", partner.id)');
+    expect(route).toContain("resolvePartnerIntegrationAccess");
+    expect(route).toContain('.eq("partner_id", access.partnerId)');
+    expect(route).toContain('access.role !== "owner"');
+    expect(route).toContain("parsed.data.requesterRole !== access.role");
     expect(route).toContain('connection_status: "vendor_approval_pending"');
     expect(route).toContain("last_validated_at: null");
   });
