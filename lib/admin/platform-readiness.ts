@@ -19,6 +19,9 @@ export function buildPlatformReadiness(
     && present(env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   const serviceRoleReady = present(env.SUPABASE_SERVICE_ROLE_KEY);
   const emailReady = present(env.RESEND_API_KEY) && present(env.RESEND_FROM_EMAIL || env.EMAIL_FROM);
+  const emailWorkerAuthorized = present(env.CRON_SECRET);
+  const emailWorkerEnabled = env.EMAIL_WORKER_ENABLED === "true";
+  const resendWebhookReady = present(env.RESEND_WEBHOOK_SECRET);
   const stripeTestKeysReady = env.STRIPE_SECRET_KEY?.startsWith("sk_test_") === true
     && env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.startsWith("pk_test_") === true;
   const stripeLiveKeysReady = env.STRIPE_SECRET_KEY?.startsWith("sk_live_") === true
@@ -37,7 +40,9 @@ export function buildPlatformReadiness(
     { id: "database", category: "core", label: "Database connectivity", status: databaseReachable ? "ready" : "attention", required: true, detail: databaseReachable ? "Administrative database query succeeded" : "Administrative database query unavailable" },
     { id: "operating_mode", category: "core", label: "Booking operating mode", status: pilotMode || commercialModeReady ? "ready" : "attention", required: true, detail: pilotMode ? "Private booking requests enabled" : commercialModeReady ? "Commercial booking mode configured" : "Neither private pilot nor commercial booking mode is complete" },
     { id: "email", category: "communications", label: "Transactional email", status: emailReady ? "ready" : "attention", required: true, detail: emailReady ? "Email provider and sender configured" : "Email provider or sender missing" },
-    { id: "email_worker", category: "communications", label: "Email worker authorization", status: present(env.CRON_SECRET) ? "ready" : "attention", required: true, detail: present(env.CRON_SECRET) ? "Scheduled worker secret configured" : "Scheduled worker secret missing" },
+    { id: "email_worker", category: "communications", label: "Email worker authorization", status: emailWorkerAuthorized ? "ready" : "attention", required: true, detail: emailWorkerAuthorized ? "Scheduled worker secret configured" : "Scheduled worker secret missing" },
+    { id: "email_worker_activation", category: "communications", label: "Email worker activation", status: emailWorkerEnabled ? "ready" : "attention", required: true, detail: emailWorkerEnabled ? "Scheduled worker explicitly enabled" : "Worker intentionally disabled until the queued messages are approved" },
+    { id: "resend_webhook", category: "communications", label: "Email delivery webhook verification", status: resendWebhookReady ? "ready" : "attention", required: true, detail: resendWebhookReady ? "Resend webhook signing secret configured" : "Resend webhook signing secret missing" },
     { id: "stripe_keys", category: "payments", label: "Stripe credentials", status: stripeTestKeysReady || stripeLiveKeysReady ? "ready" : "attention", required: false, detail: stripeLiveKeysReady ? "Live-mode server and browser keys configured" : stripeTestKeysReady ? "Test-mode server and browser keys configured" : "Complete Stripe key pair not configured" },
     { id: "stripe_webhook", category: "payments", label: "Stripe webhook verification", status: present(env.STRIPE_WEBHOOK_SECRET) ? "ready" : "attention", required: false, detail: present(env.STRIPE_WEBHOOK_SECRET) ? "Webhook signing secret configured" : "Webhook signing secret missing" },
     { id: "membership_prices", category: "payments", label: "Membership pricing", status: present(env.STRIPE_BASIC_PRICE_ID) && present(env.STRIPE_BUSINESS_PRICE_ID) ? "ready" : "attention", required: false, detail: present(env.STRIPE_BASIC_PRICE_ID) && present(env.STRIPE_BUSINESS_PRICE_ID) ? "Basic and Business annual prices configured" : "One or more membership prices missing" },

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isEmailWorkerEnabled } from "@/lib/email/worker-gate";
 import { logOperationalEvent, reportOperationalError } from "@/lib/monitoring/operational";
 
 export const dynamic = "force-dynamic";
@@ -33,11 +34,14 @@ export async function GET() {
       deliveryWebhookFailures: deliveryFailures.count || 0,
       payoutExceptions: payoutExceptions.count || 0,
       suppressedRecipients: suppressions.count || 0,
+      emailWorkerEnabled: isEmailWorkerEnabled(),
     };
     const alerts = [
+      ...(metrics.emailBacklog ? ["email_backlog"] : []),
       ...(metrics.emailDeadLetters ? ["email_dead_letters"] : []),
       ...(metrics.deliveryWebhookFailures ? ["delivery_webhook_failures"] : []),
       ...(metrics.payoutExceptions ? ["payout_exceptions"] : []),
+      ...(!metrics.emailWorkerEnabled ? ["email_worker_disabled"] : []),
     ];
     logOperationalEvent(alerts.length ? "warning" : "info", "operational_readiness_checked", {
       alertCount: alerts.length,

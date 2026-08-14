@@ -13,7 +13,9 @@ const configured = {
   PILOT_MODE: "true",
   RESEND_API_KEY: "resend-secret-value",
   RESEND_FROM_EMAIL: "support@example.com",
+  RESEND_WEBHOOK_SECRET: "resend-webhook-secret-value",
   CRON_SECRET: "cron-secret-value",
+  EMAIL_WORKER_ENABLED: "true",
   STRIPE_SECRET_KEY: "sk_test_secret-value",
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_test_public-value",
 };
@@ -39,6 +41,13 @@ describe("platform readiness console", () => {
     expect(result.requiredReady).toBe(false);
     expect(result.items.find((item) => item.id === "public_booking")?.status).toBe("off");
     expect(result.items.find((item) => item.id === "database")?.status).toBe("attention");
+  });
+
+  it("keeps communications unready while the email worker safety hold is active", () => {
+    const result = buildPlatformReadiness({ ...configured, EMAIL_WORKER_ENABLED: "false" }, true);
+    expect(result.requiredReady).toBe(false);
+    expect(result.items.find((item) => item.id === "email_worker_activation")?.status).toBe("attention");
+    expect(result.items.find((item) => item.id === "resend_webhook")?.status).toBe("ready");
   });
 
   it("recognizes a fully gated commercial booking configuration", () => {
