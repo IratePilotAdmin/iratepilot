@@ -39,7 +39,8 @@ approved production write.
 - The Supabase project is active and the read-only preflight reports 28 public tables.
 - Core marketplace, finance, cancellation, email, partner, room, inventory, booking,
   notification, and revenue boundaries exist.
-- The Supabase migration page has no recorded migration history.
+- Supabase migration history now records exactly the 49 repository versions from
+  `202607260001` through `202608130038`; versions 039 through 048 remain unrecorded.
 - Every distinguishing marker for migrations 026 through 038 resolves true in the dedicated
   read-only preflight after accounting for migration 028's intentional replacement of the migration
   027 wrapper.
@@ -54,24 +55,24 @@ approved production write.
   remained zero, and the migration-history table remained absent.
 - The post-reconciliation catalog snapshot at `2026-08-14 02:50:52 UTC` contained 28 tables, 287
   columns, 57 indexes, 51 policies, 4 triggers, 22 functions, 137 constraints, and 784 grants.
+- The approved history-only repair completed on 2026-08-14. The post-repair snapshot at
+  `2026-08-14 03:27:30 UTC` retained every public-catalog count and hash exactly; only
+  `supabase_migrations.schema_migrations` changed from absent to present. A subsequent CLI dry run
+  listed only migrations 039 through 048 as pending.
 
-Selected later schema work through migration 038 was applied outside reliable Supabase CLI history.
-The missing pre-039 security contracts are now reconciled, but SynXis migrations 039 through 048
-remain pending. Migration-history repair through 038 is still a separate production write requiring
-its own source comparison, review, and explicit approval.
+Selected later schema work through migration 038 was originally applied outside reliable Supabase
+CLI history. The missing pre-039 security contracts are reconciled and history through 038 is now
+repaired. SynXis migrations 039 through 048 remain pending and require a separate explicit
+production-write approval.
 
 ## Safe rollout order
 
-1. Compare the reconciled live schema with migrations 001 through 038 before repairing migration
-   history. Do
-   not replay them against the existing schema.
-2. Verify a current recoverable production database backup and refresh the read-only evidence.
-3. With separate explicit production-write approval, repair only the verified 001-through-038
-   versions listed in `supabase/production_synxis_rollout_manifest.json`.
-4. Verify repaired history before requesting separate approval to apply migrations 039 through 048.
-5. Apply and verify the pending migrations in exact order while keeping SynXis traffic disabled.
-6. Run the manager-onboarding acceptance sequence before merging and deploying the application.
-7. Follow `docs/SYNXIS_PRODUCTION_ROLLOUT.md` for stop conditions and the remaining external Sabre
+1. Request separate explicit approval to apply migrations 039 through 048.
+2. Refresh the recoverable backup, migration list, dry run, and catalog evidence immediately before
+   that write.
+3. Apply and verify the pending migrations in exact order while keeping SynXis traffic disabled.
+4. Run the manager-onboarding acceptance sequence before merging and deploying the application.
+5. Follow `docs/SYNXIS_PRODUCTION_ROLLOUT.md` for stop conditions and the remaining external Sabre
    certification and activation phases.
 
 Database repair or migration execution must not proceed from an autosaved SQL editor buffer

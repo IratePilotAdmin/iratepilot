@@ -32,8 +32,8 @@ describe("SynXis production rollout manifest", () => {
     expect(manifest.pendingDeploymentVersions.at(-1)).toBe("202608130048");
   });
 
-  it("is a guarded plan rather than production-write authorization", () => {
-    expect(manifest.executionState).toBe("plan_only_no_write_authorization");
+  it("records completed history repair while preserving later write gates", () => {
+    expect(manifest.executionState).toBe("history_repaired_001_038_pending_039_048");
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain(
       "explicit production-write approval",
     );

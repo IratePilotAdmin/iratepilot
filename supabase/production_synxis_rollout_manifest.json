@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "executionState": "plan_only_no_write_authorization",
+  "executionState": "history_repaired_001_038_pending_039_048",
   "historyRepairCandidates": [
     "202607260001", "202607280001", "202607280002", "202607280003",
     "202607280004", "202607280005", "202607280006", "202607290001",

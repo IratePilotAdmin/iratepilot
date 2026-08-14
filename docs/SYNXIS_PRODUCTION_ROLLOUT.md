@@ -35,8 +35,8 @@ repair. Before execution:
 5. Run `supabase/production_schema_contract_snapshot.sql` and save its single JSON result privately.
    It fingerprints public tables, columns, constraints, indexes, policies, functions, triggers, and
    grants without returning their definitions or any row data.
-6. Review one exact repair command per verified version immediately before execution. The CLI form
-   is `supabase migration repair --status applied <version>`. Do not paste the entire list into an
+6. Review the exact repair command and every verified version immediately before execution. The CLI
+   form is `supabase migration repair <version> ... --status applied`. Do not paste the list into an
    autosaved SQL editor and do not mark 039 through 048 as applied.
 7. Re-run `supabase migration list` and the catalog snapshot. Confirm that only the verified
    001-through-038 versions are recorded and every catalog section hash and identity list is
@@ -66,8 +66,14 @@ true` with zero duplicate groups, zero unapproved active properties, and zero bo
 violations. The post-execution preflight and corrected verifier returned every contract true and
 `ready_for_history_repair: true`. The post-change snapshot retained 28 tables and 287 columns while
 recording the expected contract additions: 57 indexes, 51 policies, 4 triggers, 22 functions, 137
-constraints, and 784 grants. The migration-history table remained absent. Phase 29 history repair
-still requires a separate explicit production-write approval.
+constraints, and 784 grants.
+
+Phase 29 completed under explicit approval on 2026-08-14. The CLI repaired exactly 49 versions,
+from `202607260001` through `202608130038`. The post-repair migration list matched local and remote
+for every one of those versions while 039 through 048 remained remote-empty. The catalog snapshot
+at `2026-08-14 03:27:30 UTC` retained every pre-repair count and hash; only the migration-history
+table changed from absent to present. A final `supabase db push --dry-run` listed exactly migrations
+039 through 048 and did not apply them.
 
 ## Phase 30: apply migrations 039 through 048
 
