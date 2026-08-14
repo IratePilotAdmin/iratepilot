@@ -8,6 +8,12 @@ whether any SynXis migration is pending. A non-null object name (and `true` for 
 column) confirms existence only; policies, grants, constraints, function bodies, and migration
 history must still be compared with the repository before repairing history or applying SQL.
 
+Phase 27 adds `supabase/production_migration_026_038_preflight.sql`. It returns one compact JSON
+object with a boolean marker for each intervening migration. The checks cover distinguishing
+columns, tables, functions, commission logic, transfer cancellation handling, and the unified PMS
+provider constraint. A `true` marker is evidence for deeper comparison, not authorization to mark
+the migration applied; a `false` marker blocks all later migration deployment.
+
 ## Verified production state
 
 - The Supabase project is active and stores approximately 28 MB.

@@ -116,6 +116,10 @@ current production database was previously provisioned outside a reliable CLI mi
 Object existence is not treated as proof that policies, grants, constraints, or function bodies
 match the repository; those contracts still require comparison before any migration is marked or
 applied.
+Phase 27 closes the earlier migration-evidence gap with a separate read-only 026-through-038
+preflight. SynXis migrations 039 through 048 must not be applied until every intervening marker is
+true and the corresponding live policies, grants, constraints, and function bodies have been
+compared with source.
 
 ## Configuration
 
