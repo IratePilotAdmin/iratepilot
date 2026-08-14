@@ -10,6 +10,7 @@ const ownerRoute = readFileSync("app/api/partner/team/invitations/route.ts", "ut
 const acceptRoute = readFileSync("app/api/partner/team/invitations/accept/route.ts", "utf8");
 const email = readFileSync("lib/email/partner-team-invitation.ts", "utf8");
 const acceptance = readFileSync("components/forms/partner-team-invitation-acceptance.tsx", "utf8");
+const dashboard = readFileSync("components/dashboard/partner-team-invitations.tsx", "utf8");
 
 describe("partner-team manager invitations", () => {
   it("validates only scoped manager roles and normalized email", () => {
@@ -61,6 +62,13 @@ describe("partner-team manager invitations", () => {
     expect(email).not.toContain("new Resend");
     expect(ownerRoute).toContain("queuePartnerTeamInvitation");
     expect(ownerRoute).toContain("saved but its email could not be queued");
+  });
+
+  it("retains the invitation form across asynchronous submission work", () => {
+    expect(dashboard).toContain("const formElement = event.currentTarget");
+    expect(dashboard).toContain("new FormData(formElement)");
+    expect(dashboard).toContain("formElement.reset()");
+    expect(dashboard).not.toContain("event.currentTarget.reset()");
   });
 
   it("preserves login and registration return paths for acceptance", () => {
