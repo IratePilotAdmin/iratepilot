@@ -40,7 +40,7 @@ approved production write.
 - Core marketplace, finance, cancellation, email, partner, room, inventory, booking,
   notification, and revenue boundaries exist.
 - Supabase migration history now matches every repository version from `202607260001` through
-  `202608130048`; a subsequent CLI dry run reports that the remote database is up to date.
+  `202608130049`; a subsequent CLI dry run reports that the remote database is up to date.
 - Every distinguishing marker for migrations 026 through 038 resolves true in the dedicated
   read-only preflight after accounting for migration 028's intentional replacement of the migration
   027 wrapper.
@@ -71,16 +71,16 @@ approved production write.
 
 Selected later schema work through migration 038 was originally applied outside reliable Supabase
 CLI history. The missing pre-039 security contracts are reconciled, migration history is repaired,
-and SynXis migrations 039 through 048 are applied. SynXis traffic remains disabled. Application
-deployment and manager-onboarding acceptance require the next separate approval.
+and SynXis migrations 039 through 049 are applied. Application deployment and manager-onboarding
+acceptance completed on 2026-08-14. SynXis traffic remains disabled pending the external Sabre
+certification phase and a later separate live-traffic approval.
 
 ## Safe rollout order
 
-1. Request separate explicit approval to merge and deploy the application.
-2. Run the manager-onboarding acceptance sequence with a designated partner and non-production
-   test email while keeping SynXis traffic disabled.
-3. Follow `docs/SYNXIS_PRODUCTION_ROLLOUT.md` for stop conditions and the remaining external Sabre
-   certification and activation phases.
+1. Preserve the verified migration history through 049 and keep `live_enabled` false.
+2. Follow `docs/SYNXIS_PRODUCTION_ROLLOUT.md` for the remaining external Sabre certification phase.
+3. Require a separate explicit approval only after certification evidence and the controlled
+   production smoke gate are complete before enabling live traffic.
 
 Database repair or migration execution must not proceed from an autosaved SQL editor buffer
 containing unrelated statements. Use a clean CLI session or a newly verified empty editor, and
