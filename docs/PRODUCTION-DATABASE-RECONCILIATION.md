@@ -1,38 +1,101 @@
 # Production database reconciliation
 
-Audit date: 2026-08-05
+Audit date: 2026-08-13
+
+Phase 25 extends `supabase/production_preflight.sql` with read-only existence checks for every
+SynXis deployment boundary from migrations 039 through 048. A non-null object name (and `true` for
+the schema-v2 column) confirms existence only; policies, grants, constraints, function bodies, and
+migration history must still be compared with the repository before repairing history or applying
+SQL.
+
+Phase 27 adds `supabase/production_migration_026_038_preflight.sql`. It returns one compact JSON
+object with a boolean marker for each intervening migration. The checks cover distinguishing
+columns, tables, functions, commission logic, transfer cancellation handling, and the unified PMS
+provider constraint. A `true` marker is evidence for deeper comparison, not authorization to mark
+the migration applied; a `false` marker blocks all later migration deployment.
+
+Phase 28 adds the exact ordered version manifest and controlled rollout runbook. The manifest is a
+plan, not write authorization; migration-history repair and schema deployment remain separate
+explicitly approved phases.
+
+Phase 29 preparation adds `supabase/production_schema_contract_snapshot.sql`. It produces a
+read-only, privacy-limited baseline of object identities, counts, and definition hashes across the
+public catalog. Matching before/after results prove that history repair did not alter schema; they
+do not replace the migration-by-migration source comparison.
+
+The forward reconciliation package restores the skipped contracts without automatically changing
+conflicting property data and uses bounded lock and statement timeouts. It was applied to production
+under explicit approval on 2026-08-14 after a fresh backup, catalog snapshot, and zero-blocker
+preflight were confirmed.
+
+The read-only production preflight was executed on 2026-08-13 and returned `ready_to_apply: true`:
+all four blocking-row counts and all five existing bounds/status violation counts were zero. Every
+target contract remained absent, matching the preceding catalog audit. This result is readiness
+evidence only and does not authorize execution; it must be refreshed immediately before an
+approved production write.
 
 ## Verified production state
 
-- The Supabase project is active and stores approximately 28 MB.
-- The dashboard lists 22 public tables.
-- Core marketplace tables, finance tables, cancellation tables, email jobs, partner data, rooms, inventory, bookings, notifications, and revenue tables exist.
-- `review_booking(uuid,text,text)` and `finalize_test_booking_refund(uuid,text,numeric)` exist.
-- The Supabase migration page has no recorded migration history.
-- `booking_messages` does not exist.
-- `send_booking_message(uuid,text)` does not exist.
-- `cancel_unpaid_confirmed_booking(uuid,text)` does not exist.
+- The Supabase project is active and the post-Phase-30 read-only preflight reports 37 public tables.
+- Core marketplace, finance, cancellation, email, partner, room, inventory, booking,
+  notification, and revenue boundaries exist.
+- Supabase migration history now matches every repository version from `202607260001` through
+  `202608130048`; a subsequent CLI dry run reports that the remote database is up to date.
+- Every distinguishing marker for migrations 026 through 038 resolves true in the dedicated
+  read-only preflight after accounting for migration 028's intentional replacement of the migration
+  027 wrapper.
+- `booking_messages`, `send_booking_message(uuid,text)`, and
+  `cancel_unpaid_confirmed_booking(uuid,text)` exist.
+- Every migration-039-through-048 marker resolves in the post-deployment preflight, including the
+  migration-044 schema-v2 marker and all manager-onboarding boundaries.
+- Daily physical backups are available; the latest observed backup was created at
+  `2026-08-13 11:16:39 UTC`. Point-in-time recovery is not enabled, and database backups do not
+  restore deleted Storage API objects.
+- The pre-039 reconciliation completed successfully. Its corrected read-only verifier returned
+  `ready_for_history_repair: true`, every contract returned true, every blocker/violation count
+  remained zero, and the migration-history table remained absent.
+- The post-reconciliation catalog snapshot at `2026-08-14 02:50:52 UTC` contained 28 tables, 287
+  columns, 57 indexes, 51 policies, 4 triggers, 22 functions, 137 constraints, and 784 grants.
+- The approved history-only repair completed on 2026-08-14. The post-repair snapshot at
+  `2026-08-14 03:27:30 UTC` retained every public-catalog count and hash exactly; only
+  `supabase_migrations.schema_migrations` changed from absent to present. A subsequent CLI dry run
+  listed only migrations 039 through 048 as pending.
+- The separately approved Phase 30 deployment completed on 2026-08-14. The first push safely
+  stopped after 039 and 040 because migration 041 referenced unavailable `uuid_generate_v4()`;
+  042 through 048 were not attempted. Migrations 041 through 043 were corrected forward to use
+  PostgreSQL's available `gen_random_uuid()`, regression-tested, and the approved sequence then
+  completed through 048.
+- The post-Phase-30 safety query returned `live_enabled_default: false`, zero launch-evidence rows,
+  zero live-enabled rows, zero onboarding rows, and zero team-member rows. No SynXis traffic or
+  manager-onboarding data was created by the migration deployment.
 
-This indicates that the production schema was applied outside the Supabase CLI and includes work through at least migration `202608020023_expire_stale_booking_requests.sql`, while migrations `202608020024_booking_messages.sql` and `202608020025_cancel_unpaid_confirmed_bookings.sql` are not applied.
+Selected later schema work through migration 038 was originally applied outside reliable Supabase
+CLI history. The missing pre-039 security contracts are reconciled, migration history is repaired,
+and SynXis migrations 039 through 048 are applied. SynXis traffic remains disabled. Application
+deployment and manager-onboarding acceptance require the next separate approval.
 
 ## Safe rollout order
 
-1. Create and verify a recoverable production database backup.
-2. Run `supabase/production_preflight.sql` through a clean, read-only SQL session and save the result privately.
-3. Compare the live schema with migrations 001–023 before repairing migration history. Do not replay all migrations against the existing schema.
-4. Mark only verified existing migrations as applied using the Supabase CLI migration-repair workflow.
-5. Apply migration 024, verify its table, policies, index, and function, then test booking-message authorization.
-6. Apply migration 025, verify its function grants, then test unpaid confirmed-booking cancellation and inventory restoration.
-7. Re-run the preflight and confirm that all three messaging/cancellation fields resolve to non-null values.
-8. Run customer, partner, and administrator end-to-end tests before merging release PR #137.
+1. Request separate explicit approval to merge and deploy the application.
+2. Run the manager-onboarding acceptance sequence with a designated partner and non-production
+   test email while keeping SynXis traffic disabled.
+3. Follow `docs/SYNXIS_PRODUCTION_ROLLOUT.md` for stop conditions and the remaining external Sabre
+   certification and activation phases.
 
-Database repair or migration execution must not proceed from an autosaved SQL editor buffer containing unrelated statements. Use a clean CLI session or a newly verified empty editor, and inspect the exact SQL immediately before execution.
+Database repair or migration execution must not proceed from an autosaved SQL editor buffer
+containing unrelated statements. Use a clean CLI session or a newly verified empty editor, and
+inspect the exact command or SQL immediately before execution.
 
 ## Rollback preparation
 
 - Migration 024 rollback: `supabase/rollbacks/202608020024_booking_messages.rollback.sql`
 - Migration 025 rollback: `supabase/rollbacks/202608020025_cancel_unpaid_confirmed_bookings.rollback.sql`
 
-The migration 024 rollback refuses to drop `booking_messages` once it contains any rows. After the feature accepts production messages, recovery must use a verified database backup or a forward fix instead of deleting the table. Migration 025 adds only a new function, so its rollback removes only that function.
+The migration 024 rollback refuses to drop `booking_messages` once it contains any rows. After the
+feature accepts production messages, recovery must use a verified database backup or a forward fix
+instead of deleting the table. Migration 025 adds only a new function, so its rollback removes only
+that function.
 
-Keep the rollback for each migration ready in a separate, clean session. Do not run a rollback unless the corresponding migration verification fails and the rollback target has been inspected immediately beforehand.
+Keep the rollback for each migration ready in a separate, clean session. Do not run a rollback
+unless the corresponding migration verification fails and the rollback target has been inspected
+immediately beforehand.

@@ -98,6 +98,42 @@ export const pmsConnectionSchema = z.object({
   cancellationPolicyMapping: pmsMappingSchema,
 });
 
+export const synxisOnboardingRequestSchema = z.object({
+  propertyId: z.string().uuid(),
+  synxisHotelId: z.string().trim().min(1).max(120)
+    .regex(/^[A-Za-z0-9._:/-]+$/, "Use the non-secret Hotel ID assigned by Sabre."),
+  requesterRole: z.enum([
+    "hotel_owner",
+    "general_manager",
+    "revenue_manager",
+    "sales_manager",
+  ]),
+  hotelAuthorized: z.boolean().refine(
+    (authorized) => authorized,
+    "Hotel authorization is required before requesting SynXis onboarding.",
+  ),
+});
+
+export const partnerTeamInvitationSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(254),
+  memberRole: z.enum(["general_manager", "revenue_manager", "sales_manager"]),
+});
+
+export const partnerTeamInvitationAcceptanceSchema = z.object({
+  invitationId: z.string().uuid(),
+});
+
+export const partnerTeamAccessActionSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("revoke_invitation"),
+    invitationId: z.string().uuid(),
+  }),
+  z.object({
+    action: z.literal("disable_member"),
+    memberId: z.string().uuid(),
+  }),
+]);
+
 const roomFieldsSchema = z.object({
   name: z.string().trim().min(2).max(120),
   maxGuests: z.coerce.number().int().min(inventoryLimits.minGuests).max(inventoryLimits.maxGuests),

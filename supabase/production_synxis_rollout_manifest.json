@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "executionState": "migrations_001_048_applied_synxis_traffic_disabled_pending_deploy",
+  "historyRepairCandidates": [
+    "202607260001", "202607280001", "202607280002", "202607280003",
+    "202607280004", "202607280005", "202607280006", "202607290001",
+    "202607300001", "202608010001", "202608010002", "202608020001",
+    "202608020002", "202608020003", "202608020004", "202608020005",
+    "202608020006", "202608020007", "202608020008", "202608020009",
+    "202608020010", "202608020011", "202608020012", "202608020013",
+    "202608020014", "202608020015", "202608020016", "202608020017",
+    "202608020018", "202608020019", "202608020020", "202608020021",
+    "202608020022", "202608020023", "202608020024", "202608020025",
+    "202608020026", "202608050027", "202608060028", "202608060029",
+    "202608060030", "202608070031", "202608070032", "202608090033",
+    "202608090034", "202608100035", "202608100036", "202608100037",
+    "202608130038"
+  ],
+  "appliedDeploymentVersions": [
+    "202608130039", "202608130040", "202608130041", "202608130042",
+    "202608130043", "202608130044", "202608130045", "202608130046",
+    "202608130047", "202608130048"
+  ],
+  "requiredWriteGates": [
+    "explicit approval to merge and deploy the production application",
+    "successful manager-onboarding acceptance with SynXis traffic disabled",
+    "separate Sabre certification approval before any certification traffic",
+    "separate live-traffic approval after every launch-evidence gate is complete"
+  ],
+  "stopConditions": [
+    "the production project identity cannot be verified",
+    "migration history changes unexpectedly",
+    "any 039-through-048 production marker becomes unavailable",
+    "SynXis live_enabled becomes true before final live-traffic approval",
+    "manager-onboarding acceptance exposes credentials, identifiers, or SOAP payloads"
+  ]
+}
