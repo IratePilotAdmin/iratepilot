@@ -127,9 +127,23 @@ deployment. Verify this sequence with a designated test partner and non-producti
 Passing Phase 31 makes controlled hotel onboarding available to authorized owners and managers. It
 does not make live SynXis traffic available.
 
+Phase 31 completed under explicit approval on 2026-08-14 after PR 269 merged and the production
+application deployed. The first invitation-acceptance attempt exposed an ambiguous PL/pgSQL output
+name in `accept_partner_team_invitation`; migration 049 corrected the function with explicit table
+aliases and column conflict handling. Migration 049 was applied separately under explicit approval.
+The designated manager then accepted the invitation, submitted a property onboarding request that
+remained at `vendor approval pending`, and immediately lost integration access when the owner
+disabled the membership. The acceptance, onboarding, and access-disable endpoints returned 200.
+No SynXis traffic was enabled.
+
 ## Phases 32 and 33: external launch
 
 Phase 32 completes Sabre approval, provisioned certification access, property/room/rate/channel
 mapping, certification scenarios, and the controlled production smoke test. Phase 33 requires an
 administrator's separate explicit live-traffic approval after every persisted evidence gate is
 complete. Configuration, deployment, or manager onboarding must never activate traffic implicitly.
+
+The initial Sabre request and a provisioning follow-up were sent to `PartnerAssist@sabre.com` from
+`ceo@iratepilot.com`. Phase 32 remains blocked until Sabre provides approval, the certification
+interface package and endpoint, a secure credential-delivery process, a test Hotel ID and mappings,
+and the required certification scenarios. Production and certification traffic remain disabled.
