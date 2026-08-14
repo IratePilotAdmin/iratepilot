@@ -38,7 +38,7 @@ export async function reportOperationalError(
   if (!url) return;
 
   try {
-    await fetch(url, {
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -49,6 +49,9 @@ export async function reportOperationalError(
       body: JSON.stringify({ event, timestamp: new Date().toISOString(), ...safe }),
       signal: AbortSignal.timeout(4_000),
     });
+    if (!response.ok) {
+      throw new Error(`Operational alert delivery failed with HTTP ${response.status}.`);
+    }
   } catch (reportingError) {
     logOperationalEvent("warning", "operational_alert_delivery_failed", {
       sourceEvent: event,

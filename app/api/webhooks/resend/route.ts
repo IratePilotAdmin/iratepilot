@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logOperationalEvent, reportOperationalError } from "@/lib/monitoring/operational";
+import {
+  isNewerResendDeliveryEvent,
+  isRetryableResendWebhookClaim,
+} from "@/lib/email/webhook-reliability";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -55,6 +59,7 @@ export async function POST(request: Request) {
   const eventType = event.type as DeliveryEventType;
   const admin = createAdminClient();
   const now = new Date().toISOString();
+  let claimUpdatedAt = now;
   const { data: claimed, error: claimError } = await admin
     .from("email_delivery_events")
     .upsert({
@@ -74,36 +79,61 @@ export async function POST(request: Request) {
   }
   if (!claimed) {
     const existing = await admin.from("email_delivery_events")
-      .select("processing_status,attempt_count")
+      .select("processing_status,attempt_count,updated_at")
       .eq("webhook_event_id", id)
       .single();
     if (existing.error) return NextResponse.json({ error: "Delivery event lookup failed." }, { status: 500 });
     if (existing.data.processing_status === "processed") {
       return NextResponse.json({ received: true, duplicate: true, eventType });
     }
-    if (existing.data.processing_status === "processing") {
+    if (!isRetryableResendWebhookClaim(existing.data.processing_status, existing.data.updated_at)) {
       return NextResponse.json({ error: "Delivery event is already processing.", retry: true }, { status: 409 });
     }
+    const retryClaimedAt = new Date().toISOString();
     const retry = await admin.from("email_delivery_events").update({
       processing_status: "processing",
       attempt_count: existing.data.attempt_count + 1,
       error_message: null,
-      updated_at: now,
-    }).eq("webhook_event_id", id).eq("processing_status", "failed").select("id").maybeSingle();
+      updated_at: retryClaimedAt,
+    })
+      .eq("webhook_event_id", id)
+      .eq("processing_status", existing.data.processing_status)
+      .eq("updated_at", existing.data.updated_at)
+      .select("id")
+      .maybeSingle();
     if (retry.error || !retry.data) return NextResponse.json({ error: "Delivery event retry was not claimed." }, { status: 409 });
+    claimUpdatedAt = retryClaimedAt;
   }
 
   try {
     const status = deliveryStatus[eventType];
     const detail = getDeliveryDetail(event);
 
-    const outbox = await admin.from("email_outbox").update({
-      delivery_status: status,
-      delivery_event_at: event.created_at,
-      delivery_detail: detail,
-      updated_at: now,
-    }).eq("resend_email_id", event.data.email_id);
-    if (outbox.error) throw outbox.error;
+    const { data: outboxRecord, error: outboxLookupError } = await admin.from("email_outbox")
+      .select("id,delivery_event_at")
+      .eq("resend_email_id", event.data.email_id)
+      .maybeSingle();
+    if (outboxLookupError) throw outboxLookupError;
+    if (!outboxRecord) throw new Error("Delivery event has no associated email outbox record yet.");
+
+    let deliveryEventApplied = false;
+    if (isNewerResendDeliveryEvent(event.created_at, outboxRecord.delivery_event_at)) {
+      const outbox = await admin.from("email_outbox").update({
+        delivery_status: status,
+        delivery_event_at: event.created_at,
+        delivery_detail: detail,
+        updated_at: now,
+      })
+        .eq("id", outboxRecord.id)
+        .or(`delivery_event_at.is.null,delivery_event_at.lt.${event.created_at}`)
+        .select("id")
+        .maybeSingle();
+      if (outbox.error) throw outbox.error;
+      deliveryEventApplied = Boolean(outbox.data);
+    }
+    if (!deliveryEventApplied) {
+      logOperationalEvent("info", "resend_delivery_event_stale", { webhookEventId: id, eventType });
+    }
 
     if (["email.bounced", "email.complained", "email.suppressed"].includes(eventType)) {
       const reason = eventType === "email.bounced" ? "bounce"
@@ -119,22 +149,39 @@ export async function POST(request: Request) {
       }
     }
 
+    const completedAt = new Date().toISOString();
     const completed = await admin.from("email_delivery_events").update({
       processing_status: "processed",
       error_message: null,
-      processed_at: now,
-      updated_at: now,
-    }).eq("webhook_event_id", id).eq("processing_status", "processing");
+      processed_at: completedAt,
+      updated_at: completedAt,
+    })
+      .eq("webhook_event_id", id)
+      .eq("processing_status", "processing")
+      .eq("updated_at", claimUpdatedAt)
+      .select("id")
+      .maybeSingle();
     if (completed.error) throw completed.error;
+    if (!completed.data) {
+      return NextResponse.json({ error: "Delivery event claim ownership changed before completion.", retry: true }, { status: 409 });
+    }
     logOperationalEvent("info", "resend_delivery_event_processed", { webhookEventId: id, eventType });
     return NextResponse.json({ received: true, eventType });
   } catch (error) {
-    await admin.from("email_delivery_events").update({
+    const failed = await admin.from("email_delivery_events").update({
       processing_status: "failed",
       error_message: error instanceof Error ? error.message.slice(0, 500) : "Delivery event processing failed",
       updated_at: new Date().toISOString(),
-    }).eq("webhook_event_id", id).eq("processing_status", "processing");
+    })
+      .eq("webhook_event_id", id)
+      .eq("processing_status", "processing")
+      .eq("updated_at", claimUpdatedAt)
+      .select("id")
+      .maybeSingle();
     await reportOperationalError("resend_webhook_processing_failed", error, { webhookEventId: id, eventType });
+    if (!failed.error && !failed.data) {
+      return NextResponse.json({ error: "Delivery event claim ownership changed during processing.", retry: true }, { status: 409 });
+    }
     return NextResponse.json({ error: "Delivery event processing failed." }, { status: 500 });
   }
 }
