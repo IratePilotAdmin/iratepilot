@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "executionState": "migrations_001_049_applied_manager_acceptance_complete_synxis_traffic_disabled",
+  "executionState": "migrations_001_051_applied_manager_acceptance_complete_synxis_traffic_disabled",
   "historyRepairCandidates": [
     "202607260001",
     "202607280001",
@@ -63,7 +63,9 @@
     "202608130046",
     "202608130047",
     "202608130048",
-    "202608130049"
+    "202608130049",
+    "202608140050",
+    "202608140051"
   ],
   "pendingDeploymentVersions": [],
   "requiredWriteGates": [
@@ -73,7 +75,7 @@
   "stopConditions": [
     "the production project identity cannot be verified",
     "migration history changes unexpectedly",
-    "any 039-through-049 production marker becomes unavailable",
+    "any 039-through-051 production marker becomes unavailable",
     "SynXis live_enabled becomes true before final live-traffic approval",
     "manager-onboarding acceptance exposes credentials, identifiers, or SOAP payloads"
   ]
