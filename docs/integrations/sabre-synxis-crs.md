@@ -125,6 +125,12 @@ migration-history repair candidates, 039-through-048 deployment versions, stop c
 post-deployment manager-onboarding acceptance flow. See `docs/SYNXIS_PRODUCTION_ROLLOUT.md`.
 The manifest remains plan-only: migration-history repair, schema deployment, application rollout,
 and live-traffic activation each require their own authorization and verification boundary.
+Phase 29 preparation adds a catalog contract snapshot for the history-repair boundary. It records
+only object identities, counts, and definition hashes, so the same read-only query can prove the
+public schema remained unchanged after repair without exposing production rows or function bodies.
+The first production comparison found missing pre-039 security contracts, so history repair is
+blocked. A forward reconciliation migration must restore and verify those contracts before SynXis
+migrations 039 through 048 can be considered for deployment.
 
 ## Configuration
 

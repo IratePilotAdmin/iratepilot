@@ -32,14 +32,24 @@ repair. Before execution:
    insufficient.
 4. Run `supabase migration list` and stop if history is no longer empty or differs from the saved
    evidence.
-5. Review one exact repair command per verified version immediately before execution. The CLI form
+5. Run `supabase/production_schema_contract_snapshot.sql` and save its single JSON result privately.
+   It fingerprints public tables, columns, constraints, indexes, policies, functions, triggers, and
+   grants without returning their definitions or any row data.
+6. Review one exact repair command per verified version immediately before execution. The CLI form
    is `supabase migration repair --status applied <version>`. Do not paste the entire list into an
    autosaved SQL editor and do not mark 039 through 048 as applied.
-6. Re-run `supabase migration list` and confirm that only the verified 001-through-038 versions are
-   recorded. Do not apply schema migrations in this phase.
+7. Re-run `supabase migration list` and the catalog snapshot. Confirm that only the verified
+   001-through-038 versions are recorded and every catalog section hash and identity list is
+   unchanged. Do not apply schema migrations in this phase.
 
 If any comparison fails, stop and prepare a forward reconciliation migration instead of repairing
 that version's history.
+
+The read-only Phase 29 audit on 2026-08-13 did fail this gate: production is missing multiple
+earlier security functions, triggers, constraints, indexes, and one tightened policy even though
+the later 026-through-038 existence markers are present. Therefore no 001-through-038 history
+repair is currently permitted. Design and validate a forward reconciliation migration before
+requesting production-write approval.
 
 ## Phase 30: apply migrations 039 through 048
 

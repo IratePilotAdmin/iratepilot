@@ -18,6 +18,11 @@ Phase 28 adds the exact ordered version manifest and controlled rollout runbook.
 plan, not write authorization; migration-history repair and schema deployment remain separate
 explicitly approved phases.
 
+Phase 29 preparation adds `supabase/production_schema_contract_snapshot.sql`. It produces a
+read-only, privacy-limited baseline of object identities, counts, and definition hashes across the
+public catalog. Matching before/after results prove that history repair did not alter schema; they
+do not replace the migration-by-migration source comparison.
+
 ## Verified production state
 
 - The Supabase project is active and the read-only preflight reports 28 public tables.
@@ -33,9 +38,16 @@ explicitly approved phases.
 - Daily physical backups are available; the latest observed backup was created at
   `2026-08-13 11:16:39 UTC`. Point-in-time recovery is not enabled, and database backups do not
   restore deleted Storage API objects.
+- The Phase 29 catalog/source comparison found that production is not equivalent to every
+  repository migration before 039. Missing contracts include `update_own_profile`, the approved
+  marketplace property/room helpers, both partner/property enforcement trigger functions and
+  triggers, three idempotency/deduplication indexes, five bounds/status constraints, and the
+  tightened admin partner-application read policy.
 
-This indicates that production schema work through migration 038 was applied outside reliable
-Supabase CLI history, while SynXis migrations 039 through 048 remain pending.
+This indicates that selected later schema work through migration 038 was applied outside reliable
+Supabase CLI history, but earlier security contracts were skipped. SynXis migrations 039 through
+048 remain pending. Migration-history repair through 038 is blocked until a forward reconciliation
+plan is designed, tested, approved, and applied.
 
 ## Safe rollout order
 
