@@ -32,6 +32,15 @@ jobs:
           node-version: 24
           cache: npm
 
+      - name: Verify mobile dependency mitigations
+        run: npm run security:check --prefix mobile
+
+      - name: Install mobile dependencies
+        run: npm ci --prefix mobile --ignore-scripts
+
+      - name: Validate mobile dependency runtime
+        run: npm run security:runtime --prefix mobile && npm run typecheck --prefix mobile
+
       - name: Install dependencies
         run: npm ci
 
