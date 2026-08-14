@@ -23,6 +23,17 @@ read-only, privacy-limited baseline of object identities, counts, and definition
 public catalog. Matching before/after results prove that history repair did not alter schema; they
 do not replace the migration-by-migration source comparison.
 
+The next phase packages an atomic forward reconciliation and a separate read-only preflight. The
+reconciliation restores the skipped contracts without automatically changing conflicting property
+data, uses bounded lock and statement timeouts, and remains unexecuted until a fresh backup,
+successful preflight, reviewed SQL, and explicit production-write approval are all present.
+
+The read-only production preflight was executed on 2026-08-13 and returned `ready_to_apply: true`:
+all four blocking-row counts and all five existing bounds/status violation counts were zero. Every
+target contract remained absent, matching the preceding catalog audit. This result is readiness
+evidence only and does not authorize execution; it must be refreshed immediately before an
+approved production write.
+
 ## Verified production state
 
 - The Supabase project is active and the read-only preflight reports 28 public tables.

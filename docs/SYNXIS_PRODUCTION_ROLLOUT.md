@@ -51,6 +51,21 @@ the later 026-through-038 existence markers are present. Therefore no 001-throug
 repair is currently permitted. Design and validate a forward reconciliation migration before
 requesting production-write approval.
 
+The forward package is `supabase/production_reconcile_pre_039.sql`, preceded by the read-only
+`supabase/production_reconcile_pre_039_preflight.sql`. It restores only the skipped repository
+contracts in one bounded transaction. The script fails before mutation when duplicate booking,
+payment-intent, or pending-application groups exist, or when an active property lacks an approved
+partner. It deliberately does not deactivate production properties automatically. Do not execute
+it until the preflight returns `ready_to_apply: true`, a fresh catalog snapshot and backup are saved,
+and explicit production-write approval names this reconciliation.
+After an approved execution, run `supabase/production_reconcile_pre_039_verify.sql` and the catalog
+snapshot. The verifier must return `ready_for_history_repair: true`, and a reviewer must account for
+every expected catalog-hash change before migration history can be repaired.
+
+The initial read-only reconciliation preflight returned `ready_to_apply: true` with zero duplicate
+groups, zero unapproved active properties, and zero bounds/status violations. Treat that result as
+time-sensitive: run it again immediately before any approved execution.
+
 ## Phase 30: apply migrations 039 through 048
 
 Phase 30 is a separate production write and requires separate explicit approval after Phase 29 is
