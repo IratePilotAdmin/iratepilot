@@ -65,8 +65,11 @@
     "202608130048",
     "202608130049"
   ],
-  "pendingDeploymentVersions": [],
+  "pendingDeploymentVersions": [
+    "202608140050"
+  ],
   "requiredWriteGates": [
+    "separate production application approval for commercial launch reliability migration 050",
     "separate Sabre certification approval before any certification traffic",
     "separate live-traffic approval after every launch-evidence gate is complete"
   ],

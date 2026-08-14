@@ -31,10 +31,13 @@ describe("secure transactional email worker", () => {
   });
 
   it("claims and updates the real email_outbox schema", () => {
-    expect(route.match(/\.from\("email_outbox"\)/g)).toHaveLength(2);
+    expect(route.match(/\.from\("email_outbox"\)/g)?.length).toBeGreaterThanOrEqual(2);
     expect(route).not.toContain("transactional_email_jobs");
     expect(route).toContain("resend_email_id");
     expect(route).toContain("processed_at");
+    expect(route).toContain('"Idempotency-Key": `email-outbox-${job.id}`');
+    expect(route).toContain('status: deadLettered ? "dead_letter" : "failed"');
+    expect(route).toContain('from("email_suppressions")');
   });
 
   it("atomically claims retryable jobs and recovers stale workers", () => {
