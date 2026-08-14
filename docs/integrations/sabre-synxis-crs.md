@@ -120,6 +120,11 @@ Phase 27 closes the earlier migration-evidence gap with a separate read-only 026
 preflight. SynXis migrations 039 through 048 must not be applied until every intervening marker is
 true and the corresponding live policies, grants, constraints, and function bodies have been
 compared with source.
+Phase 28 records the verified daily-backup posture and packages the exact 001-through-038
+migration-history repair candidates, 039-through-048 deployment versions, stop conditions, and
+post-deployment manager-onboarding acceptance flow. See `docs/SYNXIS_PRODUCTION_ROLLOUT.md`.
+The manifest remains plan-only: migration-history repair, schema deployment, application rollout,
+and live-traffic activation each require their own authorization and verification boundary.
 
 ## Configuration
 
