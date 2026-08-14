@@ -57,9 +57,10 @@ export function PartnerTeamInvitations() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formElement = event.currentTarget;
     setBusy(true);
     setMessage("");
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formElement);
     const response = await fetch("/api/partner/team/invitations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -71,7 +72,7 @@ export function PartnerTeamInvitations() {
     const body = await response.json();
     setMessage(response.ok ? body.message : body.error || "Invitation could not be sent.");
     if (response.ok) {
-      event.currentTarget.reset();
+      formElement.reset();
       await load();
     }
     setBusy(false);
