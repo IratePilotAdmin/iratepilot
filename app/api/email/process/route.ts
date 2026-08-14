@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
+import { emptyEmailWorkerSummary, isEmailWorkerEnabled } from "@/lib/email/worker-gate";
 import { logOperationalEvent, reportOperationalError } from "@/lib/monitoring/operational";
 
 export const runtime = "nodejs";
@@ -30,6 +31,17 @@ async function processTransactionalEmail(request: Request) {
     return NextResponse.json({ success: false, error: "Unauthorized." }, { status: 401 });
   }
 
+  if (!isEmailWorkerEnabled()) {
+    const summary = emptyEmailWorkerSummary();
+    logOperationalEvent("info", "email_worker_disabled", {
+      ...summary,
+      durationMs: Date.now() - startedAt,
+    });
+    return NextResponse.json({ success: true, disabled: true, summary }, {
+      headers: { "Cache-Control": "private, no-store" },
+    });
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const resendApiKey = process.env.RESEND_API_KEY;
@@ -42,7 +54,7 @@ async function processTransactionalEmail(request: Request) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const resend = new Resend(resendApiKey);
-  const summary = { processed: 0, sent: 0, suppressed: 0, failed: 0, deadLettered: 0 };
+  const summary = emptyEmailWorkerSummary();
 
   for (let index = 0; index < batchSize(); index += 1) {
     const { data, error: claimError } = await supabase.rpc("claim_transactional_email_job");
