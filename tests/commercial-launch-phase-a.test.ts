@@ -30,6 +30,17 @@ describe("commercial launch remediation phase A", () => {
     expect(migration).toContain("returns setof public.email_outbox");
   });
 
+  it("restricts the transactional email claim function to the service role", () => {
+    const migration = read("supabase/migrations/202608140051_restrict_transactional_email_claim_execute.sql");
+
+    expect(migration).toContain("revoke all on function public.claim_transactional_email_job()");
+    expect(migration).toContain("from public, anon, authenticated");
+    expect(migration).toContain(
+      "grant execute on function public.claim_transactional_email_job() to service_role",
+    );
+    expect(migration).not.toMatch(/grant execute[\s\S]*to (?:anon|authenticated)/);
+  });
+
   it("provides an admin-only operational readiness view and structured logs", () => {
     const route = read("app/api/admin/operational-readiness/route.ts");
     const monitoring = read("lib/monitoring/operational.ts");
