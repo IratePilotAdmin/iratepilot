@@ -5,6 +5,7 @@ type RolloutManifest = {
   executionState: string;
   historyRepairCandidates: string[];
   appliedDeploymentVersions: string[];
+  pendingDeploymentVersions: string[];
   requiredWriteGates: string[];
   stopConditions: string[];
 };
@@ -26,10 +27,14 @@ const migrationVersions = readdirSync(
 describe("SynXis production rollout manifest", () => {
   it("partitions every repository migration at the 038/039 boundary in exact order", () => {
     expect(manifest.historyRepairCandidates).toEqual(migrationVersions.slice(0, 49));
-    expect(manifest.appliedDeploymentVersions).toEqual(migrationVersions.slice(49));
+    expect([
+      ...manifest.appliedDeploymentVersions,
+      ...manifest.pendingDeploymentVersions,
+    ]).toEqual(migrationVersions.slice(49));
     expect(manifest.historyRepairCandidates.at(-1)).toBe("202608130038");
     expect(manifest.appliedDeploymentVersions[0]).toBe("202608130039");
     expect(manifest.appliedDeploymentVersions.at(-1)).toBe("202608130048");
+    expect(manifest.pendingDeploymentVersions).toEqual(["202608130049"]);
   });
 
   it("records completed database rollout while preserving later launch gates", () => {
