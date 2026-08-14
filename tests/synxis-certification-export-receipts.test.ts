@@ -25,6 +25,8 @@ const dashboard = readFileSync(
 describe("SynXis certification export receipts", () => {
   it("creates an immutable, private, non-secret issuance ledger", () => {
     expect(migration).toContain("synxis_certification_export_receipts");
+    expect(migration).toContain("default gen_random_uuid()");
+    expect(migration).not.toContain("uuid_generate_v4()");
     expect(migration).toContain("checksum text not null unique");
     expect(migration).toContain("packet bodies and credentials are prohibited");
     expect(migration).toContain("enable row level security");

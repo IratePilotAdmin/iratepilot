@@ -57,6 +57,8 @@ describe("SynXis request journal", () => {
   });
 
   it("enforces unique attempts, one completion, privacy, and retention in PostgreSQL", () => {
+    expect(migration).toContain("default gen_random_uuid()");
+    expect(migration).not.toContain("uuid_generate_v4()");
     expect(migration).toContain("unique (request_id, attempt_number)");
     expect(migration).toContain("Duplicate SynXis request attempt");
     expect(migration).toContain("status = 'started'");

@@ -36,17 +36,18 @@ approved production write.
 
 ## Verified production state
 
-- The Supabase project is active and the read-only preflight reports 28 public tables.
+- The Supabase project is active and the post-Phase-30 read-only preflight reports 37 public tables.
 - Core marketplace, finance, cancellation, email, partner, room, inventory, booking,
   notification, and revenue boundaries exist.
-- Supabase migration history now records exactly the 49 repository versions from
-  `202607260001` through `202608130038`; versions 039 through 048 remain unrecorded.
+- Supabase migration history now matches every repository version from `202607260001` through
+  `202608130048`; a subsequent CLI dry run reports that the remote database is up to date.
 - Every distinguishing marker for migrations 026 through 038 resolves true in the dedicated
   read-only preflight after accounting for migration 028's intentional replacement of the migration
   027 wrapper.
 - `booking_messages`, `send_booking_message(uuid,text)`, and
   `cancel_unpaid_confirmed_booking(uuid,text)` exist.
-- Every migration-039-through-048 marker remains absent, including the migration-044 schema marker.
+- Every migration-039-through-048 marker resolves in the post-deployment preflight, including the
+  migration-044 schema-v2 marker and all manager-onboarding boundaries.
 - Daily physical backups are available; the latest observed backup was created at
   `2026-08-13 11:16:39 UTC`. Point-in-time recovery is not enabled, and database backups do not
   restore deleted Storage API objects.
@@ -59,20 +60,26 @@ approved production write.
   `2026-08-14 03:27:30 UTC` retained every public-catalog count and hash exactly; only
   `supabase_migrations.schema_migrations` changed from absent to present. A subsequent CLI dry run
   listed only migrations 039 through 048 as pending.
+- The separately approved Phase 30 deployment completed on 2026-08-14. The first push safely
+  stopped after 039 and 040 because migration 041 referenced unavailable `uuid_generate_v4()`;
+  042 through 048 were not attempted. Migrations 041 through 043 were corrected forward to use
+  PostgreSQL's available `gen_random_uuid()`, regression-tested, and the approved sequence then
+  completed through 048.
+- The post-Phase-30 safety query returned `live_enabled_default: false`, zero launch-evidence rows,
+  zero live-enabled rows, zero onboarding rows, and zero team-member rows. No SynXis traffic or
+  manager-onboarding data was created by the migration deployment.
 
 Selected later schema work through migration 038 was originally applied outside reliable Supabase
-CLI history. The missing pre-039 security contracts are reconciled and history through 038 is now
-repaired. SynXis migrations 039 through 048 remain pending and require a separate explicit
-production-write approval.
+CLI history. The missing pre-039 security contracts are reconciled, migration history is repaired,
+and SynXis migrations 039 through 048 are applied. SynXis traffic remains disabled. Application
+deployment and manager-onboarding acceptance require the next separate approval.
 
 ## Safe rollout order
 
-1. Request separate explicit approval to apply migrations 039 through 048.
-2. Refresh the recoverable backup, migration list, dry run, and catalog evidence immediately before
-   that write.
-3. Apply and verify the pending migrations in exact order while keeping SynXis traffic disabled.
-4. Run the manager-onboarding acceptance sequence before merging and deploying the application.
-5. Follow `docs/SYNXIS_PRODUCTION_ROLLOUT.md` for stop conditions and the remaining external Sabre
+1. Request separate explicit approval to merge and deploy the application.
+2. Run the manager-onboarding acceptance sequence with a designated partner and non-production
+   test email while keeping SynXis traffic disabled.
+3. Follow `docs/SYNXIS_PRODUCTION_ROLLOUT.md` for stop conditions and the remaining external Sabre
    certification and activation phases.
 
 Database repair or migration execution must not proceed from an autosaved SQL editor buffer

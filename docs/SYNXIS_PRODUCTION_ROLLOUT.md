@@ -78,7 +78,7 @@ table changed from absent to present. A final `supabase db push --dry-run` liste
 ## Phase 30: apply migrations 039 through 048
 
 Phase 30 is a separate production write and requires separate explicit approval after Phase 29 is
-verified. Apply only the ordered versions in `pendingDeploymentVersions`. Verify each boundary
+verified. Apply only the ordered versions in `appliedDeploymentVersions`. Verify each boundary
 before continuing:
 
 1. 039: distributed rate-limit table and reservation function.
@@ -95,6 +95,17 @@ before continuing:
 After 048, re-run the read-only production preflight. All 039-through-048 markers must resolve, the
 application readiness endpoint must report all four manager-onboarding gates available, and
 `live_enabled` must remain false.
+
+Phase 30 completed under explicit approval on 2026-08-14. Migrations 039 and 040 applied before the
+first push stopped at 041 because production did not provide `uuid_generate_v4()`; migrations 042
+through 048 were not attempted. The 041-through-043 defaults were corrected forward to
+`gen_random_uuid()`, covered by regression assertions, and the resumed push applied 041 through 048
+in order. Local and remote migration history now match through 048, and a final dry run reports the
+remote database is up to date.
+
+The post-deployment preflight reports 37 public tables and every 039-through-048 marker. The
+privacy-limited safety query reports a `false` default for `live_enabled` and zero evidence,
+live-enabled, onboarding, and partner-team-member rows. Phase 30 did not enable SynXis traffic.
 
 ## Phase 31: application deployment and acceptance
 

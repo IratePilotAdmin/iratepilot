@@ -1,7 +1,7 @@
 begin;
 
 create table if not exists public.synxis_certification_export_receipts (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   provider_id text not null check (provider_id = 'sabre-synxis'),
   schema_version integer not null check (schema_version = 1),
   checksum text not null unique check (checksum ~ '^[a-f0-9]{64}$'),

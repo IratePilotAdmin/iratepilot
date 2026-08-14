@@ -1,7 +1,7 @@
 begin;
 
 create table if not exists public.synxis_request_journal (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   request_id text not null check (char_length(request_id) between 1 and 200),
   attempt_number integer not null check (attempt_number between 1 and 3),
   operation text not null check (operation in ('rate_push', 'inventory_push')),

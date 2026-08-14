@@ -70,6 +70,8 @@ describe("SynXis CRS launch evidence persistence", () => {
 
   it("records immutable audit snapshots from a database trigger", () => {
     expect(auditMigration).toContain("create table if not exists public.synxis_crs_evidence_audit");
+    expect(auditMigration).toContain("default gen_random_uuid()");
+    expect(auditMigration).not.toContain("uuid_generate_v4()");
     expect(auditMigration).toContain("after insert or update on public.synxis_crs_launch_evidence");
     expect(auditMigration).toContain("to_jsonb(new) - 'updated_by' - 'updated_at'");
     expect(auditMigration).toContain("before update or delete on public.synxis_crs_evidence_audit");

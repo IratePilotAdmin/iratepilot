@@ -1,7 +1,7 @@
 begin;
 
 create table if not exists public.synxis_crs_evidence_audit (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   provider_id text not null check (provider_id = 'sabre-synxis'),
   event_type text not null check (event_type in ('evidence_created', 'evidence_updated')),
   changed_fields text[] not null default '{}',

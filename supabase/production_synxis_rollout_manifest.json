@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "executionState": "history_repaired_001_038_pending_039_048",
+  "executionState": "migrations_001_048_applied_synxis_traffic_disabled_pending_deploy",
   "historyRepairCandidates": [
     "202607260001", "202607280001", "202607280002", "202607280003",
     "202607280004", "202607280005", "202607280006", "202607290001",
@@ -16,23 +16,22 @@
     "202608090034", "202608100035", "202608100036", "202608100037",
     "202608130038"
   ],
-  "pendingDeploymentVersions": [
+  "appliedDeploymentVersions": [
     "202608130039", "202608130040", "202608130041", "202608130042",
     "202608130043", "202608130044", "202608130045", "202608130046",
     "202608130047", "202608130048"
   ],
   "requiredWriteGates": [
-    "explicit production-write approval for the named phase",
-    "a current recoverable database backup verified immediately before execution",
-    "live policies, grants, constraints, and function bodies compared with repository migrations 001 through 038",
-    "a clean CLI session linked to the verified production project",
-    "the exact command and target versions reviewed immediately before execution"
+    "explicit approval to merge and deploy the production application",
+    "successful manager-onboarding acceptance with SynXis traffic disabled",
+    "separate Sabre certification approval before any certification traffic",
+    "separate live-traffic approval after every launch-evidence gate is complete"
   ],
   "stopConditions": [
     "the production project identity cannot be verified",
-    "the latest recoverable database backup is missing or stale",
-    "any 001-through-038 schema comparison fails",
     "migration history changes unexpectedly",
-    "any 039-through-048 migration or post-deployment verification fails"
+    "any 039-through-048 production marker becomes unavailable",
+    "SynXis live_enabled becomes true before final live-traffic approval",
+    "manager-onboarding acceptance exposes credentials, identifiers, or SOAP payloads"
   ]
 }
