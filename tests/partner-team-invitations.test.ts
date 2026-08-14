@@ -11,6 +11,10 @@ const acceptRoute = readFileSync("app/api/partner/team/invitations/accept/route.
 const email = readFileSync("lib/email/partner-team-invitation.ts", "utf8");
 const acceptance = readFileSync("components/forms/partner-team-invitation-acceptance.tsx", "utf8");
 const dashboard = readFileSync("components/dashboard/partner-team-invitations.tsx", "utf8");
+const acceptanceRepair = readFileSync(
+  "supabase/migrations/202608130049_fix_partner_team_invitation_acceptance.sql",
+  "utf8",
+);
 
 describe("partner-team manager invitations", () => {
   it("validates only scoped manager roles and normalized email", () => {
@@ -69,6 +73,16 @@ describe("partner-team manager invitations", () => {
     expect(dashboard).toContain("new FormData(formElement)");
     expect(dashboard).toContain("formElement.reset()");
     expect(dashboard).not.toContain("event.currentTarget.reset()");
+  });
+
+  it("resolves invitation RPC output names as table columns", () => {
+    expect(acceptanceRepair).toContain("#variable_conflict use_column");
+    expect(acceptanceRepair).toContain("from public.partner_team_invitations as invitation");
+    expect(acceptanceRepair).toContain("where invitation.id = p_invitation_id");
+    expect(acceptanceRepair).toContain("on conflict (partner_id, user_id) do update");
+    expect(acceptanceRepair).toContain(
+      "grant execute on function public.accept_partner_team_invitation(uuid) to authenticated",
+    );
   });
 
   it("preserves login and registration return paths for acceptance", () => {
