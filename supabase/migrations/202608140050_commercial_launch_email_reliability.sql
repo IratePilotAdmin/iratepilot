@@ -43,6 +43,8 @@ alter table public.email_suppressions enable row level security;
 revoke all on public.email_delivery_events, public.email_suppressions from anon, authenticated;
 grant all on public.email_delivery_events, public.email_suppressions to service_role;
 
+drop function if exists public.claim_transactional_email_job();
+
 create or replace function public.claim_transactional_email_job()
 returns setof public.email_outbox
 language plpgsql

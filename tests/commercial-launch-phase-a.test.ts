@@ -19,6 +19,17 @@ describe("commercial launch remediation phase A", () => {
     expect(migration).toContain("'dead_letter'");
   });
 
+  it("drops the legacy email claim function before changing its return type", () => {
+    const migration = read("supabase/migrations/202608140050_commercial_launch_email_reliability.sql");
+    const dropFunction = "drop function if exists public.claim_transactional_email_job();";
+    const createFunction = "create or replace function public.claim_transactional_email_job()";
+
+    expect(migration).toContain(dropFunction);
+    expect(migration).not.toContain(`${dropFunction.slice(0, -1)} cascade;`);
+    expect(migration.indexOf(dropFunction)).toBeLessThan(migration.indexOf(createFunction));
+    expect(migration).toContain("returns setof public.email_outbox");
+  });
+
   it("provides an admin-only operational readiness view and structured logs", () => {
     const route = read("app/api/admin/operational-readiness/route.ts");
     const monitoring = read("lib/monitoring/operational.ts");
