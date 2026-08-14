@@ -45,11 +45,10 @@ repair. Before execution:
 If any comparison fails, stop and prepare a forward reconciliation migration instead of repairing
 that version's history.
 
-The read-only Phase 29 audit on 2026-08-13 did fail this gate: production is missing multiple
+The read-only Phase 29 audit on 2026-08-13 initially failed this gate because production was missing
 earlier security functions, triggers, constraints, indexes, and one tightened policy even though
-the later 026-through-038 existence markers are present. Therefore no 001-through-038 history
-repair is currently permitted. Design and validate a forward reconciliation migration before
-requesting production-write approval.
+the later 026-through-038 existence markers were present. The approved forward reconciliation was
+subsequently applied on 2026-08-14; no migration history was repaired in that execution.
 
 The forward package is `supabase/production_reconcile_pre_039.sql`, preceded by the read-only
 `supabase/production_reconcile_pre_039_preflight.sql`. It restores only the skipped repository
@@ -62,9 +61,13 @@ After an approved execution, run `supabase/production_reconcile_pre_039_verify.s
 snapshot. The verifier must return `ready_for_history_repair: true`, and a reviewer must account for
 every expected catalog-hash change before migration history can be repaired.
 
-The initial read-only reconciliation preflight returned `ready_to_apply: true` with zero duplicate
-groups, zero unapproved active properties, and zero bounds/status violations. Treat that result as
-time-sensitive: run it again immediately before any approved execution.
+Immediately before execution, the refreshed reconciliation preflight returned `ready_to_apply:
+true` with zero duplicate groups, zero unapproved active properties, and zero bounds/status
+violations. The post-execution preflight and corrected verifier returned every contract true and
+`ready_for_history_repair: true`. The post-change snapshot retained 28 tables and 287 columns while
+recording the expected contract additions: 57 indexes, 51 policies, 4 triggers, 22 functions, 137
+constraints, and 784 grants. The migration-history table remained absent. Phase 29 history repair
+still requires a separate explicit production-write approval.
 
 ## Phase 30: apply migrations 039 through 048
 

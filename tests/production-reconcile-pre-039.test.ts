@@ -48,4 +48,11 @@ describe("production pre-039 reconciliation", () => {
     expect(verification).toContain("legacy_admin_manage_policy_removed");
     expect(verification).toContain("profile_update_policy_removed");
   });
+
+  it("normalizes PostgreSQL numeric casts when verifying rate constraints", () => {
+    expect(verification).toContain("regexp_replace(pg_get_constraintdef(oid)");
+    expect(verification).toContain("::numeric|[()[:space:]]");
+    expect(verification).toContain("base_rate>=25andbase_rate<=25000");
+    expect(verification).toContain("rate>=25andrate<=25000");
+  });
 });

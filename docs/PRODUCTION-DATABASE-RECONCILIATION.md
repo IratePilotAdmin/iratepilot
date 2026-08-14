@@ -23,10 +23,10 @@ read-only, privacy-limited baseline of object identities, counts, and definition
 public catalog. Matching before/after results prove that history repair did not alter schema; they
 do not replace the migration-by-migration source comparison.
 
-The next phase packages an atomic forward reconciliation and a separate read-only preflight. The
-reconciliation restores the skipped contracts without automatically changing conflicting property
-data, uses bounded lock and statement timeouts, and remains unexecuted until a fresh backup,
-successful preflight, reviewed SQL, and explicit production-write approval are all present.
+The forward reconciliation package restores the skipped contracts without automatically changing
+conflicting property data and uses bounded lock and statement timeouts. It was applied to production
+under explicit approval on 2026-08-14 after a fresh backup, catalog snapshot, and zero-blocker
+preflight were confirmed.
 
 The read-only production preflight was executed on 2026-08-13 and returned `ready_to_apply: true`:
 all four blocking-row counts and all five existing bounds/status violation counts were zero. Every
@@ -49,29 +49,29 @@ approved production write.
 - Daily physical backups are available; the latest observed backup was created at
   `2026-08-13 11:16:39 UTC`. Point-in-time recovery is not enabled, and database backups do not
   restore deleted Storage API objects.
-- The Phase 29 catalog/source comparison found that production is not equivalent to every
-  repository migration before 039. Missing contracts include `update_own_profile`, the approved
-  marketplace property/room helpers, both partner/property enforcement trigger functions and
-  triggers, three idempotency/deduplication indexes, five bounds/status constraints, and the
-  tightened admin partner-application read policy.
+- The pre-039 reconciliation completed successfully. Its corrected read-only verifier returned
+  `ready_for_history_repair: true`, every contract returned true, every blocker/violation count
+  remained zero, and the migration-history table remained absent.
+- The post-reconciliation catalog snapshot at `2026-08-14 02:50:52 UTC` contained 28 tables, 287
+  columns, 57 indexes, 51 policies, 4 triggers, 22 functions, 137 constraints, and 784 grants.
 
-This indicates that selected later schema work through migration 038 was applied outside reliable
-Supabase CLI history, but earlier security contracts were skipped. SynXis migrations 039 through
-048 remain pending. Migration-history repair through 038 is blocked until a forward reconciliation
-plan is designed, tested, approved, and applied.
+Selected later schema work through migration 038 was applied outside reliable Supabase CLI history.
+The missing pre-039 security contracts are now reconciled, but SynXis migrations 039 through 048
+remain pending. Migration-history repair through 038 is still a separate production write requiring
+its own source comparison, review, and explicit approval.
 
 ## Safe rollout order
 
-1. Verify a current recoverable production database backup immediately before a write.
-2. Run both read-only preflights through a clean session and save the results privately.
-3. Compare the live schema with migrations 001 through 038 before repairing migration history. Do
+1. Compare the reconciled live schema with migrations 001 through 038 before repairing migration
+   history. Do
    not replay them against the existing schema.
-4. With separate explicit production-write approval, repair only the verified 001-through-038
+2. Verify a current recoverable production database backup and refresh the read-only evidence.
+3. With separate explicit production-write approval, repair only the verified 001-through-038
    versions listed in `supabase/production_synxis_rollout_manifest.json`.
-5. Verify repaired history before requesting separate approval to apply migrations 039 through 048.
-6. Apply and verify the pending migrations in exact order while keeping SynXis traffic disabled.
-7. Run the manager-onboarding acceptance sequence before merging and deploying the application.
-8. Follow `docs/SYNXIS_PRODUCTION_ROLLOUT.md` for stop conditions and the remaining external Sabre
+4. Verify repaired history before requesting separate approval to apply migrations 039 through 048.
+5. Apply and verify the pending migrations in exact order while keeping SynXis traffic disabled.
+6. Run the manager-onboarding acceptance sequence before merging and deploying the application.
+7. Follow `docs/SYNXIS_PRODUCTION_ROLLOUT.md` for stop conditions and the remaining external Sabre
    certification and activation phases.
 
 Database repair or migration execution must not proceed from an autosaved SQL editor buffer

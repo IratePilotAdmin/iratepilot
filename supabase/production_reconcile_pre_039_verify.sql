@@ -13,9 +13,9 @@ with contracts as (
     'legacy_admin_manage_policy_removed', not exists (select 1 from pg_catalog.pg_policies where schemaname = 'public' and tablename = 'partner_applications' and policyname = 'Admins can manage partner applications'),
     'profile_update_policy_removed', not exists (select 1 from pg_catalog.pg_policies where schemaname = 'public' and tablename = 'profiles' and policyname = 'Users can update own profile'),
     'rooms_max_guests_constraint', coalesce((select pg_get_constraintdef(oid) like '%max_guests >= 1%max_guests <= 30%' from pg_catalog.pg_constraint where conname = 'rooms_max_guests_bounds' and conrelid = 'public.rooms'::regclass), false),
-    'rooms_base_rate_constraint', coalesce((select pg_get_constraintdef(oid) like '%base_rate >= 25%base_rate <= 25000%' from pg_catalog.pg_constraint where conname = 'rooms_base_rate_bounds' and conrelid = 'public.rooms'::regclass), false),
+    'rooms_base_rate_constraint', coalesce((select lower(regexp_replace(pg_get_constraintdef(oid), '::numeric|[()[:space:]]', '', 'g')) like '%base_rate>=25andbase_rate<=25000%' from pg_catalog.pg_constraint where conname = 'rooms_base_rate_bounds' and conrelid = 'public.rooms'::regclass), false),
     'inventory_units_constraint', coalesce((select pg_get_constraintdef(oid) like '%available_units >= 0%available_units <= 500%' from pg_catalog.pg_constraint where conname = 'inventory_available_units_bounds' and conrelid = 'public.inventory'::regclass), false),
-    'inventory_rate_constraint', coalesce((select pg_get_constraintdef(oid) like '%rate >= 25%rate <= 25000%' from pg_catalog.pg_constraint where conname = 'inventory_rate_bounds' and conrelid = 'public.inventory'::regclass), false),
+    'inventory_rate_constraint', coalesce((select lower(regexp_replace(pg_get_constraintdef(oid), '::numeric|[()[:space:]]', '', 'g')) like '%rate>=25andrate<=25000%' from pg_catalog.pg_constraint where conname = 'inventory_rate_bounds' and conrelid = 'public.inventory'::regclass), false),
     'partner_status_constraint', coalesce((select pg_get_constraintdef(oid) like '%pending%approved%declined%' from pg_catalog.pg_constraint where conname = 'partner_applications_status_check' and conrelid = 'public.partner_applications'::regclass), false)
   ) as evidence
 )
