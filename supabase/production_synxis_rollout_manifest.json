@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "executionState": "migrations_001_054_applied_manager_acceptance_complete_synxis_traffic_disabled",
+  "executionState": "migrations_001_057_applied_manager_acceptance_complete_synxis_traffic_disabled",
   "historyRepairCandidates": [
     "202607260001",
     "202607280001",
@@ -68,23 +68,20 @@
     "202608140051",
     "202608140052",
     "202608140053",
-    "202608150054"
-  ],
-  "pendingDeploymentVersions": [
+    "202608150054",
     "202608150055",
     "202608150056",
     "202608150057"
   ],
+  "pendingDeploymentVersions": [],
   "requiredWriteGates": [
-    "separate production migration approval before applying migration 055, migration 056, or migration 057",
     "separate Sabre certification approval before any certification traffic",
     "separate live-traffic approval after every launch-evidence gate is complete"
   ],
   "stopConditions": [
     "the production project identity cannot be verified",
     "migration history changes unexpectedly",
-    "any 039-through-054 production marker becomes unavailable",
-    "migration 055, migration 056, or migration 057 is applied without separate production approval",
+    "any 039-through-057 production marker becomes unavailable",
     "SynXis live_enabled becomes true before final live-traffic approval",
     "manager-onboarding acceptance exposes credentials, identifiers, or SOAP payloads"
   ]
