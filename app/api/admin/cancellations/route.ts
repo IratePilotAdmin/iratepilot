@@ -12,10 +12,15 @@ export async function GET() {
       .order("created_at", { ascending: false });
     if (error) throw error;
     return NextResponse.json({
-      data: (data || []).map((item) => ({
-        ...item,
-        retryable: item.status === "pending" || isCancellationClaimStale(item.status, item.updated_at),
-      })),
+      data: (data || []).map((item) => {
+        const bookingStatus = (item.bookings as unknown as { status?: string } | null)?.status;
+        return {
+          ...item,
+          retryable: item.status === "pending"
+            || (item.status === "refund_failed" && bookingStatus === "confirmed")
+            || isCancellationClaimStale(item.status, item.updated_at),
+        };
+      }),
     });
   } catch {
     return NextResponse.json({ error: "Cancellation review is not configured." }, { status: 503 });

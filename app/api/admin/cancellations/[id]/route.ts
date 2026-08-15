@@ -6,6 +6,7 @@ import { getStripe } from "@/lib/stripe";
 import { cancellationClaimTimeoutMs, isCancellationClaimStale } from "@/lib/bookings/cancellation-claims";
 import { queueBookingNotification } from "@/lib/email/booking-notifications";
 import { getStripeWebhookMode, type BookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
+import { reconcileStripeBookingRefund } from "@/lib/bookings/stripe-refund-reconciliation";
 
 const schema = z.object({
   decision: z.enum(["approve", "reject"]),
@@ -31,10 +32,10 @@ export async function PATCH(
     const admin = createAdminClient();
     const { data: cancellation, error } = await admin
       .from("booking_cancellation_requests")
-      .select("id,status,reason,updated_at,booking_id,bookings(id,customer_id,confirmation_code,total,status,stripe_payment_intent_id,stripe_payment_mode)")
+      .select("id,status,reason,updated_at,booking_id,stripe_refund_id,stripe_refund_status,bookings(id,customer_id,confirmation_code,total,status,stripe_payment_intent_id,stripe_payment_mode)")
       .eq("id", id).single();
     if (error || !cancellation) return NextResponse.json({ error: "Cancellation request not found." }, { status: 404 });
-    if (cancellation.status !== "pending" && !isCancellationClaimStale(cancellation.status, cancellation.updated_at)) {
+    if (cancellation.status !== "pending" && cancellation.status !== "refund_failed" && !isCancellationClaimStale(cancellation.status, cancellation.updated_at)) {
       const errorMessage = cancellation.status === "processing"
         ? "This refund is already processing."
         : "This request was already reviewed.";
@@ -136,7 +137,7 @@ export async function PATCH(
       reviewed_at: null,
       updated_at: claimTime,
     }).eq("id", id)
-      .or(`status.eq.pending,and(status.eq.processing,updated_at.lt.${staleBefore})`)
+      .or(`status.in.(pending,refund_failed),and(status.eq.processing,updated_at.lt.${staleBefore})`)
       .select("id")
       .maybeSingle();
     if (claimError) throw claimError;
@@ -171,23 +172,39 @@ export async function PATCH(
 
     const refund = await stripe.refunds.create(
       { payment_intent: intent.id },
-      { idempotencyKey: `booking-cancellation-${id}` }
-    );
-    refundCreated = true;
-    const refundAmount = refund.amount / 100;
-    const { data: refundedBooking, error: finalizeError } = await admin.rpc(
-      "finalize_booking_refund",
       {
-        p_request_id: id,
-        p_refund_id: refund.id,
-        p_refund_amount: refundAmount
+        idempotencyKey: cancellation.status === "refund_failed" && cancellation.stripe_refund_id
+          ? `booking-cancellation-${id}-after-${cancellation.stripe_refund_id}`
+          : `booking-cancellation-${id}`
       }
     );
-    if (finalizeError) throw finalizeError;
+    refundCreated = true;
+    const reconciliation = await reconcileStripeBookingRefund({
+      admin,
+      refund,
+      paymentMode: refundMode,
+      livemode: intent.livemode,
+    });
+    if (reconciliation.outcome === "ignored") {
+      throw new Error(reconciliation.reason || "Stripe refund could not be linked to the cancellation request.");
+    }
     claimedRequestId = null;
+    if (reconciliation.outcome === "failed") {
+      return NextResponse.json({
+        error: "Stripe did not complete the refund. The partner payout remains held and the request can be retried.",
+        refundStatus: refund.status,
+      }, { status: 502 });
+    }
+    if (reconciliation.outcome === "awaiting_confirmation") {
+      return NextResponse.json({
+        data: { id: booking.id, status: booking.status },
+        message: "Stripe accepted the refund. The booking will be finalized after Stripe confirms completion.",
+        refundStatus: refund.status,
+      }, { status: 202 });
+    }
     await queueBookingNotification({ event: "refund_completed", bookingId: booking.id, confirmationCode: booking.confirmation_code, customerId: booking.customer_id, paymentMode: refundMode });
     return NextResponse.json({
-      data: refundedBooking,
+      data: reconciliation.booking,
       message: `${refundMode === "test" ? "Test r" : "R"}efund completed, partner transfer reversed, inventory restored, and finance voided.`
     });
   } catch (error) {

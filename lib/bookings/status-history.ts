@@ -10,6 +10,7 @@ const statusLabels: Record<string, string> = {
   confirmed: "Booking confirmed",
   cancelled: "Booking cancelled",
   refunded: "Payment refunded",
+  refund_failed: "Refund needs retry",
 };
 
 export function getBookingStatusLabel(status: string) {

@@ -19,6 +19,7 @@ import { getVerifiedPartnerSubscriptionPlan } from "@/lib/stripe/partner-subscri
 import { getVerifiedMembershipSubscriptionTier } from "@/lib/stripe/membership-subscription-pricing";
 import { queueBookingNotification } from "@/lib/email/booking-notifications";
 import { getApprovedBookingMetadataMode, getStripeWebhookMode } from "@/lib/stripe/booking-payment-mode";
+import { reconcileStripeBookingRefund, type StripeRefundReconciliation } from "@/lib/bookings/stripe-refund-reconciliation";
 
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
@@ -40,6 +41,8 @@ export async function POST(request: Request) {
   let financialId: string | null = null;
   let objectId: string | null = null;
   let bookingRefund: { id: string; status: string | null } | null = null;
+  let refundReconciliation: StripeRefundReconciliation | null = null;
+  let processingStatusOverride: "processed" | "ignored" | null = null;
   let claimUpdatedAt = new Date().toISOString();
 
   const { data: claimed, error: claimError } = await admin
@@ -213,6 +216,33 @@ export async function POST(request: Request) {
       }
     }
 
+    if (event.type === "refund.created" || event.type === "refund.updated" || event.type === "refund.failed") {
+      const refund = event.data.object as Stripe.Refund;
+      objectId = refund.id;
+      refundReconciliation = await reconcileStripeBookingRefund({
+        admin,
+        refund,
+        paymentMode: webhookMode,
+        livemode: event.livemode,
+        eventCreatedAt,
+      });
+      financialId = refundReconciliation.bookingFinancialId;
+      processingStatusOverride = refundReconciliation.outcome === "ignored" ? "ignored" : "processed";
+      if (
+        refundReconciliation.outcome === "succeeded"
+        && refundReconciliation.bookingId
+        && refundReconciliation.customerId
+      ) {
+        await queueBookingNotification({
+          event: "refund_completed",
+          bookingId: refundReconciliation.bookingId,
+          confirmationCode: refundReconciliation.confirmationCode,
+          customerId: refundReconciliation.customerId,
+          paymentMode: webhookMode,
+        });
+      }
+    }
+
     if (event.type === "transfer.created" || event.type === "transfer.updated" || event.type === "transfer.reversed") {
       const transfer = event.data.object as Stripe.Transfer;
       objectId = transfer.id;
@@ -232,7 +262,8 @@ export async function POST(request: Request) {
       financialId = financial?.id || null;
     }
 
-    const processingStatus = financialId || !event.type.startsWith("transfer.") ? "processed" : "ignored";
+    const processingStatus = processingStatusOverride
+      || (financialId || !event.type.startsWith("transfer.") ? "processed" : "ignored");
     const completedAt = new Date().toISOString();
     const { data: completedClaim, error: completeError } = await admin
       .from("stripe_financial_events")
@@ -262,6 +293,7 @@ export async function POST(request: Request) {
       eventType: event.type,
       mode: webhookMode,
       ...(bookingRefund ? { bookingRefund } : {}),
+      ...(refundReconciliation ? { refundReconciliation } : {}),
     });
   } catch (error) {
     console.error("Stripe webhook processing failed", error);
