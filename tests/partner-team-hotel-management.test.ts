@@ -47,6 +47,14 @@ describe("partner-team hotel management", () => {
     }
   });
 
+  it("preserves pending-owner onboarding before delegated access is required", () => {
+    expect(onboardingRoute).toContain('.select("id,status")');
+    expect(onboardingRoute).toContain('owner.data.status !== "approved"');
+    expect(onboardingRoute).toContain("partnerId = owner.data.id");
+    expect(onboardingRoute.indexOf('owner.data.status !== "approved"'))
+      .toBeLessThan(onboardingRoute.indexOf("resolvePartnerHotelAccess(auth, requestedPartnerId)"));
+  });
+
   it("requires explicit organization selection when a manager has multiple assignments", () => {
     for (const component of [properties, rates, onboarding]) {
       expect(component).toContain("<HotelAccessSelector");

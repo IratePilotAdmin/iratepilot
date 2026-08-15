@@ -21,21 +21,31 @@ export async function GET(request: Request) {
       partnerId = owner.data?.id ?? null;
     } else {
       const requestedPartnerId = new URL(request.url).searchParams.get("partnerId");
-      hotelAccess = await resolvePartnerHotelAccess(auth, requestedPartnerId);
-      if (hotelAccess.selectionRequired) return NextResponse.json({
-        hotelAccess: {
-          options: hotelAccess.options,
-          selectedPartnerId: null,
-          selectionRequired: true,
-        },
-      });
-      if (!hotelAccess.access) return NextResponse.json({
-        error: hotelAccess.migrationRequired
-          ? "Apply hotel-management migration 055 before using delegated onboarding access."
-          : "Approved hotel-management access is required.",
-      }, { status: hotelAccess.migrationRequired ? 503 : 403 });
-      partnerId = hotelAccess.access.partnerId;
-      accessRole = hotelAccess.access.role;
+      const owner = await auth.supabase.from("partners")
+        .select("id,status")
+        .eq("owner_id", auth.user.id)
+        .maybeSingle();
+      if (owner.error) throw owner.error;
+
+      if (owner.data && owner.data.status !== "approved") {
+        partnerId = owner.data.id;
+      } else {
+        hotelAccess = await resolvePartnerHotelAccess(auth, requestedPartnerId);
+        if (hotelAccess.selectionRequired) return NextResponse.json({
+          hotelAccess: {
+            options: hotelAccess.options,
+            selectedPartnerId: null,
+            selectionRequired: true,
+          },
+        });
+        if (!hotelAccess.access) return NextResponse.json({
+          error: hotelAccess.migrationRequired
+            ? "Apply hotel-management migration 055 before using delegated onboarding access."
+            : "Approved hotel-management access is required.",
+        }, { status: hotelAccess.migrationRequired ? 503 : 403 });
+        partnerId = hotelAccess.access.partnerId;
+        accessRole = hotelAccess.access.role;
+      }
     }
     if (!partnerId) return NextResponse.json({ error: "A partner account is required to view onboarding." }, { status: 403 });
 

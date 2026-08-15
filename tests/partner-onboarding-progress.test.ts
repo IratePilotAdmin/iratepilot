@@ -45,6 +45,15 @@ describe("live partner onboarding progress", () => {
       .toBeLessThan(route.indexOf('.from("properties")'));
   });
 
+  it("keeps onboarding available to a directly owned partner awaiting approval", () => {
+    expect(route).toContain('.select("id,status")');
+    expect(route).toContain('.eq("owner_id", auth.user.id)');
+    expect(route).toContain('owner.data.status !== "approved"');
+    expect(route).toContain("partnerId = owner.data.id");
+    expect(route.indexOf('owner.data.status !== "approved"'))
+      .toBeLessThan(route.indexOf("resolvePartnerHotelAccess(auth, requestedPartnerId)"));
+  });
+
   it("replaces the application form in the protected route and adds onboarding navigation", () => {
     expect(page).toContain("<PartnerOnboarding />");
     expect(page).not.toContain("PartnerApplicationForm");
