@@ -124,4 +124,24 @@ select
     in lower(pg_get_functiondef(
       'public.enforce_hotel_manager_inventory_room_immutability()'::regprocedure
     ))
-  ) > 0 as inventory_assignment_guard_ready;
+  ) > 0 as inventory_assignment_guard_ready,
+  exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'rooms'
+      and policyname = 'Partner owners delete own rooms'
+      and cmd = 'DELETE'
+      and position('partners.owner_id = auth.uid()' in lower(coalesce(qual, ''))) > 0
+      and position('partners.status = ''approved''' in lower(coalesce(qual, ''))) > 0
+  ) as partner_owner_room_delete_ready,
+  exists (
+    select 1
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'inventory'
+      and policyname = 'Partner owners delete own inventory'
+      and cmd = 'DELETE'
+      and position('partners.owner_id = auth.uid()' in lower(coalesce(qual, ''))) > 0
+      and position('partners.status = ''approved''' in lower(coalesce(qual, ''))) > 0
+  ) as partner_owner_inventory_delete_ready;

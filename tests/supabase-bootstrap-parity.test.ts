@@ -16,10 +16,11 @@ const mirroredMigrations = [
   "202608150058_hotel_manager_inventory_stay_date_guard.sql",
   "202608150059_legacy_hotel_manager_consent.sql",
   "202608150060_delegated_property_publication_guard.sql",
+  "202608150061_partner_owner_delete_policies.sql",
 ];
 
 describe("Supabase bootstrap parity", () => {
-  it("mirrors the complete partner-team hotel-management dependency chain through migration 060", () => {
+  it("mirrors the complete partner-team hotel-management dependency chain through migration 061", () => {
     let previousIndex = -1;
     for (const name of mirroredMigrations) {
       const marker = `-- Mirrored from migrations/${name}.`;
@@ -58,6 +59,8 @@ describe("Supabase bootstrap parity", () => {
     expect(bootstrap).toContain("if old.active then");
     expect(bootstrap).toContain("new.active is distinct from old.active");
     expect(bootstrap).toContain("Hotel managers cannot change property publication state");
+    expect(bootstrap).toContain('create policy "Partner owners delete own rooms"');
+    expect(bootstrap).toContain('create policy "Partner owners delete own inventory"');
   });
 
   it("verifies the final partner-team tables, policies, resolver, and write guards", () => {
@@ -73,6 +76,8 @@ describe("Supabase bootstrap parity", () => {
       "enforce_hotel_manager_inventory_room_immutability",
       "disclosed_hotel_access_invitation_ready",
       "invitation_scoped_hotel_access_ready",
+      "Partner owners delete own rooms",
+      "Partner owners delete own inventory",
     ]) {
       expect(verification).toContain(expected);
     }

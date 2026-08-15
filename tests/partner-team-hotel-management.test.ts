@@ -29,6 +29,10 @@ const publicationGuardMigration = readFileSync(
   "supabase/migrations/202608150060_delegated_property_publication_guard.sql",
   "utf8",
 );
+const ownerDeleteMigration = readFileSync(
+  "supabase/migrations/202608150061_partner_owner_delete_policies.sql",
+  "utf8",
+);
 const resolver = readFileSync("lib/partner/hotel-access.ts", "utf8");
 const onboardingModel = readFileSync("lib/partner/onboarding.ts", "utf8");
 const propertyRoute = readFileSync("app/api/partner/properties/route.ts", "utf8");
@@ -150,6 +154,16 @@ describe("partner-team hotel management", () => {
     expect(propertyEditRoute).toContain('resolved.access.role !== "owner"');
     expect(propertyEditRoute).toContain("delegatedManager && property.active");
     expect(propertyEditRoute).toContain("...(delegatedManager ? {} : { active: false })");
+  });
+
+  it("restores room and inventory deletion only for approved partner owners", () => {
+    expect(ownerDeleteMigration).toContain('create policy "Partner owners delete own rooms"');
+    expect(ownerDeleteMigration).toContain('create policy "Partner owners delete own inventory"');
+    expect(ownerDeleteMigration.match(/for delete to authenticated/g)).toHaveLength(2);
+    expect(ownerDeleteMigration.match(/partners\.owner_id = auth\.uid\(\)/g)).toHaveLength(2);
+    expect(ownerDeleteMigration.match(/partners\.status = 'approved'/g)).toHaveLength(2);
+    expect(ownerDeleteMigration).not.toContain("Hotel managers delete");
+    expect(ownerDeleteMigration).not.toContain("can_manage_partner_hotels");
   });
 
   it("returns a hotel-only onboarding checklist to delegated managers", () => {

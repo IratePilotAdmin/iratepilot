@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "executionState": "migrations_001_059_applied_060_preview_pending_manager_acceptance_incomplete_synxis_traffic_disabled",
+  "executionState": "migrations_001_059_applied_060_061_preview_pending_manager_acceptance_incomplete_synxis_traffic_disabled",
   "historyRepairCandidates": [
     "202607260001",
     "202607280001",
@@ -76,10 +76,11 @@
     "202608150059"
   ],
   "pendingDeploymentVersions": [
-    "202608150060"
+    "202608150060",
+    "202608150061"
   ],
   "requiredWriteGates": [
-    "separate production approval to apply migration 060 and verify the delegated inactive-property guard before any application deployment, manager invitation, or manager activation",
+    "separate production approval to apply and verify migrations 060 then 061 in exact order before any application deployment, manager invitation, or manager activation",
     "separate Sabre certification approval before any certification traffic",
     "separate live-traffic approval after every launch-evidence gate is complete"
   ],
@@ -87,8 +88,8 @@
     "the production project identity cannot be verified",
     "migration history changes unexpectedly",
     "any 039-through-059 production marker becomes unavailable",
-    "migration 060 is applied before its separate production approval",
-    "application deployment, manager invitation, or manager activation occurs before production migration 060 is applied and verified",
+    "migration 060 or 061 is applied before its separate production approval or outside the required order",
+    "application deployment, manager invitation, or manager activation occurs before production migrations 060 and 061 are applied and verified",
     "SynXis live_enabled becomes true before final live-traffic approval",
     "manager-onboarding acceptance exposes credentials, identifiers, or SOAP payloads"
   ]

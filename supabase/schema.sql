@@ -2076,6 +2076,36 @@ for each row execute function public.enforce_delegated_hotel_manager_property_fi
 
 commit;
 
+-- Mirrored from migrations/202608150061_partner_owner_delete_policies.sql.
+begin;
+
+drop policy if exists "Partner owners delete own rooms" on public.rooms;
+create policy "Partner owners delete own rooms"
+  on public.rooms for delete to authenticated
+  using (exists (
+    select 1
+    from public.properties
+    join public.partners on partners.id = properties.partner_id
+    where properties.id = rooms.property_id
+      and partners.owner_id = auth.uid()
+      and partners.status = 'approved'
+  ));
+
+drop policy if exists "Partner owners delete own inventory" on public.inventory;
+create policy "Partner owners delete own inventory"
+  on public.inventory for delete to authenticated
+  using (exists (
+    select 1
+    from public.rooms
+    join public.properties on properties.id = rooms.property_id
+    join public.partners on partners.id = properties.partner_id
+    where rooms.id = inventory.room_id
+      and partners.owner_id = auth.uid()
+      and partners.status = 'approved'
+  ));
+
+commit;
+
 
 create or replace function public.handle_new_user()
 returns trigger
