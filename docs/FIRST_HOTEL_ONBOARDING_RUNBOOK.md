@@ -9,7 +9,7 @@ Use this runbook to prepare the first hotel in a private sandbox. It does not au
 - SynXis traffic remains disabled.
 - Stripe Connect may be inspected in test mode, but starting onboarding is a separate external-action gate because it creates a Stripe account and onboarding link.
 - Manager invitations are a separate external-email gate. Creating an invitation queues a transactional email.
-- Scoped hotel-management migrations 054–057 are recorded in production. Migration 055 restores integration-only property reads and adds explicit organization selection for managers assigned to multiple partners. Migration 056 restricts delegated property updates to approved draft-content fields and prevents non-admin room transfers between properties. Migration 057 prevents non-admin inventory transfers between rooms. The application remains inactive in production until the corresponding application changes receive separate merge and deployment approval.
+- Scoped hotel-management migrations 054–057 are recorded in production. Migration 055 restores integration-only property reads and adds explicit organization selection for managers assigned to multiple partners. Migration 056 restricts delegated property updates to approved draft-content fields and prevents non-admin room transfers between properties. Migration 057 prevents non-admin inventory transfers between rooms. Migration 058 additionally makes inventory stay dates immutable for non-admin users and remains preview-only pending separate production-migration approval. The application remains inactive in production until the corresponding application changes receive separate merge and deployment approval.
 - The delegated scope is limited to inactive property content, rooms/rates, and future inventory. It does not permit publication, property transfer, room or inventory deletion, invitations, billing, payouts, or live supplier traffic.
 
 ## Verified intake required before creating a real record
@@ -77,7 +77,7 @@ Preparation is complete when the sandbox controls pass, the operator packet is r
 
 1. Create the verified real hotel owner and inactive partner/property records.
 2. Publish the scoped manager-permission changes for review and pass CI.
-3. Confirm migrations 055–057 remain recorded in production, then deploy the corresponding application changes under separate approval.
+3. Confirm migrations 055–057 remain recorded in production, apply migration 058 only under separate production-migration approval, and then deploy the corresponding application changes under another separate approval.
 4. Send a manager invitation email to the verified general, revenue, or sales manager.
 5. Start Stripe Connect test onboarding for the verified payout entity.
 6. Load and review real hotel inventory while keeping the listing private.

@@ -17,6 +17,10 @@ const inventoryGuardMigration = readFileSync(
   "supabase/migrations/202608150057_hotel_manager_inventory_guard.sql",
   "utf8",
 );
+const inventoryStayDateGuardMigration = readFileSync(
+  "supabase/migrations/202608150058_hotel_manager_inventory_stay_date_guard.sql",
+  "utf8",
+);
 const resolver = readFileSync("lib/partner/hotel-access.ts", "utf8");
 const onboardingModel = readFileSync("lib/partner/onboarding.ts", "utf8");
 const propertyRoute = readFileSync("app/api/partner/properties/route.ts", "utf8");
@@ -92,7 +96,7 @@ describe("partner-team hotel management", () => {
     expect(publicationRoute).toContain('requireRole(["admin"])');
   });
 
-  it("enforces delegated property fields and room and inventory assignment immutability in the database", () => {
+  it("enforces delegated property fields and room and inventory key immutability in the database", () => {
     expect(writeGuardMigration).toContain("enforce_delegated_hotel_manager_property_fields");
     expect(writeGuardMigration).toContain("to_jsonb(new) - 'description' - 'image_url' - 'amenities' - 'active'");
     expect(writeGuardMigration).toContain("partners.owner_id = auth.uid()");
@@ -106,6 +110,12 @@ describe("partner-team hotel management", () => {
     expect(inventoryGuardMigration).toContain("Hotel managers cannot transfer inventory between rooms");
     expect(inventoryGuardMigration).toContain("before update of room_id on public.inventory");
     expect(inventoryGuardMigration).not.toContain("live_enabled = true");
+    expect(inventoryStayDateGuardMigration).toContain("enforce_hotel_manager_inventory_room_immutability");
+    expect(inventoryStayDateGuardMigration).toContain("new.room_id is distinct from old.room_id");
+    expect(inventoryStayDateGuardMigration).toContain("new.stay_date is distinct from old.stay_date");
+    expect(inventoryStayDateGuardMigration).toContain("Hotel managers cannot change inventory room or stay date");
+    expect(inventoryStayDateGuardMigration).toContain("before update of room_id, stay_date on public.inventory");
+    expect(inventoryStayDateGuardMigration).not.toContain("live_enabled = true");
   });
 
   it("returns a hotel-only onboarding checklist to delegated managers", () => {

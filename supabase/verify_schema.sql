@@ -87,4 +87,14 @@ select
     where tgrelid = 'public.inventory'::regclass
       and tgname = 'enforce_hotel_manager_inventory_room_immutability'
       and tgenabled = 'O' and not tgisinternal
-  ) as inventory_assignment_guard_ready;
+      and position(
+        'update of room_id, stay_date'
+        in lower(pg_get_triggerdef(oid))
+      ) > 0
+  )
+  and position(
+    'new.stay_date is distinct from old.stay_date'
+    in lower(pg_get_functiondef(
+      'public.enforce_hotel_manager_inventory_room_immutability()'::regprocedure
+    ))
+  ) > 0 as inventory_assignment_guard_ready;

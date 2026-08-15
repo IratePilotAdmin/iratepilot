@@ -73,8 +73,11 @@
     "202608150056",
     "202608150057"
   ],
-  "pendingDeploymentVersions": [],
+  "pendingDeploymentVersions": [
+    "202608150058"
+  ],
   "requiredWriteGates": [
+    "separate production migration approval before applying migration 058",
     "separate Sabre certification approval before any certification traffic",
     "separate live-traffic approval after every launch-evidence gate is complete"
   ],
@@ -82,6 +85,7 @@
     "the production project identity cannot be verified",
     "migration history changes unexpectedly",
     "any 039-through-057 production marker becomes unavailable",
+    "migration 058 is applied to production without separate production migration approval",
     "SynXis live_enabled becomes true before final live-traffic approval",
     "manager-onboarding acceptance exposes credentials, identifiers, or SOAP payloads"
   ]

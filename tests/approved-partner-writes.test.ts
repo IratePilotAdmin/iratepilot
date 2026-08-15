@@ -25,6 +25,10 @@ const delegatedInventoryGuardMigration = readFileSync(
   new URL("../supabase/migrations/202608150057_hotel_manager_inventory_guard.sql", import.meta.url),
   "utf8",
 );
+const delegatedInventoryStayDateGuardMigration = readFileSync(
+  new URL("../supabase/migrations/202608150058_hotel_manager_inventory_stay_date_guard.sql", import.meta.url),
+  "utf8",
+);
 const migration = readFileSync(
   new URL("../supabase/migrations/202608020014_enforce_approved_partner_writes.sql", import.meta.url),
   "utf8",
@@ -57,5 +61,8 @@ describe("approved partner write access", () => {
     expect(delegatedWriteGuardMigration).toContain("before update of property_id on public.rooms");
     expect(delegatedInventoryGuardMigration).toContain("enforce_hotel_manager_inventory_room_immutability");
     expect(delegatedInventoryGuardMigration).toContain("before update of room_id on public.inventory");
+    expect(delegatedInventoryStayDateGuardMigration).toContain("new.room_id is distinct from old.room_id");
+    expect(delegatedInventoryStayDateGuardMigration).toContain("new.stay_date is distinct from old.stay_date");
+    expect(delegatedInventoryStayDateGuardMigration).toContain("before update of room_id, stay_date on public.inventory");
   });
 });
