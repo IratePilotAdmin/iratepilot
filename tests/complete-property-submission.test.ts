@@ -29,7 +29,7 @@ describe("complete partner property submissions", () => {
   it("persists photo and amenities when approved hotel access creates the draft", () => {
     expect(route).toContain("image_url: parsed.data.imageUrl");
     expect(route).toContain("amenities: parsed.data.amenities");
-    expect(route).toContain("resolvePartnerHotelAccess(auth)");
+    expect(route).toContain("resolvePartnerHotelAccess(auth, requestedPartnerId)");
     expect(route).toContain("resolved.access.partnerId");
     expect(route).toContain("Add an active room and future inventory");
   });

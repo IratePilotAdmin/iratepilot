@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const migration = readFileSync("supabase/migrations/202608130046_partner_team_integration_access.sql", "utf8");
+const hotelSelectionMigration = readFileSync("supabase/migrations/202608150055_partner_hotel_access_selection.sql", "utf8");
 const resolver = readFileSync("lib/partner/integration-access.ts", "utf8");
 const route = readFileSync("app/api/partner/integrations/crs/synxis/route.ts", "utf8");
 const component = readFileSync("components/dashboard/partner-synxis-onboarding.tsx", "utf8");
@@ -35,6 +36,8 @@ describe("partner-team integration RBAC", () => {
     expect(route).toContain("Approved partner integration access is required.");
     expect(route).toContain("accessRole: access.role");
     expect(route).toContain('.in("property_id", propertyIds)');
+    expect(hotelSelectionMigration).toContain('create policy "Partner integration managers view properties"');
+    expect(hotelSelectionMigration).toContain("public.can_manage_partner_integrations(partner_id)");
   });
 
   it("shows delegated access and prevents role switching in the UI", () => {

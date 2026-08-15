@@ -33,17 +33,17 @@ describe("SynXis production rollout manifest", () => {
     ]).toEqual(migrationVersions.slice(49));
     expect(manifest.historyRepairCandidates.at(-1)).toBe("202608130038");
     expect(manifest.appliedDeploymentVersions[0]).toBe("202608130039");
-    expect(manifest.appliedDeploymentVersions.at(-1)).toBe("202608140053");
-    expect(manifest.pendingDeploymentVersions).toEqual(["202608150054"]);
+    expect(manifest.appliedDeploymentVersions.at(-1)).toBe("202608150054");
+    expect(manifest.pendingDeploymentVersions).toEqual(["202608150055"]);
   });
 
   it("records completed database rollout while preserving later launch gates", () => {
     expect(manifest.executionState).toBe(
-      "migrations_001_053_applied_manager_acceptance_complete_synxis_traffic_disabled",
+      "migrations_001_054_applied_manager_acceptance_complete_synxis_traffic_disabled",
     );
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("sabre certification");
-    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).not.toContain("migration 053");
-    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("migration 054");
+    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).not.toContain("migration 054");
+    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("migration 055");
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("live-traffic approval");
     expect(manifest.stopConditions.length).toBeGreaterThan(0);
   });

@@ -24,14 +24,14 @@ const migration = readFileSync(
 
 describe("approved partner write access", () => {
   it("requires resolved approved hotel access before hotel submission or editing", () => {
-    expect(propertyRoute).toContain("resolvePartnerHotelAccess(auth)");
-    expect(propertyEditRoute).toContain("resolvePartnerHotelAccess(auth)");
+    expect(propertyRoute).toContain("resolvePartnerHotelAccess(auth, requestedPartnerId)");
+    expect(propertyEditRoute).toContain("resolvePartnerHotelAccess(auth, requestedPartnerId)");
     expect(propertyRoute).toContain("resolved.access.partnerId");
     expect(propertyEditRoute).toContain("resolved.access.partnerId");
   });
 
   it("scopes room and inventory management to the resolved partner", () => {
-    expect(ratesRoute.match(/resolvePartnerHotelAccess\(auth\)/g)).toHaveLength(2);
+    expect(ratesRoute.match(/resolvePartnerHotelAccess\(auth, requestedPartnerId\)/g)).toHaveLength(2);
     expect(ratesRoute).toContain('.eq("partner_id", partnerId)');
     expect(ratesRoute).toContain('.eq("properties.partner_id", partnerId)');
   });

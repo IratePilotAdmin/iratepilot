@@ -8,7 +8,15 @@ export type PartnerHotelRole =
 
 export type PartnerHotelAccess = {
   partnerId: string;
+  partnerName: string;
   role: PartnerHotelRole;
+};
+
+export type PartnerHotelAccessResult = {
+  access: PartnerHotelAccess | null;
+  options: PartnerHotelAccess[];
+  selectionRequired: boolean;
+  migrationRequired: boolean;
 };
 
 const hotelRoles: PartnerHotelRole[] = [
@@ -20,37 +28,69 @@ const hotelRoles: PartnerHotelRole[] = [
 
 export async function resolvePartnerHotelAccess(
   auth: Awaited<ReturnType<typeof requireRole>>,
-): Promise<{ access: PartnerHotelAccess | null; migrationRequired: boolean }> {
-  if ("error" in auth) return { access: null, migrationRequired: false };
+  requestedPartnerId?: string | null,
+): Promise<PartnerHotelAccessResult> {
+  const empty = {
+    access: null,
+    options: [],
+    selectionRequired: false,
+    migrationRequired: false,
+  } satisfies PartnerHotelAccessResult;
+  if ("error" in auth) return empty;
 
-  const result = await auth.supabase.rpc("resolve_partner_hotel_access").maybeSingle();
+  const result = await auth.supabase.rpc("resolve_partner_hotel_access");
   if (result.error?.code === "42883") {
     const owner = await auth.supabase.from("partners")
-      .select("id,status")
+      .select("id,business_name,status")
       .eq("owner_id", auth.user.id)
       .maybeSingle();
     if (owner.error) throw owner.error;
+    const access = owner.data?.status === "approved"
+      ? {
+          partnerId: owner.data.id,
+          partnerName: owner.data.business_name,
+          role: "owner" as const,
+        }
+      : null;
     return {
-      access: owner.data?.status === "approved"
-        ? { partnerId: owner.data.id, role: "owner" }
-        : null,
+      access,
+      options: access ? [access] : [],
+      selectionRequired: false,
       migrationRequired: true,
     };
   }
   if (result.error) throw result.error;
-  if (!result.data) return { access: null, migrationRequired: false };
+  const rows = Array.isArray(result.data) ? result.data : [];
+  const options = rows.flatMap((item) => {
+    const row = item as {
+      resolved_partner_id?: unknown;
+      partner_name?: unknown;
+      access_role?: unknown;
+    };
+    if (
+      typeof row.resolved_partner_id !== "string"
+      || typeof row.partner_name !== "string"
+      || !hotelRoles.includes(String(row.access_role) as PartnerHotelRole)
+    ) return [];
+    return [{
+      partnerId: row.resolved_partner_id,
+      partnerName: row.partner_name,
+      role: row.access_role as PartnerHotelRole,
+    }];
+  });
 
-  const row = result.data as { resolved_partner_id?: unknown; access_role?: unknown };
-  if (
-    typeof row.resolved_partner_id !== "string"
-    || !hotelRoles.includes(String(row.access_role) as PartnerHotelRole)
-  ) return { access: null, migrationRequired: false };
+  if (rows.length > 0 && options.length !== rows.length) {
+    return { ...empty, migrationRequired: true };
+  }
+
+  const access = requestedPartnerId
+    ? options.find((option) => option.partnerId === requestedPartnerId) ?? null
+    : options.length === 1 ? options[0] : null;
 
   return {
-    access: {
-      partnerId: row.resolved_partner_id,
-      role: row.access_role as PartnerHotelRole,
-    },
+    access,
+    options,
+    selectionRequired: !requestedPartnerId && options.length > 1,
     migrationRequired: false,
   };
 }

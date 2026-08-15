@@ -1,16 +1,17 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { resolvePartnerHotelAccess, type PartnerHotelRole } from "@/lib/partner/hotel-access";
+import { resolvePartnerHotelAccess, type PartnerHotelAccessResult, type PartnerHotelRole } from "@/lib/partner/hotel-access";
 import { getPropertyReadiness, type PropertyReadinessInput } from "@/lib/property-readiness";
 import { buildPartnerOnboarding, type OnboardingPartner, type OnboardingProperty } from "@/lib/partner/onboarding";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
     let partnerId: string | null = null;
     let accessRole: PartnerHotelRole = "owner";
+    let hotelAccess: PartnerHotelAccessResult | null = null;
     if (auth.profile.role === "admin") {
       const owner = await auth.supabase.from("partners")
         .select("id")
@@ -19,14 +20,22 @@ export async function GET() {
       if (owner.error) throw owner.error;
       partnerId = owner.data?.id ?? null;
     } else {
-      const resolved = await resolvePartnerHotelAccess(auth);
-      if (!resolved.access) return NextResponse.json({
-        error: resolved.migrationRequired
-          ? "Apply hotel-management migration 054 before using delegated onboarding access."
+      const requestedPartnerId = new URL(request.url).searchParams.get("partnerId");
+      hotelAccess = await resolvePartnerHotelAccess(auth, requestedPartnerId);
+      if (hotelAccess.selectionRequired) return NextResponse.json({
+        hotelAccess: {
+          options: hotelAccess.options,
+          selectedPartnerId: null,
+          selectionRequired: true,
+        },
+      });
+      if (!hotelAccess.access) return NextResponse.json({
+        error: hotelAccess.migrationRequired
+          ? "Apply hotel-management migration 055 before using delegated onboarding access."
           : "Approved hotel-management access is required.",
-      }, { status: resolved.migrationRequired ? 503 : 403 });
-      partnerId = resolved.access.partnerId;
-      accessRole = resolved.access.role;
+      }, { status: hotelAccess.migrationRequired ? 503 : 403 });
+      partnerId = hotelAccess.access.partnerId;
+      accessRole = hotelAccess.access.role;
     }
     if (!partnerId) return NextResponse.json({ error: "A partner account is required to view onboarding." }, { status: 403 });
 
@@ -52,6 +61,11 @@ export async function GET() {
     return NextResponse.json({
       businessName: partner.business_name,
       accessRole,
+      hotelAccess: hotelAccess ? {
+        options: hotelAccess.options,
+        selectedPartnerId: hotelAccess.access?.partnerId ?? null,
+        selectionRequired: false,
+      } : null,
       ...buildPartnerOnboarding(partner as OnboardingPartner, prepared),
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {

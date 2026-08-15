@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import { HotelAccessSelector } from "@/components/partner/hotel-access-selector";
+import type { PartnerHotelAccess } from "@/lib/partner/hotel-access";
 import { toPropertySlug } from "@/lib/property-slug";
 
 type Property = { id: string; name: string; slug: string; type: string; star_rating: number; description?: string | null; city: string; country: string; active: boolean; image_url?: string | null; amenities?: string[]; readiness: { ready: boolean; missing: string[] } };
@@ -13,14 +15,27 @@ export function PartnerProperties() {
   const [selectedPropertyId, setSelectedPropertyId] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [accessOptions, setAccessOptions] = useState<PartnerHotelAccess[]>([]);
+  const [selectedPartnerId, setSelectedPartnerId] = useState("");
   const selectedProperty = properties.find((property) => property.id === selectedPropertyId);
+  const partnerSelectionRequired = accessOptions.length > 1 && !selectedPartnerId;
 
   const load = useCallback(async () => {
-    const response = await fetch("/api/partner/properties");
+    const query = selectedPartnerId ? `?partnerId=${encodeURIComponent(selectedPartnerId)}` : "";
+    const response = await fetch(`/api/partner/properties${query}`);
     const body = await response.json();
-    if (response.ok) setProperties(body.data);
+    if (body.hotelAccess) {
+      setAccessOptions(body.hotelAccess.options ?? []);
+      if (!selectedPartnerId && body.hotelAccess.selectedPartnerId) {
+        setSelectedPartnerId(body.hotelAccess.selectedPartnerId);
+      }
+    }
+    if (response.ok) {
+      setProperties(body.data ?? []);
+      setMessage("");
+    }
     else setMessage(body.error || "Properties could not be loaded.");
-  }, []);
+  }, [selectedPartnerId]);
 
   useEffect(() => {
     // Initial remote-data synchronization.
@@ -43,6 +58,7 @@ export function PartnerProperties() {
           starRating: form.get("starRating"), description: form.get("description"),
           city: form.get("city"), region: form.get("region"), country: form.get("country"),
           imageUrl: form.get("imageUrl"),
+          partnerId: selectedPartnerId || undefined,
           amenities: String(form.get("amenities")).split(",").map((item) => item.trim()).filter(Boolean)
         })
       });
@@ -68,7 +84,8 @@ export function PartnerProperties() {
     try {
       const form = new FormData(formElement);
       const propertyId = String(form.get("propertyId"));
-      const response = await fetch(`/api/partner/properties/${propertyId}`, {
+      const query = selectedPartnerId ? `?partnerId=${encodeURIComponent(selectedPartnerId)}` : "";
+      const response = await fetch(`/api/partner/properties/${propertyId}${query}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -94,7 +111,19 @@ export function PartnerProperties() {
   }
 
   return (
-    <div className="mt-8 grid gap-8 xl:grid-cols-[1fr_420px]">
+    <div className="mt-8 grid gap-8">
+      <HotelAccessSelector
+        disabled={busy}
+        onChange={(partnerId) => {
+          setSelectedPartnerId(partnerId);
+          setSelectedPropertyId("");
+          setProperties([]);
+          setMessage("");
+        }}
+        options={accessOptions}
+        value={selectedPartnerId}
+      />
+      <div className="grid gap-8 xl:grid-cols-[1fr_420px]">
       <section className="card overflow-hidden">
         <div className="border-b p-6"><h2 className="text-xl font-semibold">Your properties</h2><p className="mt-1 text-sm text-slate-500">Listings stay private until administrator approval.</p></div>
         <div className="divide-y">
@@ -114,7 +143,7 @@ export function PartnerProperties() {
         <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">City<input name="city" className="input mt-2" required /></label><label className="text-sm font-medium">State/region<input name="region" className="input mt-2" /></label></div>
         <label className="text-sm font-medium">Country<input name="country" className="input mt-2" defaultValue="United States" required /></label>
         {message && <p role="status" className="text-sm">{message}</p>}
-        <button disabled={busy} className="btn-primary">{busy ? "Creating…" : "Create property draft"}</button>
+        <button disabled={busy || partnerSelectionRequired} className="btn-primary">{busy ? "Creating…" : "Create property draft"}</button>
       </form>
       <form key={selectedPropertyId || "empty"} onSubmit={updateContent} className="card grid gap-4 p-6">
         <div><h2 className="text-xl font-semibold">Listing content</h2><p className="mt-1 text-sm text-slate-500">Content changes return an approved listing to review.</p></div>
@@ -124,6 +153,7 @@ export function PartnerProperties() {
         <label className="text-sm font-medium">Amenities, separated by commas<textarea name="amenities" className="input mt-2 min-h-24" defaultValue={(selectedProperty?.amenities ?? []).join(", ")} placeholder="Pool, Spa, Free Wi-Fi, Parking" required /></label>
         <button disabled={busy || !selectedProperty} className="btn-primary">Save property content</button>
       </form>
+      </div>
       </div>
     </div>
   );

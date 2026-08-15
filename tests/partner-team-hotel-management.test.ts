@@ -5,6 +5,10 @@ const migration = readFileSync(
   "supabase/migrations/202608150054_partner_team_hotel_management.sql",
   "utf8",
 );
+const selectionMigration = readFileSync(
+  "supabase/migrations/202608150055_partner_hotel_access_selection.sql",
+  "utf8",
+);
 const resolver = readFileSync("lib/partner/hotel-access.ts", "utf8");
 const propertyRoute = readFileSync("app/api/partner/properties/route.ts", "utf8");
 const propertyEditRoute = readFileSync("app/api/partner/properties/[id]/route.ts", "utf8");
@@ -14,27 +18,46 @@ const connectRoute = readFileSync("app/api/partner/connect/onboarding/route.ts",
 const invitationsRoute = readFileSync("app/api/partner/team/invitations/route.ts", "utf8");
 const publicationRoute = readFileSync("app/api/admin/properties/[id]/route.ts", "utf8");
 const acceptance = readFileSync("components/forms/partner-team-invitation-acceptance.tsx", "utf8");
+const properties = readFileSync("components/dashboard/partner-properties.tsx", "utf8");
+const rates = readFileSync("components/dashboard/rates-inventory-manager.tsx", "utf8");
+const onboarding = readFileSync("components/partner/partner-onboarding.tsx", "utf8");
 
 describe("partner-team hotel management", () => {
-  it("grants only active approved hotel-team roles through a bounded resolver", () => {
+  it("grants only active approved hotel-team roles and returns every accessible partner", () => {
     expect(migration).toContain("can_manage_hotels boolean not null default false");
     expect(migration).toContain("'general_manager', 'revenue_manager', 'sales_manager'");
     expect(migration).toContain("partner_team_members.status = 'active'");
     expect(migration).toContain("partner_team_members.can_manage_hotels");
     expect(migration).toContain("partners.status = 'approved'");
     expect(migration).toContain("profiles.role = 'partner'");
-    expect(migration).toContain("resolve_partner_hotel_access()");
-    expect(migration).toContain("order by candidate.priority, candidate.partner_id");
-    expect(migration).toContain("limit 1");
+    expect(selectionMigration).toContain("drop function if exists public.resolve_partner_hotel_access()");
+    expect(selectionMigration).toContain("partner_name text");
+    expect(selectionMigration).toContain("partition by candidate.partner_id");
+    expect(selectionMigration).not.toContain("limit 1");
     expect(resolver).toContain('result.error?.code === "42883"');
     expect(resolver).toContain('role: "owner"');
+    expect(resolver).toContain("options.length === 1");
+    expect(resolver).toContain("selectionRequired");
   });
 
   it("uses the shared resolver across property, room, inventory, and onboarding APIs", () => {
     for (const route of [propertyRoute, propertyEditRoute, ratesRoute, onboardingRoute]) {
-      expect(route).toContain("resolvePartnerHotelAccess(auth)");
-      expect(route).toContain("resolved.access.partnerId");
+      expect(route).toContain("resolvePartnerHotelAccess(auth, requestedPartnerId)");
+      expect(route).toContain(".access.partnerId");
     }
+  });
+
+  it("requires explicit organization selection when a manager has multiple assignments", () => {
+    for (const component of [properties, rates, onboarding]) {
+      expect(component).toContain("<HotelAccessSelector");
+      expect(component).toContain("selectedPartnerId");
+      expect(component).toContain("partnerId=");
+    }
+  });
+
+  it("preserves inactive property reads for integration-only managers", () => {
+    expect(selectionMigration).toContain('create policy "Partner integration managers view properties"');
+    expect(selectionMigration).toContain("public.can_manage_partner_integrations(partner_id)");
   });
 
   it("allows draft management without publication, deletion, or partner transfer", () => {

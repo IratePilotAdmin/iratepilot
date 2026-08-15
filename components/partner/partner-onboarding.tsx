@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { HotelAccessSelector } from "@/components/partner/hotel-access-selector";
+import type { PartnerHotelAccess } from "@/lib/partner/hotel-access";
 
 type Onboarding = {
   businessName: string;
@@ -14,24 +16,54 @@ type Onboarding = {
   primaryProperty: { id: string; name: string; active: boolean; readiness: { ready: boolean; missing: string[] } } | null;
   portfolio: { properties: number; published: number };
   software: { plan: string; status: string; active: boolean };
+  hotelAccess: {
+    options: PartnerHotelAccess[];
+    selectedPartnerId: string | null;
+    selectionRequired: boolean;
+  } | null;
 };
 
 export function PartnerOnboarding() {
   const [data, setData] = useState<Onboarding | null>(null);
   const [message, setMessage] = useState("Checking onboarding progress…");
+  const [accessOptions, setAccessOptions] = useState<PartnerHotelAccess[]>([]);
+  const [selectedPartnerId, setSelectedPartnerId] = useState("");
   useEffect(() => {
-    fetch("/api/partner/onboarding", { cache: "no-store" }).then(async (response) => {
+    const query = selectedPartnerId ? `?partnerId=${encodeURIComponent(selectedPartnerId)}` : "";
+    fetch(`/api/partner/onboarding${query}`, { cache: "no-store" }).then(async (response) => {
       const body = await response.json();
       if (!response.ok) throw new Error(body.error);
+      if (body.hotelAccess) {
+        setAccessOptions(body.hotelAccess.options ?? []);
+        if (!selectedPartnerId && body.hotelAccess.selectedPartnerId) {
+          setSelectedPartnerId(body.hotelAccess.selectedPartnerId);
+        }
+        if (body.hotelAccess.selectionRequired) {
+          setData(null);
+          setMessage("");
+          return;
+        }
+      }
       setData(body);
       setMessage("");
     }).catch((error: Error) => setMessage(error.message));
-  }, []);
+  }, [selectedPartnerId]);
 
-  if (message) return <p role="status" className="card mt-8 p-6 text-sm text-slate-600">{message}</p>;
-  if (!data) return null;
+  const accessSelector = <HotelAccessSelector
+    onChange={(partnerId) => {
+      setSelectedPartnerId(partnerId);
+      setData(null);
+      setMessage(partnerId ? "Checking onboarding progress…" : "");
+    }}
+    options={accessOptions}
+    value={selectedPartnerId}
+  />;
+
+  if (message) return <div className="mt-8 grid gap-6">{accessSelector}<p role="status" className="card p-6 text-sm text-slate-600">{message}</p></div>;
+  if (!data) return <div className="mt-8 grid gap-6">{accessSelector}<p className="card p-6 text-sm text-slate-600">Select a hotel organization to view its onboarding progress.</p></div>;
   const nextStep = data.steps.find((step) => !step.complete);
   return <>
+    <div className="mt-8">{accessSelector}</div>
     <section className="card mt-8 overflow-hidden">
       <div className="grid gap-6 p-6 md:grid-cols-[1fr_auto] md:items-center">
         <div><span className="text-sm text-slate-500">{data.businessName} launch progress</span><strong className="mt-2 block text-4xl">{data.percent}%</strong><p className="mt-2 text-sm text-slate-600">{data.completed} of {data.total} marketplace requirements complete · Signed in as {data.accessRole.replaceAll("_", " ")}</p></div>

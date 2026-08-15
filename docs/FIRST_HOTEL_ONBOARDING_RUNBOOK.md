@@ -9,7 +9,7 @@ Use this runbook to prepare the first hotel in a private sandbox. It does not au
 - SynXis traffic remains disabled.
 - Stripe Connect may be inspected in test mode, but starting onboarding is a separate external-action gate because it creates a Stripe account and onboarding link.
 - Manager invitations are a separate external-email gate. Creating an invitation queues a transactional email.
-- Scoped hotel-management access for general, revenue, and sales managers is implemented in the repository, verified in the preview database, and recorded in the preview migration ledger as migration 054. It is not active in production until migration 054 and the corresponding application changes receive separate production approvals.
+- Scoped hotel-management schema for general, revenue, and sales managers is recorded in production as migration 054. Follow-up migration 055 restores integration-only property reads and adds explicit organization selection for managers assigned to multiple partners. The application remains inactive in production until migration 055 and the corresponding application changes receive separate approvals.
 - The delegated scope is limited to inactive property content, rooms/rates, and future inventory. It does not permit publication, property transfer, room or inventory deletion, invitations, billing, payouts, or live supplier traffic.
 
 ## Verified intake required before creating a real record
@@ -77,7 +77,7 @@ Preparation is complete when the sandbox controls pass, the operator packet is r
 
 1. Create the verified real hotel owner and inactive partner/property records.
 2. Publish the scoped manager-permission changes for review and pass CI.
-3. Apply migration 054 and deploy the corresponding application changes to production under separate approvals.
+3. Apply migration 055 and deploy the corresponding application changes to production under separate approvals.
 4. Send a manager invitation email to the verified general, revenue, or sales manager.
 5. Start Stripe Connect test onboarding for the verified payout entity.
 6. Load and review real hotel inventory while keeping the listing private.

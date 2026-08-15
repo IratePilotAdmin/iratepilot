@@ -38,10 +38,10 @@ describe("live partner onboarding progress", () => {
 
   it("scopes the endpoint to resolved owner or manager hotel access", () => {
     expect(route).toContain('requireRole(["partner", "admin"])');
-    expect(route).toContain("resolvePartnerHotelAccess(auth)");
-    expect(route).toContain("resolved.access.partnerId");
+    expect(route).toContain("resolvePartnerHotelAccess(auth, requestedPartnerId)");
+    expect(route).toContain("hotelAccess.access.partnerId");
     expect(route).toContain('.eq("partner_id", partner.id)');
-    expect(route.indexOf("resolvePartnerHotelAccess(auth)"))
+    expect(route.indexOf("resolvePartnerHotelAccess(auth, requestedPartnerId)"))
       .toBeLessThan(route.indexOf('.from("properties")'));
   });
 

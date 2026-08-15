@@ -1,8 +1,21 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/require-role";
-import { resolvePartnerHotelAccess } from "@/lib/partner/hotel-access";
+import { resolvePartnerHotelAccess, type PartnerHotelAccessResult } from "@/lib/partner/hotel-access";
 import { propertyContentSchema } from "@/lib/validation";
+
+const hotelAccessError = (resolved: PartnerHotelAccessResult) => NextResponse.json({
+  error: resolved.migrationRequired
+    ? "Apply hotel-management migration 055 before using delegated property access."
+    : resolved.selectionRequired
+      ? "Select a hotel organization before editing property content."
+      : "Approved hotel-management access is required.",
+  hotelAccess: {
+    options: resolved.options,
+    selectedPartnerId: null,
+    selectionRequired: resolved.selectionRequired,
+  },
+}, { status: resolved.migrationRequired ? 503 : resolved.selectionRequired ? 409 : 403 });
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -15,14 +28,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     let propertyQuery = auth.supabase.from("properties").select("id").eq("id", id);
     if (auth.profile.role !== "admin") {
-      const resolved = await resolvePartnerHotelAccess(auth);
-      if (!resolved.access) {
-        return NextResponse.json({
-          error: resolved.migrationRequired
-            ? "Apply hotel-management migration 054 before using delegated property access."
-            : "Approved hotel-management access is required.",
-        }, { status: resolved.migrationRequired ? 503 : 403 });
-      }
+      const requestedPartnerId = new URL(request.url).searchParams.get("partnerId");
+      const resolved = await resolvePartnerHotelAccess(auth, requestedPartnerId);
+      if (!resolved.access) return hotelAccessError(resolved);
       propertyQuery = propertyQuery.eq("partner_id", resolved.access.partnerId);
     }
     const { data: property } = await propertyQuery.maybeSingle();
