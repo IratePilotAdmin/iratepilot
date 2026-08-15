@@ -68,8 +68,11 @@
     "202608140051",
     "202608140052"
   ],
-  "pendingDeploymentVersions": [],
+  "pendingDeploymentVersions": [
+    "202608140053"
+  ],
   "requiredWriteGates": [
+    "separate production approval before applying direct-checkout payment-mode migration 053",
     "separate Sabre certification approval before any certification traffic",
     "separate live-traffic approval after every launch-evidence gate is complete"
   ],
