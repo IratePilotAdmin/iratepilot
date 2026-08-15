@@ -82,7 +82,7 @@ export async function PATCH(request: Request) {
       updated: true,
       message: parsed.data.action === "revoke_invitation"
         ? "The pending invitation was revoked."
-        : "The manager's integration access was disabled.",
+        : "The manager's hotel and integration access was disabled.",
     }, { headers });
   } catch (error) {
     console.error("Partner team access could not be changed", error);

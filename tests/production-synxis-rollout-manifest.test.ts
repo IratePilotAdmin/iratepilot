@@ -34,7 +34,7 @@ describe("SynXis production rollout manifest", () => {
     expect(manifest.historyRepairCandidates.at(-1)).toBe("202608130038");
     expect(manifest.appliedDeploymentVersions[0]).toBe("202608130039");
     expect(manifest.appliedDeploymentVersions.at(-1)).toBe("202608140053");
-    expect(manifest.pendingDeploymentVersions).toEqual([]);
+    expect(manifest.pendingDeploymentVersions).toEqual(["202608150054"]);
   });
 
   it("records completed database rollout while preserving later launch gates", () => {
@@ -43,6 +43,7 @@ describe("SynXis production rollout manifest", () => {
     );
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("sabre certification");
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).not.toContain("migration 053");
+    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("migration 054");
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("live-traffic approval");
     expect(manifest.stopConditions.length).toBeGreaterThan(0);
   });

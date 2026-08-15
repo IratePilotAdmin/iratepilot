@@ -26,10 +26,11 @@ describe("complete partner property submissions", () => {
     expect(propertySchema.safeParse({ ...completeProperty, description: "Too short" }).success).toBe(false);
   });
 
-  it("persists photo and amenities when the approved partner creates the draft", () => {
+  it("persists photo and amenities when approved hotel access creates the draft", () => {
     expect(route).toContain("image_url: parsed.data.imageUrl");
     expect(route).toContain("amenities: parsed.data.amenities");
-    expect(route).toContain('partner.status !== "approved"');
+    expect(route).toContain("resolvePartnerHotelAccess(auth)");
+    expect(route).toContain("resolved.access.partnerId");
     expect(route).toContain("Add an active room and future inventory");
   });
 

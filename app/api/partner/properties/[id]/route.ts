@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/require-role";
+import { resolvePartnerHotelAccess } from "@/lib/partner/hotel-access";
 import { propertyContentSchema } from "@/lib/validation";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -14,12 +15,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     let propertyQuery = auth.supabase.from("properties").select("id").eq("id", id);
     if (auth.profile.role !== "admin") {
-      const { data: partner, error: partnerError } = await auth.supabase.from("partners").select("id,status").eq("owner_id", auth.user.id).maybeSingle();
-      if (partnerError) throw partnerError;
-      if (!partner || partner.status !== "approved") {
-        return NextResponse.json({ error: "An approved partner account is required to edit properties." }, { status: 403 });
+      const resolved = await resolvePartnerHotelAccess(auth);
+      if (!resolved.access) {
+        return NextResponse.json({
+          error: resolved.migrationRequired
+            ? "Apply hotel-management migration 054 before using delegated property access."
+            : "Approved hotel-management access is required.",
+        }, { status: resolved.migrationRequired ? 503 : 403 });
       }
-      propertyQuery = propertyQuery.eq("partner_id", partner.id);
+      propertyQuery = propertyQuery.eq("partner_id", resolved.access.partnerId);
     }
     const { data: property } = await propertyQuery.maybeSingle();
     if (!property) return NextResponse.json({ error: "Property not found." }, { status: 404 });

@@ -1,0 +1,74 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
+const migration = readFileSync(
+  "supabase/migrations/202608150054_partner_team_hotel_management.sql",
+  "utf8",
+);
+const resolver = readFileSync("lib/partner/hotel-access.ts", "utf8");
+const propertyRoute = readFileSync("app/api/partner/properties/route.ts", "utf8");
+const propertyEditRoute = readFileSync("app/api/partner/properties/[id]/route.ts", "utf8");
+const ratesRoute = readFileSync("app/api/partner/rates/route.ts", "utf8");
+const onboardingRoute = readFileSync("app/api/partner/onboarding/route.ts", "utf8");
+const connectRoute = readFileSync("app/api/partner/connect/onboarding/route.ts", "utf8");
+const invitationsRoute = readFileSync("app/api/partner/team/invitations/route.ts", "utf8");
+const publicationRoute = readFileSync("app/api/admin/properties/[id]/route.ts", "utf8");
+const acceptance = readFileSync("components/forms/partner-team-invitation-acceptance.tsx", "utf8");
+
+describe("partner-team hotel management", () => {
+  it("grants only active approved hotel-team roles through a bounded resolver", () => {
+    expect(migration).toContain("can_manage_hotels boolean not null default false");
+    expect(migration).toContain("'general_manager', 'revenue_manager', 'sales_manager'");
+    expect(migration).toContain("partner_team_members.status = 'active'");
+    expect(migration).toContain("partner_team_members.can_manage_hotels");
+    expect(migration).toContain("partners.status = 'approved'");
+    expect(migration).toContain("profiles.role = 'partner'");
+    expect(migration).toContain("resolve_partner_hotel_access()");
+    expect(migration).toContain("order by candidate.priority, candidate.partner_id");
+    expect(migration).toContain("limit 1");
+    expect(resolver).toContain('result.error?.code === "42883"');
+    expect(resolver).toContain('role: "owner"');
+  });
+
+  it("uses the shared resolver across property, room, inventory, and onboarding APIs", () => {
+    for (const route of [propertyRoute, propertyEditRoute, ratesRoute, onboardingRoute]) {
+      expect(route).toContain("resolvePartnerHotelAccess(auth)");
+      expect(route).toContain("resolved.access.partnerId");
+    }
+  });
+
+  it("allows draft management without publication, deletion, or partner transfer", () => {
+    expect(migration).toContain('create policy "Hotel managers update partner properties"');
+    expect(migration).toContain("active = false");
+    expect(migration).toContain('create policy "Hotel managers create partner rooms"');
+    expect(migration).toContain('create policy "Hotel managers update partner rooms"');
+    expect(migration).toContain('create policy "Hotel managers create partner inventory"');
+    expect(migration).toContain('create policy "Hotel managers update partner inventory"');
+    expect(migration).not.toContain("Hotel managers delete");
+    expect(migration).toContain("inventory.stay_date >= current_date");
+    expect(migration).toContain("Hotel managers cannot transfer properties between partners");
+    expect(publicationRoute).toContain('requireRole(["admin"])');
+  });
+
+  it("revokes hotel and integration capabilities together", () => {
+    expect(migration).toContain("enforce_disabled_team_member_capabilities");
+    expect(migration).toContain("new.can_manage_integrations := false");
+    expect(migration).toContain("new.can_manage_hotels := false");
+    expect(migration).toContain("can_manage_hotels = false");
+    expect(migration).toContain("can_manage_hotels = true");
+  });
+
+  it("keeps owner-only commercial and team controls unchanged", () => {
+    expect(connectRoute).toContain('.eq("owner_id", auth.user.id)');
+    expect(invitationsRoute).toContain("Only the approved partner owner can invite");
+    expect(migration).not.toContain("stripe_connect_account_id");
+    expect(migration).not.toContain("live_enabled = true");
+    expect(migration).not.toContain("properties.active = true");
+  });
+
+  it("sends accepted managers to scoped hotel operations", () => {
+    expect(acceptance).toContain("draft-property, room, inventory, and integration access");
+    expect(acceptance).toContain('href="/partner/properties"');
+    expect(acceptance).not.toContain("integration-only access");
+  });
+});

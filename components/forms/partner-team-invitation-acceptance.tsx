@@ -41,7 +41,7 @@ export function PartnerTeamInvitationAcceptance({ invitationId }: { invitationId
   return <div className="card w-full max-w-lg p-8">
     <Link className="font-bold text-brand-700" href="/">iRatePilot</Link>
     <h1 className="mt-6 text-2xl font-bold">Hotel team invitation</h1>
-    <p className="mt-2 text-sm text-slate-500">Sign in using the exact email address that received the invitation. Acceptance grants integration-only access for the assigned hotel team.</p>
+    <p className="mt-2 text-sm text-slate-500">Sign in using the exact email address that received the invitation. Acceptance grants scoped draft-property, room, inventory, and integration access for the assigned hotel team.</p>
     {authenticated === null ? <p className="mt-6 text-sm text-slate-500">Checking your session…</p>
       : !authenticated ? <div className="mt-6 flex flex-wrap gap-3">
         <Link className="btn-primary" href={loginHref}>Sign in</Link>
@@ -50,7 +50,7 @@ export function PartnerTeamInvitationAcceptance({ invitationId }: { invitationId
         : <div className="mt-6">
           <p className="text-sm">Signed in as <strong>{email}</strong></p>
           {!accepted && <button className="btn-primary mt-4" disabled={busy || !invitationId} onClick={() => void accept()} type="button">{busy ? "Accepting…" : "Accept invitation"}</button>}
-          {accepted && <Link className="btn-primary mt-4 inline-flex" href="/partner/integrations">Open hotel integrations</Link>}
+          {accepted && <Link className="btn-primary mt-4 inline-flex" href="/partner/properties">Open hotel properties</Link>}
         </div>}
     {message && <p className="mt-4 text-sm" role="status">{message}</p>}
     <p className="mt-6 text-xs text-slate-500">Invitation links are not bearer credentials. iRatePilot validates the signed-in account email, expiration, partner approval, and invitation status before granting access.</p>

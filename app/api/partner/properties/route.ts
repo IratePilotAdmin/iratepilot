@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { resolvePartnerHotelAccess } from "@/lib/partner/hotel-access";
 import { getPropertyReadiness, type PropertyReadinessInput } from "@/lib/property-readiness";
 import { propertySchema } from "@/lib/validation";
+
+const hotelAccessError = (migrationRequired: boolean) => NextResponse.json({
+  error: migrationRequired
+    ? "Apply hotel-management migration 054 before using delegated property access."
+    : "Approved hotel-management access is required.",
+}, { status: migrationRequired ? 503 : 403 });
 
 export async function GET() {
   try {
@@ -11,9 +18,9 @@ export async function GET() {
 
     let query = auth.supabase.from("properties").select("id,name,slug,type,star_rating,description,city,country,active,image_url,amenities,created_at,rooms(active,inventory(stay_date,available_units))").order("created_at", { ascending: false });
     if (auth.profile.role !== "admin") {
-      const { data: partner } = await auth.supabase.from("partners").select("id").eq("owner_id", auth.user.id).maybeSingle();
-      if (!partner) return NextResponse.json({ data: [] });
-      query = query.eq("partner_id", partner.id);
+      const resolved = await resolvePartnerHotelAccess(auth);
+      if (!resolved.access) return hotelAccessError(resolved.migrationRequired);
+      query = query.eq("partner_id", resolved.access.partnerId);
     }
     const { data, error } = await query;
     if (error) throw error;
@@ -48,11 +55,15 @@ export async function POST(request: Request) {
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
     const admin = createAdminClient();
 
-    const partnerResult = await auth.supabase.from("partners").select("id,status").eq("owner_id", auth.user.id).maybeSingle();
-    if (partnerResult.error) throw partnerResult.error;
-    let partner = partnerResult.data;
-    if (auth.profile.role !== "admin" && (!partner || partner.status !== "approved")) {
-      return NextResponse.json({ error: "An approved partner account is required to submit properties." }, { status: 403 });
+    let partner: { id: string; status: string } | null = null;
+    if (auth.profile.role === "admin") {
+      const partnerResult = await auth.supabase.from("partners").select("id,status").eq("owner_id", auth.user.id).maybeSingle();
+      if (partnerResult.error) throw partnerResult.error;
+      partner = partnerResult.data;
+    } else {
+      const resolved = await resolvePartnerHotelAccess(auth);
+      if (!resolved.access) return hotelAccessError(resolved.migrationRequired);
+      partner = { id: resolved.access.partnerId, status: "approved" };
     }
     if (!partner) {
       const { data, error } = await admin.from("partners").insert({

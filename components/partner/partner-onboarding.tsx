@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 type Onboarding = {
   businessName: string;
+  accessRole: "owner" | "general_manager" | "revenue_manager" | "sales_manager";
   completed: number;
   total: number;
   percent: number;
@@ -33,7 +34,7 @@ export function PartnerOnboarding() {
   return <>
     <section className="card mt-8 overflow-hidden">
       <div className="grid gap-6 p-6 md:grid-cols-[1fr_auto] md:items-center">
-        <div><span className="text-sm text-slate-500">{data.businessName} launch progress</span><strong className="mt-2 block text-4xl">{data.percent}%</strong><p className="mt-2 text-sm text-slate-600">{data.completed} of {data.total} marketplace requirements complete</p></div>
+        <div><span className="text-sm text-slate-500">{data.businessName} launch progress</span><strong className="mt-2 block text-4xl">{data.percent}%</strong><p className="mt-2 text-sm text-slate-600">{data.completed} of {data.total} marketplace requirements complete · Signed in as {data.accessRole.replaceAll("_", " ")}</p></div>
         {nextStep ? <Link href={nextStep.href} className="btn-primary">Next: {nextStep.label}</Link> : <span className="badge bg-emerald-50 text-emerald-800">Marketplace ready</span>}
       </div>
       <div className="h-2 bg-slate-100"><div className="h-2 bg-brand-500" style={{ width: `${data.percent}%` }} /></div>

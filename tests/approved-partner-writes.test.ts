@@ -13,21 +13,27 @@ const ratesRoute = readFileSync(
   new URL("../app/api/partner/rates/route.ts", import.meta.url),
   "utf8",
 );
+const delegatedMigration = readFileSync(
+  new URL("../supabase/migrations/202608150054_partner_team_hotel_management.sql", import.meta.url),
+  "utf8",
+);
 const migration = readFileSync(
   new URL("../supabase/migrations/202608020014_enforce_approved_partner_writes.sql", import.meta.url),
   "utf8",
 );
 
 describe("approved partner write access", () => {
-  it("requires an approved partner record before hotel submission or editing", () => {
-    expect(propertyRoute).toContain('.select("id,status")');
-    expect(propertyRoute).toContain('partner.status !== "approved"');
-    expect(propertyEditRoute).toContain('partner.status !== "approved"');
+  it("requires resolved approved hotel access before hotel submission or editing", () => {
+    expect(propertyRoute).toContain("resolvePartnerHotelAccess(auth)");
+    expect(propertyEditRoute).toContain("resolvePartnerHotelAccess(auth)");
+    expect(propertyRoute).toContain("resolved.access.partnerId");
+    expect(propertyEditRoute).toContain("resolved.access.partnerId");
   });
 
-  it("requires approved status for room and inventory management", () => {
-    expect(ratesRoute).toContain('.select("id,status")');
-    expect(ratesRoute.match(/partner\.status !== "approved"/g)).toHaveLength(2);
+  it("scopes room and inventory management to the resolved partner", () => {
+    expect(ratesRoute.match(/resolvePartnerHotelAccess\(auth\)/g)).toHaveLength(2);
+    expect(ratesRoute).toContain('.eq("partner_id", partnerId)');
+    expect(ratesRoute).toContain('.eq("properties.partner_id", partnerId)');
   });
 
   it("enforces approved status in direct database writes", () => {
@@ -35,5 +41,8 @@ describe("approved partner write access", () => {
     expect(migration).toContain('create policy "Partners can manage own rooms"');
     expect(migration).toContain('create policy "Partners can manage own inventory"');
     expect(migration.match(/partners\.status = 'approved'/g)).toHaveLength(6);
+    expect(delegatedMigration).toContain("public.can_manage_partner_hotels");
+    expect(delegatedMigration).toContain("active = false");
+    expect(delegatedMigration).toContain("inventory.stay_date >= current_date");
   });
 });

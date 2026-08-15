@@ -36,11 +36,13 @@ describe("live partner onboarding progress", () => {
     expect(progress.ready).toBe(false);
   });
 
-  it("scopes the endpoint to the signed-in partner before property queries", () => {
+  it("scopes the endpoint to resolved owner or manager hotel access", () => {
     expect(route).toContain('requireRole(["partner", "admin"])');
-    expect(route).toContain('.eq("owner_id", auth.user.id)');
+    expect(route).toContain("resolvePartnerHotelAccess(auth)");
+    expect(route).toContain("resolved.access.partnerId");
     expect(route).toContain('.eq("partner_id", partner.id)');
-    expect(route.indexOf('.eq("owner_id", auth.user.id)')).toBeLessThan(route.indexOf('.from("properties")'));
+    expect(route.indexOf("resolvePartnerHotelAccess(auth)"))
+      .toBeLessThan(route.indexOf('.from("properties")'));
   });
 
   it("replaces the application form in the protected route and adds onboarding navigation", () => {

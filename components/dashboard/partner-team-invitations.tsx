@@ -17,6 +17,7 @@ type Member = {
   member_role: string;
   member_status: string;
   can_manage_integrations: boolean;
+  can_manage_hotels: boolean;
   updated_at: string;
 };
 
@@ -97,15 +98,15 @@ export function PartnerTeamInvitations() {
 
   return <section className="card mt-8 overflow-hidden">
     <div className="border-b p-6">
-      <h2 className="text-xl font-semibold">Hotel integration team</h2>
-      <p className="mt-1 text-sm text-slate-500">Invite a general, revenue, or sales manager using their exact sign-in email. Access is limited to non-secret hotel-system onboarding.</p>
+      <h2 className="text-xl font-semibold">Hotel management team</h2>
+      <p className="mt-1 text-sm text-slate-500">Invite a general, revenue, or sales manager using their exact sign-in email. Access covers draft properties, rooms, rates, future inventory, and non-secret hotel-system onboarding.</p>
     </div>
     <div className="grid gap-8 p-6 xl:grid-cols-[420px_1fr]">
       <form className="grid h-fit gap-4" onSubmit={submit}>
         <label className="text-sm font-medium">Manager email
           <input autoComplete="email" className="input mt-2" maxLength={254} name="email" required type="email" />
         </label>
-        <label className="text-sm font-medium">Integration role
+        <label className="text-sm font-medium">Hotel role
           <select className="input mt-2" name="memberRole" required>
             <option value="">Select role</option>
             <option value="general_manager">General manager</option>
@@ -113,7 +114,7 @@ export function PartnerTeamInvitations() {
             <option value="sales_manager">Sales manager</option>
           </select>
         </label>
-        <p className="text-xs text-amber-700">The invitation expires after seven days. It does not grant credentials, certification approval, or live-traffic access.</p>
+        <p className="text-xs text-amber-700">The invitation expires after seven days. It does not grant listing publication, billing, payouts, credentials, certification approval, or live-traffic access.</p>
         {message && <p className="text-sm" role="status">{message}</p>}
         <button className="btn-primary" disabled={busy} type="submit">{busy ? "Queueing…" : "Invite manager"}</button>
       </form>
@@ -141,8 +142,8 @@ export function PartnerTeamInvitations() {
           <tbody className="divide-y">{members.map((member) => <tr key={member.member_id}>
             <td className="px-2 py-2">{member.member_email}</td>
             <td className="px-2 py-2">{member.member_role.replaceAll("_", " ")}</td>
-            <td className="px-2 py-2">{member.member_status}</td>
-            <td className="px-2 py-2">{member.member_status === "active" && member.can_manage_integrations
+            <td className="px-2 py-2">{member.member_status}{member.member_status === "active" && member.can_manage_hotels ? " · hotel access" : ""}</td>
+            <td className="px-2 py-2">{member.member_status === "active" && (member.can_manage_integrations || member.can_manage_hotels)
               ? <button className="btn-secondary text-xs" disabled={busy} onClick={() => void changeAccess({ action: "disable_member", memberId: member.member_id })} type="button">Disable access</button>
               : "—"}</td>
           </tr>)}</tbody>
