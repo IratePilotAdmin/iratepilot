@@ -17,6 +17,10 @@ const delegatedMigration = readFileSync(
   new URL("../supabase/migrations/202608150054_partner_team_hotel_management.sql", import.meta.url),
   "utf8",
 );
+const delegatedWriteGuardMigration = readFileSync(
+  new URL("../supabase/migrations/202608150056_hotel_manager_write_guards.sql", import.meta.url),
+  "utf8",
+);
 const migration = readFileSync(
   new URL("../supabase/migrations/202608020014_enforce_approved_partner_writes.sql", import.meta.url),
   "utf8",
@@ -44,5 +48,8 @@ describe("approved partner write access", () => {
     expect(delegatedMigration).toContain("public.can_manage_partner_hotels");
     expect(delegatedMigration).toContain("active = false");
     expect(delegatedMigration).toContain("inventory.stay_date >= current_date");
+    expect(delegatedWriteGuardMigration).toContain("enforce_delegated_hotel_manager_property_fields");
+    expect(delegatedWriteGuardMigration).toContain("enforce_hotel_manager_room_property_immutability");
+    expect(delegatedWriteGuardMigration).toContain("before update of property_id on public.rooms");
   });
 });

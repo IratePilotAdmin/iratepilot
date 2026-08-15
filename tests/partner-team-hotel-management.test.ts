@@ -9,6 +9,10 @@ const selectionMigration = readFileSync(
   "supabase/migrations/202608150055_partner_hotel_access_selection.sql",
   "utf8",
 );
+const writeGuardMigration = readFileSync(
+  "supabase/migrations/202608150056_hotel_manager_write_guards.sql",
+  "utf8",
+);
 const resolver = readFileSync("lib/partner/hotel-access.ts", "utf8");
 const propertyRoute = readFileSync("app/api/partner/properties/route.ts", "utf8");
 const propertyEditRoute = readFileSync("app/api/partner/properties/[id]/route.ts", "utf8");
@@ -79,6 +83,17 @@ describe("partner-team hotel management", () => {
     expect(migration).toContain("inventory.stay_date >= current_date");
     expect(migration).toContain("Hotel managers cannot transfer properties between partners");
     expect(publicationRoute).toContain('requireRole(["admin"])');
+  });
+
+  it("enforces delegated property fields and room assignment immutability in the database", () => {
+    expect(writeGuardMigration).toContain("enforce_delegated_hotel_manager_property_fields");
+    expect(writeGuardMigration).toContain("to_jsonb(new) - 'description' - 'image_url' - 'amenities' - 'active'");
+    expect(writeGuardMigration).toContain("partners.owner_id = auth.uid()");
+    expect(writeGuardMigration).toContain("before update on public.properties");
+    expect(writeGuardMigration).toContain("new.property_id is distinct from old.property_id");
+    expect(writeGuardMigration).toContain("Hotel managers cannot transfer rooms between properties");
+    expect(writeGuardMigration).toContain("before update of property_id on public.rooms");
+    expect(writeGuardMigration).not.toContain("live_enabled = true");
   });
 
   it("revokes hotel and integration capabilities together", () => {
