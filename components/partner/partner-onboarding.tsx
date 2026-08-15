@@ -15,7 +15,7 @@ type Onboarding = {
   steps: Array<{ key: string; label: string; detail: string; complete: boolean; href: string }>;
   primaryProperty: { id: string; name: string; active: boolean; readiness: { ready: boolean; missing: string[] } } | null;
   portfolio: { properties: number; published: number };
-  software: { plan: string; status: string; active: boolean };
+  software?: { plan: string; status: string; active: boolean };
   hotelAccess: {
     options: PartnerHotelAccess[];
     selectedPartnerId: string | null;
@@ -84,7 +84,7 @@ export function PartnerOnboarding() {
 
       <div className="space-y-6">
         <article className="card p-6"><h2 className="font-semibold">Primary listing</h2>{data.primaryProperty ? <><strong className="mt-4 block text-xl">{data.primaryProperty.name}</strong><p className="mt-2 text-sm text-slate-600">{data.primaryProperty.active ? "Published in traveler search" : data.primaryProperty.readiness.ready ? "Ready for administrator review" : `Still needed: ${data.primaryProperty.readiness.missing.join(", ")}`}</p></> : <p className="mt-4 text-sm text-slate-500">No property has been created yet.</p>}<dl className="mt-5 grid grid-cols-2 gap-4 border-t pt-5 text-sm"><div><dt className="text-slate-500">Properties</dt><dd className="mt-1 text-xl font-bold">{data.portfolio.properties}</dd></div><div><dt className="text-slate-500">Published</dt><dd className="mt-1 text-xl font-bold">{data.portfolio.published}</dd></div></dl></article>
-        <article className="card p-6"><h2 className="font-semibold">Management software</h2><p className="mt-2 text-sm text-slate-500">Optional and separate from marketplace listing approval.</p><div className="mt-5 flex items-center justify-between"><div><span className="text-xs uppercase tracking-wider text-slate-500">Plan</span><strong className="mt-1 block capitalize">{data.software.plan}</strong></div><span className="badge capitalize">{data.software.status}</span></div><Link href="/partner/settings" className="btn-secondary mt-5 w-full text-center">Manage software plan</Link></article>
+        {data.software ? <article className="card p-6"><h2 className="font-semibold">Management software</h2><p className="mt-2 text-sm text-slate-500">Optional and separate from marketplace listing approval.</p><div className="mt-5 flex items-center justify-between"><div><span className="text-xs uppercase tracking-wider text-slate-500">Plan</span><strong className="mt-1 block capitalize">{data.software.plan}</strong></div><span className="badge capitalize">{data.software.status}</span></div><Link href="/partner/settings" className="btn-secondary mt-5 w-full text-center">Manage software plan</Link></article> : null}
       </div>
     </section>
   </>;

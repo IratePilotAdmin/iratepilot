@@ -13,7 +13,12 @@ const writeGuardMigration = readFileSync(
   "supabase/migrations/202608150056_hotel_manager_write_guards.sql",
   "utf8",
 );
+const inventoryGuardMigration = readFileSync(
+  "supabase/migrations/202608150057_hotel_manager_inventory_guard.sql",
+  "utf8",
+);
 const resolver = readFileSync("lib/partner/hotel-access.ts", "utf8");
+const onboardingModel = readFileSync("lib/partner/onboarding.ts", "utf8");
 const propertyRoute = readFileSync("app/api/partner/properties/route.ts", "utf8");
 const propertyEditRoute = readFileSync("app/api/partner/properties/[id]/route.ts", "utf8");
 const ratesRoute = readFileSync("app/api/partner/rates/route.ts", "utf8");
@@ -51,12 +56,14 @@ describe("partner-team hotel management", () => {
     }
   });
 
-  it("preserves pending-owner onboarding before delegated access is required", () => {
-    expect(onboardingRoute).toContain('.select("id,status")');
-    expect(onboardingRoute).toContain('owner.data.status !== "approved"');
-    expect(onboardingRoute).toContain("partnerId = owner.data.id");
-    expect(onboardingRoute.indexOf('owner.data.status !== "approved"'))
-      .toBeLessThan(onboardingRoute.indexOf("resolvePartnerHotelAccess(auth, requestedPartnerId)"));
+  it("honors requested hotel access while retaining pending ownership as a selectable option", () => {
+    expect(onboardingRoute).toContain('.select("id,business_name,status")');
+    expect(onboardingRoute).toContain("pendingOwnerAccess");
+    expect(resolver).toContain("requestedPartnerId === pendingOwnerAccess?.partnerId");
+    expect(resolver).toContain("resolved.options.filter");
+    expect(onboardingRoute).toContain("mergePendingOwnerHotelAccess(resolved, pendingOwnerAccess, requestedPartnerId)");
+    expect(onboardingRoute.indexOf("resolvePartnerHotelAccess(auth, requestedPartnerId)"))
+      .toBeLessThan(onboardingRoute.indexOf("mergePendingOwnerHotelAccess(resolved, pendingOwnerAccess, requestedPartnerId)"));
   });
 
   it("requires explicit organization selection when a manager has multiple assignments", () => {
@@ -85,7 +92,7 @@ describe("partner-team hotel management", () => {
     expect(publicationRoute).toContain('requireRole(["admin"])');
   });
 
-  it("enforces delegated property fields and room assignment immutability in the database", () => {
+  it("enforces delegated property fields and room and inventory assignment immutability in the database", () => {
     expect(writeGuardMigration).toContain("enforce_delegated_hotel_manager_property_fields");
     expect(writeGuardMigration).toContain("to_jsonb(new) - 'description' - 'image_url' - 'amenities' - 'active'");
     expect(writeGuardMigration).toContain("partners.owner_id = auth.uid()");
@@ -94,6 +101,18 @@ describe("partner-team hotel management", () => {
     expect(writeGuardMigration).toContain("Hotel managers cannot transfer rooms between properties");
     expect(writeGuardMigration).toContain("before update of property_id on public.rooms");
     expect(writeGuardMigration).not.toContain("live_enabled = true");
+    expect(inventoryGuardMigration).toContain("enforce_hotel_manager_inventory_room_immutability");
+    expect(inventoryGuardMigration).toContain("new.room_id is distinct from old.room_id");
+    expect(inventoryGuardMigration).toContain("Hotel managers cannot transfer inventory between rooms");
+    expect(inventoryGuardMigration).toContain("before update of room_id on public.inventory");
+    expect(inventoryGuardMigration).not.toContain("live_enabled = true");
+  });
+
+  it("returns a hotel-only onboarding checklist to delegated managers", () => {
+    expect(onboardingRoute).toContain("buildPartnerOnboarding(partner as OnboardingPartner, prepared, accessRole)");
+    expect(onboardingModel).toContain('accessRole === "owner"');
+    expect(onboardingModel).toContain("hotelSteps");
+    expect(onboarding).toContain("data.software ?");
   });
 
   it("revokes hotel and integration capabilities together", () => {

@@ -19,6 +19,26 @@ export type PartnerHotelAccessResult = {
   migrationRequired: boolean;
 };
 
+export function mergePendingOwnerHotelAccess(
+  resolved: PartnerHotelAccessResult,
+  pendingOwnerAccess: PartnerHotelAccess | null,
+  requestedPartnerId?: string | null,
+): PartnerHotelAccessResult {
+  const options = pendingOwnerAccess
+    ? [pendingOwnerAccess, ...resolved.options.filter((option) => option.partnerId !== pendingOwnerAccess.partnerId)]
+    : resolved.options;
+  const access = requestedPartnerId === pendingOwnerAccess?.partnerId
+    ? pendingOwnerAccess
+    : resolved.access ?? (!requestedPartnerId && options.length === 1 ? options[0] : null);
+
+  return {
+    ...resolved,
+    access,
+    options,
+    selectionRequired: !requestedPartnerId && options.length > 1,
+  };
+}
+
 const hotelRoles: PartnerHotelRole[] = [
   "owner",
   "general_manager",
