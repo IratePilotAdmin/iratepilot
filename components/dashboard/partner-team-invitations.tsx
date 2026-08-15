@@ -7,6 +7,7 @@ type Invitation = {
   email: string;
   member_role: string;
   status: string;
+  can_manage_hotels: boolean;
   expires_at: string;
   accepted_at: string | null;
   created_at: string;
@@ -125,7 +126,7 @@ export function PartnerTeamInvitations() {
             <tbody className="divide-y">{invitations.map((invitation) => <tr key={invitation.id}>
               <td className="px-2 py-2">{invitation.email}</td>
               <td className="px-2 py-2">{invitation.member_role.replaceAll("_", " ")}</td>
-              <td className="px-2 py-2">{invitation.status}</td>
+              <td className="px-2 py-2">{invitation.status}{invitation.can_manage_hotels ? " · hotel access disclosed" : " · integration access"}</td>
               <td className="whitespace-nowrap px-2 py-2"><time dateTime={invitation.expires_at}>{new Date(invitation.expires_at).toLocaleDateString()}</time></td>
               <td className="px-2 py-2">{invitation.status === "pending"
                 ? <button className="btn-secondary text-xs" disabled={busy} onClick={() => void changeAccess({ action: "revoke_invitation", invitationId: invitation.id })} type="button">Revoke</button>

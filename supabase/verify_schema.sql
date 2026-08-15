@@ -71,6 +71,21 @@ select
   to_regprocedure('public.resolve_partner_hotel_access()') is not null as hotel_access_resolver_ready,
   to_regprocedure('public.accept_partner_team_invitation(uuid)') is not null as partner_invitation_acceptance_ready,
   exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'partner_team_invitations'
+      and column_name = 'can_manage_hotels'
+      and column_default = 'false'
+      and is_nullable = 'NO'
+  ) as disclosed_hotel_access_invitation_ready,
+  position(
+    'v_invitation.can_manage_hotels'
+    in lower(pg_get_functiondef(
+      'public.accept_partner_team_invitation(uuid)'::regprocedure
+    ))
+  ) > 0 as invitation_scoped_hotel_access_ready,
+  exists (
     select 1 from pg_trigger
     where tgrelid = 'public.properties'::regclass
       and tgname = 'enforce_delegated_hotel_manager_property_fields'

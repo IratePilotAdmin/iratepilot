@@ -64,6 +64,11 @@ describe("partner-team manager invitations", () => {
     expect(email).toContain("partner-team-invitation:");
     expect(email).toContain('.contains("template_data", { dedupe_key: dedupeKey })');
     expect(email).not.toContain("new Resend");
+    expect(email).toContain("draft property content, rooms, rates, future inventory");
+    expect(email).toContain("does not include publication, billing, payouts, invitations");
+    expect(email).not.toContain("integration-only access");
+    expect(ownerRoute).toContain("can_manage_hotels: true");
+    expect(ownerRoute).toContain("canManageHotels: invitation.can_manage_hotels");
     expect(ownerRoute).toContain("queuePartnerTeamInvitation");
     expect(ownerRoute).toContain("saved but its email could not be queued");
   });

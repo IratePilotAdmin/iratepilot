@@ -14,10 +14,11 @@ const mirroredMigrations = [
   "202608150056_hotel_manager_write_guards.sql",
   "202608150057_hotel_manager_inventory_guard.sql",
   "202608150058_hotel_manager_inventory_stay_date_guard.sql",
+  "202608150059_legacy_hotel_manager_consent.sql",
 ];
 
 describe("Supabase bootstrap parity", () => {
-  it("mirrors the complete partner-team hotel-management dependency chain through migration 058", () => {
+  it("mirrors the complete partner-team hotel-management dependency chain through migration 059", () => {
     let previousIndex = -1;
     for (const name of mirroredMigrations) {
       const marker = `-- Mirrored from migrations/${name}.`;
@@ -48,6 +49,11 @@ describe("Supabase bootstrap parity", () => {
     expect(bootstrap).toContain("enforce_hotel_manager_inventory_room_immutability");
     expect(bootstrap).toContain("new.stay_date is distinct from old.stay_date");
     expect(bootstrap).toContain("before update of room_id, stay_date on public.inventory");
+    expect(bootstrap).toContain(
+      "add column if not exists can_manage_hotels boolean not null default false",
+    );
+    expect(bootstrap).toContain("v_invitation.can_manage_hotels");
+    expect(bootstrap).toContain("can_manage_hotels = excluded.can_manage_hotels");
   });
 
   it("verifies the final partner-team tables, policies, resolver, and write guards", () => {
@@ -61,6 +67,8 @@ describe("Supabase bootstrap parity", () => {
       "enforce_delegated_hotel_manager_property_fields",
       "enforce_hotel_manager_room_property_immutability",
       "enforce_hotel_manager_inventory_room_immutability",
+      "disclosed_hotel_access_invitation_ready",
+      "invitation_scoped_hotel_access_ready",
     ]) {
       expect(verification).toContain(expected);
     }

@@ -40,7 +40,7 @@ export async function GET() {
     );
 
     const result = await auth.supabase.from("partner_team_invitations")
-      .select("id,email,member_role,status,expires_at,accepted_at,created_at")
+      .select("id,email,member_role,status,can_manage_hotels,expires_at,accepted_at,created_at")
       .eq("partner_id", partner.id)
       .order("created_at", { ascending: false })
       .limit(25);
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
     );
 
     const existing = await auth.supabase.from("partner_team_invitations")
-      .select("id,email,member_role,status,expires_at")
+      .select("id,email,member_role,status,can_manage_hotels,expires_at")
       .eq("partner_id", partner.id)
       .eq("email", parsed.data.email)
       .eq("status", "pending")
@@ -113,9 +113,10 @@ export async function POST(request: Request) {
         email: parsed.data.email,
         member_role: parsed.data.memberRole,
         status: "pending",
+        can_manage_hotels: true,
         created_by: auth.user.id,
         expires_at: expiresAt,
-      }).select("id,email,member_role,status,expires_at").single();
+      }).select("id,email,member_role,status,can_manage_hotels,expires_at").single();
       if (inserted.error) throw inserted.error;
       invitation = inserted.data;
     }
@@ -126,6 +127,7 @@ export async function POST(request: Request) {
         recipientEmail: invitation.email,
         partnerName: partner.business_name,
         memberRole: invitation.member_role,
+        canManageHotels: invitation.can_manage_hotels,
       });
     } catch (error) {
       console.error("Partner team invitation email could not be queued", {

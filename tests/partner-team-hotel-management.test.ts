@@ -21,6 +21,10 @@ const inventoryStayDateGuardMigration = readFileSync(
   "supabase/migrations/202608150058_hotel_manager_inventory_stay_date_guard.sql",
   "utf8",
 );
+const consentMigration = readFileSync(
+  "supabase/migrations/202608150059_legacy_hotel_manager_consent.sql",
+  "utf8",
+);
 const resolver = readFileSync("lib/partner/hotel-access.ts", "utf8");
 const onboardingModel = readFileSync("lib/partner/onboarding.ts", "utf8");
 const propertyRoute = readFileSync("app/api/partner/properties/route.ts", "utf8");
@@ -29,6 +33,7 @@ const ratesRoute = readFileSync("app/api/partner/rates/route.ts", "utf8");
 const onboardingRoute = readFileSync("app/api/partner/onboarding/route.ts", "utf8");
 const connectRoute = readFileSync("app/api/partner/connect/onboarding/route.ts", "utf8");
 const invitationsRoute = readFileSync("app/api/partner/team/invitations/route.ts", "utf8");
+const invitationEmail = readFileSync("lib/email/partner-team-invitation.ts", "utf8");
 const publicationRoute = readFileSync("app/api/admin/properties/[id]/route.ts", "utf8");
 const acceptance = readFileSync("components/forms/partner-team-invitation-acceptance.tsx", "utf8");
 const properties = readFileSync("components/dashboard/partner-properties.tsx", "utf8");
@@ -140,6 +145,20 @@ describe("partner-team hotel management", () => {
     expect(migration).toContain("new.can_manage_hotels := false");
     expect(migration).toContain("can_manage_hotels = false");
     expect(migration).toContain("can_manage_hotels = true");
+  });
+
+  it("requires a newly disclosed invitation before legacy managers gain hotel access", () => {
+    expect(consentMigration).toContain(
+      "add column if not exists can_manage_hotels boolean not null default false",
+    );
+    expect(consentMigration).toContain("set can_manage_hotels = false");
+    expect(consentMigration).toContain("v_invitation.can_manage_hotels");
+    expect(consentMigration).toContain("can_manage_hotels = excluded.can_manage_hotels");
+    expect(invitationsRoute).toContain("can_manage_hotels: true");
+    expect(invitationsRoute).toContain("canManageHotels: invitation.can_manage_hotels");
+    expect(invitationEmail).toContain("draft property content, rooms, rates, future inventory");
+    expect(invitationEmail).toContain("does not include publication, billing, payouts, invitations");
+    expect(invitationEmail).not.toContain("integration-only access");
   });
 
   it("keeps owner-only commercial and team controls unchanged", () => {
