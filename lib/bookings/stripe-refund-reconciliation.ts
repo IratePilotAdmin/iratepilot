@@ -44,6 +44,14 @@ export function stripeRefundMatchesMode(livemode: boolean, paymentMode: BookingP
   return livemode === (paymentMode === "live");
 }
 
+export function getStripeRefundOrderingTimestamp(refund: Stripe.Refund, eventCreatedAt?: string) {
+  if (eventCreatedAt) return eventCreatedAt;
+  if (!Number.isSafeInteger(refund.created) || refund.created <= 0) {
+    throw new Error("Stripe refund creation timestamp is invalid.");
+  }
+  return new Date(refund.created * 1000).toISOString();
+}
+
 export async function reconcileStripeBookingRefund(input: {
   admin: AdminClient;
   refund: Stripe.Refund;
@@ -148,7 +156,7 @@ export async function reconcileStripeBookingRefund(input: {
     p_refund_amount: input.refund.amount / 100,
     p_refund_status: lifecycleStatus,
     p_failure_reason: input.refund.failure_reason || null,
-    p_event_created_at: input.eventCreatedAt || new Date().toISOString(),
+    p_event_created_at: getStripeRefundOrderingTimestamp(input.refund, input.eventCreatedAt),
   });
   if (lifecycleError) throw lifecycleError;
 
