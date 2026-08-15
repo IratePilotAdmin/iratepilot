@@ -19,6 +19,9 @@ export function PartnerProperties() {
   const [selectedPartnerId, setSelectedPartnerId] = useState("");
   const loadRequestId = useRef(0);
   const selectedProperty = properties.find((property) => property.id === selectedPropertyId);
+  const selectedAccess = accessOptions.find((option) => option.partnerId === selectedPartnerId)
+    ?? (accessOptions.length === 1 ? accessOptions[0] : null);
+  const delegatedManager = Boolean(selectedAccess && selectedAccess.role !== "owner");
   const partnerSelectionRequired = accessOptions.length > 1 && !selectedPartnerId;
 
   const load = useCallback(async () => {
@@ -85,6 +88,10 @@ export function PartnerProperties() {
 
   async function updateContent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (delegatedManager && selectedProperty?.active) {
+      setMessage("Hotel managers may edit only properties that are already inactive.");
+      return;
+    }
     const formElement = event.currentTarget;
     setBusy(true);
     setMessage("");
@@ -154,12 +161,12 @@ export function PartnerProperties() {
         <button disabled={busy || partnerSelectionRequired} className="btn-primary">{busy ? "Creating…" : "Create property draft"}</button>
       </form>
       <form key={selectedPropertyId || "empty"} onSubmit={updateContent} className="card grid gap-4 p-6">
-        <div><h2 className="text-xl font-semibold">Listing content</h2><p className="mt-1 text-sm text-slate-500">Content changes return an approved listing to review.</p></div>
-        <label className="text-sm font-medium">Property<select name="propertyId" className="input mt-2" value={selectedPropertyId} onChange={(event) => setSelectedPropertyId(event.target.value)} required><option value="">Select property</option>{properties.map((property) => <option key={property.id} value={property.id}>{property.name}</option>)}</select></label>
+        <div><h2 className="text-xl font-semibold">Listing content</h2><p className="mt-1 text-sm text-slate-500">{delegatedManager ? "Hotel managers may edit only listings that are already inactive. Published listings require an owner or administrator." : "Content changes return an approved listing to review."}</p></div>
+        <label className="text-sm font-medium">Property<select name="propertyId" className="input mt-2" value={selectedPropertyId} onChange={(event) => setSelectedPropertyId(event.target.value)} required><option value="">Select property</option>{properties.map((property) => <option disabled={delegatedManager && property.active} key={property.id} value={property.id}>{property.name}{delegatedManager && property.active ? " — Published (owner or admin only)" : ""}</option>)}</select></label>
         <label className="text-sm font-medium">Detailed description<textarea name="description" className="input mt-2 min-h-32" minLength={120} maxLength={4000} defaultValue={selectedProperty?.description ?? ""} placeholder="Describe the location, rooms, atmosphere, and distinctive guest experience." required /></label>
         <label className="text-sm font-medium">Primary photo URL<input name="imageUrl" type="url" className="input mt-2" defaultValue={selectedProperty?.image_url ?? ""} placeholder="https://..." pattern="https://.*" required /><small className="mt-1 block text-slate-500">Use a public HTTPS image from your hotel or media host.</small></label>
         <label className="text-sm font-medium">Amenities, separated by commas<textarea name="amenities" className="input mt-2 min-h-24" defaultValue={(selectedProperty?.amenities ?? []).join(", ")} placeholder="Pool, Spa, Free Wi-Fi, Parking" required /></label>
-        <button disabled={busy || !selectedProperty} className="btn-primary">Save property content</button>
+        <button disabled={busy || !selectedProperty || (delegatedManager && selectedProperty.active)} className="btn-primary">Save property content</button>
       </form>
       </div>
       </div>

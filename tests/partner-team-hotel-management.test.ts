@@ -87,6 +87,14 @@ describe("partner-team hotel management", () => {
     }
   });
 
+  it("prevents delegated managers from submitting active-property edits", () => {
+    expect(properties).toContain('selectedAccess.role !== "owner"');
+    expect(properties).toContain("delegatedManager && selectedProperty?.active");
+    expect(properties).toContain("disabled={delegatedManager && property.active}");
+    expect(properties).toContain("Published (owner or admin only)");
+    expect(properties).toContain("delegatedManager && selectedProperty.active");
+  });
+
   it("ignores responses from superseded organization requests", () => {
     for (const component of [properties, rates, onboarding]) {
       expect(component).toContain("const loadRequestId = useRef(0)");

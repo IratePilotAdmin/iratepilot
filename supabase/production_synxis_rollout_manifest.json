@@ -79,7 +79,7 @@
     "202608150060"
   ],
   "requiredWriteGates": [
-    "separate production approval to apply migration 060 and verify the delegated inactive-property guard",
+    "separate production approval to apply migration 060 and verify the delegated inactive-property guard before any application deployment, manager invitation, or manager activation",
     "separate Sabre certification approval before any certification traffic",
     "separate live-traffic approval after every launch-evidence gate is complete"
   ],
@@ -88,6 +88,7 @@
     "migration history changes unexpectedly",
     "any 039-through-059 production marker becomes unavailable",
     "migration 060 is applied before its separate production approval",
+    "application deployment, manager invitation, or manager activation occurs before production migration 060 is applied and verified",
     "SynXis live_enabled becomes true before final live-traffic approval",
     "manager-onboarding acceptance exposes credentials, identifiers, or SOAP payloads"
   ]

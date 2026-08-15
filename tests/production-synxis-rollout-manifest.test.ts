@@ -48,9 +48,11 @@ describe("SynXis production rollout manifest", () => {
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).not.toContain("migration 058");
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).not.toContain("migration 059");
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("migration 060");
+    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("before any application deployment, manager invitation, or manager activation");
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("live-traffic approval");
     expect(manifest.stopConditions.length).toBeGreaterThan(0);
     expect(manifest.stopConditions.join(" ")).toContain("039-through-059");
+    expect(manifest.stopConditions.join(" ")).toContain("before production migration 060 is applied and verified");
   });
 
   it("contains no credential-shaped fields", () => {

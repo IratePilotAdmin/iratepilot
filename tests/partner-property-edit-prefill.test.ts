@@ -15,6 +15,6 @@ describe("partner property content editing", () => {
   });
 
   it("does not allow a content update without a selected property", () => {
-    expect(form).toContain("disabled={busy || !selectedProperty}");
+    expect(form).toContain("disabled={busy || !selectedProperty || (delegatedManager && selectedProperty.active)}");
   });
 });
