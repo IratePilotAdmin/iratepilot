@@ -25,7 +25,7 @@ const migrationVersions = readdirSync(
   .map((name) => name.split("_")[0]);
 
 describe("SynXis production rollout manifest", () => {
-  it("records every repository migration exactly once while migration 060 remains pending", () => {
+  it("records every repository migration exactly once in production order", () => {
     expect(manifest.historyRepairCandidates).toEqual(migrationVersions.slice(0, 49));
     const deploymentVersions = [
       ...manifest.appliedDeploymentVersions,
@@ -35,16 +35,13 @@ describe("SynXis production rollout manifest", () => {
     expect(new Set(deploymentVersions).size).toBe(deploymentVersions.length);
     expect(manifest.historyRepairCandidates.at(-1)).toBe("202608130038");
     expect(manifest.appliedDeploymentVersions[0]).toBe("202608130039");
-    expect(manifest.appliedDeploymentVersions).toEqual([
-      ...migrationVersions.slice(49, -2),
-      "202608150061",
-    ]);
-    expect(manifest.pendingDeploymentVersions).toEqual(["202608150060"]);
+    expect(manifest.appliedDeploymentVersions).toEqual(migrationVersions.slice(49));
+    expect(manifest.pendingDeploymentVersions).toEqual([]);
   });
 
   it("records completed database rollout while preserving later launch gates", () => {
     expect(manifest.executionState).toBe(
-      "migrations_001_059_and_061_applied_060_preview_only_manager_acceptance_incomplete_synxis_traffic_disabled",
+      "migrations_001_061_applied_application_deployment_pending_manager_acceptance_incomplete_synxis_traffic_disabled",
     );
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("sabre certification");
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).not.toContain("migration 054");
@@ -52,13 +49,16 @@ describe("SynXis production rollout manifest", () => {
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).not.toContain("migration 057");
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).not.toContain("migration 058");
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).not.toContain("migration 059");
-    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("migration 060");
+    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).not.toContain("migration 060");
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).not.toContain("migration 061");
-    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("before any application deployment, manager invitation, or manager activation");
+    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("merge pr #279");
+    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("application deployment");
+    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("manager invitation");
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("live-traffic approval");
     expect(manifest.stopConditions.length).toBeGreaterThan(0);
-    expect(manifest.stopConditions.join(" ")).toContain("039-through-059 or 061");
-    expect(manifest.stopConditions.join(" ")).toContain("before production migration 060 is applied and verified");
+    expect(manifest.stopConditions.join(" ")).toContain("039-through-061");
+    expect(manifest.stopConditions.join(" ").toLowerCase()).toContain("merged or the application is deployed without separate production approval");
+    expect(manifest.stopConditions.join(" ").toLowerCase()).toContain("before the verified application deployment");
   });
 
   it("contains no credential-shaped fields", () => {

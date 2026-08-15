@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "executionState": "migrations_001_059_and_061_applied_060_preview_only_manager_acceptance_incomplete_synxis_traffic_disabled",
+  "executionState": "migrations_001_061_applied_application_deployment_pending_manager_acceptance_incomplete_synxis_traffic_disabled",
   "historyRepairCandidates": [
     "202607260001",
     "202607280001",
@@ -74,22 +74,22 @@
     "202608150057",
     "202608150058",
     "202608150059",
+    "202608150060",
     "202608150061"
   ],
-  "pendingDeploymentVersions": [
-    "202608150060"
-  ],
+  "pendingDeploymentVersions": [],
   "requiredWriteGates": [
-    "separate production approval to apply and verify migration 060 before any application deployment, manager invitation, or manager activation",
+    "separate production approval to merge PR #279 and deploy the corresponding application before any manager invitation or manager activation",
+    "separate approval to send and accept a verified manager invitation and activate hotel-manager access after the application deployment is verified",
     "separate Sabre certification approval before any certification traffic",
     "separate live-traffic approval after every launch-evidence gate is complete"
   ],
   "stopConditions": [
     "the production project identity cannot be verified",
     "migration history changes unexpectedly",
-    "any 039-through-059 or 061 production marker becomes unavailable",
-    "migration 060 is applied before its separate production approval",
-    "application deployment, manager invitation, or manager activation occurs before production migration 060 is applied and verified",
+    "any 039-through-061 production marker becomes unavailable",
+    "PR #279 is merged or the application is deployed without separate production approval",
+    "manager invitation or manager activation occurs before the verified application deployment or without separate approval",
     "SynXis live_enabled becomes true before final live-traffic approval",
     "manager-onboarding acceptance exposes credentials, identifiers, or SOAP payloads"
   ]
