@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { HotelAccessSelector } from "@/components/partner/hotel-access-selector";
 import type { PartnerHotelAccess } from "@/lib/partner/hotel-access";
 import { toPropertySlug } from "@/lib/property-slug";
@@ -17,16 +17,20 @@ export function PartnerProperties() {
   const [busy, setBusy] = useState(false);
   const [accessOptions, setAccessOptions] = useState<PartnerHotelAccess[]>([]);
   const [selectedPartnerId, setSelectedPartnerId] = useState("");
+  const loadRequestId = useRef(0);
   const selectedProperty = properties.find((property) => property.id === selectedPropertyId);
   const partnerSelectionRequired = accessOptions.length > 1 && !selectedPartnerId;
 
   const load = useCallback(async () => {
-    const query = selectedPartnerId ? `?partnerId=${encodeURIComponent(selectedPartnerId)}` : "";
+    const requestId = ++loadRequestId.current;
+    const requestedPartnerId = selectedPartnerId;
+    const query = requestedPartnerId ? `?partnerId=${encodeURIComponent(requestedPartnerId)}` : "";
     const response = await fetch(`/api/partner/properties${query}`);
     const body = await response.json();
+    if (requestId !== loadRequestId.current) return;
     if (body.hotelAccess) {
       setAccessOptions(body.hotelAccess.options ?? []);
-      if (!selectedPartnerId && body.hotelAccess.selectedPartnerId) {
+      if (!requestedPartnerId && body.hotelAccess.selectedPartnerId) {
         setSelectedPartnerId(body.hotelAccess.selectedPartnerId);
       }
     }
@@ -41,6 +45,9 @@ export function PartnerProperties() {
     // Initial remote-data synchronization.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
+    return () => {
+      loadRequestId.current += 1;
+    };
   }, [load]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -115,6 +122,7 @@ export function PartnerProperties() {
       <HotelAccessSelector
         disabled={busy}
         onChange={(partnerId) => {
+          loadRequestId.current += 1;
           setSelectedPartnerId(partnerId);
           setSelectedPropertyId("");
           setProperties([]);

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { HotelAccessSelector } from "@/components/partner/hotel-access-selector";
 import { getTodayIsoDate, summarizeSellableInventory } from "@/lib/inventory-dates";
 import type { PartnerHotelAccess } from "@/lib/partner/hotel-access";
@@ -18,6 +18,7 @@ export function RatesInventoryManager() {
   const [inventoryRoomId, setInventoryRoomId] = useState("");
   const [accessOptions, setAccessOptions] = useState<PartnerHotelAccess[]>([]);
   const [selectedPartnerId, setSelectedPartnerId] = useState("");
+  const loadRequestId = useRef(0);
   const today = useMemo(() => getTodayIsoDate(), []);
   const propertyNames = useMemo(() => new Map(properties.map((property) => [property.id, property.name])), [properties]);
   const selectedRoom = useMemo(() => rooms.find((room) => room.id === selectedRoomId), [rooms, selectedRoomId]);
@@ -25,12 +26,15 @@ export function RatesInventoryManager() {
   const partnerSelectionRequired = accessOptions.length > 1 && !selectedPartnerId;
 
   const load = useCallback(async () => {
-    const query = selectedPartnerId ? `?partnerId=${encodeURIComponent(selectedPartnerId)}` : "";
+    const requestId = ++loadRequestId.current;
+    const requestedPartnerId = selectedPartnerId;
+    const query = requestedPartnerId ? `?partnerId=${encodeURIComponent(requestedPartnerId)}` : "";
     const response = await fetch(`/api/partner/rates${query}`);
     const body = await response.json();
+    if (requestId !== loadRequestId.current) return;
     if (body.hotelAccess) {
       setAccessOptions(body.hotelAccess.options ?? []);
-      if (!selectedPartnerId && body.hotelAccess.selectedPartnerId) {
+      if (!requestedPartnerId && body.hotelAccess.selectedPartnerId) {
         setSelectedPartnerId(body.hotelAccess.selectedPartnerId);
       }
     }
@@ -45,6 +49,9 @@ export function RatesInventoryManager() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
+    return () => {
+      loadRequestId.current += 1;
+    };
   }, [load]);
 
   async function send(event: FormEvent<HTMLFormElement>, action: "create_room" | "update_room" | "set_inventory") {
@@ -81,6 +88,7 @@ export function RatesInventoryManager() {
     <HotelAccessSelector
       disabled={busy}
       onChange={(partnerId) => {
+        loadRequestId.current += 1;
         setSelectedPartnerId(partnerId);
         setSelectedRoomId("");
         setInventoryRoomId("");

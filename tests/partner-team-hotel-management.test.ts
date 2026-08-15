@@ -78,6 +78,15 @@ describe("partner-team hotel management", () => {
     }
   });
 
+  it("ignores responses from superseded organization requests", () => {
+    for (const component of [properties, rates, onboarding]) {
+      expect(component).toContain("const loadRequestId = useRef(0)");
+      expect(component).toContain("const requestId = ++loadRequestId.current");
+      expect(component).toContain("if (requestId !== loadRequestId.current) return");
+      expect(component).toContain("loadRequestId.current += 1");
+    }
+  });
+
   it("preserves inactive property reads for integration-only managers", () => {
     expect(selectionMigration).toContain('create policy "Partner integration managers view properties"');
     expect(selectionMigration).toContain("public.can_manage_partner_integrations(partner_id)");

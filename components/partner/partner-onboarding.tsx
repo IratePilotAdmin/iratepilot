@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { HotelAccessSelector } from "@/components/partner/hotel-access-selector";
 import type { PartnerHotelAccess } from "@/lib/partner/hotel-access";
 
@@ -28,14 +28,18 @@ export function PartnerOnboarding() {
   const [message, setMessage] = useState("Checking onboarding progress…");
   const [accessOptions, setAccessOptions] = useState<PartnerHotelAccess[]>([]);
   const [selectedPartnerId, setSelectedPartnerId] = useState("");
+  const loadRequestId = useRef(0);
   useEffect(() => {
-    const query = selectedPartnerId ? `?partnerId=${encodeURIComponent(selectedPartnerId)}` : "";
+    const requestId = ++loadRequestId.current;
+    const requestedPartnerId = selectedPartnerId;
+    const query = requestedPartnerId ? `?partnerId=${encodeURIComponent(requestedPartnerId)}` : "";
     fetch(`/api/partner/onboarding${query}`, { cache: "no-store" }).then(async (response) => {
       const body = await response.json();
+      if (requestId !== loadRequestId.current) return;
       if (!response.ok) throw new Error(body.error);
       if (body.hotelAccess) {
         setAccessOptions(body.hotelAccess.options ?? []);
-        if (!selectedPartnerId && body.hotelAccess.selectedPartnerId) {
+        if (!requestedPartnerId && body.hotelAccess.selectedPartnerId) {
           setSelectedPartnerId(body.hotelAccess.selectedPartnerId);
         }
         if (body.hotelAccess.selectionRequired) {
@@ -46,11 +50,17 @@ export function PartnerOnboarding() {
       }
       setData(body);
       setMessage("");
-    }).catch((error: Error) => setMessage(error.message));
+    }).catch((error: Error) => {
+      if (requestId === loadRequestId.current) setMessage(error.message);
+    });
+    return () => {
+      if (requestId === loadRequestId.current) loadRequestId.current += 1;
+    };
   }, [selectedPartnerId]);
 
   const accessSelector = <HotelAccessSelector
     onChange={(partnerId) => {
+      loadRequestId.current += 1;
       setSelectedPartnerId(partnerId);
       setData(null);
       setMessage(partnerId ? "Checking onboarding progress…" : "");
