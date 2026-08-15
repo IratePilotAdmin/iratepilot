@@ -16,6 +16,7 @@ const liveKeys = {
 };
 const bookingRoute = readFileSync(new URL("../app/api/bookings/route.ts", import.meta.url), "utf8");
 const cancellationRoute = readFileSync(new URL("../app/api/admin/cancellations/[id]/route.ts", import.meta.url), "utf8");
+const refundReconciliation = readFileSync(new URL("../lib/bookings/stripe-refund-reconciliation.ts", import.meta.url), "utf8");
 const paymentMigration = readFileSync(new URL("../supabase/migrations/202608060028_live_booking_payment_modes.sql", import.meta.url), "utf8");
 
 describe("live booking payment gates", () => {
@@ -68,7 +69,8 @@ describe("live booking payment gates", () => {
   it("matches refunds to the recorded Stripe environment and uses the generic atomic finalizer", () => {
     expect(cancellationRoute).toContain("booking.stripe_payment_mode !== refundMode");
     expect(cancellationRoute).toContain('intent.livemode !== (refundMode === "live")');
-    expect(cancellationRoute).toContain('"finalize_booking_refund"');
+    expect(cancellationRoute).toContain("reconcileStripeBookingRefund");
+    expect(refundReconciliation).toContain('rpc("finalize_booking_refund"');
     expect(paymentMigration).toContain("create or replace function public.finalize_booking_refund");
     expect(paymentMigration).toContain("v_booking.stripe_payment_mode not in ('test', 'live')");
     expect(paymentMigration).toContain("Partner transfer must be reversed before refund finalization");
