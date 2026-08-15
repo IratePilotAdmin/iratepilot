@@ -59,6 +59,13 @@ describe("live partner onboarding progress", () => {
       .toBeLessThan(route.indexOf('.from("properties")'));
   });
 
+  it("uses the already authorized partner scope when reading pending-owner draft properties", () => {
+    expect(route).toContain('await admin.from("properties")');
+    expect(route).toContain('.eq("partner_id", partner.id)');
+    expect(route.indexOf("if (!partner)"))
+      .toBeLessThan(route.indexOf('await admin.from("properties")'));
+  });
+
   it("keeps pending ownership selectable without overriding requested managed access", () => {
     expect(route).toContain('.select("id,business_name,status")');
     expect(route).toContain('.eq("owner_id", auth.user.id)');

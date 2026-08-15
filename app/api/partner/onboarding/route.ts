@@ -57,7 +57,7 @@ export async function GET(request: Request) {
     if (partnerError) throw partnerError;
     if (!partner) return NextResponse.json({ error: "A partner account is required to view onboarding." }, { status: 403 });
 
-    const { data: properties, error: propertyError } = await auth.supabase.from("properties")
+    const { data: properties, error: propertyError } = await admin.from("properties")
       .select("id,name,active,image_url,amenities,rooms(active,inventory(stay_date,available_units))")
       .eq("partner_id", partner.id)
       .order("created_at", { ascending: true });
