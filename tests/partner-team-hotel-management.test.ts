@@ -25,6 +25,10 @@ const consentMigration = readFileSync(
   "supabase/migrations/202608150059_legacy_hotel_manager_consent.sql",
   "utf8",
 );
+const publicationGuardMigration = readFileSync(
+  "supabase/migrations/202608150060_delegated_property_publication_guard.sql",
+  "utf8",
+);
 const resolver = readFileSync("lib/partner/hotel-access.ts", "utf8");
 const onboardingModel = readFileSync("lib/partner/onboarding.ts", "utf8");
 const propertyRoute = readFileSync("app/api/partner/properties/route.ts", "utf8");
@@ -130,6 +134,14 @@ describe("partner-team hotel management", () => {
     expect(inventoryStayDateGuardMigration).toContain("Hotel managers cannot change inventory room or stay date");
     expect(inventoryStayDateGuardMigration).toContain("before update of room_id, stay_date on public.inventory");
     expect(inventoryStayDateGuardMigration).not.toContain("live_enabled = true");
+    expect(publicationGuardMigration).toContain("if old.active then");
+    expect(publicationGuardMigration).toContain("new.active is distinct from old.active");
+    expect(publicationGuardMigration).toContain("Hotel managers cannot change property publication state");
+    expect(publicationGuardMigration).toContain("to_jsonb(new) - 'description' - 'image_url' - 'amenities'");
+    expect(propertyEditRoute).toContain('.select("id,active")');
+    expect(propertyEditRoute).toContain('resolved.access.role !== "owner"');
+    expect(propertyEditRoute).toContain("delegatedManager && property.active");
+    expect(propertyEditRoute).toContain("...(delegatedManager ? {} : { active: false })");
   });
 
   it("returns a hotel-only onboarding checklist to delegated managers", () => {
@@ -169,9 +181,10 @@ describe("partner-team hotel management", () => {
     expect(migration).not.toContain("properties.active = true");
   });
 
-  it("sends accepted managers to scoped hotel operations", () => {
-    expect(acceptance).toContain("draft-property, room, inventory, and integration access");
-    expect(acceptance).toContain('href="/partner/properties"');
-    expect(acceptance).not.toContain("integration-only access");
+  it("discloses and routes accepted managers by their invitation's actual scope", () => {
+    expect(acceptance).toContain("scope.canManageHotels");
+    expect(acceptance).toContain("inactive-property content, room, rate, future-inventory, and integration access");
+    expect(acceptance).toContain("integration access only");
+    expect(acceptance).toContain('canManageHotels ? "/partner/properties" : "/partner/integrations"');
   });
 });

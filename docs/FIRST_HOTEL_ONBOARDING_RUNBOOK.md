@@ -9,8 +9,8 @@ Use this runbook to prepare the first hotel in a private sandbox. It does not au
 - SynXis traffic remains disabled.
 - Stripe Connect may be inspected in test mode, but starting onboarding is a separate external-action gate because it creates a Stripe account and onboarding link.
 - Manager invitations are a separate external-email gate. Creating an invitation queues a transactional email.
-- Scoped hotel-management migrations 054–058 are recorded in production. Migration 055 restores integration-only property reads and adds explicit organization selection for managers assigned to multiple partners. Migration 056 restricts delegated property updates to approved draft-content fields and prevents non-admin room transfers between properties. Migration 057 prevents non-admin inventory transfers between rooms. Migration 058 additionally makes inventory stay dates immutable for non-admin users. The application remains inactive in production until the corresponding application changes receive separate merge and deployment approval.
-- Migration 059 is repository/preview-only until a separate production approval. It removes the temporary migration-054 hotel-access backfill and records hotel-write scope on invitations, so an existing integration-scoped manager stays restricted until the owner sends a newly disclosed invitation and the manager accepts it.
+- Scoped hotel-management migrations 054–059 are recorded in production. Migration 055 restores integration-only property reads and adds explicit organization selection for managers assigned to multiple partners. Migration 056 restricts delegated property updates to approved draft-content fields and prevents non-admin room transfers between properties. Migration 057 prevents non-admin inventory transfers between rooms. Migration 058 additionally makes inventory stay dates immutable for non-admin users. Migration 059 removes the temporary migration-054 hotel-access backfill and records hotel-write scope on invitations, so an existing integration-scoped manager stays restricted until the owner sends a newly disclosed invitation and the manager accepts it. The application remains inactive in production until the corresponding application changes receive separate merge and deployment approval.
+- Migration 060 is repository/preview-only until a separate production approval. It prevents delegated managers from editing an active property or changing its publication state; delegated content edits are limited to properties that were already inactive.
 - The delegated scope is limited to inactive property content, rooms/rates, and future inventory. It does not permit publication, property transfer, room or inventory deletion, invitations, billing, payouts, or live supplier traffic.
 
 ## Verified intake required before creating a real record
@@ -33,7 +33,7 @@ Stop if the supplier identity, authority, content rights, rate ownership, or pay
 2. Run `npm run commercial:sandbox-preflight` with sandbox-only configuration. Require `ready: true`, `networkRequestsMade: 0`, `liveTransactions: disabled`, and `synxisTraffic: disabled`.
 3. Confirm the hotel owner has a partner account. Do not approve a real partner without verified intake and the required business review.
 4. Create the property as a draft. The property API must return `active: false`.
-5. Add property content. Saving content must return the property to `active: false`.
+5. Add property content. A delegated manager may edit only a property that is already inactive, and their save must preserve `active: false`. Owner or administrator content edits return the property to `active: false`.
 6. Configure a room type and future sandbox inventory only after the partner is approved in the sandbox. Use synthetic dates, units, and rates when validating mechanics.
 7. Confirm the readiness result requires all four controls: safe primary photo, amenities, an active room type, and future sellable inventory.
 8. Leave the property inactive. Administrator publication requires a separate approval and must be blocked when the partner or listing is incomplete.
@@ -47,14 +47,14 @@ Stop if the supplier identity, authority, content rights, rate ownership, or pay
 | --- | --- | --- |
 | Partner authorization | Non-admin property, room, inventory, finance, and Connect access requires an approved partner | Test name and result |
 | Draft property | New property is inactive | Sanitized record ID and `active: false` |
-| Content edit | Property is returned to review | Sanitized record ID and `active: false` |
+| Content edit | Delegated managers can edit only an already-inactive property and cannot change publication state | Sanitized record ID and `active: false` |
 | Publication gate | Admin publication rejects an unapproved partner or incomplete listing | HTTP status and missing requirements |
 | Readiness | Photo, amenities, active room, and future inventory are all required | Readiness object without hotel PII |
 | Inventory bounds | Dates and units satisfy configured limits and stay in the sandbox | Date range and row count |
 | Stripe mode | Test mode is visible and no live Connect account is replaced | Mode and status only; no credentials |
 | Manager roles | Only general, revenue, and sales manager roles are accepted | Validation result; no invitation submitted |
 | Delegated hotel operations | In preview, active general, revenue, and sales managers can manage inactive property content, rooms/rates, and future inventory only | API tests, helper functions, and eight scoped RLS policies |
-| Delegated restrictions | Managers cannot publish a property, transfer it, delete rooms/inventory, invite teammates, or access billing/payout controls | Negative API/RLS test evidence |
+| Delegated restrictions | Managers cannot edit or deactivate an active property, change publication state, transfer a property, delete rooms/inventory, invite teammates, or access billing/payout controls | Negative API/RLS test evidence |
 | Email | No invitation or transactional email was queued | Queue delta equals zero |
 | External effects | No supplier, payment, payout, refund, or SynXis request occurred | Provider/event deltas equal zero |
 
@@ -78,7 +78,7 @@ Preparation is complete when the sandbox controls pass, the operator packet is r
 
 1. Create the verified real hotel owner and inactive partner/property records.
 2. Publish the scoped manager-permission changes for review and pass CI.
-3. Confirm migrations 055–058 remain recorded in production, apply and verify migration 059 under its separate approval, then deploy the corresponding application changes under another approval.
+3. Confirm migrations 055–059 remain recorded in production, apply and verify migration 060 under its separate approval, then deploy the corresponding application changes under another approval.
 4. Send a manager invitation email to the verified general, revenue, or sales manager.
 5. Start Stripe Connect test onboarding for the verified payout entity.
 6. Load and review real hotel inventory while keeping the listing private.

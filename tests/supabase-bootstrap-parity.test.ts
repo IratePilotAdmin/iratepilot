@@ -15,10 +15,11 @@ const mirroredMigrations = [
   "202608150057_hotel_manager_inventory_guard.sql",
   "202608150058_hotel_manager_inventory_stay_date_guard.sql",
   "202608150059_legacy_hotel_manager_consent.sql",
+  "202608150060_delegated_property_publication_guard.sql",
 ];
 
 describe("Supabase bootstrap parity", () => {
-  it("mirrors the complete partner-team hotel-management dependency chain through migration 059", () => {
+  it("mirrors the complete partner-team hotel-management dependency chain through migration 060", () => {
     let previousIndex = -1;
     for (const name of mirroredMigrations) {
       const marker = `-- Mirrored from migrations/${name}.`;
@@ -54,6 +55,9 @@ describe("Supabase bootstrap parity", () => {
     );
     expect(bootstrap).toContain("v_invitation.can_manage_hotels");
     expect(bootstrap).toContain("can_manage_hotels = excluded.can_manage_hotels");
+    expect(bootstrap).toContain("if old.active then");
+    expect(bootstrap).toContain("new.active is distinct from old.active");
+    expect(bootstrap).toContain("Hotel managers cannot change property publication state");
   });
 
   it("verifies the final partner-team tables, policies, resolver, and write guards", () => {
@@ -75,5 +79,7 @@ describe("Supabase bootstrap parity", () => {
     expect(verification).not.toContain("Partners can manage own inventory");
     expect(verification).toContain("new.stay_date is distinct from old.stay_date");
     expect(verification).toContain("update of room_id, stay_date");
+    expect(verification).toContain("if old.active then");
+    expect(verification).toContain("new.active is distinct from old.active");
   });
 });

@@ -26,21 +26,35 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-    let propertyQuery = auth.supabase.from("properties").select("id").eq("id", id);
+    let delegatedManager = false;
+    let propertyQuery = auth.supabase.from("properties").select("id,active").eq("id", id);
     if (auth.profile.role !== "admin") {
       const requestedPartnerId = new URL(request.url).searchParams.get("partnerId");
       const resolved = await resolvePartnerHotelAccess(auth, requestedPartnerId);
       if (!resolved.access) return hotelAccessError(resolved);
+      delegatedManager = resolved.access.role !== "owner";
       propertyQuery = propertyQuery.eq("partner_id", resolved.access.partnerId);
     }
     const { data: property } = await propertyQuery.maybeSingle();
     if (!property) return NextResponse.json({ error: "Property not found." }, { status: 404 });
+    if (delegatedManager && property.active) return NextResponse.json(
+      { error: "Hotel managers may edit only properties that are already inactive." },
+      { status: 409 },
+    );
 
     const { data, error } = await auth.supabase.from("properties").update({
-      description: parsed.data.description, image_url: parsed.data.imageUrl, amenities: parsed.data.amenities, active: false
+      description: parsed.data.description,
+      image_url: parsed.data.imageUrl,
+      amenities: parsed.data.amenities,
+      ...(delegatedManager ? {} : { active: false }),
     }).eq("id", id).select("id,name,active").single();
     if (error) throw error;
-    return NextResponse.json({ data, message: "Property content saved and returned to review." });
+    return NextResponse.json({
+      data,
+      message: delegatedManager
+        ? "Draft property content saved."
+        : "Property content saved and returned to review.",
+    });
   } catch {
     return NextResponse.json({ error: "Property content could not be saved." }, { status: 503 });
   }

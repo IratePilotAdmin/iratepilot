@@ -90,7 +90,19 @@ select
     where tgrelid = 'public.properties'::regclass
       and tgname = 'enforce_delegated_hotel_manager_property_fields'
       and tgenabled = 'O' and not tgisinternal
-  ) as delegated_property_guard_ready,
+  )
+  and position(
+    'if old.active then'
+    in lower(pg_get_functiondef(
+      'public.enforce_delegated_hotel_manager_property_fields()'::regprocedure
+    ))
+  ) > 0
+  and position(
+    'new.active is distinct from old.active'
+    in lower(pg_get_functiondef(
+      'public.enforce_delegated_hotel_manager_property_fields()'::regprocedure
+    ))
+  ) > 0 as delegated_property_guard_ready,
   exists (
     select 1 from pg_trigger
     where tgrelid = 'public.rooms'::regclass
