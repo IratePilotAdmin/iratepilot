@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type Stripe from "stripe";
 import {
   getStripeRefundLifecycleStatus,
+  getStripeRefundOrderingTimestamp,
   getStripeRefundPaymentIntentId,
   stripeRefundMatchesMode,
 } from "../lib/bookings/stripe-refund-reconciliation";
@@ -16,6 +17,7 @@ const migration = readFileSync(new URL("../supabase/migrations/202608140052_stri
 function refund(overrides: Partial<Stripe.Refund> = {}) {
   return {
     id: "re_test",
+    created: 1_700_000_000,
     amount: 10_500,
     payment_intent: "pi_test",
     status: "pending",
@@ -33,6 +35,19 @@ describe("Stripe refund lifecycle reconciliation", () => {
     expect(getStripeRefundLifecycleStatus(refund({ status: "canceled" }))).toBe("canceled");
     expect(getStripeRefundPaymentIntentId(refund())).toBe("pi_test");
     expect(getStripeRefundPaymentIntentId(refund({ payment_intent: null }))).toBeNull();
+  });
+
+  it("uses Stripe timestamps consistently for same-second lifecycle ordering", () => {
+    const stripeCreatedAt = "2023-11-14T22:13:20.000Z";
+    expect(getStripeRefundOrderingTimestamp(refund())).toBe(stripeCreatedAt);
+    expect(getStripeRefundOrderingTimestamp(refund(), stripeCreatedAt)).toBe(stripeCreatedAt);
+    expect(() => getStripeRefundOrderingTimestamp(refund({ created: 0 }))).toThrow(
+      "Stripe refund creation timestamp is invalid.",
+    );
+    expect(reconciliation).toContain(
+      "getStripeRefundOrderingTimestamp(input.refund, input.eventCreatedAt)",
+    );
+    expect(reconciliation).not.toContain("input.eventCreatedAt || new Date().toISOString()");
   });
 
   it("rejects unsupported statuses and payment-mode mismatches", () => {
