@@ -28,7 +28,10 @@ export function ResetPasswordForm({ configured }: { configured: boolean }) {
       const supabase = createClient();
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      await fetch("/api/auth/recovery/complete", { method: "POST" }).catch(() => undefined);
+      const completionResponse = await fetch("/api/auth/recovery/complete", { method: "POST" });
+      if (!completionResponse.ok) {
+        throw new Error("Your password was updated, but the recovery session could not be closed. Sign in with your new password or request another reset link.");
+      }
       router.replace("/login?password=updated");
       router.refresh();
     } catch (error) {
