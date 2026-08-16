@@ -21,6 +21,8 @@ describe("password recovery", () => {
     expect(route).toContain("token_hash: tokenHash");
     expect(route).toContain('type: "recovery"');
     expect(route).toContain('new URL("/reset-password", request.url)');
+    expect(route).toContain("createRecoveryMarker(userId)");
+    expect(route).toContain("recoveryMarkerMaxAge");
     expect(route).not.toContain("exchangeCodeForSession");
 
     const logStart = route.indexOf("console.error");
@@ -42,8 +44,18 @@ describe("password recovery", () => {
     const page = read("../app/reset-password/page.tsx");
     expect(page).toContain('dynamic = "force-dynamic"');
     expect(page).toContain("supabase.auth.getUser()");
+    expect(page).toContain("verifyRecoveryMarker(recoveryMarker, user.id)");
+    expect(page).toContain("if (!recoveryVerified)");
     expect(page).toContain("Reset link required");
     expect(page).toContain('href="/forgot-password"');
+  });
+
+  it("clears the recovery marker after a successful password update", () => {
+    const form = read("../components/forms/reset-password-form.tsx");
+    const completion = read("../app/api/auth/recovery/complete/route.ts");
+    expect(form).toContain('fetch("/api/auth/recovery/complete", { method: "POST" })');
+    expect(completion).toContain("verifyRecoveryMarker(marker, user.id)");
+    expect(completion).toContain("maxAge: 0");
   });
 
   it("requires matching passwords before updating the authenticated user", () => {
@@ -52,3 +64,4 @@ describe("password recovery", () => {
     expect(source).toContain("updateUser({ password })");
   });
 });
+
