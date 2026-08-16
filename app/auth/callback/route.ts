@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getSafeNextPath } from "@/lib/auth/safe-next-path";
+import {
+  createRecoveryMarker,
+  isPasswordRecoveryExchange,
+  recoveryMarkerCookieName,
+  recoveryMarkerCookieOptions,
+  recoveryMarkerMaxAge,
+} from "@/lib/auth/recovery-marker";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -16,8 +23,24 @@ export async function GET(request: Request) {
   try {
     const supabase = await createClient();
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) throw error;
+
+    if (nextPath === "/reset-password") {
+      if (!isPasswordRecoveryExchange(data)) {
+        throw new Error("Authentication code was not issued for password recovery.");
+      }
+
+      const userId = data.user?.id ?? data.session?.user.id;
+      if (!userId) throw new Error("Password recovery exchange returned no user.");
+
+      const response = NextResponse.redirect(new URL("/reset-password", url.origin));
+      response.cookies.set(recoveryMarkerCookieName, createRecoveryMarker(userId), {
+        ...recoveryMarkerCookieOptions,
+        maxAge: recoveryMarkerMaxAge,
+      });
+      return response;
+    }
 
     let destination = nextPath;
 
@@ -54,3 +77,4 @@ export async function GET(request: Request) {
     );
   }
 }
+
