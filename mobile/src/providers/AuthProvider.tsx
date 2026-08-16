@@ -54,7 +54,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       },
       requestPasswordReset: async (email) => {
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-          redirectTo: "https://www.iratepilot.com/auth/callback?next=%2Freset-password",
+          redirectTo: "https://www.iratepilot.com/auth/confirm",
         });
         return error?.message ?? null;
       },
