@@ -8,10 +8,11 @@ describe("password recovery", () => {
     expect(read("../app/login/page.tsx")).toContain('href="/forgot-password"');
   });
 
-  it("sends recovery emails through Supabase with a safe local callback", () => {
+  it("sends recovery emails to the allow-listed confirmation endpoint", () => {
     const source = read("../components/forms/forgot-password-form.tsx");
     expect(source).toContain("resetPasswordForEmail");
-    expect(source).toContain('encodeURIComponent("/reset-password")');
+    expect(source).toContain('`${window.location.origin}/auth/confirm`');
+    expect(source).not.toContain("/auth/callback?next=");
   });
 
   it("confirms recovery token hashes server-side without browser-local PKCE state", () => {
@@ -23,7 +24,8 @@ describe("password recovery", () => {
     expect(route).toContain('new URL("/reset-password", request.url)');
     expect(route).toContain("createRecoveryMarker(userId)");
     expect(route).toContain("recoveryMarkerMaxAge");
-    expect(route).not.toContain("exchangeCodeForSession");
+    expect(route).toContain("exchangeCodeForSession(code)");
+    expect(route).toContain("isPasswordRecoveryExchange(data)");
 
     const logStart = route.indexOf("console.error");
     const redirectAfterLog = route.indexOf("return NextResponse.redirect", logStart);
@@ -34,10 +36,19 @@ describe("password recovery", () => {
 
   it("ships the matching hosted recovery-email template", () => {
     const template = read("../supabase/auth-templates/recovery.html");
-    expect(template).toContain("{{ .SiteURL }}/auth/confirm");
+    expect(template).toContain("{{ .RedirectTo }}?token_hash=");
     expect(template).toContain("token_hash={{ .TokenHash }}");
     expect(template).toContain("type=recovery");
+    expect(template).not.toContain("{{ .SiteURL }}");
     expect(template).not.toContain("{{ .ConfirmationURL }}");
+  });
+
+  it("keeps previously issued PKCE recovery links valid without trusting normal login codes", () => {
+    const callback = read("../app/auth/callback/route.ts");
+    expect(callback).toContain('nextPath === "/reset-password"');
+    expect(callback).toContain("isPasswordRecoveryExchange(data)");
+    expect(callback).toContain("createRecoveryMarker(userId)");
+    expect(callback).toContain('new URL("/reset-password", url.origin)');
   });
 
   it("does not show password inputs without an authenticated recovery session", () => {
