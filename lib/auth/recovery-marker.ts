@@ -17,6 +17,11 @@ type RecoveryMarkerPayload = {
 
 const getSigningSecret = () => process.env.SUPABASE_SERVICE_ROLE_KEY || null;
 
+export function isPasswordRecoveryExchange(data: unknown) {
+  if (!data || typeof data !== "object" || !("redirectType" in data)) return false;
+  return (data as { redirectType?: unknown }).redirectType === "recovery";
+}
+
 const sign = (encodedPayload: string, secret: string) => createHmac("sha256", secret)
   .update(`iratepilot-password-recovery-v1.${encodedPayload}`)
   .digest("base64url");
