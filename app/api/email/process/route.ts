@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 import { emptyEmailWorkerSummary, isEmailWorkerEnabled } from "@/lib/email/worker-gate";
+import {
+  resendOutboxIdTagName,
+  resendOutboxSourceTag,
+  resendSourceTagName,
+} from "@/lib/email/webhook-reliability";
 import { logOperationalEvent, reportOperationalError } from "@/lib/monitoring/operational";
 
 export const runtime = "nodejs";
@@ -95,6 +100,10 @@ async function processTransactionalEmail(request: Request) {
         to: [job.recipient_email],
         subject: job.subject,
         replyTo: process.env.EMAIL_REPLY_TO || undefined,
+        tags: [
+          { name: resendSourceTagName, value: resendOutboxSourceTag },
+          { name: resendOutboxIdTagName, value: String(job.id) },
+        ],
         html: `
           <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:32px;color:#101828">
             <h1 style="font-family:Georgia,serif">iRatePilot</h1>
@@ -109,15 +118,30 @@ async function processTransactionalEmail(request: Request) {
       });
       if (resendError) throw new Error(resendError.message);
 
+      const processedAt = new Date().toISOString();
       const sent = await supabase.from("email_outbox").update({
         status: "sent",
-        delivery_status: "sent",
         resend_email_id: email?.id ?? null,
         last_error: null,
-        processed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        processed_at: processedAt,
+        updated_at: processedAt,
       }).eq("id", job.id);
       if (sent.error) throw sent.error;
+
+      const initialDelivery = await supabase.from("email_outbox").update({
+        delivery_status: "sent",
+        updated_at: new Date().toISOString(),
+      })
+        .eq("id", job.id)
+        .is("delivery_status", null)
+        .is("delivery_event_at", null);
+      if (initialDelivery.error) {
+        await reportOperationalError(
+          "email_worker_initial_delivery_status_failed",
+          initialDelivery.error,
+          { jobId: job.id },
+        );
+      }
       summary.sent += 1;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Email processing failed.";

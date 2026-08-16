@@ -3,6 +3,8 @@ import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logOperationalEvent, reportOperationalError } from "@/lib/monitoring/operational";
 import {
+  getResendOutboxIdFromTags,
+  hasResendOutboxSourceTag,
   isNewerResendDeliveryEvent,
   isRetryableResendWebhookClaim,
 } from "@/lib/email/webhook-reliability";
@@ -108,17 +110,29 @@ export async function POST(request: Request) {
   try {
     const status = deliveryStatus[eventType];
     const detail = getDeliveryDetail(event);
+    const eventTags = "tags" in event.data ? event.data.tags : null;
+    const taggedForOutbox = hasResendOutboxSourceTag(eventTags);
+    const taggedOutboxId = getResendOutboxIdFromTags(eventTags);
+    if (taggedForOutbox && !taggedOutboxId) {
+      throw new Error("Delivery event has invalid iRatePilot outbox tags.");
+    }
 
-    const { data: outboxRecord, error: outboxLookupError } = await admin.from("email_outbox")
-      .select("id,delivery_event_at")
-      .eq("resend_email_id", event.data.email_id)
-      .maybeSingle();
+    // Tagged worker sends correlate by the pre-existing outbox ID, even when the
+    // webhook arrives before the worker persists Resend's email ID. Untagged
+    // events retain the email-ID lookup for messages sent before this rollout.
+    const outboxLookup = admin.from("email_outbox").select("id,delivery_event_at");
+    const { data: outboxRecord, error: outboxLookupError } = taggedForOutbox
+      ? await outboxLookup.eq("id", taggedOutboxId as string).maybeSingle()
+      : await outboxLookup.eq("resend_email_id", event.data.email_id).maybeSingle();
     if (outboxLookupError) throw outboxLookupError;
-    if (!outboxRecord) throw new Error("Delivery event has no associated email outbox record yet.");
+    if (taggedForOutbox && !outboxRecord) {
+      throw new Error("Tagged delivery event has no associated email outbox record.");
+    }
 
     let deliveryEventApplied = false;
-    if (isNewerResendDeliveryEvent(event.created_at, outboxRecord.delivery_event_at)) {
+    if (outboxRecord && isNewerResendDeliveryEvent(event.created_at, outboxRecord.delivery_event_at)) {
       const outbox = await admin.from("email_outbox").update({
+        resend_email_id: event.data.email_id,
         delivery_status: status,
         delivery_event_at: event.created_at,
         delivery_detail: detail,
@@ -131,7 +145,16 @@ export async function POST(request: Request) {
       if (outbox.error) throw outbox.error;
       deliveryEventApplied = Boolean(outbox.data);
     }
-    if (!deliveryEventApplied) {
+    if (!outboxRecord) {
+      // Resend webhooks are account-wide. Supabase Auth and other trusted senders
+      // can legitimately bypass the application outbox, but their suppression
+      // events still need to be recorded below.
+      logOperationalEvent("info", "resend_delivery_event_untracked", {
+        webhookEventId: id,
+        eventType,
+        resendEmailId: event.data.email_id,
+      });
+    } else if (!deliveryEventApplied) {
       logOperationalEvent("info", "resend_delivery_event_stale", { webhookEventId: id, eventType });
     }
 
@@ -166,7 +189,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Delivery event claim ownership changed before completion.", retry: true }, { status: 409 });
     }
     logOperationalEvent("info", "resend_delivery_event_processed", { webhookEventId: id, eventType });
-    return NextResponse.json({ received: true, eventType });
+    return NextResponse.json({
+      received: true,
+      eventType,
+      outboxTracked: Boolean(outboxRecord),
+    });
   } catch (error) {
     const failed = await admin.from("email_delivery_events").update({
       processing_status: "failed",
