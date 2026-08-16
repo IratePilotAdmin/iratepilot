@@ -28,6 +28,7 @@ export function ResetPasswordForm({ configured }: { configured: boolean }) {
       const supabase = createClient();
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
+      await fetch("/api/auth/recovery/complete", { method: "POST" }).catch(() => undefined);
       router.replace("/login?password=updated");
       router.refresh();
     } catch (error) {
@@ -47,3 +48,4 @@ export function ResetPasswordForm({ configured }: { configured: boolean }) {
     </form>
   );
 }
+
