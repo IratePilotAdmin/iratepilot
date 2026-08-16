@@ -53,7 +53,14 @@ describe("password recovery", () => {
   it("clears the recovery marker after a successful password update", () => {
     const form = read("../components/forms/reset-password-form.tsx");
     const completion = read("../app/api/auth/recovery/complete/route.ts");
-    expect(form).toContain('fetch("/api/auth/recovery/complete", { method: "POST" })');
+    const completionRequest = form.indexOf('fetch("/api/auth/recovery/complete", { method: "POST" })');
+    const completionCheck = form.indexOf("if (!completionResponse.ok)");
+    const successRedirect = form.indexOf('router.replace("/login?password=updated")');
+
+    expect(completionRequest).toBeGreaterThan(-1);
+    expect(completionCheck).toBeGreaterThan(completionRequest);
+    expect(successRedirect).toBeGreaterThan(completionCheck);
+    expect(form).not.toContain(".catch(() => undefined)");
     expect(completion).toContain("verifyRecoveryMarker(marker, user.id)");
     expect(completion).toContain("maxAge: 0");
   });
