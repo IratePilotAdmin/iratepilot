@@ -18,7 +18,7 @@ export function ForgotPasswordForm({ configured }: { configured: boolean }) {
       const supabase = createClient();
       const { error } = await supabase.auth.resetPasswordForEmail(
         String(form.get("email")),
-        { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/reset-password")}` },
+        { redirectTo: `${window.location.origin}/auth/confirm` },
       );
       if (error) throw error;
       setMessage("If an account exists for that email, a password-reset link is on its way.");
@@ -38,3 +38,4 @@ export function ForgotPasswordForm({ configured }: { configured: boolean }) {
     </form>
   );
 }
+
