@@ -9,7 +9,7 @@ describe("approved booking wallet checkout", () => {
   it("offers eligible Apple Pay and Google Pay wallets without replacing the fallback payment form", () => {
     expect(checkout).toContain("ExpressCheckoutElement");
     expect(checkout).toContain('applePay: "auto"');
-    expect(checkout).toContain('googlePay: "auto"');
+    expect(checkout).toContain('googlePay: "always"');
     expect(checkout).toContain("availablePaymentMethods?.applePay");
     expect(checkout).toContain("paymentMethods?.googlePay?.available");
     expect(checkout).toContain("<PaymentElement />");

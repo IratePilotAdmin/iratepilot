@@ -85,7 +85,7 @@ function ApprovedPaymentForm({ bookingId, breakdown, paymentMode }: { bookingId:
     layout: { maxColumns: 1, maxRows: 2, overflow: "never" as const },
     paymentMethods: {
       applePay: "auto" as const,
-      googlePay: "auto" as const,
+      googlePay: "always" as const,
       link: "never" as const,
       paypal: "never" as const,
       amazonPay: "never" as const,
