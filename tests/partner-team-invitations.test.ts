@@ -53,6 +53,10 @@ describe("partner-team manager invitations", () => {
     expect(migration).toContain("status = 'accepted'");
     expect(acceptRoute).toContain("supabase.auth.getUser()");
     expect(acceptRoute).toContain("accept_partner_team_invitation");
+    expect(acceptRoute).toContain("export async function GET");
+    expect(acceptRoute).toContain('select("id,email,status,expires_at,can_manage_hotels")');
+    expect(acceptRoute).toContain("invitation.data.email.toLowerCase() !== user.email.toLowerCase()");
+    expect(acceptRoute).toContain("canManageHotels: invitation.data.can_manage_hotels");
     expect(migration).toContain("expire_own_partner_team_invitations()");
     expect(migration).toContain("get diagnostics v_count = row_count");
     expect(ownerRoute).toContain("expireInvitations(auth)");
@@ -64,6 +68,11 @@ describe("partner-team manager invitations", () => {
     expect(email).toContain("partner-team-invitation:");
     expect(email).toContain('.contains("template_data", { dedupe_key: dedupeKey })');
     expect(email).not.toContain("new Resend");
+    expect(email).toContain("draft property content, rooms, rates, future inventory");
+    expect(email).toContain("does not include publication, billing, payouts, invitations");
+    expect(email).not.toContain("integration-only access");
+    expect(ownerRoute).toContain("can_manage_hotels: true");
+    expect(ownerRoute).toContain("canManageHotels: invitation.can_manage_hotels");
     expect(ownerRoute).toContain("queuePartnerTeamInvitation");
     expect(ownerRoute).toContain("saved but its email could not be queued");
   });
@@ -91,5 +100,9 @@ describe("partner-team manager invitations", () => {
     expect(acceptance).toContain("/register?next=");
     expect(acceptance).toContain("exact email address");
     expect(acceptance).toContain("Invitation links are not bearer credentials");
+    expect(acceptance).toContain("Loading the access included in this invitation");
+    expect(acceptance).toContain("integration access only");
+    expect(acceptance).toContain("inactive-property content");
+    expect(acceptance).toContain('canManageHotels ? "/partner/properties" : "/partner/integrations"');
   });
 });

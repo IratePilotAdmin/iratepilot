@@ -25,26 +25,40 @@ const migrationVersions = readdirSync(
   .map((name) => name.split("_")[0]);
 
 describe("SynXis production rollout manifest", () => {
-  it("partitions every repository migration at the 038/039 boundary in exact order", () => {
+  it("records every repository migration exactly once in production order", () => {
     expect(manifest.historyRepairCandidates).toEqual(migrationVersions.slice(0, 49));
-    expect([
+    const deploymentVersions = [
       ...manifest.appliedDeploymentVersions,
       ...manifest.pendingDeploymentVersions,
-    ]).toEqual(migrationVersions.slice(49));
+    ];
+    expect([...deploymentVersions].sort()).toEqual(migrationVersions.slice(49));
+    expect(new Set(deploymentVersions).size).toBe(deploymentVersions.length);
     expect(manifest.historyRepairCandidates.at(-1)).toBe("202608130038");
     expect(manifest.appliedDeploymentVersions[0]).toBe("202608130039");
-    expect(manifest.appliedDeploymentVersions.at(-1)).toBe("202608140053");
+    expect(manifest.appliedDeploymentVersions).toEqual(migrationVersions.slice(49));
     expect(manifest.pendingDeploymentVersions).toEqual([]);
   });
 
   it("records completed database rollout while preserving later launch gates", () => {
     expect(manifest.executionState).toBe(
-      "migrations_001_053_applied_manager_acceptance_complete_synxis_traffic_disabled",
+      "migrations_001_061_applied_application_deployment_pending_manager_acceptance_incomplete_synxis_traffic_disabled",
     );
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("sabre certification");
-    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).not.toContain("migration 053");
+    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).not.toContain("migration 054");
+    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).not.toContain("migration 055");
+    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).not.toContain("migration 057");
+    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).not.toContain("migration 058");
+    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).not.toContain("migration 059");
+    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).not.toContain("migration 060");
+    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).not.toContain("migration 061");
+    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("merge pr #279");
+    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("application deployment");
+    expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("manager invitation");
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("live-traffic approval");
     expect(manifest.stopConditions.length).toBeGreaterThan(0);
+    expect(manifest.stopConditions.join(" ")).toContain("039-through-061");
+    expect(manifest.stopConditions.join(" ").toLowerCase()).toContain("merged or the application is deployed without separate production approval");
+    expect(manifest.stopConditions.join(" ").toLowerCase()).toContain("before the verified application deployment");
   });
 
   it("contains no credential-shaped fields", () => {

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { buildPartnerOnboarding, type OnboardingProperty } from "../lib/partner/onboarding";
+import { mergePendingOwnerHotelAccess, type PartnerHotelAccessResult } from "../lib/partner/hotel-access";
 
 const route = readFileSync(new URL("../app/api/partner/onboarding/route.ts", import.meta.url), "utf8");
 const page = readFileSync(new URL("../app/partner/onboarding/page.tsx", import.meta.url), "utf8");
@@ -36,11 +37,62 @@ describe("live partner onboarding progress", () => {
     expect(progress.ready).toBe(false);
   });
 
-  it("scopes the endpoint to the signed-in partner before property queries", () => {
+  it("omits owner-only commercial steps and software data for delegated managers", () => {
+    const progress = buildPartnerOnboarding(
+      { status: "approved", stripe_connect_status: "pending", software_plan: "starter", subscription_status: "active" },
+      [property({ active: true })],
+      "revenue_manager",
+    );
+    expect(progress.ready).toBe(true);
+    expect(progress.total).toBe(5);
+    expect(progress.steps.map((step) => step.key)).toEqual(["property", "content", "rooms", "inventory", "published"]);
+    expect(progress.steps.some((step) => step.href === "/partner/payouts")).toBe(false);
+    expect(progress).not.toHaveProperty("software");
+  });
+
+  it("scopes the endpoint to resolved owner or manager hotel access", () => {
     expect(route).toContain('requireRole(["partner", "admin"])');
-    expect(route).toContain('.eq("owner_id", auth.user.id)');
+    expect(route).toContain("resolvePartnerHotelAccess(auth, requestedPartnerId)");
+    expect(route).toContain("hotelAccess.access.partnerId");
     expect(route).toContain('.eq("partner_id", partner.id)');
-    expect(route.indexOf('.eq("owner_id", auth.user.id)')).toBeLessThan(route.indexOf('.from("properties")'));
+    expect(route.indexOf("resolvePartnerHotelAccess(auth, requestedPartnerId)"))
+      .toBeLessThan(route.indexOf('.from("properties")'));
+  });
+
+  it("uses the already authorized partner scope when reading pending-owner draft properties", () => {
+    expect(route).toContain('await admin.from("properties")');
+    expect(route).toContain('.eq("partner_id", partner.id)');
+    expect(route.indexOf("if (!partner)"))
+      .toBeLessThan(route.indexOf('await admin.from("properties")'));
+  });
+
+  it("keeps pending ownership selectable without overriding requested managed access", () => {
+    expect(route).toContain('.select("id,business_name,status")');
+    expect(route).toContain('.eq("owner_id", auth.user.id)');
+    expect(route).toContain('owner.data.status !== "approved"');
+    expect(route).toContain("pendingOwnerAccess");
+    expect(route).toContain("mergePendingOwnerHotelAccess(resolved, pendingOwnerAccess, requestedPartnerId)");
+    expect(route.indexOf("resolvePartnerHotelAccess(auth, requestedPartnerId)"))
+      .toBeLessThan(route.indexOf("mergePendingOwnerHotelAccess(resolved, pendingOwnerAccess, requestedPartnerId)"));
+  });
+
+  it("honors requested managed access before pending ownership and otherwise requires a selection", () => {
+    const managed = { partnerId: "managed-partner", partnerName: "Managed Hotel", role: "revenue_manager" as const };
+    const pendingOwner = { partnerId: "pending-owner", partnerName: "Pending Hotel", role: "owner" as const };
+    const resolved = {
+      access: managed,
+      options: [managed],
+      selectionRequired: false,
+      migrationRequired: false,
+    } satisfies PartnerHotelAccessResult;
+
+    expect(mergePendingOwnerHotelAccess(resolved, pendingOwner, managed.partnerId).access).toEqual(managed);
+    expect(mergePendingOwnerHotelAccess({ ...resolved, access: null }, pendingOwner, pendingOwner.partnerId).access).toEqual(pendingOwner);
+    expect(mergePendingOwnerHotelAccess({ ...resolved, access: null }, pendingOwner, null)).toMatchObject({
+      access: null,
+      options: [pendingOwner, managed],
+      selectionRequired: true,
+    });
   });
 
   it("replaces the application form in the protected route and adds onboarding navigation", () => {

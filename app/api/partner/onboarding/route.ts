@@ -1,20 +1,63 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/require-role";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { mergePendingOwnerHotelAccess, resolvePartnerHotelAccess, type PartnerHotelAccess, type PartnerHotelAccessResult, type PartnerHotelRole } from "@/lib/partner/hotel-access";
 import { getPropertyReadiness, type PropertyReadinessInput } from "@/lib/property-readiness";
 import { buildPartnerOnboarding, type OnboardingPartner, type OnboardingProperty } from "@/lib/partner/onboarding";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-    const { data: partner, error: partnerError } = await auth.supabase.from("partners")
+    let partnerId: string | null = null;
+    let accessRole: PartnerHotelRole = "owner";
+    let hotelAccess: PartnerHotelAccessResult | null = null;
+    if (auth.profile.role === "admin") {
+      const owner = await auth.supabase.from("partners")
+        .select("id")
+        .eq("owner_id", auth.user.id)
+        .maybeSingle();
+      if (owner.error) throw owner.error;
+      partnerId = owner.data?.id ?? null;
+    } else {
+      const requestedPartnerId = new URL(request.url).searchParams.get("partnerId");
+      const owner = await auth.supabase.from("partners")
+        .select("id,business_name,status")
+        .eq("owner_id", auth.user.id)
+        .maybeSingle();
+      if (owner.error) throw owner.error;
+      const pendingOwnerAccess: PartnerHotelAccess | null = owner.data && owner.data.status !== "approved"
+        ? { partnerId: owner.data.id, partnerName: owner.data.business_name, role: "owner" }
+        : null;
+
+      const resolved = await resolvePartnerHotelAccess(auth, requestedPartnerId);
+      hotelAccess = mergePendingOwnerHotelAccess(resolved, pendingOwnerAccess, requestedPartnerId);
+      if (hotelAccess.selectionRequired) return NextResponse.json({
+        hotelAccess: {
+          options: hotelAccess.options,
+          selectedPartnerId: null,
+          selectionRequired: true,
+        },
+      });
+      if (!hotelAccess.access) return NextResponse.json({
+        error: hotelAccess.migrationRequired
+          ? "Apply hotel-management migration 055 before using delegated onboarding access."
+          : "Approved hotel-management access is required.",
+      }, { status: hotelAccess.migrationRequired ? 503 : 403 });
+      partnerId = hotelAccess.access.partnerId;
+      accessRole = hotelAccess.access.role;
+    }
+    if (!partnerId) return NextResponse.json({ error: "A partner account is required to view onboarding." }, { status: 403 });
+
+    const admin = createAdminClient();
+    const { data: partner, error: partnerError } = await admin.from("partners")
       .select("id,business_name,status,stripe_connect_status,software_plan,subscription_status")
-      .eq("owner_id", auth.user.id)
+      .eq("id", partnerId)
       .maybeSingle();
     if (partnerError) throw partnerError;
     if (!partner) return NextResponse.json({ error: "A partner account is required to view onboarding." }, { status: 403 });
 
-    const { data: properties, error: propertyError } = await auth.supabase.from("properties")
+    const { data: properties, error: propertyError } = await admin.from("properties")
       .select("id,name,active,image_url,amenities,rooms(active,inventory(stay_date,available_units))")
       .eq("partner_id", partner.id)
       .order("created_at", { ascending: true });
@@ -27,7 +70,13 @@ export async function GET() {
     })) as OnboardingProperty[];
     return NextResponse.json({
       businessName: partner.business_name,
-      ...buildPartnerOnboarding(partner as OnboardingPartner, prepared),
+      accessRole,
+      hotelAccess: hotelAccess ? {
+        options: hotelAccess.options,
+        selectedPartnerId: hotelAccess.access?.partnerId ?? null,
+        selectionRequired: false,
+      } : null,
+      ...buildPartnerOnboarding(partner as OnboardingPartner, prepared, accessRole),
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Partner onboarding failed", error);

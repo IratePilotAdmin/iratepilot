@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "executionState": "migrations_001_053_applied_manager_acceptance_complete_synxis_traffic_disabled",
+  "executionState": "migrations_001_061_applied_application_deployment_pending_manager_acceptance_incomplete_synxis_traffic_disabled",
   "historyRepairCandidates": [
     "202607260001",
     "202607280001",
@@ -67,17 +67,29 @@
     "202608140050",
     "202608140051",
     "202608140052",
-    "202608140053"
+    "202608140053",
+    "202608150054",
+    "202608150055",
+    "202608150056",
+    "202608150057",
+    "202608150058",
+    "202608150059",
+    "202608150060",
+    "202608150061"
   ],
   "pendingDeploymentVersions": [],
   "requiredWriteGates": [
+    "separate production approval to merge PR #279 and deploy the corresponding application before any manager invitation or manager activation",
+    "separate approval to send and accept a verified manager invitation and activate hotel-manager access after the application deployment is verified",
     "separate Sabre certification approval before any certification traffic",
     "separate live-traffic approval after every launch-evidence gate is complete"
   ],
   "stopConditions": [
     "the production project identity cannot be verified",
     "migration history changes unexpectedly",
-    "any 039-through-053 production marker becomes unavailable",
+    "any 039-through-061 production marker becomes unavailable",
+    "PR #279 is merged or the application is deployed without separate production approval",
+    "manager invitation or manager activation occurs before the verified application deployment or without separate approval",
     "SynXis live_enabled becomes true before final live-traffic approval",
     "manager-onboarding acceptance exposes credentials, identifiers, or SOAP payloads"
   ]

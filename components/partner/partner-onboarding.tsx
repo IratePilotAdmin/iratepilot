@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { HotelAccessSelector } from "@/components/partner/hotel-access-selector";
+import type { PartnerHotelAccess } from "@/lib/partner/hotel-access";
 
 type Onboarding = {
   businessName: string;
+  accessRole: "owner" | "general_manager" | "revenue_manager" | "sales_manager";
   completed: number;
   total: number;
   percent: number;
@@ -12,28 +15,68 @@ type Onboarding = {
   steps: Array<{ key: string; label: string; detail: string; complete: boolean; href: string }>;
   primaryProperty: { id: string; name: string; active: boolean; readiness: { ready: boolean; missing: string[] } } | null;
   portfolio: { properties: number; published: number };
-  software: { plan: string; status: string; active: boolean };
+  software?: { plan: string; status: string; active: boolean };
+  hotelAccess: {
+    options: PartnerHotelAccess[];
+    selectedPartnerId: string | null;
+    selectionRequired: boolean;
+  } | null;
 };
 
 export function PartnerOnboarding() {
   const [data, setData] = useState<Onboarding | null>(null);
   const [message, setMessage] = useState("Checking onboarding progress…");
+  const [accessOptions, setAccessOptions] = useState<PartnerHotelAccess[]>([]);
+  const [selectedPartnerId, setSelectedPartnerId] = useState("");
+  const loadRequestId = useRef(0);
   useEffect(() => {
-    fetch("/api/partner/onboarding", { cache: "no-store" }).then(async (response) => {
+    const requestId = ++loadRequestId.current;
+    const requestedPartnerId = selectedPartnerId;
+    const query = requestedPartnerId ? `?partnerId=${encodeURIComponent(requestedPartnerId)}` : "";
+    fetch(`/api/partner/onboarding${query}`, { cache: "no-store" }).then(async (response) => {
       const body = await response.json();
+      if (requestId !== loadRequestId.current) return;
       if (!response.ok) throw new Error(body.error);
+      if (body.hotelAccess) {
+        setAccessOptions(body.hotelAccess.options ?? []);
+        if (!requestedPartnerId && body.hotelAccess.selectedPartnerId) {
+          setSelectedPartnerId(body.hotelAccess.selectedPartnerId);
+        }
+        if (body.hotelAccess.selectionRequired) {
+          setData(null);
+          setMessage("");
+          return;
+        }
+      }
       setData(body);
       setMessage("");
-    }).catch((error: Error) => setMessage(error.message));
-  }, []);
+    }).catch((error: Error) => {
+      if (requestId === loadRequestId.current) setMessage(error.message);
+    });
+    return () => {
+      if (requestId === loadRequestId.current) loadRequestId.current += 1;
+    };
+  }, [selectedPartnerId]);
 
-  if (message) return <p role="status" className="card mt-8 p-6 text-sm text-slate-600">{message}</p>;
-  if (!data) return null;
+  const accessSelector = <HotelAccessSelector
+    onChange={(partnerId) => {
+      loadRequestId.current += 1;
+      setSelectedPartnerId(partnerId);
+      setData(null);
+      setMessage(partnerId ? "Checking onboarding progress…" : "");
+    }}
+    options={accessOptions}
+    value={selectedPartnerId}
+  />;
+
+  if (message) return <div className="mt-8 grid gap-6">{accessSelector}<p role="status" className="card p-6 text-sm text-slate-600">{message}</p></div>;
+  if (!data) return <div className="mt-8 grid gap-6">{accessSelector}<p className="card p-6 text-sm text-slate-600">Select a hotel organization to view its onboarding progress.</p></div>;
   const nextStep = data.steps.find((step) => !step.complete);
   return <>
+    <div className="mt-8">{accessSelector}</div>
     <section className="card mt-8 overflow-hidden">
       <div className="grid gap-6 p-6 md:grid-cols-[1fr_auto] md:items-center">
-        <div><span className="text-sm text-slate-500">{data.businessName} launch progress</span><strong className="mt-2 block text-4xl">{data.percent}%</strong><p className="mt-2 text-sm text-slate-600">{data.completed} of {data.total} marketplace requirements complete</p></div>
+        <div><span className="text-sm text-slate-500">{data.businessName} launch progress</span><strong className="mt-2 block text-4xl">{data.percent}%</strong><p className="mt-2 text-sm text-slate-600">{data.completed} of {data.total} marketplace requirements complete · Signed in as {data.accessRole.replaceAll("_", " ")}</p></div>
         {nextStep ? <Link href={nextStep.href} className="btn-primary">Next: {nextStep.label}</Link> : <span className="badge bg-emerald-50 text-emerald-800">Marketplace ready</span>}
       </div>
       <div className="h-2 bg-slate-100"><div className="h-2 bg-brand-500" style={{ width: `${data.percent}%` }} /></div>
@@ -51,7 +94,7 @@ export function PartnerOnboarding() {
 
       <div className="space-y-6">
         <article className="card p-6"><h2 className="font-semibold">Primary listing</h2>{data.primaryProperty ? <><strong className="mt-4 block text-xl">{data.primaryProperty.name}</strong><p className="mt-2 text-sm text-slate-600">{data.primaryProperty.active ? "Published in traveler search" : data.primaryProperty.readiness.ready ? "Ready for administrator review" : `Still needed: ${data.primaryProperty.readiness.missing.join(", ")}`}</p></> : <p className="mt-4 text-sm text-slate-500">No property has been created yet.</p>}<dl className="mt-5 grid grid-cols-2 gap-4 border-t pt-5 text-sm"><div><dt className="text-slate-500">Properties</dt><dd className="mt-1 text-xl font-bold">{data.portfolio.properties}</dd></div><div><dt className="text-slate-500">Published</dt><dd className="mt-1 text-xl font-bold">{data.portfolio.published}</dd></div></dl></article>
-        <article className="card p-6"><h2 className="font-semibold">Management software</h2><p className="mt-2 text-sm text-slate-500">Optional and separate from marketplace listing approval.</p><div className="mt-5 flex items-center justify-between"><div><span className="text-xs uppercase tracking-wider text-slate-500">Plan</span><strong className="mt-1 block capitalize">{data.software.plan}</strong></div><span className="badge capitalize">{data.software.status}</span></div><Link href="/partner/settings" className="btn-secondary mt-5 w-full text-center">Manage software plan</Link></article>
+        {data.software ? <article className="card p-6"><h2 className="font-semibold">Management software</h2><p className="mt-2 text-sm text-slate-500">Optional and separate from marketplace listing approval.</p><div className="mt-5 flex items-center justify-between"><div><span className="text-xs uppercase tracking-wider text-slate-500">Plan</span><strong className="mt-1 block capitalize">{data.software.plan}</strong></div><span className="badge capitalize">{data.software.status}</span></div><Link href="/partner/settings" className="btn-secondary mt-5 w-full text-center">Manage software plan</Link></article> : null}
       </div>
     </section>
   </>;

@@ -1,6 +1,8 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { HotelAccessSelector } from "@/components/partner/hotel-access-selector";
+import type { PartnerHotelAccess } from "@/lib/partner/hotel-access";
 import { toPropertySlug } from "@/lib/property-slug";
 
 type Property = { id: string; name: string; slug: string; type: string; star_rating: number; description?: string | null; city: string; country: string; active: boolean; image_url?: string | null; amenities?: string[]; readiness: { ready: boolean; missing: string[] } };
@@ -13,19 +15,42 @@ export function PartnerProperties() {
   const [selectedPropertyId, setSelectedPropertyId] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [accessOptions, setAccessOptions] = useState<PartnerHotelAccess[]>([]);
+  const [selectedPartnerId, setSelectedPartnerId] = useState("");
+  const loadRequestId = useRef(0);
   const selectedProperty = properties.find((property) => property.id === selectedPropertyId);
+  const selectedAccess = accessOptions.find((option) => option.partnerId === selectedPartnerId)
+    ?? (accessOptions.length === 1 ? accessOptions[0] : null);
+  const delegatedManager = Boolean(selectedAccess && selectedAccess.role !== "owner");
+  const partnerSelectionRequired = accessOptions.length > 1 && !selectedPartnerId;
 
   const load = useCallback(async () => {
-    const response = await fetch("/api/partner/properties");
+    const requestId = ++loadRequestId.current;
+    const requestedPartnerId = selectedPartnerId;
+    const query = requestedPartnerId ? `?partnerId=${encodeURIComponent(requestedPartnerId)}` : "";
+    const response = await fetch(`/api/partner/properties${query}`);
     const body = await response.json();
-    if (response.ok) setProperties(body.data);
+    if (requestId !== loadRequestId.current) return;
+    if (body.hotelAccess) {
+      setAccessOptions(body.hotelAccess.options ?? []);
+      if (!requestedPartnerId && body.hotelAccess.selectedPartnerId) {
+        setSelectedPartnerId(body.hotelAccess.selectedPartnerId);
+      }
+    }
+    if (response.ok) {
+      setProperties(body.data ?? []);
+      setMessage("");
+    }
     else setMessage(body.error || "Properties could not be loaded.");
-  }, []);
+  }, [selectedPartnerId]);
 
   useEffect(() => {
     // Initial remote-data synchronization.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
+    return () => {
+      loadRequestId.current += 1;
+    };
   }, [load]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -43,6 +68,7 @@ export function PartnerProperties() {
           starRating: form.get("starRating"), description: form.get("description"),
           city: form.get("city"), region: form.get("region"), country: form.get("country"),
           imageUrl: form.get("imageUrl"),
+          partnerId: selectedPartnerId || undefined,
           amenities: String(form.get("amenities")).split(",").map((item) => item.trim()).filter(Boolean)
         })
       });
@@ -62,13 +88,18 @@ export function PartnerProperties() {
 
   async function updateContent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (delegatedManager && selectedProperty?.active) {
+      setMessage("Hotel managers may edit only properties that are already inactive.");
+      return;
+    }
     const formElement = event.currentTarget;
     setBusy(true);
     setMessage("");
     try {
       const form = new FormData(formElement);
       const propertyId = String(form.get("propertyId"));
-      const response = await fetch(`/api/partner/properties/${propertyId}`, {
+      const query = selectedPartnerId ? `?partnerId=${encodeURIComponent(selectedPartnerId)}` : "";
+      const response = await fetch(`/api/partner/properties/${propertyId}${query}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -94,7 +125,20 @@ export function PartnerProperties() {
   }
 
   return (
-    <div className="mt-8 grid gap-8 xl:grid-cols-[1fr_420px]">
+    <div className="mt-8 grid gap-8">
+      <HotelAccessSelector
+        disabled={busy}
+        onChange={(partnerId) => {
+          loadRequestId.current += 1;
+          setSelectedPartnerId(partnerId);
+          setSelectedPropertyId("");
+          setProperties([]);
+          setMessage("");
+        }}
+        options={accessOptions}
+        value={selectedPartnerId}
+      />
+      <div className="grid gap-8 xl:grid-cols-[1fr_420px]">
       <section className="card overflow-hidden">
         <div className="border-b p-6"><h2 className="text-xl font-semibold">Your properties</h2><p className="mt-1 text-sm text-slate-500">Listings stay private until administrator approval.</p></div>
         <div className="divide-y">
@@ -114,16 +158,17 @@ export function PartnerProperties() {
         <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">City<input name="city" className="input mt-2" required /></label><label className="text-sm font-medium">State/region<input name="region" className="input mt-2" /></label></div>
         <label className="text-sm font-medium">Country<input name="country" className="input mt-2" defaultValue="United States" required /></label>
         {message && <p role="status" className="text-sm">{message}</p>}
-        <button disabled={busy} className="btn-primary">{busy ? "Creating…" : "Create property draft"}</button>
+        <button disabled={busy || partnerSelectionRequired} className="btn-primary">{busy ? "Creating…" : "Create property draft"}</button>
       </form>
       <form key={selectedPropertyId || "empty"} onSubmit={updateContent} className="card grid gap-4 p-6">
-        <div><h2 className="text-xl font-semibold">Listing content</h2><p className="mt-1 text-sm text-slate-500">Content changes return an approved listing to review.</p></div>
-        <label className="text-sm font-medium">Property<select name="propertyId" className="input mt-2" value={selectedPropertyId} onChange={(event) => setSelectedPropertyId(event.target.value)} required><option value="">Select property</option>{properties.map((property) => <option key={property.id} value={property.id}>{property.name}</option>)}</select></label>
+        <div><h2 className="text-xl font-semibold">Listing content</h2><p className="mt-1 text-sm text-slate-500">{delegatedManager ? "Hotel managers may edit only listings that are already inactive. Published listings require an owner or administrator." : "Content changes return an approved listing to review."}</p></div>
+        <label className="text-sm font-medium">Property<select name="propertyId" className="input mt-2" value={selectedPropertyId} onChange={(event) => setSelectedPropertyId(event.target.value)} required><option value="">Select property</option>{properties.map((property) => <option disabled={delegatedManager && property.active} key={property.id} value={property.id}>{property.name}{delegatedManager && property.active ? " — Published (owner or admin only)" : ""}</option>)}</select></label>
         <label className="text-sm font-medium">Detailed description<textarea name="description" className="input mt-2 min-h-32" minLength={120} maxLength={4000} defaultValue={selectedProperty?.description ?? ""} placeholder="Describe the location, rooms, atmosphere, and distinctive guest experience." required /></label>
         <label className="text-sm font-medium">Primary photo URL<input name="imageUrl" type="url" className="input mt-2" defaultValue={selectedProperty?.image_url ?? ""} placeholder="https://..." pattern="https://.*" required /><small className="mt-1 block text-slate-500">Use a public HTTPS image from your hotel or media host.</small></label>
         <label className="text-sm font-medium">Amenities, separated by commas<textarea name="amenities" className="input mt-2 min-h-24" defaultValue={(selectedProperty?.amenities ?? []).join(", ")} placeholder="Pool, Spa, Free Wi-Fi, Parking" required /></label>
-        <button disabled={busy || !selectedProperty} className="btn-primary">Save property content</button>
+        <button disabled={busy || !selectedProperty || (delegatedManager && selectedProperty.active)} className="btn-primary">Save property content</button>
       </form>
+      </div>
       </div>
     </div>
   );

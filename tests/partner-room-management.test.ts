@@ -22,13 +22,13 @@ describe("partner room management", () => {
     });
   });
 
-  it("checks approved ownership before updating a room", () => {
+  it("checks resolved hotel-team scope before updating a room", () => {
     const updateBlock = route.slice(
       route.indexOf('body.action === "update_room"'),
       route.indexOf('body.action === "set_inventory"'),
     );
     expect(updateBlock).toContain('select("id,properties!inner(partner_id)")');
-    expect(updateBlock).toContain('.eq("properties.partner_id", partner.id)');
+    expect(updateBlock).toContain('.eq("properties.partner_id", partnerId)');
     expect(updateBlock.indexOf("maybeSingle()"))
       .toBeLessThan(updateBlock.indexOf('.from("rooms").update'));
   });
