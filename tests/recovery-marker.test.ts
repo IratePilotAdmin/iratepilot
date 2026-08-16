@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createRecoveryMarker,
+  isPasswordRecoveryExchange,
   recoveryMarkerMaxAge,
   verifyRecoveryMarker,
 } from "../lib/auth/recovery-marker";
@@ -42,6 +43,13 @@ describe("password recovery marker", () => {
       "Password recovery signing configuration is missing.",
     );
     expect(verifyRecoveryMarker("marker.signature", userId, now)).toBe(false);
+  });
+
+  it("accepts only PKCE exchanges explicitly identified as password recovery", () => {
+    expect(isPasswordRecoveryExchange({ redirectType: "recovery" })).toBe(true);
+    expect(isPasswordRecoveryExchange({ redirectType: "signup" })).toBe(false);
+    expect(isPasswordRecoveryExchange({})).toBe(false);
+    expect(isPasswordRecoveryExchange(null)).toBe(false);
   });
 });
 
