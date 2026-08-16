@@ -34,6 +34,33 @@ describe("password recovery", () => {
     expect(logStatement).not.toContain("token_hash");
   });
 
+  it("hands implicit recovery fragments to a client-only compatibility route", () => {
+    const confirmation = read("../app/auth/confirm/route.ts");
+    const recoveryPage = read("../app/auth/recovery/page.tsx");
+    const recoveryStart = read("../app/api/auth/recovery/start/route.ts");
+
+    expect(confirmation).toContain('const implicitRecoveryPath = "/auth/recovery"');
+    expect(confirmation).toContain("NextResponse.redirect(new URL(implicitRecoveryPath, request.url))");
+    expect(recoveryPage).toContain('fragment.get("access_token")');
+    expect(recoveryPage).toContain('fragment.get("refresh_token")');
+    expect(recoveryPage).toContain('type !== "recovery"');
+    expect(recoveryPage).toContain('window.history.replaceState(null, "", window.location.pathname)');
+    expect(recoveryPage).toContain("supabase.auth.setSession({");
+    expect(recoveryPage).toContain('fetch("/api/auth/recovery/start"');
+    expect(recoveryPage).toContain('window.location.replace("/reset-password")');
+    expect(recoveryStart).toContain("supabase.auth.getUser()");
+    expect(recoveryStart).toContain("supabase.auth.getClaims()");
+    expect(recoveryStart).toContain('entry.method === "otp"');
+    expect(recoveryStart).toContain("entry.timestamp > now - recoveryMarkerMaxAge");
+    expect(recoveryStart).toContain("createRecoveryMarker(user.id)");
+    expect(recoveryStart).toContain("recoveryMarkerMaxAge");
+
+    const scrub = recoveryPage.indexOf("window.history.replaceState");
+    const session = recoveryPage.indexOf("supabase.auth.setSession");
+    expect(scrub).toBeGreaterThan(-1);
+    expect(session).toBeGreaterThan(scrub);
+  });
+
   it("ships the matching hosted recovery-email template", () => {
     const template = read("../supabase/auth-templates/recovery.html");
     expect(template).toContain("{{ .RedirectTo }}?token_hash=");

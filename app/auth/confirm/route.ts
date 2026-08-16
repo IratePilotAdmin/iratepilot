@@ -9,6 +9,7 @@ import {
 } from "@/lib/auth/recovery-marker";
 
 const invalidRecoveryPath = "/forgot-password?error=recovery_link_invalid";
+const implicitRecoveryPath = "/auth/recovery";
 
 const invalidRecoveryResponse = (request: NextRequest) => {
   const response = NextResponse.redirect(new URL(invalidRecoveryPath, request.url));
@@ -34,7 +35,10 @@ export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
 
   if ((!tokenHash || type !== "recovery") && !code) {
-    return invalidRecoveryResponse(request);
+    // Supabase's implicit recovery flow returns credentials in the URL fragment.
+    // Fragments are intentionally unavailable to route handlers, so preserve the
+    // fragment across a same-origin redirect to a client-only compatibility page.
+    return NextResponse.redirect(new URL(implicitRecoveryPath, request.url));
   }
 
   try {
