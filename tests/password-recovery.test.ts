@@ -14,6 +14,38 @@ describe("password recovery", () => {
     expect(source).toContain('encodeURIComponent("/reset-password")');
   });
 
+  it("confirms recovery token hashes server-side without browser-local PKCE state", () => {
+    const route = read("../app/auth/confirm/route.ts");
+    expect(route).toContain('type !== "recovery"');
+    expect(route).toContain("verifyOtp({");
+    expect(route).toContain("token_hash: tokenHash");
+    expect(route).toContain('type: "recovery"');
+    expect(route).toContain('new URL("/reset-password", request.url)');
+    expect(route).not.toContain("exchangeCodeForSession");
+
+    const logStart = route.indexOf("console.error");
+    const redirectAfterLog = route.indexOf("return NextResponse.redirect", logStart);
+    const logStatement = route.slice(logStart, redirectAfterLog);
+    expect(logStatement).not.toContain("tokenHash");
+    expect(logStatement).not.toContain("token_hash");
+  });
+
+  it("ships the matching hosted recovery-email template", () => {
+    const template = read("../supabase/auth-templates/recovery.html");
+    expect(template).toContain("{{ .SiteURL }}/auth/confirm");
+    expect(template).toContain("token_hash={{ .TokenHash }}");
+    expect(template).toContain("type=recovery");
+    expect(template).not.toContain("{{ .ConfirmationURL }}");
+  });
+
+  it("does not show password inputs without an authenticated recovery session", () => {
+    const page = read("../app/reset-password/page.tsx");
+    expect(page).toContain('dynamic = "force-dynamic"');
+    expect(page).toContain("supabase.auth.getUser()");
+    expect(page).toContain("Reset link required");
+    expect(page).toContain('href="/forgot-password"');
+  });
+
   it("requires matching passwords before updating the authenticated user", () => {
     const source = read("../components/forms/reset-password-form.tsx");
     expect(source).toContain("password !== confirmation");
