@@ -46,6 +46,8 @@ describe("Automation Operations Center Phase 1", () => {
     expect(route).toContain('requireRole(["admin"])');
     expect(route.indexOf('requireRole(["admin"])')).toBeLessThan(route.indexOf("createAdminClient()"));
     expect(route).toContain("Promise.all([");
+    expect(route).toContain('.select("*", { count: "exact", head: true })');
+    expect(route).not.toContain('.select("id", { count: "exact", head: true })');
     expect(route).toContain('"Cache-Control": "private, no-store"');
     expect(route).not.toContain("export async function POST");
     expect(route).not.toContain("export async function PATCH");

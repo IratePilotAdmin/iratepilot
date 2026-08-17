@@ -34,7 +34,7 @@ export async function GET() {
     const admin = createAdminClient();
     const count = (table: string, column: string, values: Array<string | boolean>) => admin
       .from(table)
-      .select("id", { count: "exact", head: true })
+      .select("*", { count: "exact", head: true })
       .in(column, values);
 
     const results = await Promise.all([
