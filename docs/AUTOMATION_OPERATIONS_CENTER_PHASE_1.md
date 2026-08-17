@@ -1,6 +1,6 @@
 # iRatePilot Automation Operations Center — Phase 1
 
-Status: Local implementation complete; Preview release and acceptance pending separate approval
+Status: Phase 1 complete; Preview release and authenticated acceptance passed on August 17, 2026
 
 Phase 1 gives administrators one read-only surface for monitoring automation queues, ledger failures, sanitized activity receipts, and private-pilot safety locks. It does not introduce an automation executor or authorize any external action.
 
@@ -71,8 +71,16 @@ A disengaged lock is a critical review signal. It never becomes automatic author
 - [x] The UI contains no execute, retry, publish, payment, payout, email-send, or supplier-activation controls.
 - [x] Focused lint, TypeScript, and Phase 1 tests pass locally.
 - [x] Full repository verification passes: ESLint, TypeScript, 954 tests across 223 files, and the optimized 111-route Next.js build.
-- [ ] Preview deployment is separately approved and reaches `READY`.
-- [ ] Authenticated Preview browser acceptance confirms the page and live ledgers render without errors.
+- [x] Preview deployment is separately approved and reaches `READY`.
+- [x] Authenticated Preview browser acceptance confirms the page and live ledgers render without errors.
+
+## Preview acceptance evidence
+
+- Stable Preview: `https://iratepilotadmin-preview-20260817.vercel.app/admin/operations`
+- Accepted deployment: `dpl_HBnrajrrFsE3ATmJY1yg3TmfWqhG`
+- Build result: `READY`, with TypeScript and the optimized 111-route Next.js build passing on Vercel.
+- Authenticated acceptance: six operational lanes rendered from live Preview ledgers, all six private-pilot safety locks were engaged, and no execute, retry, publish, payment, payout, email-send, or supplier-activation control was exposed.
+- Regression correction: evidence-table counts use schema-independent row selection because those ledgers are keyed by `provider_id`, not `id`.
 
 ## Later phases
 
