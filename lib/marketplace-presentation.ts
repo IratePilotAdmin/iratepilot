@@ -53,7 +53,19 @@ export function getPresentedRooms(
   ];
 }
 
-export function getReviewPresentation(rating: number, reviews: number) {
+export function getReviewPresentation(
+  rating: number,
+  reviews: number,
+  source: "database" | "demo" = "database",
+) {
+  if (source === "demo") {
+    return {
+      score: rating > 0 ? rating.toFixed(1) : "Demo",
+      label: "Illustrative score",
+      detail: "Sample review data for this private demo",
+    };
+  }
+
   if (reviews < 1) {
     return { score: "New", label: "New to iRatePilot", detail: "No verified guest reviews yet" };
   }

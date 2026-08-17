@@ -28,6 +28,7 @@ const migrationVersions = [
   "202608150058",
   "202608150059",
   "202608150060",
+  "202608150061",
   ...APPROVED_PREVIEW_PENDING,
 ];
 
@@ -51,10 +52,10 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
     expect(migration).toContain("to service_role");
   });
 
-  it("recognizes the repository migration chain through 061 before reconciling Preview", () => {
+  it("recognizes the repository migration chain through 062 before reconciling Preview", () => {
     const versions = listMigrationVersions();
     expect(versions).toEqual(expect.arrayContaining(REQUIRED_PREVIEW_BASELINE));
-    expect(versions.at(-1)).toBe("202608150061");
+    expect(versions.at(-1)).toBe("202608170062");
     expect(assertPreviewMigrationTarget({
       PREVIEW_SUPABASE_DB_URL: previewUrl,
       PREVIEW_SUPABASE_PROJECT_REF: previewRef,
@@ -73,10 +74,10 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
     })).toThrow("does not match");
   });
 
-  it("accepts only an exact remote ledger with migration 061 pending or already applied", () => {
-    const appliedThrough060 = migrationVersions.slice(0, -1);
+  it("accepts only an exact remote ledger with migration 062 pending or already applied", () => {
+    const appliedThrough061 = migrationVersions.slice(0, -1);
     expect(assertPreviewRemoteMigrationState(
-      migrationList(migrationVersions, appliedThrough060),
+      migrationList(migrationVersions, appliedThrough061),
       migrationVersions,
     ).pendingVersions).toEqual(APPROVED_PREVIEW_PENDING);
     expect(assertPreviewRemoteMigrationState(
@@ -102,7 +103,7 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
 
   it("requires the dry run to name exactly the approved pending migration", () => {
     expect(assertPreviewDryRun(
-      "Would push migration 202608150061_partner_owner_delete_policies.sql",
+      "Would push migration 202608170062_hotel_manager_intake_drafts.sql",
       APPROVED_PREVIEW_PENDING,
       migrationVersions,
     )).toEqual(APPROVED_PREVIEW_PENDING);
@@ -118,7 +119,7 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
     const calls: Array<{ args: string[]; capture?: boolean }> = [];
     const outputs = [
       migrationList(repoMigrationVersions, repoMigrationVersions.slice(0, -1)),
-      "Would push migration 202608150061_partner_owner_delete_policies.sql",
+      "Would push migration 202608170062_hotel_manager_intake_drafts.sql",
       "",
       migrationList(repoMigrationVersions, repoMigrationVersions),
     ];

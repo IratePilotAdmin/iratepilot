@@ -6,14 +6,14 @@ import { getReviewPresentation } from "@/lib/marketplace-presentation";
 import { formatCurrency } from "@/lib/utils";
 
 export function HotelCard({ hotel, variant = "list", rank, source = "demo", hotelHref }: { hotel: Hotel; variant?: "list" | "grid"; rank?: number; source?: "database" | "demo"; hotelHref?: string }) {
-  const review = getReviewPresentation(hotel.rating, hotel.reviews);
+  const review = getReviewPresentation(hotel.rating, hotel.reviews, source);
   const href = hotelHref || `/hotels/${hotel.slug}`;
   if (variant === "grid") return (
     <article className="premium-card group">
       <Link href={href} className="block">
         <div className="relative h-64 overflow-hidden">
           <Image src={hotel.image} alt={hotel.name} fill unoptimized sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition duration-500 group-hover:scale-105" />
-          <span className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1 text-xs font-extrabold text-slate-800 shadow">{hotel.stars}-star verified</span>
+          <span className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1 text-xs font-extrabold text-slate-800 shadow">{hotel.stars}-star {source === "database" ? "approved" : "demo"}</span>
           <span className="absolute right-4 top-4 rounded-full bg-slate-950/80 px-3 py-1 text-xs font-bold text-white backdrop-blur">★ {review.score}</span>
         </div>
         <div className="p-5">
@@ -21,7 +21,7 @@ export function HotelCard({ hotel, variant = "list", rank, source = "demo", hote
           <h3 className="mt-2 text-xl font-extrabold tracking-tight text-slate-950">{hotel.name}</h3>
           <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600">{hotel.description}</p>
           <div className="mt-4 flex flex-wrap gap-2">{hotel.amenities.slice(0, 3).map(item => <span key={item} className="mini-chip">{item}</span>)}</div>
-          <div className="mt-5 flex items-end justify-between border-t border-slate-100 pt-4"><div><span className="block text-xs text-slate-500">From</span><strong className="text-2xl text-slate-950">{formatCurrency(hotel.price)}</strong><span className="text-xs text-slate-500"> / night</span></div><span className="text-sm font-extrabold text-violet-700">View rooms →</span></div>
+          <div className="mt-5 flex items-end justify-between border-t border-slate-100 pt-4"><div><span className="block text-xs text-slate-500">{source === "database" ? "From" : "Sample from"}</span><strong className="text-2xl text-slate-950">{formatCurrency(hotel.price)}</strong><span className="text-xs text-slate-500"> / night</span></div><span className="text-sm font-extrabold text-violet-700">{source === "database" ? "View rooms" : "Preview rooms"} →</span></div>
         </div>
       </Link>
     </article>
@@ -30,8 +30,8 @@ export function HotelCard({ hotel, variant = "list", rank, source = "demo", hote
     <article className="result-card group">
       <div className="grid md:grid-cols-[280px_1fr_210px]">
         <div className="relative min-h-64 overflow-hidden">
-          <Image src={hotel.image} alt={hotel.name} fill unoptimized sizes="(max-width: 768px) 100vw, 280px" className="object-cover" />
-          {rank ? <span className="absolute left-4 top-4 rounded-full bg-slate-950/80 px-3 py-1.5 text-xs font-bold text-white backdrop-blur">#{rank} Smart Match</span> : null}
+          <Image src={hotel.image} alt={hotel.name} fill loading={rank === 1 ? "eager" : "lazy"} unoptimized sizes="(max-width: 768px) 100vw, 280px" className="object-cover" />
+          {rank ? <span className="absolute left-4 top-4 rounded-full bg-slate-950/80 px-3 py-1.5 text-xs font-bold text-white backdrop-blur">#{rank} {source === "database" ? "Marketplace result" : "Demo order"}</span> : null}
           <button aria-label={`Save ${hotel.name}`} className="absolute right-4 top-4 rounded-full bg-white/95 p-2.5 text-slate-700 shadow"><Heart className="h-4 w-4" /></button>
         </div>
         <div className="p-6">
@@ -52,11 +52,11 @@ export function HotelCard({ hotel, variant = "list", rank, source = "demo", hote
             <div className="text-xs text-slate-500">{review.detail}</div>
           </div>
           <div className="mt-6">
-            <div className="text-sm text-slate-500">From</div>
+            <div className="text-sm text-slate-500">{source === "database" ? "From" : "Sample from"}</div>
             <div className="text-2xl font-bold">{formatCurrency(hotel.price)}</div>
-            <div className="text-xs text-slate-500">per night</div>
-            <div className="mt-3 flex items-center gap-1 text-xs font-bold text-violet-700"><Sparkles className="h-3.5 w-3.5" /> Member value available</div>
-            <Link href={href} className="btn-primary mt-4 w-full">View rooms</Link>
+            <div className="text-xs text-slate-500">{source === "database" ? "per night" : "illustrative nightly rate"}</div>
+            <div className="mt-3 flex items-center gap-1 text-xs font-bold text-violet-700"><Sparkles className="h-3.5 w-3.5" /> {source === "database" ? "Member value available" : "Sample member value"}</div>
+            <Link href={href} className="btn-primary mt-4 w-full">{source === "database" ? "View rooms" : "Preview rooms"}</Link>
           </div>
         </div>
       </div>

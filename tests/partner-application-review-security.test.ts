@@ -27,6 +27,7 @@ describe("partner application review transitions", () => {
     expect(reviewRoute).toContain('"review_partner_application"');
     expect(reviewRoute).not.toContain('.from("partner_applications").update');
     expect(listRoute).toContain('.from("partner_applications")');
-    expect(listRoute).toContain('.select("id,property_name,contact_name,email,property_type,status,created_at")');
+    expect(listRoute).toContain('hotel_authorized,content_rights_confirmed,information_accurate,property_id');
+    expect(reviewRoute).toContain("verificationConfirmed");
   });
 });

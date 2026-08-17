@@ -77,7 +77,9 @@
     "202608150060",
     "202608150061"
   ],
-  "pendingDeploymentVersions": [],
+  "pendingDeploymentVersions": [
+    "202608170062"
+  ],
   "requiredWriteGates": [
     "separate production approval to merge PR #279 and deploy the corresponding application before any manager invitation or manager activation",
     "separate approval to send and accept a verified manager invitation and activate hotel-manager access after the application deployment is verified",

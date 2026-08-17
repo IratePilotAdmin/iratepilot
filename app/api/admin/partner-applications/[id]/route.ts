@@ -4,6 +4,15 @@ import { requireRole } from "@/lib/auth/require-role";
 
 const decisionSchema = z.object({
   status: z.enum(["pending", "approved", "declined"]),
+  verificationConfirmed: z.boolean().optional(),
+}).superRefine((value, context) => {
+  if (value.status === "approved" && value.verificationConfirmed !== true) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["verificationConfirmed"],
+      message: "Administrator verification is required before approval.",
+    });
+  }
 });
 
 export async function PATCH(
@@ -33,6 +42,9 @@ export async function PATCH(
 
     if (error) {
       if (error.message.includes("must register with the application email")) {
+        return NextResponse.json({ error: error.message }, { status: 409 });
+      }
+      if (error.message.includes("Complete and verify the hotel intake")) {
         return NextResponse.json({ error: error.message }, { status: 409 });
       }
       if (error.message.includes("Approved partner access must be managed separately")) {

@@ -28,27 +28,27 @@ export default function HomePage() {
                   Exceptional stays. <span className="gradient-text">Smarter value.</span>
                 </h1>
                 <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-                  Discover verified 4- and 5-star hotels, resorts, and premium vacation homes with transparent pricing, intelligent recommendations, and help whenever you need it.
+                  Explore premium hotels, resorts, and vacation homes with transparent pricing, intelligent recommendations, and help whenever you need it. Private-pilot inventory is clearly identified before booking.
                 </p>
                 <div className="mt-8 flex flex-wrap gap-3 text-sm font-semibold text-slate-600">
-                  <span className="trust-chip"><Check /> Premium-only collection</span>
+                  <span className="trust-chip"><Check /> Curated premium collection</span>
                   <span className="trust-chip"><Check /> Transparent trip totals</span>
-                  <span className="trust-chip"><Check /> Secure live payments</span>
+                  <span className="trust-chip"><Check /> Private-pilot safeguards</span>
                 </div>
               </div>
               <div className="journey-panel">
                 <div className="journey-glow" />
                 <div className="relative overflow-hidden rounded-[28px] bg-slate-950 shadow-2xl shadow-violet-300/40">
-                  <Image src={hotels[0].image} alt="Luxury beachfront hotel" width={1000} height={780} priority unoptimized sizes="(max-width: 1024px) 100vw, 50vw" className="h-[470px] w-full object-cover opacity-80" />
+                  <Image src={hotels[0].image} alt="Luxury beachfront hotel" width={1000} height={780} loading="eager" unoptimized sizes="(max-width: 1024px) 100vw, 50vw" className="h-[470px] w-full object-cover opacity-80" />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/15 to-transparent" />
                   <div className="absolute inset-x-0 bottom-0 p-7 text-white">
-                    <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold backdrop-blur">AI match · 96%</span>
+                    <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold backdrop-blur">Demo match · 96%</span>
                     <h2 className="mt-4 text-2xl font-extrabold">Your ideal beachfront escape</h2>
                     <p className="mt-2 text-sm text-slate-200">5-star stay · Free breakfast · Ocean view · Under your budget</p>
                   </div>
                 </div>
-                <div className="floating-card left-[-20px] top-10"><Bot className="h-5 w-5 text-violet-600" /><span><strong>Concierge found 7 matches</strong><small>Based on your preferences</small></span></div>
-                <div className="floating-card bottom-10 right-[-18px]"><TrendingDown className="h-5 w-5 text-emerald-600" /><span><strong>Member value available</strong><small>Save fees and earn rewards</small></span></div>
+                <div className="floating-card left-[-20px] top-10"><Bot className="h-5 w-5 text-violet-600" /><span><strong>Demo concierge found 7 matches</strong><small>Illustrative preferences</small></span></div>
+                <div className="floating-card bottom-10 right-[-18px]"><TrendingDown className="h-5 w-5 text-emerald-600" /><span><strong>Sample member value</strong><small>Benefits require activation</small></span></div>
               </div>
             </div>
             <div className="relative z-10 mt-12 lg:-mb-28">
@@ -76,8 +76,8 @@ export default function HomePage() {
         <section className="bg-white py-20">
           <div className="container-page">
             <div className="section-title-row">
-              <div><span className="section-kicker">Premium verified properties</span><h2>Stay somewhere remarkable.</h2><p>Sample properties demonstrate the marketplace until direct partner inventory is connected.</p></div>
-              <Link href="/search">View all properties <ArrowRight /></Link>
+              <div><span className="section-kicker">Private-pilot preview</span><h2>Stay somewhere remarkable.</h2><p>These sample properties demonstrate the marketplace. They are not live bookable inventory; approved partner listings will appear only after review and activation.</p></div>
+              <Link href="/search">Browse sample properties <ArrowRight /></Link>
             </div>
             <div className="mt-9 grid gap-6 lg:grid-cols-3">
               {hotels.slice(0, 3).map((hotel) => <HotelCard key={hotel.slug} hotel={hotel} variant="grid" hotelHref={`/search?destination=${encodeURIComponent(hotel.city)}`} />)}

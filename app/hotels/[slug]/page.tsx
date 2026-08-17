@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Bot, Check, ChevronRight, Heart, MapPin, ShieldCheck, Sparkles, Star } from "lucide-react";
+import { Bot, Check, ChevronRight, MapPin, ShieldCheck, Sparkles, Star } from "lucide-react";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { RoomCard } from "@/components/hotels/room-card";
@@ -30,7 +30,7 @@ export default async function HotelPage({ params, searchParams }: { params: Prom
   const testCheckoutEnabled = process.env.ENABLE_TEST_CHECKOUT === "true" && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.startsWith("pk_test_") === true;
   const availabilityState = source === "demo" ? "demo" : stay.criteria ? "verified" : "unverified";
   const presentedRooms = getPresentedRooms(source, rooms, hotel.price);
-  const review = getReviewPresentation(hotel.rating, hotel.reviews);
+  const review = getReviewPresentation(hotel.rating, hotel.reviews, source);
 
   return (
     <>
@@ -40,18 +40,18 @@ export default async function HotelPage({ params, searchParams }: { params: Prom
           <nav className="flex items-center gap-2 text-sm text-slate-500"><Link href="/">Home</Link><ChevronRight className="h-4 w-4" /><Link href="/search">Premium stays</Link><ChevronRight className="h-4 w-4" /><span className="text-slate-800">{hotel.name}</span></nav>
           <div className="mt-6 flex flex-col justify-between gap-5 md:flex-row md:items-end">
             <div>
-              <div className="flex items-center gap-3"><span className="badge">{hotel.stars}-star verified</span><span className="flex text-amber-500">{Array.from({ length: hotel.stars }).map((_, i) => <Star key={i} className="h-4 w-4 fill-current" />)}</span></div>
+              <div className="flex items-center gap-3"><span className="badge">{hotel.stars}-star {source === "database" ? "approved" : "demo"}</span><span className="flex text-amber-500">{Array.from({ length: hotel.stars }).map((_, i) => <Star key={i} className="h-4 w-4 fill-current" />)}</span></div>
               <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">{hotel.name}</h1>
               <p className="mt-2 flex items-center gap-2 font-semibold text-slate-600"><MapPin className="h-4 w-4 text-violet-600" /> {hotel.city}, {hotel.country}</p>
             </div>
-            <button className="result-control"><Heart /> Save property</button>
+            <span className="result-control">{source === "database" ? "Approved marketplace listing" : "Private demo preview"}</span>
           </div>
 
           <div className="property-gallery mt-7">
-            <div className="relative min-h-[430px] overflow-hidden rounded-l-[28px]"><Image src={hotel.image} alt={hotel.name} fill priority unoptimized sizes="(max-width: 1024px) 100vw, 66vw" className="object-cover" /></div>
+            <div className="relative min-h-[430px] overflow-hidden rounded-l-[28px]"><Image src={hotel.image} alt={hotel.name} fill loading="eager" unoptimized sizes="(max-width: 1024px) 100vw, 66vw" className="object-cover" /></div>
             <div className="grid gap-2">
-              <div className="relative overflow-hidden rounded-tr-[28px]"><Image src={hotel.image} alt={`${hotel.name} property view`} fill unoptimized sizes="(max-width: 1024px) 100vw, 34vw" className="object-cover" /></div>
-              <div className="relative overflow-hidden rounded-br-[28px]"><Image src={hotel.image} alt={`${hotel.name} guest experience`} fill unoptimized sizes="(max-width: 1024px) 100vw, 34vw" className="object-cover" /></div>
+              <div className="relative overflow-hidden rounded-tr-[28px]"><Image src={hotel.image} alt={`${hotel.name} property view`} fill loading="eager" unoptimized sizes="(max-width: 1024px) 100vw, 34vw" className="object-cover" /></div>
+              <div className="relative overflow-hidden rounded-br-[28px]"><Image src={hotel.image} alt={`${hotel.name} guest experience`} fill loading="eager" unoptimized sizes="(max-width: 1024px) 100vw, 34vw" className="object-cover" /></div>
             </div>
           </div>
 
@@ -59,16 +59,16 @@ export default async function HotelPage({ params, searchParams }: { params: Prom
             <div>
               <div className="flex flex-wrap items-center gap-4 border-b border-slate-200 pb-8">
                 <span className="rating-box">{review.score}</span><div><strong className="block text-lg">{review.label}</strong><span className="text-sm text-slate-500">{review.detail}</span></div>
-                <div className="ml-auto hidden text-right sm:block"><strong className="block">Premium quality verified</strong><span className="text-sm text-slate-500">{source === "database" ? "Approved marketplace property" : "Private demo property"}</span></div>
+                <div className="ml-auto hidden text-right sm:block"><strong className="block">{source === "database" ? "Publication review complete" : "Illustrative property content"}</strong><span className="text-sm text-slate-500">{source === "database" ? "Approved marketplace property" : "Private demo property"}</span></div>
               </div>
               <section className="py-9"><h2 className="text-2xl font-black">About this stay</h2><p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">{hotel.description}</p><div className="mt-6 grid gap-3 sm:grid-cols-2">{hotel.amenities.map((amenity) => <span key={amenity} className="amenity-row"><Check /> {amenity}</span>)}</div></section>
               <div className="ai-property-note"><Bot /><div><strong>Why iRatePilot recommends it</strong><p>{source === "database" ? "This partner listing passed iRatePilot publication review and includes active room inventory." : "This private demonstration property shows how premium partner inventory will appear."}</p></div></div>
             </div>
             <aside className="booking-summary">
-              <div className="flex items-end justify-between"><div><span className="text-sm text-slate-500">From</span><p><strong>${hotel.price}</strong> / night</p></div><span className="rounded-lg bg-violet-700 px-2.5 py-1.5 text-sm font-black text-white">{review.score}</span></div>
+              <div className="flex items-end justify-between"><div><span className="text-sm text-slate-500">{source === "database" ? "From" : "Sample from"}</span><p><strong>${hotel.price}</strong> / night</p></div><span className="rounded-lg bg-violet-700 px-2.5 py-1.5 text-sm font-black text-white">{review.score}</span></div>
               <div className="booking-dates"><span>Check in<small>{stay.criteria?.checkIn || "Add date"}</small></span><span>Check out<small>{stay.criteria?.checkOut || "Add date"}</small></span><span className="col-span-2">Travelers<small>{stay.criteria ? `${stay.criteria.guests} ${stay.criteria.guests === 1 ? "guest" : "guests"} · 1 room` : "Add guests"}</small></span></div>
-              <a href="#rooms" className="btn-primary w-full">Choose a room</a>
-              <p className="mt-3 text-center text-xs text-slate-500">You will not be charged yet</p>
+              <a href="#rooms" className="btn-primary w-full">{source === "database" ? "Choose a room" : "Preview sample rooms"}</a>
+              <p className="mt-3 text-center text-xs text-slate-500">{source === "database" ? "You will not be charged yet" : "Demo only · booking is disabled"}</p>
               <div className="mt-5 border-t border-slate-200 pt-5 text-sm"><p className="flex justify-between"><span>Traveler service fee</span><strong>{serviceFeeRate === 0 ? "Waived" : `${serviceFeeRate * 100}%`}</strong></p><p className="mt-2 flex items-center gap-2 font-bold text-violet-700"><Sparkles className="h-4 w-4" /> Basic & Business members pay 0%</p></div>
             </aside>
           </div>
@@ -80,7 +80,7 @@ export default async function HotelPage({ params, searchParams }: { params: Prom
             <div className="mt-7 grid gap-4">{presentedRooms.map((room) => <RoomCard key={room.id} name={room.name} price={room.price} notes={room.notes} bookable={room.bookable} />)}</div>
             <div className="mt-8"><BookingRequestForm key={stay.criteria ? `${stay.criteria.checkIn}-${stay.criteria.checkOut}-${stay.criteria.guests}` : availabilityState} hotelSlug={hotel.slug} rooms={rooms} testCheckoutEnabled={testCheckoutEnabled} initialSelection={initialSelection} availabilityState={availabilityState} serviceFeeRate={serviceFeeRate} /></div>
           </section>
-          <div className="trust-booking"><ShieldCheck /><div><strong>Book with verified availability</strong><p>Room availability, nightly pricing, and the trip total are verified before confirmation. {testCheckoutEnabled ? "Payments remain in test mode during development." : "Private booking requests are reviewed by the property before payment."}</p></div></div>
+          <div className="trust-booking"><ShieldCheck /><div><strong>{source === "database" ? "Book with verified availability" : "Private demo · booking disabled"}</strong><p>{source === "database" ? <>Room availability, nightly pricing, and the trip total are verified before confirmation. {testCheckoutEnabled ? "Payments remain in test mode during development." : "Private booking requests are reviewed by the property before payment."}</> : "This sample listing demonstrates the property experience. It has no live availability and cannot accept a booking request."}</p></div></div>
         </section>
       </main>
       <SiteFooter />

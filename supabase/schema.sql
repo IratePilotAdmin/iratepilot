@@ -25,14 +25,35 @@ create table partner_applications (
   contact_name text not null,
   email text not null,
   property_type property_type not null,
+  star_rating integer check (star_rating in (4,5)),
+  contact_role text check (contact_role in ('hotel_owner','general_manager','revenue_manager','sales_manager','authorized_representative')),
+  phone text check (phone is null or char_length(phone) between 7 and 30),
+  website_url text check (website_url is null or website_url ~ '^https://[^/@:]+([/:?#]|$)'),
+  address_line1 text,
+  city text,
+  region text,
+  postal_code text,
+  country text,
+  description text check (description is null or char_length(description) between 120 and 4000),
+  amenities text[] not null default '{}' check (cardinality(amenities) between 0 and 20),
+  photo_source_url text check (photo_source_url is null or photo_source_url ~ '^https://[^/@:]+([/:?#]|$)'),
+  additional_notes text,
+  hotel_authorized boolean not null default false,
+  content_rights_confirmed boolean not null default false,
+  information_accurate boolean not null default false,
+  property_id uuid,
   status text not null default 'pending'
     constraint partner_applications_status_check check (status in ('pending','approved','declined')),
   created_at timestamptz not null default now()
 );
 
-create unique index one_pending_partner_application_per_email
-  on partner_applications (lower(trim(email)))
+create unique index one_pending_partner_application_per_email_and_property
+  on partner_applications (lower(trim(email)), lower(trim(property_name)))
   where status = 'pending';
+
+create unique index partner_applications_property_id_key
+  on partner_applications (property_id)
+  where property_id is not null;
 
 create table contact_messages (
   id uuid primary key default uuid_generate_v4(),
@@ -100,6 +121,10 @@ create table properties (
   active boolean not null default false,
   created_at timestamptz not null default now()
 );
+
+alter table partner_applications
+  add constraint partner_applications_property_id_fkey
+  foreign key (property_id) references properties(id) on delete set null;
 
 create table rooms (
   id uuid primary key default uuid_generate_v4(),
@@ -2170,6 +2195,10 @@ as $$
 declare
   v_application partner_applications;
   v_user_id uuid;
+  v_partner_id uuid;
+  v_property_id uuid;
+  v_slug_base text;
+  v_slug text;
 begin
   if not exists (
     select 1 from profiles where id = auth.uid() and role = 'admin'
@@ -2190,6 +2219,24 @@ begin
   end if;
 
   if p_status = 'approved' then
+    if v_application.star_rating not in (4, 5)
+      or v_application.contact_role is null
+      or v_application.phone is null
+      or v_application.website_url is null
+      or v_application.address_line1 is null
+      or v_application.city is null
+      or v_application.postal_code is null
+      or v_application.country is null
+      or v_application.description is null
+      or coalesce(cardinality(v_application.amenities), 0) = 0
+      or v_application.photo_source_url is null
+      or not v_application.hotel_authorized
+      or not v_application.content_rights_confirmed
+      or not v_application.information_accurate
+    then
+      raise exception 'Complete and verify the hotel intake before approval' using errcode = '22023';
+    end if;
+
     select id into v_user_id from auth.users
       where lower(email) = lower(v_application.email)
       order by created_at limit 1;
@@ -2205,7 +2252,32 @@ begin
     insert into partners (owner_id, business_name, status)
       values (v_user_id, v_application.property_name, 'approved')
       on conflict (owner_id) do update
-        set business_name = excluded.business_name, status = 'approved';
+        set business_name = excluded.business_name, status = 'approved'
+      returning id into v_partner_id;
+
+    if v_application.property_id is null then
+      v_slug_base := trim(both '-' from regexp_replace(
+        lower(v_application.property_name), '[^a-z0-9]+', '-', 'g'
+      ));
+      if v_slug_base = '' then v_slug_base := 'hotel'; end if;
+      v_slug := v_slug_base;
+      if exists (select 1 from properties where slug = v_slug) then
+        v_slug := v_slug_base || '-' || substring(v_application.id::text, 1, 8);
+      end if;
+
+      insert into properties (
+        partner_id, name, slug, type, star_rating, description, amenities,
+        city, region, country, active
+      ) values (
+        v_partner_id, v_application.property_name, v_slug,
+        v_application.property_type, v_application.star_rating,
+        v_application.description, v_application.amenities,
+        v_application.city, v_application.region, v_application.country, false
+      ) returning id into v_property_id;
+
+      update partner_applications set property_id = v_property_id
+        where id = p_application_id;
+    end if;
   end if;
 
   update partner_applications set status = p_status

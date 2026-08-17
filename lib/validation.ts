@@ -27,6 +27,59 @@ export const partnerApplicationSchema = z.object({
   propertyType: z.enum(["hotel", "resort", "vacation_home"])
 });
 
+const requiredConfirmation = z.preprocess(
+  (value) => value === true || value === "true",
+  z.literal(true),
+);
+
+const optionalText = (maximum: number) => z.preprocess(
+  (value) => typeof value === "string" && value.trim() === "" ? undefined : value,
+  z.string().trim().max(maximum).optional(),
+);
+
+const httpsUrl = z.string().trim().url().max(2000).refine((value) => {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && Boolean(url.hostname) && !url.username && !url.password;
+  } catch {
+    return false;
+  }
+}, "Use a secure HTTPS URL without embedded credentials.");
+
+export const hotelManagerIntakeSchema = partnerApplicationSchema.extend({
+  starRating: z.coerce.number().int().refine(
+    (value) => value === 4 || value === 5,
+    "iRatePilot currently accepts verified 4- and 5-star properties.",
+  ),
+  contactRole: z.enum([
+    "hotel_owner",
+    "general_manager",
+    "revenue_manager",
+    "sales_manager",
+    "authorized_representative",
+  ]),
+  phone: z.string().trim().min(7).max(30),
+  websiteUrl: httpsUrl,
+  addressLine1: z.string().trim().min(3).max(160),
+  city: z.string().trim().min(2).max(100),
+  region: optionalText(100),
+  postalCode: z.string().trim().min(2).max(20),
+  country: z.string().trim().min(2).max(100),
+  description: z.string().trim().min(120).max(4000),
+  amenities: z.preprocess(
+    (value) => typeof value === "string"
+      ? value.split(",").map((item) => item.trim()).filter(Boolean)
+      : value,
+    z.array(z.string().min(2).max(80)).min(1).max(20),
+  ),
+  photoSourceUrl: httpsUrl,
+  additionalNotes: optionalText(1000),
+  hotelAuthorized: requiredConfirmation,
+  contentRightsConfirmed: requiredConfirmation,
+  informationAccurate: requiredConfirmation,
+  companyFax: z.string().max(0).optional(),
+});
+
 export const checkoutSchema = z.object({
   hotelSlug: z.string().min(1),
   roomId: z.string().uuid(),

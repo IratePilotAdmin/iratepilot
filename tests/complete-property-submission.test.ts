@@ -31,6 +31,7 @@ describe("complete partner property submissions", () => {
     expect(route).toContain("amenities: parsed.data.amenities");
     expect(route).toContain("resolvePartnerHotelAccess(auth, requestedPartnerId)");
     expect(route).toContain("resolved.access.partnerId");
+    expect(route).toContain("active: false");
     expect(route).toContain("Add an active room and future inventory");
   });
 
@@ -38,7 +39,10 @@ describe("complete partner property submissions", () => {
     expect(form).toContain('name="imageUrl"');
     expect(form).toContain('name="amenities"');
     expect(form).toContain("minLength={120}");
-    expect(form).toContain("Create property draft");
+    expect(form).toContain("Create inactive property draft");
+    expect(form).toContain("Verified intake first");
+    expect(form).toContain("Never enter passwords");
+    expect(form).toContain('autoComplete="organization"');
     expect(form).not.toContain("Submit for review");
   });
 });
