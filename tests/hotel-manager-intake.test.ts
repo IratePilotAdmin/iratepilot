@@ -7,6 +7,7 @@ const form = read("components/forms/partner-application-form.tsx");
 const intakePage = read("app/hotel-intake/page.tsx");
 const submissionRoute = read("app/api/partners/apply/route.ts");
 const adminReview = read("components/dashboard/admin-partner-applications.tsx");
+const footer = read("components/layout/site-footer.tsx");
 const migration = read("supabase/migrations/202608170062_hotel_manager_intake_drafts.sql");
 
 const validIntake = {
@@ -59,11 +60,14 @@ describe("hotel manager intake", () => {
 
   it("provides a dedicated shareable form without requesting sensitive hotel data", () => {
     expect(intakePage).toContain("Private hotel onboarding");
+    expect(intakePage).toContain("Before you begin");
+    expect(intakePage).toContain("Allow about 10 minutes");
     expect(form).toContain("Submit hotel for verification");
     expect(form).toContain("submission does not publish the property");
     expect(form).toContain("Do not enter passwords");
     expect(form).not.toContain('name="password"');
     expect(form).not.toContain('name="bank');
+    expect(footer).toContain('["Hotel manager intake", "/hotel-intake"]');
   });
 
   it("stores only pending intake data and keeps approval behind an explicit admin verification", () => {

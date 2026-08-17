@@ -15,6 +15,25 @@ export type OnboardingProperty = {
   readiness: PropertyReadiness;
 };
 
+export type PartnerOnboardingStep = {
+  key: string;
+  label: string;
+  detail: string;
+  complete: boolean;
+  href: string;
+};
+
+const summarizeSteps = (steps: PartnerOnboardingStep[]) => {
+  const completed = steps.filter((step) => step.complete).length;
+  return {
+    completed,
+    total: steps.length,
+    percent: Math.round(completed / steps.length * 100),
+    ready: completed === steps.length,
+    steps,
+  };
+};
+
 const readinessScore = (property: OnboardingProperty) =>
   Object.values(property.readiness.requirements).filter(Boolean).length;
 
@@ -38,16 +57,22 @@ export function buildPartnerOnboarding(
     { key: "approval", label: "Partner account approved", detail: "Your business must pass iRatePilot partner review.", complete: partner.status === "approved", href: "/partner/dashboard" },
     { key: "payouts", label: "Connect your payout account", detail: "Complete Stripe verification so eligible proceeds can be paid out.", complete: partner.stripe_connect_status === "ready", href: "/partner/payouts" },
   ];
-  const steps = accessRole === "owner"
-    ? [ownerSteps[0], ...hotelSteps.slice(0, -1), ownerSteps[1], hotelSteps.at(-1)!]
-    : hotelSteps;
-  const completed = steps.filter((step) => step.complete).length;
+  const pilotSteps = accessRole === "owner"
+    ? [ownerSteps[0], ...hotelSteps.slice(0, -1)]
+    : hotelSteps.slice(0, -1);
+  const activationSteps = accessRole === "owner"
+    ? [ownerSteps[1], hotelSteps.at(-1)!]
+    : [hotelSteps.at(-1)!];
+  const steps = [...pilotSteps, ...activationSteps];
+  const overall = summarizeSteps(steps);
   return {
-    completed,
-    total: steps.length,
-    percent: Math.round(completed / steps.length * 100),
-    ready: completed === steps.length,
+    completed: overall.completed,
+    total: overall.total,
+    percent: overall.percent,
+    ready: overall.ready,
     steps,
+    pilotPreparation: summarizeSteps(pilotSteps),
+    commercialActivation: summarizeSteps(activationSteps),
     primaryProperty,
     portfolio: { properties: properties.length, published: properties.filter((property) => property.active).length },
     ...(accessRole === "owner" ? {

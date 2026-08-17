@@ -8,6 +8,7 @@ const page = readFileSync(new URL("../app/partner/onboarding/page.tsx", import.m
 const navigation = readFileSync(new URL("../data/navigation.ts", import.meta.url), "utf8");
 const home = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
 const publicPartnerPage = readFileSync(new URL("../app/partner/page.tsx", import.meta.url), "utf8");
+const onboardingUi = readFileSync(new URL("../components/partner/partner-onboarding.tsx", import.meta.url), "utf8");
 
 const property = (overrides: Partial<OnboardingProperty> = {}): OnboardingProperty => ({
   id: "property-1", name: "Pilot Hotel", active: false,
@@ -24,6 +25,8 @@ describe("live partner onboarding progress", () => {
     expect(progress.ready).toBe(true);
     expect(progress.completed).toBe(7);
     expect(progress.percent).toBe(100);
+    expect(progress.pilotPreparation).toMatchObject({ ready: true, percent: 100, completed: 5, total: 5 });
+    expect(progress.commercialActivation).toMatchObject({ ready: true, percent: 100, completed: 2, total: 2 });
     expect(progress.software).toMatchObject({ plan: "none", active: false });
   });
 
@@ -34,6 +37,21 @@ describe("live partner onboarding progress", () => {
     expect(progress.primaryProperty?.id).toBe("p2");
     expect(progress.steps.find((step) => step.key === "inventory")?.complete).toBe(true);
     expect(progress.steps.find((step) => step.key === "payouts")?.complete).toBe(false);
+    expect(progress.pilotPreparation).toMatchObject({ ready: true, percent: 100 });
+    expect(progress.commercialActivation).toMatchObject({ ready: false, percent: 0 });
+    expect(progress.ready).toBe(false);
+  });
+
+  it("lets an inactive delegated hotel reach private-pilot readiness without implying publication", () => {
+    const progress = buildPartnerOnboarding(
+      { status: "approved", stripe_connect_status: "pending", software_plan: "starter", subscription_status: "active" },
+      [property()],
+      "general_manager",
+    );
+    expect(progress.pilotPreparation).toMatchObject({ ready: true, percent: 100, completed: 4, total: 4 });
+    expect(progress.pilotPreparation.steps.map((step) => step.key)).toEqual(["property", "content", "rooms", "inventory"]);
+    expect(progress.commercialActivation).toMatchObject({ ready: false, percent: 0, completed: 0, total: 1 });
+    expect(progress.commercialActivation.steps.map((step) => step.key)).toEqual(["published"]);
     expect(progress.ready).toBe(false);
   });
 
@@ -103,5 +121,9 @@ describe("live partner onboarding progress", () => {
     expect(home).toContain('href="/partner#application"');
     expect(publicPartnerPage).toContain('id="application"');
     expect(publicPartnerPage).not.toContain('href="/partner/onboarding"');
+    expect(page).toContain("private-pilot preparation first");
+    expect(onboardingUi).toContain("Private-pilot checklist");
+    expect(onboardingUi).toContain("Publication and payouts require separate operator, provider, and production approvals.");
+    expect(onboardingUi).toContain("Private-pilot ready");
   });
 });

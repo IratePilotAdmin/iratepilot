@@ -2,8 +2,14 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { ReadinessItem } from "@/lib/admin/platform-readiness";
-import type { PmsProviderReadiness, PriorityPmsLaunchStatus } from "@/services/hotel-suppliers";
+import {
+  buildSupplierPhaseReadiness,
+  type PmsProviderReadiness,
+  type PriorityPmsLaunchStatus,
+  type PriorityPmsProviderId,
+} from "@/services/hotel-suppliers";
 import { SynxisCrsReadiness } from "@/components/dashboard/synxis-crs-readiness";
+import { PaymentReadiness } from "@/components/dashboard/payment-readiness";
 
 type Response = {
   items: ReadinessItem[];
@@ -23,7 +29,7 @@ type PmsConnection = {
 };
 
 type PriorityPmsProductionReadiness = {
-  id: string;
+  id: PriorityPmsProviderId;
   name: string;
   status: PriorityPmsLaunchStatus;
   configuredEnvironmentKeys: string[];
@@ -65,10 +71,16 @@ const priorityStatusStyle: Record<PriorityPmsLaunchStatus, string> = {
   activation_required: "text-blue-700",
   live: "text-emerald-700",
 };
+const supplierPhaseStatusCopy = {
+  framework_attention: "Framework needs attention",
+  vendor_certification_pending: "Framework ready; vendor certification pending",
+  controlled_activation_ready: "Provider certified; activation decision pending",
+  live_provider_present: "At least one provider has recorded live authorization",
+} as const;
 
 export function AdminSettings() {
   const [data, setData] = useState<Response | null>(null);
-  const [message, setMessage] = useState("Checking platform readinessâ€¦");
+  const [message, setMessage] = useState("Checking platform readiness…");
   const [emailTestBusy, setEmailTestBusy] = useState(false);
   const [emailTestMessage, setEmailTestMessage] = useState("");
   const [pmsProviders, setPmsProviders] = useState<PmsProviderReadiness[]>([]);
@@ -78,12 +90,16 @@ export function AdminSettings() {
   const [evidenceMessage, setEvidenceMessage] = useState("");
   const [pmsConnections, setPmsConnections] = useState<PmsConnection[]>([]);
   const [selectedConnectionId, setSelectedConnectionId] = useState("");
-  const [pmsMessage, setPmsMessage] = useState("Checking PMS connectionsâ€¦");
+  const [pmsMessage, setPmsMessage] = useState("Checking PMS connections…");
   const [credentialBusy, setCredentialBusy] = useState(false);
   const [credentialMessage, setCredentialMessage] = useState("");
   const selectedConnection = useMemo(
     () => pmsConnections.find((connection) => connection.id === selectedConnectionId),
     [pmsConnections, selectedConnectionId],
+  );
+  const supplierPhase = useMemo(
+    () => buildSupplierPhaseReadiness(pmsProviders, priorityPmsReadiness, evidenceTrackingAvailable),
+    [evidenceTrackingAvailable, pmsProviders, priorityPmsReadiness],
   );
 
   async function sendEmailTest() {
@@ -234,8 +250,24 @@ export function AdminSettings() {
       <section className="card mt-6 p-6">
         <h2 className="text-xl font-semibold">Transactional email test</h2>
         <p className="mt-2 text-sm text-slate-600">Send one operational test message to the signed-in administrator. This creates no booking, payment, refund, or partner transfer.</p>
-        <button className="btn-primary mt-4" disabled={emailTestBusy} onClick={sendEmailTest}>{emailTestBusy ? "Sendingâ€¦" : "Send test email"}</button>
+        <button className="btn-primary mt-4" disabled={emailTestBusy} onClick={sendEmailTest}>{emailTestBusy ? "Sending…" : "Send test email"}</button>
         {emailTestMessage && <p className="mt-3 text-sm" role="status">{emailTestMessage}</p>}
+      </section>
+
+      <PaymentReadiness />
+
+      <section className={`card mt-6 border-l-4 p-6 ${supplierPhase.frameworkReady ? "border-l-emerald-600" : "border-l-amber-600"}`}>
+        <span className="text-xs uppercase tracking-wider text-slate-500">Phase 4 control summary</span>
+        <h2 className="mt-2 text-xl font-semibold">Supplier certification readiness</h2>
+        <p className="mt-2 text-sm font-semibold text-slate-800">{supplierPhaseStatusCopy[supplierPhase.status]}</p>
+        <p className="mt-2 text-sm text-slate-600">The software framework and external approvals are reported separately. SynXis certification evidence and its independent traffic gate are shown in the dedicated panel below.</p>
+        <div className="mt-5 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-lg bg-slate-50 p-3"><strong>{supplierPhase.priorityManifestCoverageCount}</strong> of <strong>{supplierPhase.priorityLaunchManifestCount}</strong><span className="mt-1 block text-xs text-slate-500">priority manifests covered</span></div>
+          <div className="rounded-lg bg-slate-50 p-3"><strong>{supplierPhase.vendorApprovedCount}</strong><span className="mt-1 block text-xs text-slate-500">vendor approvals recorded</span></div>
+          <div className="rounded-lg bg-slate-50 p-3"><strong>{supplierPhase.controlledActivationCandidateCount}</strong><span className="mt-1 block text-xs text-slate-500">controlled-activation candidates</span></div>
+          <div className="rounded-lg bg-slate-50 p-3"><strong>{supplierPhase.liveProviderCount}</strong><span className="mt-1 block text-xs text-slate-500">providers with live traffic recorded</span></div>
+        </div>
+        <p className="mt-4 text-xs text-slate-500">This summary is read-only. It cannot approve certification, send vendor traffic, or enable a provider.</p>
       </section>
 
       <SynxisCrsReadiness />
@@ -358,7 +390,7 @@ export function AdminSettings() {
         {pmsConnections.length === 0 ? <p className="mt-4 text-sm text-slate-500">A partner must declare a hotel PMS before credentials can be configured.</p> : <form key={selectedConnectionId} className="mt-5 grid gap-4" onSubmit={saveCredentials}>
           <label className="text-sm font-medium">Hotel connection
             <select className="input mt-2" value={selectedConnectionId} onChange={(event) => { setSelectedConnectionId(event.target.value); setCredentialMessage(""); }} required>
-              {pmsConnections.map((connection) => <option key={connection.id} value={connection.id}>{connection.property_name} â€” {connection.provider_id}</option>)}
+              {pmsConnections.map((connection) => <option key={connection.id} value={connection.id}>{connection.property_name} — {connection.provider_id}</option>)}
             </select>
           </label>
           {selectedConnection && <>
@@ -371,7 +403,7 @@ export function AdminSettings() {
               <input className="input mt-2" name={key} type="password" autoComplete="new-password" maxLength={4096} required />
             </label>)}</div>
             <div className="flex flex-wrap gap-3">
-              <button className="btn-primary" disabled={credentialBusy} type="submit">{credentialBusy ? "Workingâ€¦" : "Encrypt and save"}</button>
+              <button className="btn-primary" disabled={credentialBusy} type="submit">{credentialBusy ? "Working…" : "Encrypt and save"}</button>
               <button className="btn-secondary" disabled={credentialBusy || !selectedConnection.credentials_configured} onClick={testCredentials} type="button">Validate stored configuration</button>
             </div>
           </>}

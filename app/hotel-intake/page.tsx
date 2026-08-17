@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CheckCircle2, ClipboardCheck, ShieldCheck } from "lucide-react";
+import { CheckCircle2, ClipboardCheck, Clock3, ShieldCheck } from "lucide-react";
 import { PartnerApplicationForm } from "@/components/forms/partner-application-form";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
@@ -41,6 +41,23 @@ export default function HotelIntakePage() {
                 </article>
               ))}
             </div>
+
+            <section aria-labelledby="intake-preparation" className="mb-10 rounded-2xl border border-sky-200 bg-sky-50 p-6 sm:p-8">
+              <div className="flex items-start gap-4">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-sky-700">
+                  <Clock3 className="h-5 w-5" />
+                </span>
+                <div>
+                  <h2 id="intake-preparation" className="text-xl font-semibold text-sky-950">Before you begin</h2>
+                  <p className="mt-2 text-sm leading-6 text-sky-950/80">
+                    Allow about 10 minutes. Have the hotel&apos;s official website, business address and phone, authorized contact details, a 120-word property description, verified amenities, and an official HTTPS media-library link ready.
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-sky-950/80">
+                    Do not provide account credentials, guest information, identity documents, or payment and banking details.
+                  </p>
+                </div>
+              </div>
+            </section>
 
             <div className="mx-auto max-w-3xl">
               <PartnerApplicationForm />

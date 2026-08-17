@@ -6,7 +6,7 @@ iRatePilot is application-ready for a controlled private-pilot preview. It is no
 
 ## Phase 1 — Curated inventory and lead capture
 
-Status: **application work complete; pilot activation pending**
+Status: **application and Preview baseline complete; first real pilot activation pending**
 
 Completed in the repository:
 
@@ -18,32 +18,91 @@ Completed in the repository:
 - Admin verification that requires an explicit authority/content review, matches the manager's registered business email, and creates one inactive property draft without publishing it.
 - Draft property, room, rate, future-inventory, partner-review, and scoped manager workflows.
 
+Verified Preview gates:
+
+- [x] Configure and verify the isolated Supabase Preview environment.
+- [x] Run the network-free commercial sandbox preflight and Preview acceptance checks.
+- [x] Record migration `202608170062` and the complete repository migration history in the authorized Preview database.
+- [x] Submit, inspect, and remove a clearly labelled synthetic hotel intake while confirming that it remained pending and created no property.
+
 Remaining activation gates:
 
-- Configure and verify the authorized Supabase preview environment.
-- Run the commercial sandbox preflight and preview acceptance checks.
-- Apply migration `202608170062` to an authorized preview database, then complete the first pilot-hotel intake and keep its draft inactive until separately approved.
-- Verify contact and partner-application submissions, support routing, and transactional email in preview.
+- [ ] Complete the first real pilot-hotel intake from information supplied by an authorized representative and keep its draft inactive until separately approved.
+- [ ] Verify contact and partner-application submissions, support routing, and transactional email in Preview.
+- [ ] Have a verified pilot partner exercise the scoped portal workflows and approve the operator experience.
+
+The recorded Preview baseline is in `docs/PREVIEW_PILOT_EVIDENCE_2026-08-17.md`.
 
 ## Phase 2 — Live booking and payments
 
-Status: **implemented behind safety gates; commercial activation incomplete**
+Status: **software and read-only launch audit complete; external Stripe validation pending**
 
 The repository includes booking requests, approved-reservation checkout, Stripe test and live-mode guards, refunds, webhook reconciliation, and payout controls. Public booking and live money movement must remain disabled until supplier, Stripe, legal, support, and end-to-end sandbox evidence is approved.
+
+Verified software gates:
+
+- [x] Fail closed when test/live payment flags or Stripe key modes conflict.
+- [x] Revalidate approved reservations before idempotent PaymentIntent creation and finalization.
+- [x] Verify webhook signatures and deduplicate or safely retry financial events.
+- [x] Reconcile refunds, transfer failures, reversals, and refunded-before-transfer outcomes.
+- [x] Expose an admin-only read-only audit that separates test readiness, production configuration, and production authorization.
+
+Remaining activation gates:
+
+- [ ] Configure and verify approved Stripe test credentials and webhooks in Preview.
+- [ ] Complete success, decline, 3DS, duplicate/out-of-order webhook, refund, transfer, and reversal scenarios in the Stripe sandbox.
+- [ ] Reconcile sanitized Stripe evidence against booking and financial ledgers.
+- [ ] Obtain hotel, Stripe, supplier, legal, support, and production-release approvals.
+
+The recorded software evidence is in `docs/PAYMENT_PHASE_EVIDENCE_2026-08-17.md`.
 
 Required external gates are maintained in `docs/DEPLOYMENT.md`, `docs/PAYMENTS.md`, and `docs/COMMERCIAL_SANDBOX_TEST_PLAN.md`.
 
 ## Phase 3 — Partner portal and revenue tools
 
-Status: **application work substantially complete; first-partner validation pending**
+Status: **software and private-pilot progress model complete; verified partner acceptance pending**
 
 The partner portal includes onboarding, properties, rooms, rates, inventory, reservations, promotions, analytics, finance, messaging, team access, subscription controls, PMS preparation, and revenue recommendations. Completion requires a verified pilot partner to exercise these workflows in preview and approve the operator experience.
 
+Verified software gates:
+
+- [x] Scope partner and delegated-manager access to authorized hotel organizations.
+- [x] Support complete inactive property content, room, rate, and future-inventory preparation.
+- [x] Keep publication, payout, invitation, billing, deletion, and supplier activation outside delegated-manager scope.
+- [x] Separate 100% private-pilot preparation from publication and payout activation.
+- [x] Preserve reservation, messaging, finance, analytics, promotion, subscription, and integration-preparation surfaces.
+
+Remaining acceptance gates:
+
+- [ ] Have a verified pilot partner exercise the portal in Preview.
+- [ ] Record operator feedback and the partner's acceptance decision.
+- [ ] Resolve any acceptance findings without enabling publication, payouts, or supplier traffic.
+
+The recorded software evidence is in `docs/PARTNER_PORTAL_PHASE_EVIDENCE_2026-08-17.md`.
+
 ## Phase 4 — Broader supplier connectivity
 
-Status: **integration framework complete; vendor certification pending**
+Status: **software framework and read-only certification audit complete; vendor certification pending**
 
 The repository includes guarded supplier adapters, PMS credential storage, readiness checks, SynXis certification evidence, and production-traffic authorization. No live supplier traffic is authorized. Completion depends on vendor-issued credentials, approved endpoint mappings, sandbox certification, operational support contacts, and a separate production activation decision.
+
+Verified software gates:
+
+- [x] Cover all 22 registered PMS providers with unique strict production launch manifests.
+- [x] Keep configuration and credential values server-side while reporting only missing or invalid key names.
+- [x] Require ordered vendor approval, verified activation details, property mapping, sandbox, webhook, and production test-property evidence.
+- [x] Fail closed at the independent SynXis certification, production-smoke, and live-traffic runtime gates.
+- [x] Expose a read-only operator summary that separates software coverage from external certification and cannot authorize traffic.
+
+Remaining certification and activation gates:
+
+- [ ] Select the first real pilot hotel's authorized PMS/CRS integration path and obtain vendor approval.
+- [ ] Receive vendor-issued Preview/sandbox credentials, approved endpoints, property mappings, and support contacts.
+- [ ] Complete the vendor's sandbox certification scenarios and validate signed or authenticated webhooks where supported.
+- [ ] Complete a controlled production test-property smoke test with recorded evidence and rollback support.
+- [ ] Make a separate production decision before enabling any real-property supplier traffic.
+
+The recorded software evidence is in `docs/SUPPLIER_PHASE_EVIDENCE_2026-08-17.md`.
 
 ## Overall completion rule
 

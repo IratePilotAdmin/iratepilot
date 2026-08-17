@@ -6,7 +6,7 @@ export default function Page() {
   return (
     <DashboardShell title="Partner Center" items={partnerNavigation}>
       <h1 className="text-3xl font-bold">Property onboarding</h1>
-      <p className="mt-2 text-slate-600">Follow the live checklist from partner approval through a published, payout-ready listing.</p>
+      <p className="mt-2 text-slate-600">Complete private-pilot preparation first, then track publication and payout activation as separate approval gates.</p>
       <PartnerOnboarding />
     </DashboardShell>
   );
