@@ -15,6 +15,7 @@ This checklist is an internal qualification record. It does not create a contrac
 
 ## Before the meeting
 
+- [ ] Open the verified Preview intake at `https://iratepilotadmin-preview-20260817.vercel.app/hotel-intake`; do not use the production site for this pilot gate.
 - [ ] The property name, official website, public business address, and business telephone were independently located.
 - [ ] The participant's business role or referral path can be verified using a hotel-controlled or company-controlled source.
 - [ ] The private-pilot limitations and prohibited data list are ready to explain.
@@ -84,6 +85,20 @@ Decision reason:
 
 
 Next action, owner, and due date:
+
+
+## Qualified-intake handoff
+
+Complete this section only when the participant is qualified and authorized to submit.
+
+- [ ] Give the representative only this manager link: `https://iratepilotadmin-preview-20260817.vercel.app/hotel-intake`.
+- [ ] The representative enters the hotel's official information and completes all three authority, content-rights, and accuracy confirmations.
+- [ ] Confirm the receipt page appears; do not interpret submission as approval or publication.
+- [ ] End the manager-facing session at the receipt page. Do not approve the intake, create a manager invitation, enter payment details, or connect a PMS during the meeting.
+- [ ] Later, an iRatePilot administrator independently reviews the pending intake at `https://iratepilotadmin-preview-20260817.vercel.app/admin/partners`.
+- [ ] If verification passes under a separately approved action, create only an inactive property draft and keep publication disabled.
+
+Preview submission reference and time:
 
 
 ## Operator sign-off

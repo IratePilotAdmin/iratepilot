@@ -80,9 +80,14 @@ Do not promise:
 
 1. Complete the [meeting checklist](./MEETING_CHECKLIST.md).
 2. Complete the [first-pilot acceptance form](./FIRST_PILOT_ACCEPTANCE_FORM.md) without secrets or bank information.
-3. Independently verify the property, business, participant, authority, and content rights.
-4. Review the packet against the [first-hotel onboarding runbook](../FIRST_HOTEL_ONBOARDING_RUNBOOK.md).
-5. Request a separate approval before creating a partner record, property record, or manager invitation.
-6. Keep the property inactive through private content and inventory review.
-7. Use separate gates for Stripe Connect, publication, controlled live booking, supplier traffic, and SynXis.
+3. If the representative is qualified and authorized, let them submit the verified Preview [hotel-manager intake](https://iratepilotadmin-preview-20260817.vercel.app/hotel-intake) from their own device or a supervised browser.
+4. Stop at the receipt page. Submission creates a pending intake only and does not approve or publish the hotel.
+5. Independently verify the property, business, participant, authority, and content rights.
+6. Review the pending record in the Preview admin queue and compare it with the packet.
+7. Review the packet against the [first-hotel onboarding runbook](../FIRST_HOTEL_ONBOARDING_RUNBOOK.md).
+8. Request a separate approval before creating a partner record, inactive property draft, or manager invitation.
+9. Keep the property inactive through private content and inventory review.
+10. Use separate gates for Stripe Connect, publication, controlled live booking, supplier traffic, and SynXis.
+
+After a verified partner account and inactive property are separately approved, use the [partner portal acceptance checklist](./PARTNER_PORTAL_ACCEPTANCE_CHECKLIST.md) for the supervised operator-experience session. An administrator walkthrough or synthetic fixture cannot close that external acceptance gate.
 

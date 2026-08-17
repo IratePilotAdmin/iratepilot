@@ -9,12 +9,13 @@ type InventoryDay = {
 
 export type StayPricingResult =
   | { ok: false; reason: "availability" | "pricing" }
-  | { ok: true; subtotal: number; serviceFee: number; total: number };
+  | { ok: true; baseSubtotal: number; memberDiscount: number; subtotal: number; serviceFee: number; total: number };
 
 export function calculateVerifiedStayPricing(
   inventory: InventoryDay[],
   nights: number,
   serviceFeeRate: number,
+  memberDiscountRate = 0,
 ): StayPricingResult {
   const uniqueDates = new Set(inventory.map((day) => day.stay_date));
   if (inventory.length !== nights || uniqueDates.size !== nights) {
@@ -36,6 +37,10 @@ export function calculateVerifiedStayPricing(
     return { ok: false, reason: "pricing" };
   }
 
-  const quote = calculateBookingQuote(rates.reduce((sum, rate) => sum + rate, 0), serviceFeeRate);
+  const quote = calculateBookingQuote(
+    rates.reduce((sum, rate) => sum + rate, 0),
+    serviceFeeRate,
+    memberDiscountRate,
+  );
   return { ok: true, ...quote };
 }

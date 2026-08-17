@@ -78,7 +78,8 @@
     "202608150061"
   ],
   "pendingDeploymentVersions": [
-    "202608170062"
+    "202608170062",
+    "202608170063"
   ],
   "requiredWriteGates": [
     "separate production approval to merge PR #279 and deploy the corresponding application before any manager invitation or manager activation",

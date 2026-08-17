@@ -23,6 +23,7 @@ export const partnerNavigation = [
 
 export const adminNavigation = [
   { href: "/admin", label: "Overview" },
+  { href: "/admin/operations", label: "Operations" },
   { href: "/admin/properties", label: "Properties" },
   { href: "/admin/content", label: "Content quality" },
   { href: "/admin/bookings", label: "Bookings" },

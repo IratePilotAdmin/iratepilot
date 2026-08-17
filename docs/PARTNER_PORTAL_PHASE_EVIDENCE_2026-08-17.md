@@ -51,5 +51,5 @@ An inactive property with complete content, room, and future inventory can reach
 ## Remaining external acceptance
 
 - A verified hotel representative must complete the real intake and authority review.
-- The approved pilot partner must exercise the scoped portal in Preview and approve the operator experience.
+- The approved pilot partner must exercise the scoped portal in Preview and approve the operator experience using the [verified partner portal acceptance checklist](./hotel-manager-pilot/PARTNER_PORTAL_ACCEPTANCE_CHECKLIST.md).
 - Any invitation email, Stripe Connect test onboarding, publication, live booking, payout, or supplier validation requires its separate approval gate.

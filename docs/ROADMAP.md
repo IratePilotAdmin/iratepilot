@@ -22,20 +22,20 @@ Verified Preview gates:
 
 - [x] Configure and verify the isolated Supabase Preview environment.
 - [x] Run the network-free commercial sandbox preflight and Preview acceptance checks.
-- [x] Record migration `202608170062` and the complete repository migration history in the authorized Preview database.
+- [x] Record repository migrations through `202608170063` and reconcile the corresponding Preview database contracts without changing migration history.
 - [x] Submit, inspect, and remove a clearly labelled synthetic hotel intake while confirming that it remained pending and created no property.
 
 Remaining activation gates:
 
 - [ ] Complete the first real pilot-hotel intake from information supplied by an authorized representative and keep its draft inactive until separately approved.
-- [ ] Verify contact and partner-application submissions, support routing, and transactional email in Preview.
+- [x] Verify contact and partner-application submissions, support routing, and transactional email in Preview. Both labelled fixtures were removed after review; the single email job was provider-accepted in one attempt with no persisted error.
 - [ ] Have a verified pilot partner exercise the scoped portal workflows and approve the operator experience.
 
 The recorded Preview baseline is in `docs/PREVIEW_PILOT_EVIDENCE_2026-08-17.md`.
 
 ## Phase 2 — Live booking and payments
 
-Status: **software and read-only launch audit complete; external Stripe validation pending**
+Status: **software, Stripe Sandbox acceptance, and linked Preview ledger reconciliation complete; external release approvals pending**
 
 The repository includes booking requests, approved-reservation checkout, Stripe test and live-mode guards, refunds, webhook reconciliation, and payout controls. Public booking and live money movement must remain disabled until supplier, Stripe, legal, support, and end-to-end sandbox evidence is approved.
 
@@ -49,9 +49,9 @@ Verified software gates:
 
 Remaining activation gates:
 
-- [ ] Configure and verify approved Stripe test credentials and webhooks in Preview.
-- [ ] Complete success, decline, 3DS, duplicate/out-of-order webhook, refund, transfer, and reversal scenarios in the Stripe sandbox.
-- [ ] Reconcile sanitized Stripe evidence against booking and financial ledgers.
+- [x] Verify approved Stripe test credentials and one valid signed webhook delivery in Preview. The app reports 10/10 test safeguards, and Stripe Sandbox received HTTP 200 from the stable protected Preview webhook through the approved bypass.
+- [x] Complete success, decline, 3DS, duplicate/out-of-order webhook, refund, transfer, and reversal scenarios in the Stripe sandbox. All fresh signed deliveries reached the stable Preview endpoint with HTTP 200 in test mode; the transfer retry and full reversal were confirmed in Stripe Sandbox.
+- [x] Reconcile sanitized Stripe evidence against booking and financial ledgers. One inactive USD 25.00 Preview fixture links the same test PaymentIntent across the signed webhook, confirmed booking, and eligible financial row; no transfer, payout, or email job was created.
 - [ ] Obtain hotel, Stripe, supplier, legal, support, and production-release approvals.
 
 The recorded software evidence is in `docs/PAYMENT_PHASE_EVIDENCE_2026-08-17.md`.
@@ -103,6 +103,29 @@ Remaining certification and activation gates:
 - [ ] Make a separate production decision before enabling any real-property supplier traffic.
 
 The recorded software evidence is in `docs/SUPPLIER_PHASE_EVIDENCE_2026-08-17.md`.
+
+## Phase 5 — Automation Operations Center
+
+Status: **Phase 1 implemented locally; Preview release and acceptance pending**
+
+Phase 1 adds an admin-only, read-only command center over existing iRatePilot operational ledgers. It centralizes queue health, failures, recent sanitized receipts, and private-pilot safety locks without adding an automation executor or database migration.
+
+Phase 1 software gates:
+
+- [x] Add the `/admin/operations` surface and admin navigation entry.
+- [x] Require administrator authorization before service-role ledger access.
+- [x] Normalize communications, bookings, partners, support, payments, and suppliers into six operational lanes.
+- [x] Show explicit private-pilot safety locks and a non-mutating attention queue.
+- [x] Keep Phase 1 read-only with no execute, retry, send, publish, payment, payout, or supplier-activation controls.
+- [x] Add unit coverage for queue health, safety conflicts, receipt ordering, authorization order, and GET-only behavior.
+
+Remaining Phase 1 release gates:
+
+- [x] Pass the full repository check with the completed Operations Center changes: ESLint, TypeScript, 954 tests across 223 files, and the optimized 111-route Next.js build.
+- [ ] Commit and push only after separate approval.
+- [ ] Deploy to Preview only after separate approval and verify the authenticated page against live Preview ledgers.
+
+The Phase 1 design and safety boundary are recorded in `docs/AUTOMATION_OPERATIONS_CENTER_PHASE_1.md`.
 
 ## Overall completion rule
 

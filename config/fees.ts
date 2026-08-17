@@ -1,4 +1,4 @@
 export const fees = {
   defaultCommissionRate: 0.14,
-  serviceFeeRate: 0.05
+  serviceFeeRate: 0
 };

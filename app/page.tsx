@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Bot, BriefcaseBusiness, Building2, Check, Gem, Headphones, ShieldCheck, Sparkles, Star, TrendingDown } from "lucide-react";
+import { ArrowRight, Bot, BriefcaseBusiness, Building2, Check, Gem, Headphones, ShieldCheck, Sparkles, TrendingDown } from "lucide-react";
+import { memberships } from "@/config/memberships";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SearchForm } from "@/components/search/search-form";
@@ -89,13 +90,13 @@ export default function HomePage() {
           <div className="membership-shell">
             <div className="relative z-10 max-w-2xl">
               <span className="eyebrow-pill light"><Gem className="h-4 w-4" /> iRatePilot memberships</span>
-              <h2 className="mt-6 text-4xl font-black tracking-tight text-white sm:text-5xl">Book more. Pay less in fees. Earn more.</h2>
-              <p className="mt-5 text-lg leading-8 text-violet-100">Membership checkout is limited to Stripe test mode. Benefits activate only while a verified membership subscription is active.</p>
+              <h2 className="mt-6 text-4xl font-black tracking-tight text-white sm:text-5xl">No traveler fees. More member value.</h2>
+              <p className="mt-5 text-lg leading-8 text-violet-100">Every traveler pays a 0% traveler service fee. Active members also receive extra stay discounts and accelerated iRate Rewards points.</p>
               <Link href="/rewards" className="mt-7 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 font-bold text-violet-800">Explore rewards <ArrowRight className="h-4 w-4" /></Link>
             </div>
             <div className="relative z-10 grid gap-4">
-              <article className="member-tier"><span>Basic</span><strong>$70<small>/year</small></strong><p>0% traveler service fee + reward points</p></article>
-              <article className="member-tier featured"><span><BriefcaseBusiness className="h-4 w-4" /> Business Traveler</span><strong>$120<small>/year</small></strong><p>0% traveler service fee · double reward points</p></article>
+              <article className="member-tier"><span>Basic</span><strong>${memberships.basic.annualPrice}<small>/year</small></strong><p>Extra {memberships.basic.discountRate * 100}% discount · {memberships.basic.rewardMultiplier}× iRate Rewards points</p></article>
+              <article className="member-tier featured"><span><BriefcaseBusiness className="h-4 w-4" /> Business Traveler</span><strong>${memberships.business.annualPrice}<small>/year</small></strong><p>Extra {memberships.business.discountRate * 100}% discount · {memberships.business.rewardMultiplier}× iRate Rewards points</p></article>
             </div>
           </div>
         </section>
@@ -107,8 +108,7 @@ export default function HomePage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <article className="dark-feature"><ShieldCheck /><strong>Admin-approved inventory</strong><p>Partner properties remain drafts until reviewed and published.</p></article>
                 <article className="dark-feature"><Building2 /><strong>4- and 5-star focus</strong><p>Hotels, resorts, and professionally managed vacation homes.</p></article>
-                <article className="dark-feature"><Headphones /><strong>AI + human support</strong><p>Routine answers with escalation for exceptions and complex cases.</p></article>
-                <article className="dark-feature"><Star /><strong>Transparent economics</strong><p>5% traveler fee and 14% partner commission shown separately.</p></article>
+                <article className="dark-feature sm:col-span-2"><Headphones /><strong>AI + human support</strong><p>Routine answers with escalation for exceptions and complex cases.</p></article>
               </div>
             </div>
           </div>

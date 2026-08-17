@@ -5,7 +5,7 @@ import { calculateRewardPoints } from "../lib/rewards";
 
 describe("booking safeguards", () => {
   it("uses the approved customer and partner rates", () => {
-    expect(fees.serviceFeeRate).toBe(0.05);
+    expect(fees.serviceFeeRate).toBe(0);
     expect(fees.defaultCommissionRate).toBe(0.14);
   });
 
@@ -16,9 +16,9 @@ describe("booking safeguards", () => {
     expect(checkoutSchema.safeParse(valid).success).toBe(true);
   });
 
-  it("awards standard Basic points and double Business points", () => {
+  it("awards double Basic points and triple Business points", () => {
     expect(calculateRewardPoints(389.99, "none")).toBe(0);
-    expect(calculateRewardPoints(389.99, "basic")).toBe(389);
-    expect(calculateRewardPoints(389.99, "business")).toBe(778);
+    expect(calculateRewardPoints(389.99, "basic")).toBe(778);
+    expect(calculateRewardPoints(389.99, "business")).toBe(1167);
   });
 });

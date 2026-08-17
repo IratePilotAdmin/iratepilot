@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { differenceInCalendarDays, parseISO, startOfDay } from "date-fns";
 import { fees } from "@/config/fees";
+import { memberships } from "@/config/memberships";
 import { createRequestClient } from "@/lib/supabase/request";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { bookingSchema } from "@/lib/validation";
 import { calculateVerifiedStayPricing } from "@/lib/bookings/stay-pricing";
-import { hasActiveMembership } from "@/lib/memberships/eligibility";
+import { getActiveMembershipTier } from "@/lib/memberships/eligibility";
 import { queueBookingNotification } from "@/lib/email/booking-notifications";
 import { getApprovedBookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
 
@@ -84,8 +85,9 @@ export async function POST(request: Request) {
     if (inventoryResult.error) throw inventoryResult.error;
     const inventory = inventoryResult.data || [];
     const { data: profile } = await supabase.from("profiles").select("membership_tier,membership_status").eq("id", user.id).single();
-    const memberFeeExempt = hasActiveMembership(profile);
-    const pricing = calculateVerifiedStayPricing(inventory, nights, memberFeeExempt ? 0 : fees.serviceFeeRate);
+    const membershipTier = getActiveMembershipTier(profile);
+    const memberDiscountRate = membershipTier === "none" ? 0 : memberships[membershipTier].discountRate;
+    const pricing = calculateVerifiedStayPricing(inventory, nights, fees.serviceFeeRate, memberDiscountRate);
     if (!pricing.ok && pricing.reason === "availability") {
       return NextResponse.json({ error: "This room is not available for every selected night." }, { status: 409 });
     }

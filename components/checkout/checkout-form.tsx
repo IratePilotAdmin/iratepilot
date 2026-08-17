@@ -14,6 +14,10 @@ type Breakdown = {
   checkOut: string;
   nights: number;
   guests: number;
+  membershipTier: "none" | "basic" | "business";
+  memberDiscountRate: number;
+  baseSubtotal: number;
+  memberDiscount: number;
   subtotal: number;
   serviceFee: number;
   total: number;
@@ -76,8 +80,9 @@ function PaymentForm({ breakdown }: { breakdown: Breakdown }) {
         <p className="mt-3 font-semibold">{breakdown.propertyName}</p>
         <p className="text-sm text-slate-500">{breakdown.roomName} · {breakdown.checkIn} to {breakdown.checkOut}</p>
         <p className="text-sm text-slate-500">{breakdown.guests} guests</p>
-        <div className="mt-4 flex justify-between"><span>{breakdown.nights} nights</span><span>${breakdown.subtotal.toFixed(2)}</span></div>
-        <div className="mt-2 flex justify-between"><span>Traveler service fee{breakdown.serviceFee === 0 ? " (member benefit)" : ""}</span><span>${breakdown.serviceFee.toFixed(2)}</span></div>
+        <div className="mt-4 flex justify-between"><span>{breakdown.nights} nights</span><span>${breakdown.baseSubtotal.toFixed(2)}</span></div>
+        {breakdown.memberDiscount > 0 ? <div className="mt-2 flex justify-between font-semibold text-emerald-700"><span>{breakdown.membershipTier === "basic" ? "Basic" : "Business"} member discount ({breakdown.memberDiscountRate * 100}%)</span><span>−${breakdown.memberDiscount.toFixed(2)}</span></div> : null}
+        <div className="mt-2 flex justify-between"><span>Traveler service fee (0% for everyone)</span><span>${breakdown.serviceFee.toFixed(2)}</span></div>
         <div className="mt-4 flex justify-between border-t pt-4 text-lg font-bold"><span>Total</span><span>${breakdown.total.toFixed(2)}</span></div>
       </aside>
     </div>

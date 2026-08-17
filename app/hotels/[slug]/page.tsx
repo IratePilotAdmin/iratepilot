@@ -6,7 +6,7 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { RoomCard } from "@/components/hotels/room-card";
 import { BookingRequestForm } from "@/components/bookings/booking-request-form";
-import { getMarketplaceHotel, getTravelerServiceFeeRate } from "@/lib/data/marketplace";
+import { getMarketplaceHotel, getTravelerBenefits } from "@/lib/data/marketplace";
 import { getPresentedRooms, getReviewPresentation } from "@/lib/marketplace-presentation";
 import { parseHotelStay } from "@/lib/marketplace-search";
 
@@ -15,9 +15,9 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 export default async function HotelPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: SearchParams }) {
   const [{ slug }, query] = await Promise.all([params, searchParams]);
   const stay = parseHotelStay(query);
-  const [{ hotel, source, rooms }, serviceFeeRate] = await Promise.all([
+  const [{ hotel, source, rooms }, travelerBenefits] = await Promise.all([
     getMarketplaceHotel(slug, stay.criteria),
-    getTravelerServiceFeeRate(),
+    getTravelerBenefits(),
   ]);
   if (!hotel) notFound();
   const stringParam = (name: string) => typeof query[name] === "string" ? query[name] : undefined;
@@ -69,7 +69,7 @@ export default async function HotelPage({ params, searchParams }: { params: Prom
               <div className="booking-dates"><span>Check in<small>{stay.criteria?.checkIn || "Add date"}</small></span><span>Check out<small>{stay.criteria?.checkOut || "Add date"}</small></span><span className="col-span-2">Travelers<small>{stay.criteria ? `${stay.criteria.guests} ${stay.criteria.guests === 1 ? "guest" : "guests"} · 1 room` : "Add guests"}</small></span></div>
               <a href="#rooms" className="btn-primary w-full">{source === "database" ? "Choose a room" : "Preview sample rooms"}</a>
               <p className="mt-3 text-center text-xs text-slate-500">{source === "database" ? "You will not be charged yet" : "Demo only · booking is disabled"}</p>
-              <div className="mt-5 border-t border-slate-200 pt-5 text-sm"><p className="flex justify-between"><span>Traveler service fee</span><strong>{serviceFeeRate === 0 ? "Waived" : `${serviceFeeRate * 100}%`}</strong></p><p className="mt-2 flex items-center gap-2 font-bold text-violet-700"><Sparkles className="h-4 w-4" /> Basic & Business members pay 0%</p></div>
+              <div className="mt-5 border-t border-slate-200 pt-5 text-sm"><p className="flex justify-between"><span>Traveler service fee</span><strong>0% for everyone</strong></p><p className="mt-2 flex items-center gap-2 font-bold text-violet-700"><Sparkles className="h-4 w-4" /> {travelerBenefits.tier === "none" ? "Basic saves an extra 5% + 2× points · Business saves an extra 10% + 3× points" : `${travelerBenefits.tier === "basic" ? "Basic" : "Business"} member: ${travelerBenefits.memberDiscountRate * 100}% extra discount + ${travelerBenefits.rewardMultiplier}× points`}</p></div>
             </aside>
           </div>
 
@@ -78,7 +78,7 @@ export default async function HotelPage({ params, searchParams }: { params: Prom
             {stay.error && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-4 text-sm font-medium text-red-700">{stay.error} Update the dates and guest count below to request this stay.</p>}
             {source === "database" && stay.criteria && rooms.length === 0 && <p className="mt-4 rounded-xl bg-amber-50 p-4 text-sm font-medium text-amber-800">No rooms fit these dates and guest count. Change your stay details to check other options.</p>}
             <div className="mt-7 grid gap-4">{presentedRooms.map((room) => <RoomCard key={room.id} name={room.name} price={room.price} notes={room.notes} bookable={room.bookable} />)}</div>
-            <div className="mt-8"><BookingRequestForm key={stay.criteria ? `${stay.criteria.checkIn}-${stay.criteria.checkOut}-${stay.criteria.guests}` : availabilityState} hotelSlug={hotel.slug} rooms={rooms} testCheckoutEnabled={testCheckoutEnabled} initialSelection={initialSelection} availabilityState={availabilityState} serviceFeeRate={serviceFeeRate} /></div>
+            <div className="mt-8"><BookingRequestForm key={stay.criteria ? `${stay.criteria.checkIn}-${stay.criteria.checkOut}-${stay.criteria.guests}` : availabilityState} hotelSlug={hotel.slug} rooms={rooms} testCheckoutEnabled={testCheckoutEnabled} initialSelection={initialSelection} availabilityState={availabilityState} serviceFeeRate={travelerBenefits.serviceFeeRate} memberDiscountRate={travelerBenefits.memberDiscountRate} membershipTier={travelerBenefits.tier} /></div>
           </section>
           <div className="trust-booking"><ShieldCheck /><div><strong>{source === "database" ? "Book with verified availability" : "Private demo · booking disabled"}</strong><p>{source === "database" ? <>Room availability, nightly pricing, and the trip total are verified before confirmation. {testCheckoutEnabled ? "Payments remain in test mode during development." : "Private booking requests are reviewed by the property before payment."}</> : "This sample listing demonstrates the property experience. It has no live availability and cannot accept a booking request."}</p></div></div>
         </section>

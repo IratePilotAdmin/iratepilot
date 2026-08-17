@@ -109,7 +109,13 @@ export function AdminSettings() {
       const response = await fetch("/api/admin/email-test", { method: "POST" });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "The test email could not be sent.");
-      setEmailTestMessage(body.message);
+      const workerResponse = await fetch("/api/email/process", { method: "POST" });
+      const workerBody = await workerResponse.json();
+      if (!workerResponse.ok) throw new Error(workerBody.error || "The email worker could not be started.");
+      const sent = Number(workerBody.summary?.sent || 0);
+      setEmailTestMessage(sent > 0
+        ? "Test email sent. Check the administrator inbox."
+        : `${body.message} The worker completed without sending a message.`);
     } catch (error) {
       setEmailTestMessage(error instanceof Error ? error.message : "The test email could not be sent.");
     } finally {
