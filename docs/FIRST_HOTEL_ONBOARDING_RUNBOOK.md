@@ -2,6 +2,8 @@
 
 Use this runbook to prepare the first hotel in a private sandbox. It does not authorize a real supplier activation, a public listing, a live transaction, an invitation email, or SynXis traffic.
 
+Use the [hotel-manager private-pilot recruitment packet](./hotel-manager-pilot/README.md), [meeting checklist](./hotel-manager-pilot/MEETING_CHECKLIST.md), and [first-pilot acceptance form](./hotel-manager-pilot/FIRST_PILOT_ACCEPTANCE_FORM.md) before creating any real partner, property, or manager record.
+
 ## Gate status
 
 - Pilot mode remains enabled.
@@ -84,3 +86,4 @@ Preparation is complete when the sandbox controls pass, the operator packet is r
 6. Load and review real hotel inventory while keeping the listing private.
 7. Publish the hotel and enable controlled booking only after payment, email, support, and supplier gates are approved.
 8. Enable SynXis only after Sabre certification and a dedicated production-traffic approval.
+
