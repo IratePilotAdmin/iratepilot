@@ -1,6 +1,6 @@
 # iRatePilot Automation Operations Center — Phase 5
 
-Status: Isolated Preview migrations and authenticated acceptance complete on August 18, 2026; sandbox remains locked; laptop Git closeout pending
+Status: Isolated Preview migrations, authenticated acceptance, and laptop Git closeout complete on August 18, 2026; sandbox remains locked
 
 Phase 5 completes the Automation Operations Center development sequence with one narrowly scoped sandbox adapter. The adapter checks whether a sanitized UUID identifies an existing `email_outbox` receipt and returns only its status. It cannot send or retry email, reveal recipient data, access the network, invoke Resend, or mutate the outbox.
 
@@ -67,8 +67,10 @@ Database constraints require:
 - [x] Migrations 064–067 were separately approved and applied to the isolated Preview database only.
 - [x] The isolated Preview deployment reached `READY` and authenticated browser acceptance passed with both executor kill switches still disabled.
 - [x] Reconcile this laptop branch with the deployed source commit; all 73 changed Git blobs match from the common base.
-- [ ] Publish the local commits only after separate approval.
+- [x] Publish the approved laptop branch and verify local/remote synchronization at `0c7540d`.
 - [ ] A separate Preview-only decision enables both kill switches for one labeled synthetic receipt check, followed by immediate relocking and evidence review.
+
+The synthetic closeout procedure and its three-administrator prerequisite are recorded in `docs/AUTOMATION_OPERATIONS_CENTER_PHASE_5_SYNTHETIC_CHECK_RUNBOOK.md`. The isolated Preview currently has only two administrator operator profiles, so no synthetic execution was attempted.
 
 ## Completion rule
 

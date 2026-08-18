@@ -1,6 +1,6 @@
 # iRatePilot Automation Operations Center — Phase 3
 
-Status: Isolated Preview migrations and authenticated acceptance complete on August 18, 2026; laptop Git closeout pending
+Status: Isolated Preview migrations, authenticated acceptance, and laptop Git closeout complete on August 18, 2026
 
 Phase 3 adds a controlled retry-authorization rehearsal to the Operations Center. It proves that a proposed retry can be represented idempotently, reviewed by two independent administrators, and closed with an immutable dry-run receipt. It does not contain an execution adapter and cannot contact an external provider.
 
@@ -52,7 +52,7 @@ Adding a real executor is a later phase requiring a named adapter, provider sand
 - [x] Migrations 064 and 065 were separately approved and applied to the isolated Preview database only.
 - [x] The isolated Preview deployment reached `READY` and authenticated browser acceptance passed.
 - [x] Reconcile this laptop branch with the deployed source commit; all 73 changed Git blobs match from the common base.
-- [ ] Publish the local commits only after separate approval.
+- [x] Publish the approved laptop branch and verify local/remote synchronization at `0c7540d`.
 
 ## Later phases
 

@@ -1,6 +1,6 @@
 # iRatePilot Automation Operations Center — Phase 4
 
-Status: Isolated Preview migrations and authenticated acceptance complete on August 18, 2026; scanner disabled; laptop Git closeout pending
+Status: Isolated Preview migrations, authenticated acceptance, and laptop Git closeout complete on August 18, 2026; scanner disabled
 
 Phase 4 adds service-level objectives, internal escalation ownership, and scheduled provider-health observation. It records operational evidence only. The scanner cannot send notifications, invoke retry adapters, move money, mutate bookings, or contact a supplier.
 
@@ -68,7 +68,7 @@ Preview deployment cannot exercise Vercel Cron automatically. Preview acceptance
 - [x] Migrations 064–066 were separately approved and applied to the isolated Preview database only.
 - [x] The isolated Preview deployment reached `READY` and authenticated browser acceptance passed with the scanner disabled.
 - [x] Reconcile this laptop branch with the deployed source commit; all 73 changed Git blobs match from the common base.
-- [ ] Publish the local commits only after separate approval.
+- [x] Publish the approved laptop branch and verify local/remote synchronization at `0c7540d`.
 
 ## Next phase
 

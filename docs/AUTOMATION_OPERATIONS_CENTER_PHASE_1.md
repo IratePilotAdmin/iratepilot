@@ -84,8 +84,4 @@ A disengaged lock is a critical review signal. It never becomes automatic author
 
 ## Later phases
 
-Phase 2 is implemented locally and remains behind its separate migration and Preview release gates. Later phases still require separate design and approval:
-
-- Phase 3: narrowly scoped retry controls with idempotency, approvals, and immutable audit receipts.
-- Phase 4: scheduling, escalation policy, service-level objectives, and provider health integrations.
-- Phase 5: assisted recommendations with human approval; no autonomous money movement, publication, or supplier activation.
+Phases 2–5 are implemented, migrated, and authenticated-accepted in the isolated Preview environment. The approved laptop branch was published and verified at `0c7540d` on August 18, 2026. Phase 4 remains observation-only with its scanner disabled, and Phase 5 remains behind both disabled kill switches. Production automation, money movement, publication, and supplier activation remain unauthorized.

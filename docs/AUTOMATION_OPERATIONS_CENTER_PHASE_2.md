@@ -1,6 +1,6 @@
 # iRatePilot Automation Operations Center — Phase 2
 
-Status: Isolated Preview migration and authenticated acceptance complete on August 18, 2026; laptop Git closeout pending
+Status: Isolated Preview migration, authenticated acceptance, and laptop Git closeout complete on August 18, 2026
 
 Phase 2 adds accountable operator coordination to the Phase 1 monitoring surface. Administrators can follow bounded runbooks and create, acknowledge, assign, document, and resolve internal incidents. The workflow records decisions only; it cannot execute automation or authorize an external action.
 
@@ -56,7 +56,7 @@ Both the server actions and database constraints reject credential-shaped, token
 - [x] Migration 064 was separately approved and applied to the isolated Preview database only.
 - [x] The isolated Preview deployment reached `READY` and authenticated browser acceptance passed.
 - [x] Reconcile this laptop branch with the deployed source commit; all 73 changed Git blobs match from the common base.
-- [ ] Publish the local commits only after separate approval.
+- [x] Publish the approved laptop branch and verify local/remote synchronization at `0c7540d`.
 
 ## Later phases
 
