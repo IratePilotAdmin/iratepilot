@@ -1,6 +1,6 @@
 # Roadmap and completion status
 
-Last reviewed: 2026-08-17
+Last reviewed: 2026-08-18
 
 iRatePilot is application-ready for a controlled private-pilot preview. It is not yet commercially complete: real inventory, public booking, live payments, partner payouts, and supplier traffic remain behind explicit release gates.
 
@@ -106,7 +106,7 @@ The recorded software evidence is in `docs/SUPPLIER_PHASE_EVIDENCE_2026-08-17.md
 
 ## Phase 5 — Automation Operations Center
 
-Status: **Phase 1 Preview-accepted; Phases 2–5 implemented locally with migrations and Preview release pending**
+Status: **Phases 1–5 accepted in isolated Preview; laptop Git closeout and optional locked synthetic check pending**
 
 Phase 1 adds an admin-only, read-only command center over existing iRatePilot operational ledgers. Phase 2 adds bounded runbooks and accountable incident coordination. Phase 3 adds an idempotent, dual-approved retry rehearsal. Phase 4 adds fixed SLO policies and internal escalation ownership. Phase 5 adds one doubly locked, internal read-only email receipt adapter with no network access or external side effects.
 
@@ -136,11 +136,13 @@ Phase 2 software gates:
 - [x] Keep all execution, retry, send, publish, payment, payout, credential, and supplier-activation controls excluded.
 - [x] Keep Phase 1 available in runbooks-only mode before migration 064 is applied.
 
-Remaining Phase 2 release gates:
+Phase 2 release gates:
 
 - [x] Pass the full repository verification with Phase 2: ESLint, TypeScript, 960 tests across 224 files, and the optimized 111-route Next.js build.
-- [ ] Apply migration `202608170064` to the isolated Preview database only after separate approval.
-- [ ] Commit, push, deploy to Preview, and complete authenticated browser acceptance only after separate approval.
+- [x] Apply migration `202608170064` to the isolated Preview database after separate approval.
+- [x] Deploy to isolated Preview and complete authenticated browser acceptance after separate approval.
+- [x] Reconcile this laptop branch with the deployed source; all 73 changed Git blobs match from the common base.
+- [ ] Publish this laptop branch's local commits only after separate approval.
 
 The Phase 2 design and safety boundary are recorded in `docs/AUTOMATION_OPERATIONS_CENTER_PHASE_2.md`.
 
@@ -154,11 +156,13 @@ Phase 3 software gates:
 - [x] Keep email, money movement, booking mutation, supplier traffic, deployment, and Production actions excluded.
 - [x] Keep Phases 1–2 available when migration 065 is not yet present.
 
-Remaining Phase 3 release gates:
+Phase 3 release gates:
 
 - [x] Pass the full repository verification with Phase 3: ESLint, TypeScript, 966 tests across 225 files, and the optimized 111-route Next.js build.
-- [ ] Apply migrations `202608170064` and `202608170065` to the isolated Preview database only after separate approval.
-- [ ] Commit, push, deploy to Preview, and complete authenticated browser acceptance only after separate approval.
+- [x] Apply migrations `202608170064` and `202608170065` to the isolated Preview database after separate approval.
+- [x] Deploy to isolated Preview and complete authenticated browser acceptance after separate approval.
+- [x] Reconcile this laptop branch with the deployed source; all 73 changed Git blobs match from the common base.
+- [ ] Publish this laptop branch's local commits only after separate approval.
 
 The Phase 3 design and execution boundary are recorded in `docs/AUTOMATION_OPERATIONS_CENTER_PHASE_3.md`.
 
@@ -173,11 +177,13 @@ Phase 4 software gates:
 - [x] Keep notification, retry, payment, booking mutation, supplier traffic, and manual scan controls excluded.
 - [x] Keep Phases 1–3 available when migration 066 is not yet present.
 
-Remaining Phase 4 release gates:
+Phase 4 release gates:
 
 - [x] Pass the full repository verification with Phase 4: ESLint, TypeScript, 972 tests across 226 files, and the optimized 111-page Next.js build.
-- [ ] Apply migrations `202608170064` through `202608170066` to the isolated Preview database only after separate approval.
-- [ ] Commit, push, deploy to Preview, and complete authenticated browser acceptance only after separate approval.
+- [x] Apply migrations `202608170064` through `202608170066` to the isolated Preview database after separate approval.
+- [x] Deploy to isolated Preview and complete authenticated browser acceptance after separate approval.
+- [x] Reconcile this laptop branch with the deployed source; all 73 changed Git blobs match from the common base.
+- [ ] Publish this laptop branch's local commits only after separate approval.
 - [ ] Keep `AUTOMATION_POLICY_SCANNER_ENABLED=false` in Production until a separate Production scheduling decision.
 
 The Phase 4 design and scheduling boundary are recorded in `docs/AUTOMATION_OPERATIONS_CENTER_PHASE_4.md`.
@@ -193,15 +199,19 @@ Phase 5 software gates:
 - [x] Keep execution and event history immutable and administrator-owned.
 - [x] Keep Phases 1–4 available when migration 067 is not yet present.
 
-Remaining Phase 5 release gates:
+Phase 5 release gates:
 
 - [x] Pass the full repository verification with Phase 5: ESLint, TypeScript, 978 tests across 227 files, and the optimized 111-page Next.js build.
-- [ ] Apply migrations `202608170064` through `202608170067` to the isolated Preview database only after separate approval.
-- [ ] Commit, push, deploy to Preview, and complete authenticated browser acceptance only after separate approval.
+- [x] Apply migrations `202608170064` through `202608170067` to the isolated Preview database after separate approval.
+- [x] Deploy to isolated Preview and complete authenticated browser acceptance with both executor kill switches disabled after separate approval.
+- [x] Reconcile this laptop branch with the deployed source; all 73 changed Git blobs match from the common base.
+- [ ] Publish this laptop branch's local commits only after separate approval.
 - [ ] Keep both sandbox-executor kill switches disabled until a separate Preview-only synthetic check is approved.
 - [ ] Keep the adapter disabled in Production until a separate Production authorization decision.
 
 The Phase 5 design and double-kill-switch boundary are recorded in `docs/AUTOMATION_OPERATIONS_CENTER_PHASE_5.md`.
+
+The combined isolated Preview acceptance evidence for Phases 2–5 is recorded in `docs/AUTOMATION_OPERATIONS_CENTER_PREVIEW_EVIDENCE_2026-08-18.md`.
 
 ## Overall completion rule
 

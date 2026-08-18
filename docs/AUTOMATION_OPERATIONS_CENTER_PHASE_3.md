@@ -1,6 +1,6 @@
 # iRatePilot Automation Operations Center — Phase 3
 
-Status: Local implementation complete; migrations 064–065, Preview release, and authenticated acceptance pending separate approval
+Status: Isolated Preview migrations and authenticated acceptance complete on August 18, 2026; laptop Git closeout pending
 
 Phase 3 adds a controlled retry-authorization rehearsal to the Operations Center. It proves that a proposed retry can be represented idempotently, reviewed by two independent administrators, and closed with an immutable dry-run receipt. It does not contain an execution adapter and cannot contact an external provider.
 
@@ -49,11 +49,11 @@ Adding a real executor is a later phase requiring a named adapter, provider sand
 - [x] Dry-run completion re-checks the approval quorum in the same locked transaction.
 - [x] The only execution result is `validated_no_executor`; no provider SDK or execution adapter is called.
 - [x] Full local repository verification passes: ESLint, TypeScript, 966 tests across 225 files, and the optimized 111-route Next.js build.
-- [ ] Migrations 064 and 065 are separately approved and applied to the isolated Preview database only.
-- [ ] Phase 2–3 changes are separately approved for commit and push.
-- [ ] Preview deployment reaches `READY` and authenticated browser acceptance passes.
+- [x] Migrations 064 and 065 were separately approved and applied to the isolated Preview database only.
+- [x] The isolated Preview deployment reached `READY` and authenticated browser acceptance passed.
+- [x] Reconcile this laptop branch with the deployed source commit; all 73 changed Git blobs match from the common base.
+- [ ] Publish the local commits only after separate approval.
 
 ## Later phases
 
-- Phase 4: scheduling, escalation policy, service-level objectives, and internal-ledger provider health; implemented locally with a disabled-by-default scanner.
-- Phase 5: one narrowly scoped sandbox executor at a time, with provider-specific idempotency, kill switches, and separate human approval; no autonomous money movement, publication, or supplier activation.
+Phases 4–5 are implemented and accepted in the same isolated Preview environment. The Phase 4 scanner and both Phase 5 kill switches remain disabled.

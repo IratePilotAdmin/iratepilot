@@ -1,6 +1,6 @@
 # iRatePilot Automation Operations Center — Phase 4
 
-Status: Local implementation complete; migrations 064–066, Preview release, and authenticated acceptance pending separate approval
+Status: Isolated Preview migrations and authenticated acceptance complete on August 18, 2026; scanner disabled; laptop Git closeout pending
 
 Phase 4 adds service-level objectives, internal escalation ownership, and scheduled provider-health observation. It records operational evidence only. The scanner cannot send notifications, invoke retry adapters, move money, mutate bookings, or contact a supplier.
 
@@ -65,10 +65,11 @@ Preview deployment cannot exercise Vercel Cron automatically. Preview acceptance
 - [x] Provider health reads only existing internal ledgers and invokes no provider SDK or network request.
 - [x] The UI exposes no manual scanner, external notification, retry, payment, or provider controls.
 - [x] Full local repository verification passes: ESLint, TypeScript, 972 tests across 226 files, and the optimized 111-page Next.js build.
-- [ ] Migrations 064–066 are separately approved and applied to the isolated Preview database only.
-- [ ] Phase 2–4 changes are separately approved for commit and push.
-- [ ] Preview deployment reaches `READY` and authenticated browser acceptance passes.
+- [x] Migrations 064–066 were separately approved and applied to the isolated Preview database only.
+- [x] The isolated Preview deployment reached `READY` and authenticated browser acceptance passed with the scanner disabled.
+- [x] Reconcile this laptop branch with the deployed source commit; all 73 changed Git blobs match from the common base.
+- [ ] Publish the local commits only after separate approval.
 
 ## Next phase
 
-Phase 5 implements one locked internal email-outbox receipt adapter with inherited dual approval, idempotency, two kill switches, and no network or external side effects. Autonomous message delivery, money movement, publication, and supplier activation remain prohibited.
+Phase 5 is implemented and accepted in the same isolated Preview environment. Its application and database kill switches remain disabled; autonomous message delivery, money movement, publication, and supplier activation remain prohibited.
