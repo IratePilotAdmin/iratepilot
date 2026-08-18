@@ -80,7 +80,7 @@ Do not promise:
 
 1. Complete the [meeting checklist](./MEETING_CHECKLIST.md).
 2. Complete the [first-pilot acceptance form](./FIRST_PILOT_ACCEPTANCE_FORM.md) without secrets or bank information.
-3. If the representative is qualified and authorized, let them submit the verified Preview [hotel-manager intake](https://iratepilotadmin-preview-20260817.vercel.app/hotel-intake) from their own device or a supervised browser.
+3. If the representative is qualified and authorized, let them submit the verified isolated Preview [hotel-manager intake](https://project-w1cin.vercel.app/hotel-intake) from their own device or a supervised browser.
 4. Stop at the receipt page. Submission creates a pending intake only and does not approve or publish the hotel.
 5. Independently verify the property, business, participant, authority, and content rights.
 6. Review the pending record in the Preview admin queue and compare it with the packet.

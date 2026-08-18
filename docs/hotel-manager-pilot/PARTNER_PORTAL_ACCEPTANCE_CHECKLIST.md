@@ -9,7 +9,7 @@ Use this checklist for a supervised Preview session with an independently verifi
 - Verified partner organization:
 - Participant name and authorized role:
 - Authority evidence reference:
-- Preview deployment or alias: `https://iratepilotadmin-preview-20260817.vercel.app`
+- Verified isolated Preview alias: `https://project-w1cin.vercel.app`
 - Sanitized partner/property reference:
 
 Do not record passwords, one-time codes, identity documents, guest lists, bank or card details, API keys, or PMS credentials.
