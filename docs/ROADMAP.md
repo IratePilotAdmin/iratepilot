@@ -184,7 +184,7 @@ Phase 4 release gates:
 - [x] Deploy to isolated Preview and complete authenticated browser acceptance after separate approval.
 - [x] Reconcile this laptop branch with the deployed source; all 73 changed Git blobs match from the common base.
 - [x] Publish the approved laptop branch and verify local/remote synchronization at `0c7540d`.
-- [ ] Keep `AUTOMATION_POLICY_SCANNER_ENABLED=false` in Production until a separate Production scheduling decision.
+- [x] Verify the main Production project has no Project or Shared `AUTOMATION_POLICY_SCANNER_ENABLED` entry; the scanner remains fail-closed unless a separate Production scheduling decision explicitly enables it.
 
 The Phase 4 design and scheduling boundary are recorded in `docs/AUTOMATION_OPERATIONS_CENTER_PHASE_4.md`.
 
@@ -206,8 +206,8 @@ Phase 5 release gates:
 - [x] Deploy to isolated Preview and complete authenticated browser acceptance with both executor kill switches disabled after separate approval.
 - [x] Reconcile this laptop branch with the deployed source; all 73 changed Git blobs match from the common base.
 - [x] Publish the approved laptop branch and verify local/remote synchronization at `0c7540d`.
-- [ ] Keep both sandbox-executor kill switches disabled until a separate Preview-only synthetic check is approved.
-- [ ] Keep the adapter disabled in Production until a separate Production authorization decision.
+- [x] Verify both isolated Preview sandbox-executor kill switches remain disabled, the effective executor is locked, and zero executions are recorded; any synthetic check still requires separate approval.
+- [x] Verify the main Production project has no Project or Shared `AUTOMATION_SANDBOX_EXECUTOR_ENABLED` entry; the adapter remains fail-closed unless a separate Production authorization decision explicitly enables it.
 
 The Phase 5 design and double-kill-switch boundary are recorded in `docs/AUTOMATION_OPERATIONS_CENTER_PHASE_5.md`.
 

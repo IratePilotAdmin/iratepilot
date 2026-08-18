@@ -41,4 +41,12 @@ The authenticated API returned `safetyReady=true`, `readOnly=true`, six of six e
 
 The read-only prerequisite audit at `2026-08-18T19:49:37Z` confirmed two administrator operator profiles, zero incidents, zero retry requests, zero sandbox executions, and both executor kill switches disabled. The three-identity approval quorum cannot be met with the current two operators, so no execution or switch change was attempted. See `docs/AUTOMATION_OPERATIONS_CENTER_PHASE_5_SYNTHETIC_CHECK_RUNBOOK.md`.
 
+## Safety-lock closeout verification
+
+At `2026-08-18T20:04:45Z`:
+
+- Main Vercel project `iratepilotadmin` Project and Shared environment searches returned no entry for `AUTOMATION_POLICY_SCANNER_ENABLED` or `AUTOMATION_SANDBOX_EXECUTOR_ENABLED`; the exact-`true` checks therefore remain false and fail-closed in Production.
+- The isolated Preview operations API reported `scannerEnabled=false`, `applicationKillSwitchEnabled=false`, `databaseKillSwitchEnabled=false`, `effectiveEnabled=false`, zero executions, and all six safety locks engaged.
+- No environment variable, database row, deployment, alias, Preview state, or Production state was changed during this verification.
+
 Production automation remains unauthorized.
