@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { AutomationIncidentWorkspace } from "@/components/dashboard/automation-incident-workspace";
+import { AutomationRetryWorkspace } from "@/components/dashboard/automation-retry-workspace";
+import { AutomationEscalationWorkspace } from "@/components/dashboard/automation-escalation-workspace";
+import { AutomationExecutorWorkspace } from "@/components/dashboard/automation-executor-workspace";
 import type {
   AutomationActivity,
   AutomationAttentionItem,
@@ -9,6 +13,10 @@ import type {
   AutomationLaneStatus,
   AutomationSafetyLock,
 } from "@/lib/admin/automation-operations";
+import type { AutomationWorkflowSnapshot } from "@/lib/admin/automation-workflow";
+import type { AutomationRetrySnapshot } from "@/lib/admin/automation-retry";
+import type { AutomationEscalationSnapshot } from "@/lib/admin/automation-escalation";
+import type { AutomationExecutorSnapshot } from "@/lib/admin/automation-executor";
 
 type Snapshot = {
   phase: string;
@@ -30,6 +38,10 @@ type Snapshot = {
   safetyLocks: AutomationSafetyLock[];
   attention: AutomationAttentionItem[];
   activity: AutomationActivity[];
+  workflow: AutomationWorkflowSnapshot;
+  retryWorkflow: AutomationRetrySnapshot;
+  escalationWorkflow: AutomationEscalationSnapshot;
+  executorWorkflow: AutomationExecutorSnapshot;
 };
 
 const statusClass: Record<AutomationLaneStatus, string> = {
@@ -166,5 +178,10 @@ export function AutomationOperationsCenter() {
         {!data.activity.length && <p className="p-6 text-sm text-slate-500">No automation receipts are recorded yet.</p>}
       </div>
     </section>
+
+    <AutomationIncidentWorkspace onRefresh={refresh} workflow={data.workflow} />
+    <AutomationRetryWorkspace incidentWorkflow={data.workflow} onRefresh={refresh} retryWorkflow={data.retryWorkflow} />
+    <AutomationEscalationWorkspace escalationWorkflow={data.escalationWorkflow} incidentWorkflow={data.workflow} onRefresh={refresh} />
+    <AutomationExecutorWorkspace executorWorkflow={data.executorWorkflow} onRefresh={refresh} retryWorkflow={data.retryWorkflow} />
   </>;
 }

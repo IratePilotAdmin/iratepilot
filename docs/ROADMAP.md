@@ -106,9 +106,9 @@ The recorded software evidence is in `docs/SUPPLIER_PHASE_EVIDENCE_2026-08-17.md
 
 ## Phase 5 — Automation Operations Center
 
-Status: **Phase 1 implemented locally; Preview release and acceptance pending**
+Status: **Phase 1 Preview-accepted; Phases 2–5 implemented locally with migrations and Preview release pending**
 
-Phase 1 adds an admin-only, read-only command center over existing iRatePilot operational ledgers. It centralizes queue health, failures, recent sanitized receipts, and private-pilot safety locks without adding an automation executor or database migration.
+Phase 1 adds an admin-only, read-only command center over existing iRatePilot operational ledgers. Phase 2 adds bounded runbooks and accountable incident coordination. Phase 3 adds an idempotent, dual-approved retry rehearsal. Phase 4 adds fixed SLO policies and internal escalation ownership. Phase 5 adds one doubly locked, internal read-only email receipt adapter with no network access or external side effects.
 
 Phase 1 software gates:
 
@@ -119,13 +119,89 @@ Phase 1 software gates:
 - [x] Keep Phase 1 read-only with no execute, retry, send, publish, payment, payout, or supplier-activation controls.
 - [x] Add unit coverage for queue health, safety conflicts, receipt ordering, authorization order, and GET-only behavior.
 
-Remaining Phase 1 release gates:
+Completed Phase 1 release gates:
 
 - [x] Pass the full repository check with the completed Operations Center changes: ESLint, TypeScript, 954 tests across 223 files, and the optimized 111-route Next.js build.
-- [ ] Commit and push only after separate approval.
-- [ ] Deploy to Preview only after separate approval and verify the authenticated page against live Preview ledgers.
+- [x] Commit and push after separate approval.
+- [x] Deploy to Preview after separate approval and verify the authenticated page against live Preview ledgers.
 
 The Phase 1 design and safety boundary are recorded in `docs/AUTOMATION_OPERATIONS_CENTER_PHASE_1.md`.
+
+Phase 2 software gates:
+
+- [x] Add six lane-specific operator runbooks with explicit completion checks and prohibited actions.
+- [x] Add admin-only incident creation, acknowledgment, assignment, immutable notes, and resolution.
+- [x] Re-check administrator authorization inside every server action and database transaction.
+- [x] Reject credential-, token-, and payment-card-shaped incident text at the application and database boundaries.
+- [x] Keep all execution, retry, send, publish, payment, payout, credential, and supplier-activation controls excluded.
+- [x] Keep Phase 1 available in runbooks-only mode before migration 064 is applied.
+
+Remaining Phase 2 release gates:
+
+- [x] Pass the full repository verification with Phase 2: ESLint, TypeScript, 960 tests across 224 files, and the optimized 111-route Next.js build.
+- [ ] Apply migration `202608170064` to the isolated Preview database only after separate approval.
+- [ ] Commit, push, deploy to Preview, and complete authenticated browser acceptance only after separate approval.
+
+The Phase 2 design and safety boundary are recorded in `docs/AUTOMATION_OPERATIONS_CENTER_PHASE_2.md`.
+
+Phase 3 software gates:
+
+- [x] Require an acknowledged, unresolved incident before a dry-run request can be created.
+- [x] Generate a deterministic SHA-256 idempotency fingerprint and reject duplicate logical requests.
+- [x] Require two distinct administrator approvals and prohibit requester self-approval.
+- [x] Preserve immutable approval, quorum, cancellation, and dry-run validation receipts.
+- [x] Constrain the entire phase to `dry_run_only` with `validated_no_executor` as the sole completion result.
+- [x] Keep email, money movement, booking mutation, supplier traffic, deployment, and Production actions excluded.
+- [x] Keep Phases 1–2 available when migration 065 is not yet present.
+
+Remaining Phase 3 release gates:
+
+- [x] Pass the full repository verification with Phase 3: ESLint, TypeScript, 966 tests across 225 files, and the optimized 111-route Next.js build.
+- [ ] Apply migrations `202608170064` and `202608170065` to the isolated Preview database only after separate approval.
+- [ ] Commit, push, deploy to Preview, and complete authenticated browser acceptance only after separate approval.
+
+The Phase 3 design and execution boundary are recorded in `docs/AUTOMATION_OPERATIONS_CENTER_PHASE_3.md`.
+
+Phase 4 software gates:
+
+- [x] Add six fixed acknowledgment and resolution SLO policies for critical, warning, and review incidents.
+- [x] Record one idempotent observation-only scan per UTC date.
+- [x] Create internal escalations for breached SLOs and resolve them when source incidents reach their policy checkpoints.
+- [x] Require administrator authorization and a sanitized note for escalation acknowledgment.
+- [x] Derive provider-health snapshots only from existing email, Stripe, PMS, and SynXis ledgers.
+- [x] Require both `CRON_SECRET` and a disabled-by-default scanner flag before service-role access.
+- [x] Keep notification, retry, payment, booking mutation, supplier traffic, and manual scan controls excluded.
+- [x] Keep Phases 1–3 available when migration 066 is not yet present.
+
+Remaining Phase 4 release gates:
+
+- [x] Pass the full repository verification with Phase 4: ESLint, TypeScript, 972 tests across 226 files, and the optimized 111-page Next.js build.
+- [ ] Apply migrations `202608170064` through `202608170066` to the isolated Preview database only after separate approval.
+- [ ] Commit, push, deploy to Preview, and complete authenticated browser acceptance only after separate approval.
+- [ ] Keep `AUTOMATION_POLICY_SCANNER_ENABLED=false` in Production until a separate Production scheduling decision.
+
+The Phase 4 design and scheduling boundary are recorded in `docs/AUTOMATION_OPERATIONS_CENTER_PHASE_4.md`.
+
+Phase 5 software gates:
+
+- [x] Allowlist exactly one internal read-only adapter for sanitized email-outbox receipt validation.
+- [x] Require a dual-approved, completed Phase 3 email-delivery dry run.
+- [x] Enforce one execution per approved request and derive its idempotency key from the Phase 3 fingerprint.
+- [x] Default both application and database kill switches to disabled.
+- [x] Read and retain only the allowlisted outbox status, never recipient or message data.
+- [x] Constrain network access, external side effects, message sending, and money movement to false.
+- [x] Keep execution and event history immutable and administrator-owned.
+- [x] Keep Phases 1–4 available when migration 067 is not yet present.
+
+Remaining Phase 5 release gates:
+
+- [x] Pass the full repository verification with Phase 5: ESLint, TypeScript, 978 tests across 227 files, and the optimized 111-page Next.js build.
+- [ ] Apply migrations `202608170064` through `202608170067` to the isolated Preview database only after separate approval.
+- [ ] Commit, push, deploy to Preview, and complete authenticated browser acceptance only after separate approval.
+- [ ] Keep both sandbox-executor kill switches disabled until a separate Preview-only synthetic check is approved.
+- [ ] Keep the adapter disabled in Production until a separate Production authorization decision.
+
+The Phase 5 design and double-kill-switch boundary are recorded in `docs/AUTOMATION_OPERATIONS_CENTER_PHASE_5.md`.
 
 ## Overall completion rule
 

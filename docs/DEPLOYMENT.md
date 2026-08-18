@@ -21,6 +21,10 @@ Apply migration `202608020021_enforce_future_partner_inventory.sql` before enabl
 
 The repository uses a Hobby-compatible daily schedule at 08:00 UTC. During the private pilot, urgent queues can be drained by sending an authenticated `POST /api/email/process` for each job. Upgrade the Vercel plan before increasing the automated cadence.
 
+The Automation Operations Center also declares a Hobby-compatible daily observation scan at 08:15 UTC. Its route requires `CRON_SECRET` and remains fail-closed while `AUTOMATION_POLICY_SCANNER_ENABLED=false`. Keep that flag false until migration `202608170066_automation_slo_escalations.sql`, the application release, and a separate Production scheduling decision are approved. The scanner records internal SLO and provider-ledger observations only; it sends no notifications and contacts no provider.
+
+Keep `AUTOMATION_SANDBOX_EXECUTOR_ENABLED=false` in every environment when first applying migration `202608170067_automation_sandbox_executor.sql`; the database registry also starts disabled. Enabling either kill switch requires a separate environment-specific decision, and both must remain disabled in Production until a distinct Production authorization. The only registered adapter reads a sanitized internal email-outbox status and cannot send a message or contact Resend.
+
 ## Verified deployment baseline
 
 Audit date: 2026-08-05
