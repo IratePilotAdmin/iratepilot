@@ -1,6 +1,6 @@
 # iRatePilot Flights — Phase 5
 
-Status: Local evaluation-governance software and repository verification complete; Git and isolated Preview release pending separate approval; all external activation gates remain closed
+Status: Evaluation-governance software, Git publication, isolated Preview deployment, and authenticated Preview acceptance complete; all external activation gates remain closed
 
 ## Purpose
 
@@ -70,9 +70,9 @@ Phase 5 adds no client component, form, API route, server action, database migra
 
 ## Release gates
 
-- [ ] Commit and push the approved laptop changes after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and push the approved laptop changes at `b78a6f7` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 ## External activation gates
 
@@ -83,3 +83,5 @@ Phase 5 adds no client component, form, API route, server action, database migra
 - [ ] Make separate shortlist, contract, supplier-selection, credential-channel, implementation, and Production decisions.
 
 Phase 5 software completion is not authorization to evaluate a named supplier, receive supplier material, select a supplier, accept a contract, or enable a live flight search or sale.
+
+The isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_5_PREVIEW_EVIDENCE_2026-08-18.md`.
