@@ -622,6 +622,29 @@ Phase 18 provider-contact decision gates:
 
 The Flights Phase 18 Duffel provider-contact authorization and non-contact boundary is recorded in `docs/FLIGHTS_PHASE_18.md`. Its isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_18_PREVIEW_EVIDENCE_2026-08-19.md`. Provider contact remains blocked.
 
+Phase 19 Duffel provider-contact preflight design software gates:
+
+- [x] Define seven preflight controls without creating or verifying Phase 18 authorization; assigning or authenticating a sender or approver; identifying a recipient; creating or approving a message, disclosure, channel, or window; contacting Duffel; receiving a response; or authorizing an external capability.
+- [x] Define five immediate-stop safeguards for implied opening, authority or scope drift, identity or channel mismatch, conflicts, sensitive content, attachments, credentials, commitments, expiry, retries, incidents, responses, and downstream release.
+- [x] Define ten separately owned provider-contact preflight gates while keeping authorization, contact, responses, intake, cases, recommendations, selection, contracts, accounts, credentials, traffic, ticketing, and payments disabled.
+- [x] Extend the protected `/admin/flights` workspace without a database, form, mutation, upload, storage path, environment variable, provider SDK, network request, external message, recipient identity, sender identity, or Production change.
+- [x] Pass the focused Phase 19 test, ESLint, TypeScript, 1,092 tests across 246 files, and the optimized 113-page Next.js build.
+
+Phase 19 release gates:
+
+- [ ] Commit and publish the approved Phase 19 source to the private branch after separate approval.
+- [ ] Deploy only to the isolated Preview project after separate approval.
+- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+
+Phase 19 provider-contact preflight decision gates:
+
+- [ ] Create and separately approve an actual, current, narrow, expiring, revocable Phase 18 authorization outside this software after every Phase 18 decision prerequisite is satisfied.
+- [ ] Bind and independently verify the immutable authority reference, Duffel-only scope, one diligence purpose, one attempt, exact message and disclosures, data minimization, sender, approvers, recipient role, official channel, start, expiry, revocation, stops, incidents, no retry, response disposition, closeout, and no-standing-authority controls.
+- [ ] Make a new one-time action-time decision outside this design immediately before one approved contact attempt.
+- [ ] Keep every response, evidence intake, scoring, recommendation, selection, contract, account, credential, Sandbox, ticketing, payment, deployment, and Production decision separately controlled.
+
+The Flights Phase 19 Duffel provider-contact preflight and no-opening boundary is recorded in `docs/FLIGHTS_PHASE_19.md`. Actual Phase 18 authorization, Phase 19 preflight, and provider contact remain blocked.
+
 ## Overall completion rule
 
 Repository completion means `npm run check` passes and every public surface accurately describes its current mode. Commercial completion additionally requires all provider, data, legal, operational, and production release gates to be satisfied with recorded evidence. Software readiness must never be treated as authorization to enable live transactions.
