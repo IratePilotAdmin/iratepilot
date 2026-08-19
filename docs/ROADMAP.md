@@ -4,6 +4,8 @@ Last reviewed: 2026-08-19
 
 iRatePilot is application-ready for a controlled private-pilot preview. It is not yet commercially complete: real inventory, public booking, live payments, partner payouts, and supplier traffic remain behind explicit release gates.
 
+Flights Phases 1–20 are repository-verified, Git-published, deployed, and accepted in isolated Preview. Phase 21 provider-contact closeout design is repository-verified locally and awaits separately approved private-branch publication and isolated Preview acceptance. No provider contact or Production action is authorized.
+
 ## Phase 1 — Curated inventory and lead capture
 
 Status: **application and Preview baseline complete; first real pilot activation pending**
@@ -668,6 +670,30 @@ Phase 20 provider-contact execution decision gates:
 - [ ] Keep every response, evidence intake, scoring, recommendation, selection, contract, account, credential, Sandbox, ticketing, payment, deployment, and Production decision separately controlled.
 
 The Flights Phase 20 Duffel provider-contact execution-control and no-contact boundary is recorded in `docs/FLIGHTS_PHASE_20.md`. Its isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_20_PREVIEW_EVIDENCE_2026-08-19.md`. Actual Phase 18 authorization, Phase 19 preflight, Phase 20 execution, and provider contact remain blocked.
+
+Phase 21 Duffel provider-contact closeout design software gates:
+
+- [x] Define seven provider-contact closeout evidence artifacts without creating or verifying Phase 18 authorization, Phase 19 preflight, or Phase 20 execution; assigning a person; creating a message, recipient, channel, attempt, delivery, receipt, response, incident, audit record, finding, expiry record, or closeout receipt; contacting Duffel; or authorizing an external capability.
+- [x] Define five closeout reconciliation safeguards for implied execution, authority or scope drift, altered or duplicate attempts, delivery and receipt mismatch, responses, quarantine, incidents, stops, access, retention, deletion, expiry, no reply, no retry, no restart, and downstream release.
+- [x] Define ten separately owned provider-contact closeout gates while keeping contact, delivery, responses, intake, cases, recommendations, selection, contracts, accounts, credentials, traffic, ticketing, and payments disabled.
+- [x] Extend the protected `/admin/flights` workspace without a database, form, button, mutation, upload, storage path, environment variable, provider SDK, network request, external message, recipient identity, sender identity, or Production change.
+- [x] Pass the focused Phase 21 test, ESLint, TypeScript, 1,103 tests across 248 files, and the optimized 113-page Next.js build.
+
+Phase 21 release gates:
+
+- [ ] Commit and publish the approved Phase 21 source to the private branch after separate approval.
+- [ ] Deploy only to the isolated Preview project after separate approval.
+- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+
+Phase 21 provider-contact closeout decision gates:
+
+- [ ] Create and separately approve an actual Phase 18 authorization, Phase 19 preflight receipt, and Phase 20 execution record after every prerequisite is independently satisfied.
+- [ ] Reconcile the exact scope, message, recipient role, authentic channel, fixed window, manual release, one attempt, delivery, minimal receipt, every response or quarantine item, incident, stop, access event, retained or deleted item, finding, dissent, exception, expiry, and audit record.
+- [ ] Confirm no opening, following, forwarding, reply, retry, alternate channel, restart, evidence intake, recommendation, selection, contract, account, credential, implementation, traffic, ticketing, payment, or Production authority followed.
+- [ ] Make a new closeout decision outside this design only after every prerequisite, reconciliation, access-removal, deletion, expiry, audit, and no-restart requirement is satisfied; Phase 21 creates no closeout control.
+- [ ] Keep every future contact, reply, evidence intake, scoring, recommendation, selection, contract, account, credential, Sandbox, ticketing, payment, deployment, and Production decision separately controlled.
+
+The Flights Phase 21 Duffel provider-contact closeout and no-reply boundary is recorded in `docs/FLIGHTS_PHASE_21.md`. Actual Phase 18 authorization, Phase 19 preflight, Phase 20 execution, provider contact, response handling, and closeout remain blocked.
 
 ## Overall completion rule
 
