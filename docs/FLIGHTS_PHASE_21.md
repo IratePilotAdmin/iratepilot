@@ -1,7 +1,7 @@
 # iRatePilot Flights — Phase 21
 
 Date: 2026-08-19
-Status: **Repository-verified locally; private-branch publication, isolated Preview deployment, and authenticated browser acceptance remain pending; actual Phase 18 authorization, Phase 19 preflight, Phase 20 execution, provider contact, and closeout remain unstarted**
+Status: **Repository-verified, Git-published, deployed, and authenticated browser-accepted in isolated Preview; actual Phase 18 authorization, Phase 19 preflight, Phase 20 execution, provider contact, and closeout remain unstarted**
 
 ## Purpose
 
@@ -75,9 +75,9 @@ No provider was contacted. No message, recipient, channel, contact window, attem
 
 ## Release gates
 
-- [ ] Commit and publish the approved Phase 21 source to the private branch after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and publish the approved Phase 21 source to the private branch after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 ## Provider-contact closeout decision gates
 
@@ -91,3 +91,5 @@ No provider was contacted. No message, recipient, channel, contact window, attem
 Software completion is not evidence that actual Phase 18 authorization exists, Phase 19 preflight passed, Phase 20 execution occurred, Duffel was contacted, a message was delivered, a response was received, or closeout is authorized. It does not authorize supplier contact, a reply, supplier selection, live flight search, ticketing, payment, or Production traffic.
 
 The Phase 20 provider-contact execution-control and no-contact boundary remains recorded in `docs/FLIGHTS_PHASE_20.md`. Its isolated Preview acceptance evidence remains recorded in `docs/FLIGHTS_PHASE_20_PREVIEW_EVIDENCE_2026-08-19.md`.
+
+The Phase 21 provider-contact closeout and no-reply boundary is accepted in isolated Preview. Its acceptance evidence is recorded in `docs/FLIGHTS_PHASE_21_PREVIEW_EVIDENCE_2026-08-19.md`.

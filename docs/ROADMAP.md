@@ -4,7 +4,7 @@ Last reviewed: 2026-08-19
 
 iRatePilot is application-ready for a controlled private-pilot preview. It is not yet commercially complete: real inventory, public booking, live payments, partner payouts, and supplier traffic remain behind explicit release gates.
 
-Flights Phases 1–20 are repository-verified, Git-published, deployed, and accepted in isolated Preview. Phase 21 provider-contact closeout design is repository-verified locally and awaits separately approved private-branch publication and isolated Preview acceptance. No provider contact or Production action is authorized.
+Flights Phases 1–21 are repository-verified, Git-published, deployed, and accepted in isolated Preview. No provider contact or Production action is authorized.
 
 ## Phase 1 — Curated inventory and lead capture
 
@@ -681,9 +681,9 @@ Phase 21 Duffel provider-contact closeout design software gates:
 
 Phase 21 release gates:
 
-- [ ] Commit and publish the approved Phase 21 source to the private branch after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and publish the approved Phase 21 source to the private branch after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 Phase 21 provider-contact closeout decision gates:
 
@@ -693,7 +693,7 @@ Phase 21 provider-contact closeout decision gates:
 - [ ] Make a new closeout decision outside this design only after every prerequisite, reconciliation, access-removal, deletion, expiry, audit, and no-restart requirement is satisfied; Phase 21 creates no closeout control.
 - [ ] Keep every future contact, reply, evidence intake, scoring, recommendation, selection, contract, account, credential, Sandbox, ticketing, payment, deployment, and Production decision separately controlled.
 
-The Flights Phase 21 Duffel provider-contact closeout and no-reply boundary is recorded in `docs/FLIGHTS_PHASE_21.md`. Actual Phase 18 authorization, Phase 19 preflight, Phase 20 execution, provider contact, response handling, and closeout remain blocked.
+The Flights Phase 21 Duffel provider-contact closeout and no-reply boundary is recorded in `docs/FLIGHTS_PHASE_21.md`. Its isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_21_PREVIEW_EVIDENCE_2026-08-19.md`. Actual Phase 18 authorization, Phase 19 preflight, Phase 20 execution, provider contact, response handling, and closeout remain blocked.
 
 ## Overall completion rule
 
