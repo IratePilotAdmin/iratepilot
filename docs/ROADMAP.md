@@ -1,6 +1,6 @@
 # Roadmap and completion status
 
-Last reviewed: 2026-08-18
+Last reviewed: 2026-08-19
 
 iRatePilot is application-ready for a controlled private-pilot preview. It is not yet commercially complete: real inventory, public booking, live payments, partner payouts, and supplier traffic remain behind explicit release gates.
 
@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1–9 and Phases 11–14 repository-verified, Git-published, and accepted in isolated Preview; Phase 10 repository-verified, Git-published, and deployed to isolated Preview with its distinct authenticated acceptance pending; all closeout, intake, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1–9 and Phases 11–14 repository-verified, Git-published, and accepted in isolated Preview; Phase 15 repository-verified locally with release verification pending; Phase 10 repository-verified, Git-published, and deployed to isolated Preview with its distinct authenticated acceptance pending; all closeout, intake, evidence review, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -519,6 +519,31 @@ Phase 14 intake-closeout decision gates:
 - [ ] Make a new closeout decision outside this design only after every prerequisite and reconciliation requirement is satisfied.
 
 The Flights Phase 14 supplier-evaluation intake closeout, findings-disposition, and non-activation boundary is recorded in `docs/FLIGHTS_PHASE_14.md`. Its isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_14_PREVIEW_EVIDENCE_2026-08-19.md`.
+
+Phase 15 supplier-evidence review authorization design software gates:
+
+- [x] Define seven evidence-review authorization artifacts without creating or approving Phase 14 closeout; reopening intake; contacting a supplier; creating a candidate, case, or channel; admitting evidence; approving a rubric; assigning a reviewer; granting access; opening a review; scoring or selecting a supplier; or authorizing an external capability.
+- [x] Define five review-integrity safeguards for implied authority, evidence admissibility, new intake, retrofitted criteria, conflicted review, suppressed dissent, recommendation, selection, and downstream release.
+- [x] Define ten separately owned evidence-review authorization gates while keeping closeout, evidence, rubrics, review roles, access, review, scoring, recommendations, shortlist, commercial diligence, contracts, supplier selection, credentials, traffic, ticketing, and payment disabled.
+- [x] Extend the protected `/admin/flights` workspace without a database, form, mutation, upload, storage path, scoring engine, environment variable, provider SDK, network request, external message, supplier identity, reviewer identity, or Production change.
+- [x] Pass ESLint, TypeScript, 1,070 tests across 242 files, and the optimized 113-page Next.js build.
+
+Phase 15 release gates:
+
+- [ ] Commit and publish the approved Phase 15 source to the private branch after separate approval.
+- [ ] Deploy only to the isolated Preview project after separate approval.
+- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+
+Phase 15 evidence-review authorization decision gates:
+
+- [ ] Create and separately approve an actual, current Phase 14 closeout after every prerequisite, reconciliation, deletion, incident, finding, dissent, expiry, teardown, and no-restart requirement is satisfied.
+- [ ] Approve one fixed, sanitized, lineaged, allowlisted evidence inventory with permitted use, exclusions, access, retention, deletion, prohibited-data, contamination, and reproducibility controls; do not reopen intake or add material.
+- [ ] Approve and freeze the objective review purpose, rubric version, criteria, weights, thresholds, missing-evidence rules, change control, and no-retrofitting boundary before any evidence is inspected.
+- [ ] Confirm legal, commercial, privacy, security, confidentiality, jurisdiction, and data-use authority for the narrow review without accepting a proposal or contract.
+- [ ] Approve independent reviewers and observers, conflicts, recusals, replacements, blind-review rules, variance treatment, preserved dissent, exceptions, explicit overrides, findings, escalation, and unconditional stop authority.
+- [ ] Make a new, one-time, scoped, expiring, revocable action-time decision outside this design immediately before a fixed evidence inventory could enter review.
+
+The Flights Phase 15 supplier-evidence review authorization and non-review boundary is recorded in `docs/FLIGHTS_PHASE_15.md`.
 
 ## Overall completion rule
 
