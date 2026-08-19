@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1–17 repository-verified, Git-published, and accepted in isolated Preview; all review execution, recommendation, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1–17 repository-verified, Git-published, and accepted in isolated Preview; Phase 18 repository-verified locally and awaiting release approval; all provider contact, review execution, recommendation, supplier selection, airline content, credentials, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -599,6 +599,28 @@ Public-source provider research and an unscored, non-selection preliminary short
 A separately approved named-provider public-evidence matrix and conservative provisional scores are recorded in `docs/FLIGHTS_PROVIDER_PUBLIC_EVIDENCE_MATRIX_2026-08-19.md`. The scores measure public documentation completeness only and create no formal score, recommendation, selection, contact, contract, account, credential, traffic, payment, deployment, or Production authority.
 
 The executive documentation-only provider-path preference is recorded in `docs/FLIGHTS_PROVIDER_PATH_DECISION_2026-08-19.md`: Duffel is the primary intended diligence and launch path, and Sabre is the secondary intended expansion path. No provider contact, formal recommendation, contracted selection, account, credential, implementation, traffic, payment, deployment, or Production authority was created.
+
+Phase 18 Duffel provider-contact authorization design software gates:
+
+- [x] Define six authorization artifacts without assigning a sender or approver; identifying a recipient; creating or approving a message, disclosure, channel, or contact window; contacting Duffel; receiving a response; or authorizing an external capability.
+- [x] Define five immediate-stop safeguards for implied authority, provider or purpose drift, recipient or channel mismatch, unapproved text, sensitive data, impersonation, retries, incidents, commitments, evidence intake, and downstream release.
+- [x] Define ten separately owned provider-contact authorization gates while keeping contact, responses, intake, cases, recommendations, selection, contracts, accounts, credentials, traffic, ticketing, and payments disabled.
+- [x] Extend the protected `/admin/flights` workspace without a database, form, mutation, upload, storage path, environment variable, provider SDK, network request, external message, recipient identity, sender identity, or Production change.
+- [x] Pass ESLint, TypeScript, 1,087 tests across 245 files, and the optimized 113-page Next.js build.
+
+Phase 18 release gates:
+
+- [ ] Commit and publish the approved Phase 18 source to the private branch after separate approval.
+- [ ] Deploy only to the isolated Preview project after separate approval.
+- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+
+Phase 18 provider-contact decision gates:
+
+- [ ] Approve one narrow Duffel diligence purpose, one accountable organizational sender, independent approvers, one official recipient role, one allowlisted channel, one immutable message, truthful disclosures, data minimization, start, expiry, revocation, stop, incident, no-retry, response-disposition, closeout, and no-commitment controls.
+- [ ] Make a new one-time action-time decision outside the design immediately before one approved contact attempt.
+- [ ] Keep every response, evidence intake, scoring, recommendation, selection, contract, account, credential, Sandbox, ticketing, payment, deployment, and Production decision separately controlled.
+
+The Flights Phase 18 Duffel provider-contact authorization and non-contact boundary is recorded in `docs/FLIGHTS_PHASE_18.md`. Provider contact remains blocked.
 
 ## Overall completion rule
 
