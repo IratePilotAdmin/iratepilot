@@ -632,9 +632,9 @@ Phase 19 Duffel provider-contact preflight design software gates:
 
 Phase 19 release gates:
 
-- [ ] Commit and publish the approved Phase 19 source to the private branch after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and publish the approved Phase 19 source at private-branch commit `80c8e7a` after separate approval.
+- [x] Deploy only to the isolated Preview project as deployment `dpl_6TEhtT7Ams1LdaoJWdojFKhNGGot` after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 Phase 19 provider-contact preflight decision gates:
 
@@ -643,7 +643,7 @@ Phase 19 provider-contact preflight decision gates:
 - [ ] Make a new one-time action-time decision outside this design immediately before one approved contact attempt.
 - [ ] Keep every response, evidence intake, scoring, recommendation, selection, contract, account, credential, Sandbox, ticketing, payment, deployment, and Production decision separately controlled.
 
-The Flights Phase 19 Duffel provider-contact preflight and no-opening boundary is recorded in `docs/FLIGHTS_PHASE_19.md`. Actual Phase 18 authorization, Phase 19 preflight, and provider contact remain blocked.
+The Flights Phase 19 Duffel provider-contact preflight and no-opening boundary is recorded in `docs/FLIGHTS_PHASE_19.md`. Its isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_19_PREVIEW_EVIDENCE_2026-08-19.md`. Actual Phase 18 authorization, Phase 19 preflight, and provider contact remain blocked.
 
 ## Overall completion rule
 
