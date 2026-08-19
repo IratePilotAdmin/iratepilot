@@ -11,6 +11,7 @@ import { buildFlightEvaluationReviewAuthorizationDesign, flightEvaluationReviewA
 import { buildFlightEvaluationReviewExecutionControlDesign, flightEvaluationReviewExecutionSafeguards, flightEvaluationReviewExecutionStages } from "@/lib/flights/evaluation-review-execution-control";
 import { buildFlightEvaluationReviewPreflightDesign, flightEvaluationReviewPreflightControls, flightEvaluationReviewPreflightSafeguards } from "@/lib/flights/evaluation-review-preflight";
 import { buildFlightProviderContactAuthorizationDesign, flightProviderContactAuthorizationArtifacts, flightProviderContactAuthorizationSafeguards } from "@/lib/flights/provider-contact-authorization";
+import { buildFlightProviderContactExecutionControlDesign, flightProviderContactExecutionSafeguards, flightProviderContactExecutionStages } from "@/lib/flights/provider-contact-execution-control";
 import { buildFlightProviderContactPreflightDesign, flightProviderContactPreflightControls, flightProviderContactPreflightSafeguards } from "@/lib/flights/provider-contact-preflight";
 import { buildFlightEvaluationRehearsal, flightEvaluationRehearsalReceipts, flightEvaluationRehearsalScenarios } from "@/lib/flights/evaluation-rehearsal";
 import { buildFlightRehearsalAuthorizationReadiness, flightRehearsalAuthorizationArtifacts, flightRehearsalAuthorizationSafeguards } from "@/lib/flights/rehearsal-authorization";
@@ -22,8 +23,8 @@ import { buildFlightSupplierReadiness, flightCapabilityGroups, flightSupplierPat
 import { buildFlightSupplierSelectionPlan, flightSandboxAdapterOperations, flightSupplierSelectionCriteria } from "@/lib/flights/supplier-selection";
 
 export const metadata: Metadata = {
-  title: "Duffel provider-contact preflight design",
-  description: "Review the blocked, read-only Duffel provider-contact preflight boundary while authorization, contact, evidence intake, commitments, accounts, credentials, traffic, ticketing, payments, and Production remain disabled.",
+  title: "Duffel provider-contact execution-control design",
+  description: "Review the blocked, read-only Duffel provider-contact execution boundary while authorization, preflight, contact, responses, evidence intake, commitments, accounts, credentials, traffic, ticketing, payments, and Production remain disabled.",
 };
 
 export default function Page() {
@@ -43,6 +44,51 @@ export default function Page() {
   const reviewAuthorization = buildFlightEvaluationReviewAuthorizationDesign();
   const reviewPreflight = buildFlightEvaluationReviewPreflightDesign();
   const reviewExecutionControl = buildFlightEvaluationReviewExecutionControlDesign();
+  const providerContactExecutionControl = buildFlightProviderContactExecutionControlDesign();
+  const providerContactExecutionLocks = [
+    ["Phase 18 authorization prerequisite", providerContactExecutionControl.phase18AuthorizationPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
+    ["Phase 19 preflight prerequisite", providerContactExecutionControl.phase19PreflightPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
+    ["Phase 19 software acceptance", providerContactExecutionControl.phase19SoftwareAcceptanceState === "accepted_in_preview" ? "Accepted in Preview" : "Pending"],
+    ["Authorization reference", providerContactExecutionControl.authorizationReferenceState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Preflight receipt", providerContactExecutionControl.preflightReceiptState === "not_created" ? "Not created" : "Created"],
+    ["Execution control", providerContactExecutionControl.executionControlState === "blocked" ? "Blocked" : "Ready"],
+    ["Action-time decision", providerContactExecutionControl.executionDecisionState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Contact scope binding", providerContactExecutionControl.contactScopeBindingState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Sender", providerContactExecutionControl.senderState === "not_assigned" ? "Not assigned" : "Assigned"],
+    ["Approvers", providerContactExecutionControl.approverState === "not_assigned" ? "Not assigned" : "Assigned"],
+    ["Conflict review", providerContactExecutionControl.conflictReviewState === "not_started" ? "Not started" : "Started"],
+    ["Contact access", providerContactExecutionControl.accessState === "not_granted" ? "Not granted" : "Granted"],
+    ["Message", providerContactExecutionControl.messageState === "not_created" ? "Not created" : "Created"],
+    ["Message freeze", providerContactExecutionControl.messageFreezeState === "not_confirmed" ? "Not confirmed" : "Confirmed"],
+    ["Disclosures", providerContactExecutionControl.disclosureState === "not_approved" ? "Not approved" : "Approved"],
+    ["Recipient role", providerContactExecutionControl.recipientRoleState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Channel", providerContactExecutionControl.channelState === "not_approved" ? "Not approved" : "Approved"],
+    ["Channel authenticity", providerContactExecutionControl.channelAuthenticityState === "not_verified" ? "Not verified" : "Verified"],
+    ["Recordkeeping plan", providerContactExecutionControl.recordkeepingPlanState === "not_approved" ? "Not approved" : "Approved"],
+    ["Contact window", providerContactExecutionControl.contactWindowState === "not_opened" ? "Not opened" : "Opened"],
+    ["Supplier contact", providerContactExecutionControl.supplierContactState === "not_started" ? "Not started" : "Started"],
+    ["Contact attempts", `${providerContactExecutionControl.contactAttemptCount}`],
+    ["Contact receipt", providerContactExecutionControl.receiptState === "not_created" ? "Not created" : "Created"],
+    ["Provider response", providerContactExecutionControl.responseState === "not_received" ? "Not received" : "Received"],
+    ["Response disposition", providerContactExecutionControl.responseDispositionState === "not_started" ? "Not started" : "Started"],
+    ["Response quarantine", providerContactExecutionControl.responseQuarantineState === "not_created" ? "Not created" : "Created"],
+    ["Incident", providerContactExecutionControl.incidentState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Stop record", providerContactExecutionControl.stopRecordState === "not_created" ? "Not created" : "Created"],
+    ["Closeout", providerContactExecutionControl.closeoutState === "not_created" ? "Not created" : "Created"],
+    ["Evidence intake", providerContactExecutionControl.evidenceIntakeState === "closed" ? "Closed" : "Open"],
+    ["Evaluation case", providerContactExecutionControl.evaluationCaseState === "not_created" ? "Not created" : "Created"],
+    ["Recommendation", providerContactExecutionControl.recommendationState === "not_issued" ? "Not issued" : "Issued"],
+    ["Supplier selection", providerContactExecutionControl.selectionState === "not_selected" ? "Not selected" : "Selected"],
+    ["Contract", providerContactExecutionControl.contractState === "not_received" ? "Not received" : "Received"],
+    ["Provider account", providerContactExecutionControl.accountState === "not_created" ? "Not created" : "Created"],
+    ["Credentials", providerContactExecutionControl.credentialsAccepted ? "Accepted" : "Not accepted"],
+    ["External network", providerContactExecutionControl.externalNetworkAccess ? "Enabled" : "Disabled"],
+    ["Sandbox adapter", providerContactExecutionControl.sandboxAdapterImplemented ? "Implemented" : "Not implemented"],
+    ["Sandbox traffic", providerContactExecutionControl.sandboxTrafficAuthorized ? "Enabled" : "Disabled"],
+    ["Production traffic", providerContactExecutionControl.productionTrafficAuthorized ? "Enabled" : "Disabled"],
+    ["Ticketing", providerContactExecutionControl.ticketingAuthorized ? "Enabled" : "Disabled"],
+    ["Flight payments", providerContactExecutionControl.paymentAuthorized ? "Enabled" : "Disabled"],
+  ] as const;
   const providerContactPreflight = buildFlightProviderContactPreflightDesign();
   const providerContactPreflightLocks = [
     ["Phase 18 authorization prerequisite", providerContactPreflight.phase18AuthorizationPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
@@ -466,6 +512,77 @@ export default function Page() {
 
   return (
     <DashboardShell title="Admin Console" items={adminNavigation}>
+      <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 20 · Duffel contact execution-control design only</p>
+      <h1 className="mt-2 text-3xl font-bold">Duffel provider-contact execution-control plan</h1>
+      <p className="mt-2 max-w-3xl text-slate-600">Define the fail-closed control sequence for a possible future single Duffel diligence contact: actual Phase 18 authorization, a separately approved Phase 19 preflight receipt, immutable scope and message, accountable independent roles, official recipient role and authentic channel, one manual attempt, a fixed window, two-person release, immediate stops, response quarantine, incident handling, minimal audit, expiry, closeout, and no-downstream authority. Phase 19 software was accepted in isolated Preview, but no actual authorization or preflight exists. This page has no send control and cannot identify or contact a recipient, create or transmit a message, open a window, receive or inspect a response, admit evidence, accept terms, recommend or select a supplier, create an account, accept credentials, enable traffic, issue tickets, collect payment, or change Production.</p>
+
+      <section className="mt-8 grid gap-4 lg:grid-cols-[1fr_1.6fr]">
+        <div className="rounded-2xl bg-slate-950 p-6 text-white">
+          <div className="flex items-center gap-3"><ShieldCheck className="h-6 w-6" /><strong>Duffel provider-contact execution is blocked</strong></div>
+          <p className="mt-3 text-sm leading-6 text-slate-300">Phase 19 software acceptance is recorded, but no actual Phase 18 authorization, Phase 19 preflight receipt, immutable authority reference, bound contact scope, sender, approver, access, message, disclosure packet, recipient role, verified channel, action-time start decision, contact window, attempt, receipt, response, quarantine, incident record, closeout, intake, case, recommendation, selection, contract, account, credential, traffic, ticketing, or payment exists. Completing every Phase 20 design gate cannot start or perform contact.</p>
+          <div className="mt-6 text-4xl font-bold">{providerContactExecutionControl.completedCount}/{providerContactExecutionControl.totalCount}</div>
+          <p className="mt-1 text-xs uppercase tracking-wider text-slate-400">Phase 20 gates recorded complete</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {providerContactExecutionLocks.map(([label, status]) => (
+            <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5">
+              <CircleSlash2 className="h-5 w-5 text-rose-600" />
+              <strong className="mt-4 block">{label}</strong>
+              <span className={`mt-1 block text-sm font-medium ${status === "Accepted in Preview" ? "text-emerald-700" : "text-rose-700"}`}>{status}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Contact execution blueprint only</p><h2 className="mt-2 text-2xl font-bold">Seven controlled provider-contact stages</h2></div><ClipboardCheck className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Seven static stages define how a future separately authorized one-attempt contact would have to remain bound from authority through closeout. They do not create authorization, preflight, roles, access, a message, a recipient, a channel, a window, a send, a receipt, a response, evidence, an incident, closeout, commitment, or external action.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {flightProviderContactExecutionStages.map((stage) => (
+            <article key={stage.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold">{stage.label}</h3>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{stage.owner}</p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{stage.executionRequirement}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-rose-700"><strong>Boundary:</strong> {stage.nonExecutionBoundary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Any missing, changed, automated, sensitive, or response-bearing event aborts contact</p><h2 className="mt-2 text-2xl font-bold">Five immediate-stop contact safeguards</h2></div><Scale className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Five safeguards keep implied start, authority or message drift, identity or channel mismatch, conflicts, automation, retries, sensitive content, attachments, credentials, commitments, incidents, responses, incomplete closeout, and downstream release fail closed.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {flightProviderContactExecutionSafeguards.map((safeguard) => (
+            <article key={safeguard.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold">{safeguard.label}</h3>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{safeguard.owner}</p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{safeguard.safeguard}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-rose-700"><strong>Fail closed:</strong> {safeguard.failClosedBoundary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10 rounded-2xl border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 p-6"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Phase 20 provider-contact execution sequence</p><h2 className="mt-2 text-2xl font-bold">Ten separately owned provider-contact execution gates</h2><p className="mt-2 text-sm text-slate-600">Every gate starts incomplete. Even a completed design cannot satisfy actual Phase 18 authorization or Phase 19 preflight, assign or verify a person, approve a message or channel, identify a recipient, open a contact window, contact Duffel, create a receipt, admit or rely on a response, recommend or select a supplier, or authorize any external capability.</p></div>
+        <div className="divide-y divide-slate-100">
+          {providerContactExecutionControl.gates.map((gate, index) => (
+            <article key={gate.id} className="grid gap-3 p-6 md:grid-cols-[3rem_1fr_11rem] md:items-start">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">{index + 1}</span>
+              <div><h3 className="font-bold">{gate.label}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{gate.detail}</p></div>
+              <div className="md:text-right"><span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{gate.owner}</span><span className="mt-2 block text-sm font-medium text-amber-700">Not recorded</span></div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-12 border-t border-slate-200 pt-10">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Flights · Phase 19 · Duffel contact preflight design only</p>
+        <h2 className="mt-2 text-2xl font-bold">Provider-contact preflight reference</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600"><strong>Actual provider-contact preflight remains unsatisfied.</strong> Phase 19 software was accepted in isolated Preview, but no actual Phase 18 authorization, Phase 19 preflight receipt, sender, approver, message, recipient role, channel, contact window, or action-time start decision exists. Phase 20 does not create, satisfy, replace, or bypass Phase 18 or Phase 19 authority.</p>
+      </section>
+
       <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 19 · Duffel contact preflight design only</p>
       <h1 className="mt-2 text-3xl font-bold">Duffel provider-contact preflight plan</h1>
       <p className="mt-2 max-w-3xl text-slate-600">Define the final verification sequence for a possible future Duffel diligence contact: the actual Phase 18 authority reference, provider and purpose scope, accountable sender and independent approvers, immutable exact message and disclosures, official recipient role and channel authenticity, data minimization, privacy, security, recordkeeping, contact window, expiry, revocation, stops, incident handling, no retry, response disposition, closeout, and no-downstream-release controls. Phase 18 software was accepted in isolated Preview, but no actual Phase 18 authorization exists. This page cannot satisfy authorization, identify or contact a recipient, create or send a message, open a window, receive evidence, accept terms, recommend or select a supplier, create an account, accept credentials, enable traffic, issue tickets, collect payment, or change Production.</p>
