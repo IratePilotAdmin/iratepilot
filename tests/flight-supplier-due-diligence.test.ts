@@ -69,10 +69,9 @@ describe("flight supplier due diligence phase 4", () => {
     expect(flightSupplierDiligenceGates.every((gate) => gate.owner.length > 0)).toBe(true);
   });
 
-  it("keeps the Phase 4 administrator workspace server-rendered, read-only, and network-free", () => {
+  it("keeps the Phase 4 reference server-rendered, read-only, and network-free", () => {
     const page = read("app/admin/flights/page.tsx");
-    expect(page).toContain("Flights · Phase 4 · Due diligence only");
-    expect(page).toContain("No candidate or contract recorded");
+    expect(page).toContain("Phase 4 diligence reference");
     expect(page).toContain("Candidate evidence packet");
     expect(page).toContain("Contract review matrix");
     expect(page).not.toContain("fetch(");
@@ -85,6 +84,7 @@ describe("flight supplier due diligence phase 4", () => {
   it("preserves the earlier planning and activation references without adding sensitive storage", () => {
     const page = read("app/admin/flights/page.tsx");
     const model = read("lib/flights/supplier-due-diligence.ts");
+    expect(page).toContain("Phase 4 diligence reference");
     expect(page).toContain("Phase 3 planning reference");
     expect(page).toContain("Phase 2 activation reference");
     expect(model).not.toContain("candidateName");

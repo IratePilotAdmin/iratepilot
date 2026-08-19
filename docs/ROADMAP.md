@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1–4 accepted in isolated Preview; all airline content, credentials, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1–4 accepted in isolated Preview; Phase 5 evaluation-governance software verified locally; all airline content, credentials, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -289,6 +289,22 @@ Phase 4 release gates:
 - [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 The Flights Phase 4 due-diligence and contracting-readiness boundary is recorded in `docs/FLIGHTS_PHASE_4.md`. The isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_4_PREVIEW_EVIDENCE_2026-08-18.md`.
+
+Phase 5 evaluation-governance software gates:
+
+- [x] Define six evidence-admissibility controls without opening intake or recording a supplier identity, response, document, representation, score, ranking, recommendation, or shortlist.
+- [x] Define five decision-record safeguards that separate admissibility, scoring, conflicts, exceptions, recommendations, shortlist approval, contracting, supplier selection, implementation, and release.
+- [x] Define ten separately owned evaluation-governance gates while keeping intake, candidate records, evaluation cases, evidence, scoring, recommendations, shortlist, contract, supplier selection, credentials, implementation, traffic, ticketing, and payment disabled.
+- [x] Extend the protected `/admin/flights` workspace without a database, form, mutation, environment variable, provider SDK, or network request.
+- [x] Pass ESLint, TypeScript, 1,007 tests across 232 files, and the optimized 113-page Next.js build.
+
+Phase 5 release gates:
+
+- [ ] Commit and push the approved laptop changes after separate approval.
+- [ ] Deploy only to the isolated Preview project after separate approval.
+- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+
+The Flights Phase 5 evaluation-governance boundary is recorded in `docs/FLIGHTS_PHASE_5.md`.
 
 ## Overall completion rule
 

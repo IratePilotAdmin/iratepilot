@@ -46,7 +46,7 @@ describe("flight supplier readiness phase 2", () => {
 
   it("keeps the administrator workspace read-only and network-free", () => {
     const page = read("app/admin/flights/page.tsx");
-    expect(page).toContain("Activation remains locked");
+    expect(page).toContain("Phase 2 activation reference");
     expect(page).toContain("Every gate starts incomplete");
     expect(page).not.toContain("fetch(");
     expect(page).not.toContain("process.env");

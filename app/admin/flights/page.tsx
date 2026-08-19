@@ -2,44 +2,50 @@ import type { Metadata } from "next";
 import { Circle, CircleSlash2, ClipboardCheck, Network, Plane, Route, Scale, ShieldCheck, TicketCheck } from "lucide-react";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { adminNavigation } from "@/data/navigation";
+import { buildFlightEvaluationGovernance, flightEvaluationControls, flightEvaluationDecisionSafeguards } from "@/lib/flights/evaluation-governance";
 import { buildFlightSupplierDueDiligence, flightSupplierContractLanes, flightSupplierEvidenceWorkstreams } from "@/lib/flights/supplier-due-diligence";
 import { buildFlightSupplierReadiness, flightCapabilityGroups, flightSupplierPaths } from "@/lib/flights/supplier-readiness";
 import { buildFlightSupplierSelectionPlan, flightSandboxAdapterOperations, flightSupplierSelectionCriteria } from "@/lib/flights/supplier-selection";
 
 export const metadata: Metadata = {
-  title: "Flight supplier due diligence plan",
-  description: "Review the flight supplier evidence and contracting-readiness plan while candidate data, credentials, traffic, ticketing, payments, and Production remain disabled.",
+  title: "Flight supplier evaluation governance",
+  description: "Review the flight supplier evaluation-governance design while candidate intake, evidence, scoring, recommendations, credentials, traffic, ticketing, payments, and Production remain disabled.",
 };
 
 export default function Page() {
   const readiness = buildFlightSupplierReadiness();
   const selection = buildFlightSupplierSelectionPlan();
   const diligence = buildFlightSupplierDueDiligence();
+  const governance = buildFlightEvaluationGovernance();
   const locks = [
-    ["Candidate", diligence.candidateState === "not_recorded" ? "Not recorded" : "Recorded"],
-    ["Shortlist", diligence.shortlistState === "not_created" ? "Not created" : "Created"],
-    ["Contract", diligence.contractState === "not_received" ? "Not received" : "Received"],
-    ["Supplier selection", diligence.selectionState === "not_selected" ? "Not selected" : "Selected"],
-    ["Credentials", diligence.credentialsAccepted ? "Accepted" : "Not accepted"],
-    ["Sandbox adapter", diligence.sandboxAdapterImplemented ? "Implemented" : "Not implemented"],
-    ["Sandbox traffic", diligence.sandboxTrafficAuthorized ? "Enabled" : "Disabled"],
-    ["Production traffic", diligence.productionTrafficAuthorized ? "Enabled" : "Disabled"],
-    ["Ticketing", diligence.ticketingAuthorized ? "Enabled" : "Disabled"],
-    ["Flight payments", diligence.paymentAuthorized ? "Enabled" : "Disabled"],
+    ["Evaluation intake", governance.intakeState === "closed" ? "Closed" : "Open"],
+    ["Candidate", governance.candidateState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Evaluation case", governance.evaluationCaseState === "not_created" ? "Not created" : "Created"],
+    ["Score", governance.scoreState === "not_calculated" ? "Not calculated" : "Calculated"],
+    ["Recommendation", governance.recommendationState === "not_issued" ? "Not issued" : "Issued"],
+    ["Shortlist", governance.shortlistState === "not_created" ? "Not created" : "Created"],
+    ["Supplier selection", governance.selectionState === "not_selected" ? "Not selected" : "Selected"],
+    ["Contract", governance.contractState === "not_received" ? "Not received" : "Received"],
+    ["Credentials", governance.credentialsAccepted ? "Accepted" : "Not accepted"],
+    ["Sandbox adapter", governance.sandboxAdapterImplemented ? "Implemented" : "Not implemented"],
+    ["Sandbox traffic", governance.sandboxTrafficAuthorized ? "Enabled" : "Disabled"],
+    ["Production traffic", governance.productionTrafficAuthorized ? "Enabled" : "Disabled"],
+    ["Ticketing", governance.ticketingAuthorized ? "Enabled" : "Disabled"],
+    ["Flight payments", governance.paymentAuthorized ? "Enabled" : "Disabled"],
   ] as const;
 
   return (
     <DashboardShell title="Admin Console" items={adminNavigation}>
-      <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 4 · Due diligence only</p>
-      <h1 className="mt-2 text-3xl font-bold">Flight supplier due diligence plan</h1>
-      <p className="mt-2 max-w-3xl text-slate-600">Prepare a neutral evidence packet and contract review sequence without recording a candidate, receiving a contract, accepting credentials, or contacting an airline, distributor, consolidator, payment service, or ticketing system.</p>
+      <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 5 · Evaluation governance only</p>
+      <h1 className="mt-2 text-3xl font-bold">Flight supplier evaluation governance</h1>
+      <p className="mt-2 max-w-3xl text-slate-600">Define the neutral rules, reviewer separation, decision records, and approval sequence required before a named supplier evaluation could begin. No candidate, evidence, score, recommendation, contract, credential, or external contact is recorded.</p>
 
       <section className="mt-8 grid gap-4 lg:grid-cols-[1fr_1.6fr]">
         <div className="rounded-2xl bg-slate-950 p-6 text-white">
-          <div className="flex items-center gap-3"><ShieldCheck className="h-6 w-6" /><strong>Activation remains locked</strong></div>
-          <p className="mt-3 text-sm leading-6 text-slate-300">No candidate or contract recorded. Diligence completion cannot select a supplier, accept credentials, implement an adapter, enable traffic, issue tickets, collect payment, or change Production.</p>
-          <div className="mt-6 text-4xl font-bold">{diligence.completedCount}/{diligence.totalCount}</div>
-          <p className="mt-1 text-xs uppercase tracking-wider text-slate-400">Phase 4 gates recorded complete</p>
+          <div className="flex items-center gap-3"><ShieldCheck className="h-6 w-6" /><strong>Evaluation intake remains closed</strong></div>
+          <p className="mt-3 text-sm leading-6 text-slate-300">No evaluation case or supplier evidence recorded. Governance completion cannot open intake, calculate a score, issue a recommendation, create a shortlist, select a supplier, accept credentials, enable traffic, issue tickets, collect payment, or change Production.</p>
+          <div className="mt-6 text-4xl font-bold">{governance.completedCount}/{governance.totalCount}</div>
+          <p className="mt-1 text-xs uppercase tracking-wider text-slate-400">Phase 5 gates recorded complete</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {locks.map(([label, status]) => (
@@ -53,7 +59,50 @@ export default function Page() {
       </section>
 
       <section className="mt-10">
-        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Evidence requirements only</p><h2 className="mt-2 text-2xl font-bold">Candidate evidence packet</h2></div><ClipboardCheck className="h-7 w-7 text-slate-400" /></div>
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Policy design only</p><h2 className="mt-2 text-2xl font-bold">Evidence admissibility controls</h2></div><ClipboardCheck className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Six controls define how future evidence would be attributed, compared, protected, independently reviewed, and escalated. They do not open an intake channel or receive any supplier material.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {flightEvaluationControls.map((control) => (
+            <article key={control.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold">{control.label}</h3>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{control.owner}</p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{control.requiredRule}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-rose-700"><strong>Boundary:</strong> {control.safetyBoundary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Decision separation</p><h2 className="mt-2 text-2xl font-bold">Decision-record safeguards</h2></div><Scale className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Five safeguards keep admissibility, scoring, conflicts, exceptions, recommendations, shortlist approval, contracting, supplier selection, and release as separate future records.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {flightEvaluationDecisionSafeguards.map((safeguard) => (
+            <article key={safeguard.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold">{safeguard.label}</h3>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{safeguard.owner}</p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{safeguard.recordRule}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-rose-700"><strong>Boundary:</strong> {safeguard.activationBoundary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10 rounded-2xl border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 p-6"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Phase 5 release sequence</p><h2 className="mt-2 text-2xl font-bold">Ten separately owned evaluation-governance gates</h2><p className="mt-2 text-sm text-slate-600">Every gate starts incomplete. Even a completed governance record cannot open evidence intake, create an evaluation case, or authorize a named supplier review.</p></div>
+        <div className="divide-y divide-slate-100">
+          {governance.gates.map((gate, index) => (
+            <article key={gate.id} className="grid gap-3 p-6 md:grid-cols-[3rem_1fr_11rem] md:items-start">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">{index + 1}</span>
+              <div><h3 className="font-bold">{gate.label}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{gate.detail}</p></div>
+              <div className="md:text-right"><span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{gate.owner}</span><span className="mt-2 block text-sm font-medium text-amber-700">Not recorded</span></div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Phase 4 diligence reference</p><h2 className="mt-2 text-2xl font-bold">Candidate evidence packet</h2></div><ClipboardCheck className="h-7 w-7 text-slate-400" /></div>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Seven workstreams define what attributable, current evidence would be required from a future candidate. This page stores no supplier identity, response, document, score, quote, or representation.</p>
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {flightSupplierEvidenceWorkstreams.map((workstream) => (
