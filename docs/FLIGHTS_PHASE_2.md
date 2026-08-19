@@ -1,6 +1,6 @@
 # iRatePilot Flights — Phase 2
 
-Status: Local supplier-readiness software and repository verification complete; Git and isolated Preview release pending separate approval
+Status: Supplier-readiness software, Git publication, isolated Preview deployment, and authenticated browser acceptance complete; all external activation gates remain closed
 
 ## Purpose
 
@@ -52,9 +52,9 @@ Phase 2 adds no database migration, API route, server action, environment variab
 
 ## Release gates
 
-- [ ] Commit and push the approved laptop changes after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and push the approved laptop changes after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 ## External activation gates
 
@@ -67,3 +67,5 @@ Phase 2 adds no database migration, API route, server action, environment variab
 - [ ] Make a separate Production decision before enabling supplier traffic, ticketing, or flight payments.
 
 Phase 2 software completion is not supplier approval and never authorizes a live flight sale.
+
+The isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_2_PREVIEW_EVIDENCE_2026-08-18.md`.
