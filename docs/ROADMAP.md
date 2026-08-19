@@ -594,6 +594,8 @@ Phase 17 evidence-review execution decision gates:
 
 The Flights Phase 17 supplier-evidence review execution-control and no-execution boundary is recorded in `docs/FLIGHTS_PHASE_17.md`. Its isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_17_PREVIEW_EVIDENCE_2026-08-19.md`.
 
+Public-source provider research and an unscored, non-selection preliminary shortlist are recorded in `docs/FLIGHTS_PROVIDER_RESEARCH_SHORTLIST_2026-08-19.md`. No supplier was contacted, scored, recommended, selected, contracted, credentialed, or connected.
+
 ## Overall completion rule
 
 Repository completion means `npm run check` passes and every public surface accurately describes its current mode. Commercial completion additionally requires all provider, data, legal, operational, and production release gates to be satisfied with recorded evidence. Software readiness must never be treated as authorization to enable live transactions.
