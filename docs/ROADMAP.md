@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Phase 1 software and isolated Preview browser acceptance complete; all airline content, ticketing, payment, and Production traffic disabled**
+Status: **Phase 1 Preview acceptance complete; Phase 2 supplier-readiness software verified locally; all airline content, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -241,6 +241,22 @@ External activation gates:
 - [ ] Make a separate Production decision before enabling airline traffic, flight payments, or ticketing.
 
 The Flights Phase 1 design and safety boundary are recorded in `docs/FLIGHTS_PHASE_1.md`. The isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_1_PREVIEW_EVIDENCE_2026-08-18.md`.
+
+Phase 2 supplier-readiness software gates:
+
+- [x] Add the protected, read-only `/admin/flights` supplier-readiness workspace.
+- [x] Define neutral NDC aggregator, GDS, and consolidator evaluation paths without claiming a supplier relationship.
+- [x] Define shopping, order, ticketing, servicing, and operational certification requirements.
+- [x] Define ten separately owned activation gates while keeping sandbox traffic, Production traffic, ticketing, and payment disabled.
+- [x] Pass ESLint, TypeScript, 987 tests across 229 files, and the optimized 113-page Next.js build.
+
+Phase 2 release gates:
+
+- [ ] Commit and push the approved laptop changes after separate approval.
+- [ ] Deploy only to the isolated Preview project after separate approval.
+- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+
+The Flights Phase 2 supplier-readiness design and fail-closed boundary are recorded in `docs/FLIGHTS_PHASE_2.md`.
 
 ## Overall completion rule
 

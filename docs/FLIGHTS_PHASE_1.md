@@ -41,3 +41,5 @@ The isolated Preview deployment and browser evidence are recorded in `docs/FLIGH
 - [ ] Make a separate Production decision before enabling airline traffic, flight payments, or ticketing.
 
 Software completion never authorizes a provider connection or live flight sale.
+
+The next supplier-readiness phase is recorded separately in `docs/FLIGHTS_PHASE_2.md` and does not change this Phase 1 consumer-planning boundary.
