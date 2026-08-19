@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1–17 repository-verified, Git-published, and accepted in isolated Preview; Phase 18 repository-verified locally and awaiting release approval; all provider contact, review execution, recommendation, supplier selection, airline content, credentials, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1–18 repository-verified, Git-published, and accepted in isolated Preview; all provider contact, review execution, recommendation, supplier selection, airline content, credentials, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -610,9 +610,9 @@ Phase 18 Duffel provider-contact authorization design software gates:
 
 Phase 18 release gates:
 
-- [ ] Commit and publish the approved Phase 18 source to the private branch after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and publish the approved Phase 18 source at private-branch commit `f1d40e9` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 Phase 18 provider-contact decision gates:
 
@@ -620,7 +620,7 @@ Phase 18 provider-contact decision gates:
 - [ ] Make a new one-time action-time decision outside the design immediately before one approved contact attempt.
 - [ ] Keep every response, evidence intake, scoring, recommendation, selection, contract, account, credential, Sandbox, ticketing, payment, deployment, and Production decision separately controlled.
 
-The Flights Phase 18 Duffel provider-contact authorization and non-contact boundary is recorded in `docs/FLIGHTS_PHASE_18.md`. Provider contact remains blocked.
+The Flights Phase 18 Duffel provider-contact authorization and non-contact boundary is recorded in `docs/FLIGHTS_PHASE_18.md`. Its isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_18_PREVIEW_EVIDENCE_2026-08-19.md`. Provider contact remains blocked.
 
 ## Overall completion rule
 

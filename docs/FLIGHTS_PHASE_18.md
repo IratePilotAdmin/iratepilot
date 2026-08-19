@@ -1,7 +1,7 @@
 # iRatePilot Flights — Phase 18
 
 Date: 2026-08-19
-Status: **Repository-verified locally; Git publication, isolated Preview deployment, browser acceptance, and every action-time or external gate remain pending**
+Status: **Repository-verified, Git-published, deployed, and authenticated browser-accepted in isolated Preview; provider contact and every action-time or external gate remain pending**
 
 ## Purpose
 
@@ -71,9 +71,9 @@ Duffel, Sabre, Travelport, Amadeus, airlines, agencies, and consolidators were n
 
 ## Release gates
 
-- [ ] Commit and publish the approved Phase 18 source to the private branch after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and publish the approved Phase 18 source at private-branch commit `f1d40e9` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 ## Provider-contact decision gates
 
@@ -85,4 +85,4 @@ Duffel, Sabre, Travelport, Amadeus, airlines, agencies, and consolidators were n
 
 Software completion is not provider-contact authority and does not imply that Duffel was contacted, responded, supplied evidence, accepted iRatePilot, or was recommended, selected, contracted, credentialed, connected, or activated.
 
-The staged provider-path preference remains recorded in `docs/FLIGHTS_PROVIDER_PATH_DECISION_2026-08-19.md`. The Phase 17 evidence-review execution-control boundary remains recorded in `docs/FLIGHTS_PHASE_17.md`; Phase 18 does not satisfy or bypass any Phase 11 through Phase 17 prerequisite.
+The staged provider-path preference remains recorded in `docs/FLIGHTS_PROVIDER_PATH_DECISION_2026-08-19.md`. The Phase 17 evidence-review execution-control boundary remains recorded in `docs/FLIGHTS_PHASE_17.md`; Phase 18 does not satisfy or bypass any Phase 11 through Phase 17 prerequisite. The isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_18_PREVIEW_EVIDENCE_2026-08-19.md`.
