@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1–9, Phase 11, and Phase 12 repository-verified, Git-published, and accepted in isolated Preview; Phase 13 repository-verified locally and awaiting its separately approved release sequence; Phase 10 repository-verified, Git-published, and deployed to isolated Preview with its distinct authenticated acceptance pending; all closeout, intake, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1–9 and Phases 11–13 repository-verified, Git-published, and accepted in isolated Preview; Phase 10 repository-verified, Git-published, and deployed to isolated Preview with its distinct authenticated acceptance pending; all closeout, intake, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -480,10 +480,9 @@ Phase 13 supplier-evaluation intake execution-control design software gates:
 
 Phase 13 release gates:
 
-- [ ] Commit the Phase 13 source and documentation after separate approval.
-- [ ] Push only the approved private laptop branch after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and publish the approved Phase 13 source at private-branch commit `83537fa` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 Phase 13 intake-execution decision gates:
 
@@ -494,7 +493,7 @@ Phase 13 intake-execution decision gates:
 - [ ] Confirm independent roles, conflicts, recusals, replacements, preserved dissent, exceptions, escalation, immediate-stop, no-restart, teardown, closeout, and no-downstream authority.
 - [ ] Make a new, one-time, scoped, expiring, revocable action-time decision outside this design immediately before contacting one supplier or opening one isolated intake window.
 
-The Flights Phase 13 supplier-evaluation intake execution-control design and non-execution boundary is recorded in `docs/FLIGHTS_PHASE_13.md`. Commit, private-branch push, isolated Preview deployment, and authenticated acceptance remain pending separate approval.
+The Flights Phase 13 supplier-evaluation intake execution-control design and non-execution boundary is recorded in `docs/FLIGHTS_PHASE_13.md`. Its isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_13_PREVIEW_EVIDENCE_2026-08-19.md`.
 
 ## Overall completion rule
 

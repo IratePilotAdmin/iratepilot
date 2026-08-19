@@ -1,6 +1,6 @@
 # iRatePilot Flights — Phase 13
 
-Status: Supplier-evaluation intake execution-control design repository-verified locally; commit, private-branch push, isolated Preview deployment, and authenticated browser acceptance pending separate approval
+Status: Supplier-evaluation intake execution-control design repository-verified, Git-published, deployed, and authenticated browser-accepted in isolated Preview; action-time decision gates pending
 
 ## Purpose
 
@@ -77,10 +77,9 @@ Phase 13 adds no client component, form, route handler, server action, database 
 
 ## Release gates
 
-- [ ] Commit the Phase 13 source and documentation after separate approval.
-- [ ] Push only the approved private laptop branch after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and publish the approved Phase 13 source at private-branch commit `83537fa` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 ## Intake-execution decision gates
 
@@ -99,4 +98,4 @@ Phase 13 adds no client component, form, route handler, server action, database 
 
 Phase 13 software completion is not evidence that a Phase 11 authorization or Phase 12 preflight receipt exists and does not authorize supplier evaluation intake, supplier contact, evidence receipt, scoring, supplier selection, live flight search, ticketing, payment, or Production traffic.
 
-The Phase 12 supplier-evaluation intake preflight and non-opening boundary remains recorded in `docs/FLIGHTS_PHASE_12.md`. Its isolated Preview acceptance evidence remains recorded in `docs/FLIGHTS_PHASE_12_PREVIEW_EVIDENCE_2026-08-19.md`.
+The Phase 12 supplier-evaluation intake preflight and non-opening boundary remains recorded in `docs/FLIGHTS_PHASE_12.md`. Its isolated Preview acceptance evidence remains recorded in `docs/FLIGHTS_PHASE_12_PREVIEW_EVIDENCE_2026-08-19.md`. The Phase 13 isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_13_PREVIEW_EVIDENCE_2026-08-19.md`.
