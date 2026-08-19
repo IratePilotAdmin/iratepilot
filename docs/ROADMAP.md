@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1–8 repository-verified, Git-published, and accepted in isolated Preview; Phase 9 synthetic rehearsal execution-control design software repository-verified with release gates pending; all authorization, preflight, rehearsal execution, airline content, credentials, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1–9 repository-verified, Git-published, and accepted in isolated Preview; Phase 10 synthetic rehearsal closeout and findings-disposition design software repository-verified with release gates pending; all authorization, preflight, rehearsal execution, closeout, airline content, credentials, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -384,9 +384,9 @@ Phase 9 synthetic rehearsal execution-control design software gates:
 
 Phase 9 release gates:
 
-- [ ] Commit and push the approved laptop changes after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and push the approved laptop changes at `41ad1b3` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 Phase 9 execution-control decision gates:
 
@@ -395,7 +395,31 @@ Phase 9 execution-control decision gates:
 - [ ] Make a separate action-time decision before opening an execution window, creating any fictional fixture, assigning any participant, or releasing one scenario.
 - [ ] Stop immediately on any prerequisite, scope, contamination, connectivity, role, observer, evidence, sequence, teardown, or closeout failure; require a new authorization and preflight cycle before any restart could be considered.
 
-The Flights Phase 9 synthetic rehearsal execution-control design and non-execution boundary is recorded in `docs/FLIGHTS_PHASE_9.md`.
+The Flights Phase 9 synthetic rehearsal execution-control design and non-execution boundary is recorded in `docs/FLIGHTS_PHASE_9.md`. The isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_9_PREVIEW_EVIDENCE_2026-08-19.md`.
+
+Phase 10 synthetic rehearsal closeout and findings-disposition design software gates:
+
+- [x] Define six closeout evidence artifacts without creating an execution record, implying that a rehearsal ran, recording an observation, creating a receipt or finding, starting teardown, confirming deletion, approving closeout, or opening supplier evaluation intake.
+- [x] Define five findings-disposition safeguards for implied execution, incomplete teardown, unresolved findings, dissent, recusals, exceptions, no restart, and no downstream authority.
+- [x] Define ten separately owned closeout-control gates while keeping authorization, preflight, execution evidence, the execution window, fixtures, roles, rehearsal execution, released scenarios, results, observations, receipts, findings, findings disposition, contamination review, teardown, fixture deletion, closeout, candidates, evidence, scoring, recommendations, shortlist, contract, supplier selection, credentials, traffic, ticketing, and payment disabled.
+- [x] Extend the protected `/admin/flights` workspace without a database, form, mutation, deletion action, environment variable, provider SDK, network request, external message, or Production change.
+- [x] Pass ESLint, TypeScript, 1,040 tests across 237 files, and the optimized 113-page Next.js build.
+
+Phase 10 release gates:
+
+- [ ] Commit and push the approved laptop changes after separate approval.
+- [ ] Deploy only to the isolated Preview project after separate approval.
+- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+
+Phase 10 closeout decision gates:
+
+- [ ] Create a Phase 9 execution record only after separately satisfying its authorization, preflight, and action-time start decisions through accountable internal processes.
+- [ ] Reconcile every separately released fictional scenario, stop, observer checkpoint, sanitized observation, and result without accepting real or sensitive data.
+- [ ] Confirm contamination review, fictional-fixture deletion, evidence sanitation, findings ownership, dissent, recusals, exceptions, authorization expiration, and no restart through separate accountable reviews.
+- [ ] Resolve every blocking finding and independent objection without waiver, suppression, or conversion into downstream authority.
+- [ ] Make a separate closeout decision before creating a closeout receipt; require a new authorization and preflight cycle before any future rehearsal could be considered.
+
+The Flights Phase 10 synthetic rehearsal closeout, findings-disposition, and non-activation boundary is recorded in `docs/FLIGHTS_PHASE_10.md`.
 
 ## Overall completion rule
 

@@ -1,6 +1,6 @@
 # iRatePilot Flights — Phase 9
 
-Status: Synthetic rehearsal execution-control design software and repository verification complete; release gates pending
+Status: Synthetic rehearsal execution-control design software repository-verified, Git-published, and accepted in isolated Preview; execution remains blocked
 
 ## Purpose
 
@@ -75,9 +75,9 @@ Phase 9 adds no client component, form, route handler, server action, database m
 
 ## Release gates
 
-- [ ] Commit and push the approved laptop changes after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and push the approved laptop changes at `41ad1b3` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 ## Execution-control decision gates
 
@@ -95,4 +95,4 @@ Phase 9 adds no client component, form, route handler, server action, database m
 
 Phase 9 software completion is not authorization to satisfy authorization or preflight, create or run a rehearsal, evaluate a named supplier, receive supplier material, select a supplier, accept a contract, enable a live flight search, issue a ticket, or collect payment.
 
-The Phase 8 synthetic preflight-design boundary remains recorded in `docs/FLIGHTS_PHASE_8.md`.
+The isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_9_PREVIEW_EVIDENCE_2026-08-19.md`. The Phase 8 synthetic preflight-design boundary remains recorded in `docs/FLIGHTS_PHASE_8.md`.

@@ -5,6 +5,7 @@ import { adminNavigation } from "@/data/navigation";
 import { buildFlightEvaluationGovernance, flightEvaluationControls, flightEvaluationDecisionSafeguards } from "@/lib/flights/evaluation-governance";
 import { buildFlightEvaluationRehearsal, flightEvaluationRehearsalReceipts, flightEvaluationRehearsalScenarios } from "@/lib/flights/evaluation-rehearsal";
 import { buildFlightRehearsalAuthorizationReadiness, flightRehearsalAuthorizationArtifacts, flightRehearsalAuthorizationSafeguards } from "@/lib/flights/rehearsal-authorization";
+import { buildFlightRehearsalCloseoutDesign, flightRehearsalCloseoutArtifacts, flightRehearsalCloseoutSafeguards } from "@/lib/flights/rehearsal-closeout";
 import { buildFlightRehearsalExecutionControlDesign, flightRehearsalExecutionSafeguards, flightRehearsalExecutionStages } from "@/lib/flights/rehearsal-execution-control";
 import { buildFlightRehearsalPreflightDesign, flightRehearsalPreflightControls, flightRehearsalPreflightSafeguards } from "@/lib/flights/rehearsal-preflight";
 import { buildFlightSupplierDueDiligence, flightSupplierContractLanes, flightSupplierEvidenceWorkstreams } from "@/lib/flights/supplier-due-diligence";
@@ -12,8 +13,8 @@ import { buildFlightSupplierReadiness, flightCapabilityGroups, flightSupplierPat
 import { buildFlightSupplierSelectionPlan, flightSandboxAdapterOperations, flightSupplierSelectionCriteria } from "@/lib/flights/supplier-selection";
 
 export const metadata: Metadata = {
-  title: "Flight rehearsal execution-control design",
-  description: "Review the supplier-free synthetic rehearsal execution controls while authorization and preflight remain unsatisfied and fixtures, roles, scenarios, observations, candidates, credentials, traffic, ticketing, payments, and Production remain disabled.",
+  title: "Flight rehearsal closeout design",
+  description: "Review the supplier-free synthetic rehearsal closeout and findings-disposition controls while execution, teardown, findings, closeout, supplier intake, credentials, traffic, ticketing, payments, and Production remain disabled.",
 };
 
 export default function Page() {
@@ -25,55 +26,61 @@ export default function Page() {
   const authorization = buildFlightRehearsalAuthorizationReadiness();
   const preflight = buildFlightRehearsalPreflightDesign();
   const executionControl = buildFlightRehearsalExecutionControlDesign();
+  const closeout = buildFlightRehearsalCloseoutDesign();
   const locks = [
-    ["Authorization prerequisite", executionControl.authorizationPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
-    ["Preflight prerequisite", executionControl.preflightPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
-    ["Execution decision", executionControl.executionDecisionState === "not_recorded" ? "Not recorded" : "Recorded"],
-    ["Execution control", executionControl.executionControlState === "blocked" ? "Blocked" : "Ready"],
-    ["Execution window", executionControl.executionWindowState === "not_opened" ? "Not opened" : "Opened"],
-    ["Scope binding", executionControl.scopeBindingState === "not_recorded" ? "Not recorded" : "Recorded"],
-    ["Fixture manifest", executionControl.fixtureManifestState === "not_created" ? "Not created" : "Created"],
-    ["Synthetic fixture", executionControl.syntheticFixtureState === "not_created" ? "Not created" : "Created"],
-    ["Isolation proof", executionControl.isolationProofState === "not_recorded" ? "Not recorded" : "Recorded"],
-    ["Roles", executionControl.roleAssignmentState === "not_assigned" ? "Not assigned" : "Assigned"],
-    ["Observer", executionControl.observerState === "not_assigned" ? "Not assigned" : "Assigned"],
-    ["Rehearsal", executionControl.rehearsalState === "not_run" ? "Not run" : "Run"],
-    ["Released scenarios", `${executionControl.releasedScenarioCount}`],
-    ["Scenario results", `${executionControl.scenarioResultCount}`],
-    ["Observations", `${executionControl.observationCount}`],
-    ["Rehearsal receipts", executionControl.receiptState === "not_created" ? "Not created" : "Created"],
-    ["Findings", `${executionControl.findingCount}`],
-    ["Teardown", executionControl.teardownState === "not_started" ? "Not started" : "Started"],
-    ["Closeout", executionControl.closeoutState === "not_created" ? "Not created" : "Created"],
-    ["Evaluation intake", executionControl.evaluationIntakeState === "closed" ? "Closed" : "Open"],
-    ["Candidate", executionControl.candidateState === "not_recorded" ? "Not recorded" : "Recorded"],
-    ["Evaluation case", executionControl.evaluationCaseState === "not_created" ? "Not created" : "Created"],
-    ["Score", executionControl.scoreState === "not_calculated" ? "Not calculated" : "Calculated"],
-    ["Recommendation", executionControl.recommendationState === "not_issued" ? "Not issued" : "Issued"],
-    ["Shortlist", executionControl.shortlistState === "not_created" ? "Not created" : "Created"],
-    ["Supplier selection", executionControl.selectionState === "not_selected" ? "Not selected" : "Selected"],
-    ["Contract", executionControl.contractState === "not_received" ? "Not received" : "Received"],
-    ["Credentials", executionControl.credentialsAccepted ? "Accepted" : "Not accepted"],
-    ["External network", executionControl.externalNetworkAccess ? "Enabled" : "Disabled"],
-    ["Sandbox adapter", executionControl.sandboxAdapterImplemented ? "Implemented" : "Not implemented"],
-    ["Sandbox traffic", executionControl.sandboxTrafficAuthorized ? "Enabled" : "Disabled"],
-    ["Production traffic", executionControl.productionTrafficAuthorized ? "Enabled" : "Disabled"],
-    ["Ticketing", executionControl.ticketingAuthorized ? "Enabled" : "Disabled"],
-    ["Flight payments", executionControl.paymentAuthorized ? "Enabled" : "Disabled"],
+    ["Authorization prerequisite", closeout.authorizationPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
+    ["Preflight prerequisite", closeout.preflightPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
+    ["Execution record", closeout.executionRecordState === "not_created" ? "Not created" : "Created"],
+    ["Closeout control", closeout.closeoutControlState === "blocked" ? "Blocked" : "Ready"],
+    ["Execution window", closeout.executionWindowState === "not_opened" ? "Not opened" : "Opened"],
+    ["Scope binding", closeout.scopeBindingState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Fixture manifest", closeout.fixtureManifestState === "not_created" ? "Not created" : "Created"],
+    ["Synthetic fixture", closeout.syntheticFixtureState === "not_created" ? "Not created" : "Created"],
+    ["Roles", closeout.roleAssignmentState === "not_assigned" ? "Not assigned" : "Assigned"],
+    ["Observer", closeout.observerState === "not_assigned" ? "Not assigned" : "Assigned"],
+    ["Rehearsal", closeout.rehearsalState === "not_run" ? "Not run" : "Run"],
+    ["Released scenarios", `${closeout.releasedScenarioCount}`],
+    ["Scenario results", `${closeout.scenarioResultCount}`],
+    ["Observations", `${closeout.observationCount}`],
+    ["Rehearsal receipts", closeout.receiptState === "not_created" ? "Not created" : "Created"],
+    ["Findings", `${closeout.findingCount}`],
+    ["Findings disposition", closeout.findingDispositionState === "not_started" ? "Not started" : "Started"],
+    ["Contamination review", closeout.contaminationReviewState === "not_started" ? "Not started" : "Started"],
+    ["Teardown", closeout.teardownState === "not_started" ? "Not started" : "Started"],
+    ["Fixture deletion", closeout.fixtureDeletionState === "not_confirmed" ? "Not confirmed" : "Confirmed"],
+    ["Observer closeout", closeout.observerCloseoutState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Authorization expiration", closeout.authorizationExpirationState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Closeout decision", closeout.closeoutDecisionState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Closeout", closeout.closeoutState === "not_created" ? "Not created" : "Created"],
+    ["Evaluation intake", closeout.evaluationIntakeState === "closed" ? "Closed" : "Open"],
+    ["Candidate", closeout.candidateState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Evaluation case", closeout.evaluationCaseState === "not_created" ? "Not created" : "Created"],
+    ["Score", closeout.scoreState === "not_calculated" ? "Not calculated" : "Calculated"],
+    ["Recommendation", closeout.recommendationState === "not_issued" ? "Not issued" : "Issued"],
+    ["Shortlist", closeout.shortlistState === "not_created" ? "Not created" : "Created"],
+    ["Supplier selection", closeout.selectionState === "not_selected" ? "Not selected" : "Selected"],
+    ["Contract", closeout.contractState === "not_received" ? "Not received" : "Received"],
+    ["Credentials", closeout.credentialsAccepted ? "Accepted" : "Not accepted"],
+    ["External network", closeout.externalNetworkAccess ? "Enabled" : "Disabled"],
+    ["Sandbox adapter", closeout.sandboxAdapterImplemented ? "Implemented" : "Not implemented"],
+    ["Sandbox traffic", closeout.sandboxTrafficAuthorized ? "Enabled" : "Disabled"],
+    ["Production traffic", closeout.productionTrafficAuthorized ? "Enabled" : "Disabled"],
+    ["Ticketing", closeout.ticketingAuthorized ? "Enabled" : "Disabled"],
+    ["Flight payments", closeout.paymentAuthorized ? "Enabled" : "Disabled"],
   ] as const;
 
   return (
     <DashboardShell title="Admin Console" items={adminNavigation}>
-      <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 9 · Rehearsal execution-control design only</p>
-      <h1 className="mt-2 text-3xl font-bold">Flight synthetic rehearsal execution-control plan</h1>
-      <p className="mt-2 max-w-3xl text-slate-600">Define the entry, one-scenario-at-a-time release, observer checkpoints, immediate-stop response, sanitized observation boundary, and teardown controls that a future fictional rehearsal would require after separate authorization and preflight decisions. This page cannot satisfy either prerequisite, open an execution window, create a fixture, assign anyone, release or run a scenario, record an observation, or open supplier evaluation intake.</p>
+      <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 10 · Rehearsal closeout design only</p>
+      <h1 className="mt-2 text-3xl font-bold">Flight synthetic rehearsal closeout plan</h1>
+      <p className="mt-2 max-w-3xl text-slate-600">Define the scenario disposition, abort record, sanitized observation inventory, fictional-fixture deletion proof, findings ownership, authorization expiration, and no-downstream-authority controls that a future closeout would require after a separately authorized and completed fictional rehearsal. This page cannot imply that a rehearsal ran, start teardown, delete a fixture, record or resolve a finding, create a receipt, approve closeout, or open supplier evaluation intake.</p>
 
       <section className="mt-8 grid gap-4 lg:grid-cols-[1fr_1.6fr]">
         <div className="rounded-2xl bg-slate-950 p-6 text-white">
-          <div className="flex items-center gap-3"><ShieldCheck className="h-6 w-6" /><strong>Rehearsal execution control is blocked</strong></div>
-          <p className="mt-3 text-sm leading-6 text-slate-300">Neither the Phase 7 authorization nor Phase 8 preflight prerequisite is satisfied. No execution decision, window, scope binding, fixture, participant, released scenario, result, observation, receipt, finding, candidate, or supplier evidence exists. Completing this design cannot start or imply a rehearsal, contact a supplier, open intake, accept credentials, enable traffic, issue tickets, collect payment, or change Production.</p>
-          <div className="mt-6 text-4xl font-bold">{executionControl.completedCount}/{executionControl.totalCount}</div>
-          <p className="mt-1 text-xs uppercase tracking-wider text-slate-400">Phase 9 gates recorded complete</p>
+          <div className="flex items-center gap-3"><ShieldCheck className="h-6 w-6" /><strong>Rehearsal closeout is blocked</strong></div>
+          <p className="mt-3 text-sm leading-6 text-slate-300">No separately approved execution record exists and the rehearsal remains unrun. No window, scope binding, fixture, participant, released scenario, result, observation, receipt, finding, teardown, deletion confirmation, closeout, candidate, or supplier evidence exists. Completing this design cannot imply execution, erase or resolve evidence, open intake, accept credentials, enable traffic, issue tickets, collect payment, or change Production.</p>
+          <div className="mt-6 text-4xl font-bold">{closeout.completedCount}/{closeout.totalCount}</div>
+          <p className="mt-1 text-xs uppercase tracking-wider text-slate-400">Phase 10 gates recorded complete</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {locks.map(([label, status]) => (
@@ -84,6 +91,55 @@ export default function Page() {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Closeout packet blueprint only</p><h2 className="mt-2 text-2xl font-bold">Closeout evidence artifacts</h2></div><ClipboardCheck className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Six static artifacts define future scenario disposition, stop evidence, sanitized observations, fixture destruction, findings ownership, authorization expiration, and closeout proof. They create no execution record, receipt, finding, deletion, approval, storage path, or external action.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {flightRehearsalCloseoutArtifacts.map((artifact) => (
+            <article key={artifact.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold">{artifact.label}</h3>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{artifact.owner}</p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{artifact.closeoutRequirement}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-rose-700"><strong>Boundary:</strong> {artifact.nonRecordBoundary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">No inferred completion or release</p><h2 className="mt-2 text-2xl font-bold">Findings-disposition safeguards</h2></div><Scale className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Five safeguards keep implied execution, incomplete teardown, unresolved findings, dissent, conflicts, exceptions, restart, supplier evaluation, and every external release fail closed.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {flightRehearsalCloseoutSafeguards.map((safeguard) => (
+            <article key={safeguard.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold">{safeguard.label}</h3>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{safeguard.owner}</p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{safeguard.safeguard}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-rose-700"><strong>Fail closed:</strong> {safeguard.failClosedBoundary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10 rounded-2xl border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 p-6"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Phase 10 closeout-control sequence</p><h2 className="mt-2 text-2xl font-bold">Ten separately owned closeout-control gates</h2><p className="mt-2 text-sm text-slate-600">Every gate starts incomplete. Even a completed design cannot imply execution, start teardown, confirm deletion, create or resolve a finding, create a receipt, approve closeout, open named supplier evaluation, or authorize an external capability.</p></div>
+        <div className="divide-y divide-slate-100">
+          {closeout.gates.map((gate, index) => (
+            <article key={gate.id} className="grid gap-3 p-6 md:grid-cols-[3rem_1fr_11rem] md:items-start">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">{index + 1}</span>
+              <div><h3 className="font-bold">{gate.label}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{gate.detail}</p></div>
+              <div className="md:text-right"><span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{gate.owner}</span><span className="mt-2 block text-sm font-medium text-amber-700">Not recorded</span></div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-12 border-t border-slate-200 pt-10">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Flights · Phase 9 · Rehearsal execution-control design only</p>
+        <h2 className="mt-2 text-2xl font-bold">Rehearsal execution-control design reference</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600"><strong>Rehearsal execution control is blocked.</strong> Phase 9 is a static reference for entry, one-scenario-at-a-time release, observer, immediate-stop, sanitized observation, teardown, and closeout controls. It cannot prove that a rehearsal ran, create closeout evidence, resolve a finding, or authorize downstream activity.</p>
       </section>
 
       <section className="mt-10">
@@ -117,7 +173,7 @@ export default function Page() {
       </section>
 
       <section className="mt-10 rounded-2xl border border-slate-200 bg-white">
-        <div className="border-b border-slate-200 p-6"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Phase 9 execution-control sequence</p><h2 className="mt-2 text-2xl font-bold">Ten separately owned execution-control gates</h2><p className="mt-2 text-sm text-slate-600">Every gate starts incomplete. Even a completed design cannot satisfy authorization or preflight, open an execution window, create a fixture, assign roles, release a scenario, run a rehearsal, record an observation, or authorize a named supplier evaluation.</p></div>
+        <div className="border-b border-slate-200 p-6"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Phase 9 execution-control reference</p><h2 className="mt-2 text-2xl font-bold">Ten separately owned execution-control gates</h2><p className="mt-2 text-sm text-slate-600">Every gate remains incomplete. A Phase 10 design cannot satisfy Phase 9, open an execution window, create a fixture, assign roles, release a scenario, run a rehearsal, record an observation, or authorize named supplier evaluation.</p></div>
         <div className="divide-y divide-slate-100">
           {executionControl.gates.map((gate, index) => (
             <article key={gate.id} className="grid gap-3 p-6 md:grid-cols-[3rem_1fr_11rem] md:items-start">
