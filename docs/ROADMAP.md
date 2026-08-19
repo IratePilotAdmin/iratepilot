@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1–9 and Phases 11–14 repository-verified, Git-published, and accepted in isolated Preview; Phase 15 repository-verified locally with release verification pending; Phase 10 repository-verified, Git-published, and deployed to isolated Preview with its distinct authenticated acceptance pending; all closeout, intake, evidence review, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1–9 and Phases 11–15 repository-verified, Git-published, and accepted in isolated Preview; Phase 10 repository-verified, Git-published, and deployed to isolated Preview with its distinct authenticated acceptance pending; all closeout, intake, evidence review, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -530,9 +530,9 @@ Phase 15 supplier-evidence review authorization design software gates:
 
 Phase 15 release gates:
 
-- [ ] Commit and publish the approved Phase 15 source to the private branch after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and publish the approved Phase 15 source at private-branch commit `56bcf22` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 Phase 15 evidence-review authorization decision gates:
 
@@ -543,7 +543,7 @@ Phase 15 evidence-review authorization decision gates:
 - [ ] Approve independent reviewers and observers, conflicts, recusals, replacements, blind-review rules, variance treatment, preserved dissent, exceptions, explicit overrides, findings, escalation, and unconditional stop authority.
 - [ ] Make a new, one-time, scoped, expiring, revocable action-time decision outside this design immediately before a fixed evidence inventory could enter review.
 
-The Flights Phase 15 supplier-evidence review authorization and non-review boundary is recorded in `docs/FLIGHTS_PHASE_15.md`.
+The Flights Phase 15 supplier-evidence review authorization and non-review boundary is recorded in `docs/FLIGHTS_PHASE_15.md`. Its isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_15_PREVIEW_EVIDENCE_2026-08-19.md`.
 
 ## Overall completion rule
 
