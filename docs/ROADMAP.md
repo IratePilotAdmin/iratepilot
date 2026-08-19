@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1–9 and Phases 11–16 repository-verified, Git-published, and accepted in isolated Preview; Phase 10 repository-verified, Git-published, and deployed to isolated Preview with its distinct authenticated acceptance pending; all authorization, preflight, review, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1–16 repository-verified, Git-published, and accepted in isolated Preview; all closeout, authorization, preflight, review, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -409,7 +409,7 @@ Phase 10 release gates:
 
 - [x] Commit and push the approved laptop changes at `0f83a63` after separate approval.
 - [x] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 Phase 10 closeout decision gates:
 
@@ -419,7 +419,7 @@ Phase 10 closeout decision gates:
 - [ ] Resolve every blocking finding and independent objection without waiver, suppression, or conversion into downstream authority.
 - [ ] Make a separate closeout decision before creating a closeout receipt; require a new authorization and preflight cycle before any future rehearsal could be considered.
 
-The Flights Phase 10 synthetic rehearsal closeout, findings-disposition, and non-activation boundary is recorded in `docs/FLIGHTS_PHASE_10.md`. Its authenticated Preview acceptance remains pending; no acceptance evidence is claimed.
+The Flights Phase 10 synthetic rehearsal closeout, findings-disposition, and non-activation boundary is recorded in `docs/FLIGHTS_PHASE_10.md`. Its isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_10_PREVIEW_EVIDENCE_2026-08-19.md`.
 
 Phase 11 supplier-evaluation intake authorization design software gates:
 
