@@ -598,6 +598,8 @@ Public-source provider research and an unscored, non-selection preliminary short
 
 A separately approved named-provider public-evidence matrix and conservative provisional scores are recorded in `docs/FLIGHTS_PROVIDER_PUBLIC_EVIDENCE_MATRIX_2026-08-19.md`. The scores measure public documentation completeness only and create no formal score, recommendation, selection, contact, contract, account, credential, traffic, payment, deployment, or Production authority.
 
+The executive documentation-only provider-path preference is recorded in `docs/FLIGHTS_PROVIDER_PATH_DECISION_2026-08-19.md`: Duffel is the primary intended diligence and launch path, and Sabre is the secondary intended expansion path. No provider contact, formal recommendation, contracted selection, account, credential, implementation, traffic, payment, deployment, or Production authority was created.
+
 ## Overall completion rule
 
 Repository completion means `npm run check` passes and every public surface accurately describes its current mode. Commercial completion additionally requires all provider, data, legal, operational, and production release gates to be satisfied with recorded evidence. Software readiness must never be treated as authorization to enable live transactions.

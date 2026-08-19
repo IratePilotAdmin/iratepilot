@@ -111,6 +111,8 @@ Every provider remains blocked from formal scoring until accountable reviewers a
 
 Public-evidence scoring state: `provisional_complete`.
 
+A subsequent executive provider-path preference is recorded in `docs/FLIGHTS_PROVIDER_PATH_DECISION_2026-08-19.md`: Duffel is the primary intended diligence and launch path, and Sabre is the secondary intended expansion path. That documentation-only sequence is separate from a formal recommendation, contracted supplier selection, provider contact, or external authorization.
+
 Formal evidence-review state: `not_started`. Recommendation: `not_issued`. Supplier selection: `not_selected`. Supplier contact: `not_started`. Contract: `not_received`. Account: `not_created`. Credentials: `not_accepted`. Sandbox and Production traffic: `disabled`. Ticketing and flight payments: `disabled`.
 
 These provisional totals cannot authorize a contact, questionnaire, account, recommendation, selection, contract, adapter, credential, Sandbox call, payment, deployment, or Production change. Each requires a separately approved action-time gate under the existing Flights governance controls.
