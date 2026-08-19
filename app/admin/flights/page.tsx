@@ -4,6 +4,7 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { adminNavigation } from "@/data/navigation";
 import { buildFlightEvaluationGovernance, flightEvaluationControls, flightEvaluationDecisionSafeguards } from "@/lib/flights/evaluation-governance";
 import { buildFlightEvaluationIntakeAuthorizationDesign, flightEvaluationIntakeAuthorizationArtifacts, flightEvaluationIntakeAuthorizationSafeguards } from "@/lib/flights/evaluation-intake-authorization";
+import { buildFlightEvaluationIntakePreflightDesign, flightEvaluationIntakePreflightControls, flightEvaluationIntakePreflightSafeguards } from "@/lib/flights/evaluation-intake-preflight";
 import { buildFlightEvaluationRehearsal, flightEvaluationRehearsalReceipts, flightEvaluationRehearsalScenarios } from "@/lib/flights/evaluation-rehearsal";
 import { buildFlightRehearsalAuthorizationReadiness, flightRehearsalAuthorizationArtifacts, flightRehearsalAuthorizationSafeguards } from "@/lib/flights/rehearsal-authorization";
 import { buildFlightRehearsalCloseoutDesign, flightRehearsalCloseoutArtifacts, flightRehearsalCloseoutSafeguards } from "@/lib/flights/rehearsal-closeout";
@@ -14,8 +15,8 @@ import { buildFlightSupplierReadiness, flightCapabilityGroups, flightSupplierPat
 import { buildFlightSupplierSelectionPlan, flightSandboxAdapterOperations, flightSupplierSelectionCriteria } from "@/lib/flights/supplier-selection";
 
 export const metadata: Metadata = {
-  title: "Flight supplier-evaluation intake authorization design",
-  description: "Review the candidate-neutral supplier-evaluation intake authorization boundary while intake, supplier contact, evidence receipt, scoring, selection, credentials, traffic, ticketing, payments, and Production remain disabled.",
+  title: "Flight supplier-evaluation intake preflight design",
+  description: "Review the blocked supplier-evaluation intake preflight boundary while authorization, intake, supplier contact, evidence receipt, scoring, selection, credentials, traffic, ticketing, payments, and Production remain disabled.",
 };
 
 export default function Page() {
@@ -29,7 +30,43 @@ export default function Page() {
   const executionControl = buildFlightRehearsalExecutionControlDesign();
   const closeout = buildFlightRehearsalCloseoutDesign();
   const intakeAuthorization = buildFlightEvaluationIntakeAuthorizationDesign();
-  const intakeLocks = [
+  const intakePreflight = buildFlightEvaluationIntakePreflightDesign();
+  const intakePreflightLocks = [
+    ["Phase 11 authorization prerequisite", intakePreflight.phase11AuthorizationPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
+    ["Phase 11 software acceptance", intakePreflight.phase11SoftwareAcceptanceState === "accepted_in_preview" ? "Accepted in Preview" : "Pending"],
+    ["Authorization reference", intakePreflight.authorizationReferenceState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Intake preflight", intakePreflight.preflightState === "blocked" ? "Blocked" : "Ready"],
+    ["Scope binding", intakePreflight.scopeBindingState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Candidate-neutrality check", intakePreflight.candidateNeutralityCheckState === "not_started" ? "Not started" : "Started"],
+    ["Contact plan", intakePreflight.contactPlanState === "not_approved" ? "Not approved" : "Approved"],
+    ["Submission channel", intakePreflight.submissionChannelState === "not_created" ? "Not created" : "Created"],
+    ["Isolation proof", intakePreflight.isolationProofState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Evidence taxonomy", intakePreflight.evidenceTaxonomyState === "not_approved" ? "Not approved" : "Approved"],
+    ["Reviewer", intakePreflight.roleAssignmentState === "not_assigned" ? "Not assigned" : "Assigned"],
+    ["Observer", intakePreflight.observerState === "not_assigned" ? "Not assigned" : "Assigned"],
+    ["Conflict review", intakePreflight.conflictReviewState === "not_started" ? "Not started" : "Started"],
+    ["Evaluation intake", intakePreflight.evaluationIntakeState === "closed" ? "Closed" : "Open"],
+    ["Supplier contact", intakePreflight.supplierContactState === "not_started" ? "Not started" : "Started"],
+    ["Candidate", intakePreflight.candidateState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Evaluation case", intakePreflight.evaluationCaseState === "not_created" ? "Not created" : "Created"],
+    ["Supplier evidence", `${intakePreflight.evidenceCount}`],
+    ["Authorization window", intakePreflight.authorizationWindowState === "not_opened" ? "Not opened" : "Opened"],
+    ["Stop plan", intakePreflight.stopPlanState === "not_approved" ? "Not approved" : "Approved"],
+    ["Closeout plan", intakePreflight.closeoutPlanState === "not_approved" ? "Not approved" : "Approved"],
+    ["Score", intakePreflight.scoreState === "not_calculated" ? "Not calculated" : "Calculated"],
+    ["Recommendation", intakePreflight.recommendationState === "not_issued" ? "Not issued" : "Issued"],
+    ["Shortlist", intakePreflight.shortlistState === "not_created" ? "Not created" : "Created"],
+    ["Supplier selection", intakePreflight.selectionState === "not_selected" ? "Not selected" : "Selected"],
+    ["Contract", intakePreflight.contractState === "not_received" ? "Not received" : "Received"],
+    ["Credentials", intakePreflight.credentialsAccepted ? "Accepted" : "Not accepted"],
+    ["External network", intakePreflight.externalNetworkAccess ? "Enabled" : "Disabled"],
+    ["Sandbox adapter", intakePreflight.sandboxAdapterImplemented ? "Implemented" : "Not implemented"],
+    ["Sandbox traffic", intakePreflight.sandboxTrafficAuthorized ? "Enabled" : "Disabled"],
+    ["Production traffic", intakePreflight.productionTrafficAuthorized ? "Enabled" : "Disabled"],
+    ["Ticketing", intakePreflight.ticketingAuthorized ? "Enabled" : "Disabled"],
+    ["Flight payments", intakePreflight.paymentAuthorized ? "Enabled" : "Disabled"],
+  ] as const;
+  const intakeAuthorizationLocks = [
     ["Phase 10 closeout prerequisite", intakeAuthorization.phase10CloseoutPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
     ["Phase 10 Preview acceptance", intakeAuthorization.phase10PreviewAcceptanceState === "pending" ? "Pending" : "Complete"],
     ["Intake authorization", intakeAuthorization.intakeAuthorizationState === "blocked" ? "Blocked" : "Ready"],
@@ -101,6 +138,77 @@ export default function Page() {
 
   return (
     <DashboardShell title="Admin Console" items={adminNavigation}>
+      <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 12 · Evaluation-intake preflight design only</p>
+      <h1 className="mt-2 text-3xl font-bold">Flight supplier-evaluation intake preflight plan</h1>
+      <p className="mt-2 max-w-3xl text-slate-600">Define the authorization-reference, candidate-neutrality, contact, identity, isolated-channel, evidence-taxonomy, independent-role, stop, revocation, expiry, and closeout checks that a future supplier-evaluation intake preflight would require. Phase 11 software was accepted in isolated Preview, but no actual intake-opening authorization exists. This page cannot contact a supplier, open intake, create a candidate or case, create a submission channel, receive evidence, assign a reviewer, score or select a supplier, accept credentials, enable traffic, issue tickets, collect payment, or change Production.</p>
+
+      <section className="mt-8 grid gap-4 lg:grid-cols-[1fr_1.6fr]">
+        <div className="rounded-2xl bg-slate-950 p-6 text-white">
+          <div className="flex items-center gap-3"><ShieldCheck className="h-6 w-6" /><strong>Evaluation-intake preflight is blocked</strong></div>
+          <p className="mt-3 text-sm leading-6 text-slate-300">No separately approved Phase 11 intake-opening authorization or authorization reference exists. No scope binding, candidate-neutrality check, contact plan, submission channel, isolation proof, evidence taxonomy, role assignment, conflict review, stop plan, closeout plan, intake window, supplier contact, candidate, case, evidence, score, recommendation, shortlist, contract, selection, credential, traffic, ticketing, or payment exists. Completing every design gate cannot open preflight or intake.</p>
+          <div className="mt-6 text-4xl font-bold">{intakePreflight.completedCount}/{intakePreflight.totalCount}</div>
+          <p className="mt-1 text-xs uppercase tracking-wider text-slate-400">Phase 12 gates recorded complete</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {intakePreflightLocks.map(([label, status]) => (
+            <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5">
+              <CircleSlash2 className="h-5 w-5 text-rose-600" />
+              <strong className="mt-4 block">{label}</strong>
+              <span className={`mt-1 block text-sm font-medium ${status === "Accepted in Preview" ? "text-emerald-700" : "text-rose-700"}`}>{status}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Preflight packet blueprint only</p><h2 className="mt-2 text-2xl font-bold">Intake preflight control artifacts</h2></div><ClipboardCheck className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Seven static controls define the future authorization reference, candidate-neutral scope recheck, contact and identity boundary, submission-channel isolation proof, evidence taxonomy, independent role check-in, and stop-to-closeout plan. They create no authorization, identity, contact, channel, evidence, assignment, decision, approval, storage path, or external action.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {flightEvaluationIntakePreflightControls.map((control) => (
+            <article key={control.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold">{control.label}</h3>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{control.owner}</p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{control.preflightRequirement}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-rose-700"><strong>Boundary:</strong> {control.nonOpeningBoundary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">No inferred authority, contact, channel, or release</p><h2 className="mt-2 text-2xl font-bold">Immediate-stop intake safeguards</h2></div><Scale className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Five safeguards keep missing authority, supplier identity and contact, channel or data contamination, role conflicts and dissent, incomplete closeout, and every downstream release fail closed.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {flightEvaluationIntakePreflightSafeguards.map((safeguard) => (
+            <article key={safeguard.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold">{safeguard.label}</h3>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{safeguard.owner}</p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{safeguard.safeguard}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-rose-700"><strong>Fail closed:</strong> {safeguard.failClosedBoundary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10 rounded-2xl border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 p-6"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Phase 12 intake-preflight sequence</p><h2 className="mt-2 text-2xl font-bold">Ten separately owned intake-preflight gates</h2><p className="mt-2 text-sm text-slate-600">Every gate starts incomplete. Even a completed design cannot create Phase 11 authority, open preflight or intake, contact a supplier, create a candidate or case, receive evidence, assign a reviewer, score or select a supplier, or authorize an external capability.</p></div>
+        <div className="divide-y divide-slate-100">
+          {intakePreflight.gates.map((gate, index) => (
+            <article key={gate.id} className="grid gap-3 p-6 md:grid-cols-[3rem_1fr_11rem] md:items-start">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">{index + 1}</span>
+              <div><h3 className="font-bold">{gate.label}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{gate.detail}</p></div>
+              <div className="md:text-right"><span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{gate.owner}</span><span className="mt-2 block text-sm font-medium text-amber-700">Not recorded</span></div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-12 border-t border-slate-200 pt-10">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Flights · Phase 11 · Evaluation-intake authorization design only</p>
+        <h2 className="mt-2 text-2xl font-bold">Evaluation-intake authorization design reference</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600"><strong>Evaluation-intake authorization is blocked.</strong> Phase 11 software is repository-verified, Git-published, deployed, and accepted in isolated Preview. That evidence confirms only the protected software surface; it does not create the separately accountable intake-opening authorization that Phase 12 requires.</p>
+      </section>
+
       <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 11 · Evaluation-intake authorization design only</p>
       <h1 className="mt-2 text-3xl font-bold">Flight supplier-evaluation intake authorization plan</h1>
       <p className="mt-2 max-w-3xl text-slate-600">Define the prerequisite, purpose, candidate-neutral entry, evidence-channel, independent-review, expiry, revocation, and no-downstream-authority controls that a future supplier-evaluation intake-opening decision would require. Phase 10 authenticated Preview acceptance and its actual closeout prerequisite remain incomplete. This page cannot contact a supplier, open intake, create a candidate or case, receive evidence, assign a reviewer, score or select a supplier, accept credentials, enable traffic, issue tickets, collect payment, or change Production.</p>
@@ -113,7 +221,7 @@ export default function Page() {
           <p className="mt-1 text-xs uppercase tracking-wider text-slate-400">Phase 11 gates recorded complete</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {intakeLocks.map(([label, status]) => (
+          {intakeAuthorizationLocks.map(([label, status]) => (
             <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5">
               <CircleSlash2 className="h-5 w-5 text-rose-600" />
               <strong className="mt-4 block">{label}</strong>
