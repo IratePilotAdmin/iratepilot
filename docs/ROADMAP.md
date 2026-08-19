@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1–16 repository-verified, Git-published, and accepted in isolated Preview; all closeout, authorization, preflight, review, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1–16 repository-verified, Git-published, and accepted in isolated Preview; Phase 17 repository-verified locally with commit, private publication, isolated Preview deployment, and acceptance pending; all review execution, recommendation, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -569,6 +569,30 @@ Phase 16 evidence-review preflight decision gates:
 - [ ] Make a new one-time action-time decision outside this design only after every preflight item is independently verified; review opening remains separate.
 
 The Flights Phase 16 supplier-evidence review preflight and no-opening boundary is recorded in `docs/FLIGHTS_PHASE_16.md`. Its isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_16_PREVIEW_EVIDENCE_2026-08-19.md`.
+
+Phase 17 supplier-evidence review execution-control design software gates:
+
+- [x] Define seven controlled evidence-review stages without creating or verifying Phase 15 authorization or Phase 16 preflight; contacting a supplier; admitting or reviewing evidence; approving or running a rubric; assigning a reviewer; granting access; opening review; calculating a score; recommending or selecting a supplier; or authorizing an external capability.
+- [x] Define five immediate-stop safeguards for missing authority, inventory or rubric drift, role conflicts, overprivileged access, contamination, uncontrolled work product, suppressed dissent, incomplete closeout, recommendation, selection, and downstream release.
+- [x] Define ten separately owned evidence-review execution-control gates while keeping authorization, preflight, evidence, rubrics, review roles, access, sessions, review, scoring, recommendations, shortlist, commercial diligence, contracts, supplier selection, credentials, traffic, ticketing, and payment disabled.
+- [x] Extend the protected `/admin/flights` workspace without a database, form, mutation, upload, storage path, scoring engine, environment variable, provider SDK, network request, external message, supplier identity, reviewer identity, or Production change.
+- [x] Pass ESLint, TypeScript, 1,082 tests across 244 files, and the optimized 113-page Next.js build.
+
+Phase 17 release gates:
+
+- [ ] Commit and publish the approved Phase 17 source to the private backup branch after separate approval.
+- [ ] Deploy only to the isolated Preview project after separate approval.
+- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+
+Phase 17 evidence-review execution decision gates:
+
+- [ ] Create and separately approve an actual Phase 15 authorization and a separately approved Phase 16 preflight receipt after every prerequisite is satisfied.
+- [ ] Bind one fixed evidence inventory, immutable hashes and lineage, rubric version, independent roles, isolated access, criterion sequence, review window, expiry, revocation, stop, closeout, and no-restart boundary.
+- [ ] Reverify prohibited-data, privacy, security, retention, deletion, work-product, incident, contamination, variance, dissent, finding, audit, reproducibility, access-removal, and closeout controls.
+- [ ] Make a new one-time action-time decision outside this design before opening one fixed review window or releasing one criterion.
+- [ ] Keep every score, recommendation, shortlist, commercial-diligence, contract, supplier-selection, credential, Sandbox, ticketing, payment, and Production decision separately controlled.
+
+The Flights Phase 17 supplier-evidence review execution-control and no-execution boundary is recorded in `docs/FLIGHTS_PHASE_17.md`.
 
 ## Overall completion rule
 
