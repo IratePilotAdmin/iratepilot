@@ -5,13 +5,14 @@ import { adminNavigation } from "@/data/navigation";
 import { buildFlightEvaluationGovernance, flightEvaluationControls, flightEvaluationDecisionSafeguards } from "@/lib/flights/evaluation-governance";
 import { buildFlightEvaluationRehearsal, flightEvaluationRehearsalReceipts, flightEvaluationRehearsalScenarios } from "@/lib/flights/evaluation-rehearsal";
 import { buildFlightRehearsalAuthorizationReadiness, flightRehearsalAuthorizationArtifacts, flightRehearsalAuthorizationSafeguards } from "@/lib/flights/rehearsal-authorization";
+import { buildFlightRehearsalPreflightDesign, flightRehearsalPreflightControls, flightRehearsalPreflightSafeguards } from "@/lib/flights/rehearsal-preflight";
 import { buildFlightSupplierDueDiligence, flightSupplierContractLanes, flightSupplierEvidenceWorkstreams } from "@/lib/flights/supplier-due-diligence";
 import { buildFlightSupplierReadiness, flightCapabilityGroups, flightSupplierPaths } from "@/lib/flights/supplier-readiness";
 import { buildFlightSupplierSelectionPlan, flightSandboxAdapterOperations, flightSupplierSelectionCriteria } from "@/lib/flights/supplier-selection";
 
 export const metadata: Metadata = {
-  title: "Flight rehearsal authorization readiness",
-  description: "Review the supplier-free synthetic rehearsal authorization requirements while authorization, fixtures, roles, scenarios, candidates, credentials, traffic, ticketing, payments, and Production remain disabled.",
+  title: "Flight rehearsal preflight design",
+  description: "Review the supplier-free synthetic rehearsal preflight controls while authorization remains unsatisfied and fixtures, roles, scenarios, candidates, credentials, traffic, ticketing, payments, and Production remain disabled.",
 };
 
 export default function Page() {
@@ -21,47 +22,50 @@ export default function Page() {
   const governance = buildFlightEvaluationGovernance();
   const rehearsal = buildFlightEvaluationRehearsal();
   const authorization = buildFlightRehearsalAuthorizationReadiness();
+  const preflight = buildFlightRehearsalPreflightDesign();
   const locks = [
-    ["Authorization", authorization.authorizationState === "not_recorded" ? "Not recorded" : "Recorded"],
-    ["Policy", authorization.policyState === "not_recorded" ? "Not recorded" : "Recorded"],
-    ["Fixture standard", authorization.fixtureStandardState === "not_recorded" ? "Not recorded" : "Recorded"],
-    ["Attestation", authorization.attestationState === "not_recorded" ? "Not recorded" : "Recorded"],
-    ["Roles", authorization.roleAssignmentState === "not_assigned" ? "Not assigned" : "Assigned"],
-    ["Observer", authorization.observerState === "not_assigned" ? "Not assigned" : "Assigned"],
-    ["Rehearsal", authorization.rehearsalState === "not_run" ? "Not run" : "Run"],
-    ["Synthetic fixture", authorization.syntheticFixtureState === "not_created" ? "Not created" : "Created"],
-    ["Scenario results", `${authorization.scenarioResultCount}`],
-    ["Rehearsal receipts", authorization.receiptState === "not_created" ? "Not created" : "Created"],
-    ["Findings", `${authorization.findingCount}`],
-    ["Evaluation intake", authorization.evaluationIntakeState === "closed" ? "Closed" : "Open"],
-    ["Candidate", authorization.candidateState === "not_recorded" ? "Not recorded" : "Recorded"],
-    ["Evaluation case", authorization.evaluationCaseState === "not_created" ? "Not created" : "Created"],
-    ["Score", authorization.scoreState === "not_calculated" ? "Not calculated" : "Calculated"],
-    ["Recommendation", authorization.recommendationState === "not_issued" ? "Not issued" : "Issued"],
-    ["Shortlist", authorization.shortlistState === "not_created" ? "Not created" : "Created"],
-    ["Supplier selection", authorization.selectionState === "not_selected" ? "Not selected" : "Selected"],
-    ["Contract", authorization.contractState === "not_received" ? "Not received" : "Received"],
-    ["Credentials", authorization.credentialsAccepted ? "Accepted" : "Not accepted"],
-    ["External network", authorization.externalNetworkAccess ? "Enabled" : "Disabled"],
-    ["Sandbox adapter", authorization.sandboxAdapterImplemented ? "Implemented" : "Not implemented"],
-    ["Sandbox traffic", authorization.sandboxTrafficAuthorized ? "Enabled" : "Disabled"],
-    ["Production traffic", authorization.productionTrafficAuthorized ? "Enabled" : "Disabled"],
-    ["Ticketing", authorization.ticketingAuthorized ? "Enabled" : "Disabled"],
-    ["Flight payments", authorization.paymentAuthorized ? "Enabled" : "Disabled"],
+    ["Authorization prerequisite", preflight.authorizationPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
+    ["Authorization reference", preflight.authorizationReferenceState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Scope binding", preflight.scopeBindingState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Preflight", preflight.preflightState === "blocked" ? "Blocked" : "Ready"],
+    ["Fixture manifest", preflight.fixtureManifestState === "not_created" ? "Not created" : "Created"],
+    ["Isolation proof", preflight.isolationProofState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Roles", preflight.roleAssignmentState === "not_assigned" ? "Not assigned" : "Assigned"],
+    ["Observer", preflight.observerState === "not_assigned" ? "Not assigned" : "Assigned"],
+    ["Rehearsal", preflight.rehearsalState === "not_run" ? "Not run" : "Run"],
+    ["Synthetic fixture", preflight.syntheticFixtureState === "not_created" ? "Not created" : "Created"],
+    ["Scenario results", `${preflight.scenarioResultCount}`],
+    ["Rehearsal receipts", preflight.receiptState === "not_created" ? "Not created" : "Created"],
+    ["Findings", `${preflight.findingCount}`],
+    ["Evaluation intake", preflight.evaluationIntakeState === "closed" ? "Closed" : "Open"],
+    ["Candidate", preflight.candidateState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Evaluation case", preflight.evaluationCaseState === "not_created" ? "Not created" : "Created"],
+    ["Score", preflight.scoreState === "not_calculated" ? "Not calculated" : "Calculated"],
+    ["Recommendation", preflight.recommendationState === "not_issued" ? "Not issued" : "Issued"],
+    ["Shortlist", preflight.shortlistState === "not_created" ? "Not created" : "Created"],
+    ["Supplier selection", preflight.selectionState === "not_selected" ? "Not selected" : "Selected"],
+    ["Contract", preflight.contractState === "not_received" ? "Not received" : "Received"],
+    ["Credentials", preflight.credentialsAccepted ? "Accepted" : "Not accepted"],
+    ["External network", preflight.externalNetworkAccess ? "Enabled" : "Disabled"],
+    ["Sandbox adapter", preflight.sandboxAdapterImplemented ? "Implemented" : "Not implemented"],
+    ["Sandbox traffic", preflight.sandboxTrafficAuthorized ? "Enabled" : "Disabled"],
+    ["Production traffic", preflight.productionTrafficAuthorized ? "Enabled" : "Disabled"],
+    ["Ticketing", preflight.ticketingAuthorized ? "Enabled" : "Disabled"],
+    ["Flight payments", preflight.paymentAuthorized ? "Enabled" : "Disabled"],
   ] as const;
 
   return (
     <DashboardShell title="Admin Console" items={adminNavigation}>
-      <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 7 · Rehearsal authorization readiness only</p>
-      <h1 className="mt-2 text-3xl font-bold">Flight synthetic rehearsal authorization plan</h1>
-      <p className="mt-2 max-w-3xl text-slate-600">Define the approvals, attestations, role separation, stop conditions, sanitized evidence rules, and closeout boundary required before a one-time fictional tabletop rehearsal could be separately considered. This page does not request or record authorization, create a fixture, assign anyone, run a scenario, or open supplier evaluation intake.</p>
+      <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 8 · Rehearsal preflight design only</p>
+      <h1 className="mt-2 text-3xl font-bold">Flight synthetic rehearsal preflight plan</h1>
+      <p className="mt-2 max-w-3xl text-slate-600">Define the isolation proof, fictional-fixture manifest, independent-role checks, scenario controls, sanitized evidence schema, immediate-stop rules, and teardown boundary required after a separate authorization and before any future tabletop could be considered. This page does not satisfy authorization, create a fixture, assign anyone, run a scenario, record a result, or open supplier evaluation intake.</p>
 
       <section className="mt-8 grid gap-4 lg:grid-cols-[1fr_1.6fr]">
         <div className="rounded-2xl bg-slate-950 p-6 text-white">
-          <div className="flex items-center gap-3"><ShieldCheck className="h-6 w-6" /><strong>No rehearsal authorization is recorded</strong></div>
-          <p className="mt-3 text-sm leading-6 text-slate-300">No policy approval, fixture standard, attestation, participant assignment, fictional fixture, scenario result, receipt, finding, candidate, or supplier evidence exists. Completing this design cannot authorize or run a rehearsal, contact a supplier, open intake, accept credentials, enable traffic, issue tickets, collect payment, or change Production.</p>
-          <div className="mt-6 text-4xl font-bold">{authorization.completedCount}/{authorization.totalCount}</div>
-          <p className="mt-1 text-xs uppercase tracking-wider text-slate-400">Phase 7 gates recorded complete</p>
+          <div className="flex items-center gap-3"><ShieldCheck className="h-6 w-6" /><strong>Rehearsal preflight is blocked</strong></div>
+          <p className="mt-3 text-sm leading-6 text-slate-300">No Phase 7 authorization prerequisite, scope binding, fixture manifest, isolation proof, participant assignment, fictional fixture, scenario result, receipt, finding, candidate, or supplier evidence exists. Completing this design cannot satisfy authorization, start preflight, run a rehearsal, contact a supplier, open intake, accept credentials, enable traffic, issue tickets, collect payment, or change Production.</p>
+          <div className="mt-6 text-4xl font-bold">{preflight.completedCount}/{preflight.totalCount}</div>
+          <p className="mt-1 text-xs uppercase tracking-wider text-slate-400">Phase 8 gates recorded complete</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {locks.map(([label, status]) => (
@@ -72,6 +76,55 @@ export default function Page() {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Preflight blueprint only</p><h2 className="mt-2 text-2xl font-bold">Preflight control artifacts</h2></div><ClipboardCheck className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Seven static controls define the future authorization scope, fictional fixture, isolation, roles, scenario checks, evidence, and teardown proof. They create no record, fixture, assignment, authorization, execution path, or external action.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {flightRehearsalPreflightControls.map((control) => (
+            <article key={control.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold">{control.label}</h3>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{control.owner}</p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{control.readinessRequirement}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-rose-700"><strong>Boundary:</strong> {control.nonExecutionBoundary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Stop before any action</p><h2 className="mt-2 text-2xl font-bold">Immediate-stop safeguards</h2></div><Scale className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Five safeguards keep authorization prerequisites, real-data contamination, external connectivity, role conflicts, evidence handling, teardown, and downstream release fail closed.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {flightRehearsalPreflightSafeguards.map((safeguard) => (
+            <article key={safeguard.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold">{safeguard.label}</h3>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{safeguard.owner}</p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{safeguard.safeguard}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-rose-700"><strong>Fail closed:</strong> {safeguard.failClosedBoundary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10 rounded-2xl border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 p-6"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Phase 8 preflight sequence</p><h2 className="mt-2 text-2xl font-bold">Ten separately owned preflight-readiness gates</h2><p className="mt-2 text-sm text-slate-600">Every gate starts incomplete. Even a completed design cannot satisfy the Phase 7 authorization prerequisite, create a fixture, assign roles, start preflight, run a rehearsal, record a result, or authorize a named supplier evaluation.</p></div>
+        <div className="divide-y divide-slate-100">
+          {preflight.gates.map((gate, index) => (
+            <article key={gate.id} className="grid gap-3 p-6 md:grid-cols-[3rem_1fr_11rem] md:items-start">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">{index + 1}</span>
+              <div><h3 className="font-bold">{gate.label}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{gate.detail}</p></div>
+              <div className="md:text-right"><span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{gate.owner}</span><span className="mt-2 block text-sm font-medium text-amber-700">Not recorded</span></div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-12 border-t border-slate-200 pt-10">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Flights · Phase 7 · Rehearsal authorization readiness only</p>
+        <h2 className="mt-2 text-2xl font-bold">Rehearsal authorization design reference</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600"><strong>No rehearsal authorization is recorded.</strong> Phase 7 remains a static reference for the approval packet and fail-closed decision boundary. It cannot satisfy the Phase 8 prerequisite, create a fixture, assign a participant, or run a rehearsal.</p>
       </section>
 
       <section className="mt-10">
@@ -105,7 +158,7 @@ export default function Page() {
       </section>
 
       <section className="mt-10 rounded-2xl border border-slate-200 bg-white">
-        <div className="border-b border-slate-200 p-6"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Phase 7 decision sequence</p><h2 className="mt-2 text-2xl font-bold">Ten separately owned authorization-readiness gates</h2><p className="mt-2 text-sm text-slate-600">Every gate starts incomplete. Even a completed packet cannot record authorization, create a fixture, assign roles, run a rehearsal, record a result, or authorize a named supplier evaluation.</p></div>
+        <div className="border-b border-slate-200 p-6"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Phase 7 decision sequence</p><h2 className="mt-2 text-2xl font-bold">Ten separately owned authorization-readiness gates</h2><p className="mt-2 text-sm text-slate-600">Every gate starts incomplete. Even a completed packet cannot record authorization, satisfy the Phase 8 prerequisite, create a fixture, assign roles, run a rehearsal, record a result, or authorize a named supplier evaluation.</p></div>
         <div className="divide-y divide-slate-100">
           {authorization.gates.map((gate, index) => (
             <article key={gate.id} className="grid gap-3 p-6 md:grid-cols-[3rem_1fr_11rem] md:items-start">

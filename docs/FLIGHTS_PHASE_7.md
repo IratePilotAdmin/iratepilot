@@ -1,6 +1,6 @@
 # iRatePilot Flights — Phase 7
 
-Status: Rehearsal-authorization readiness software and repository verification complete; release gates pending
+Status: Rehearsal-authorization readiness software repository-verified, Git-published, deployed, and accepted in isolated Preview; rehearsal and external decisions pending
 
 ## Purpose
 
@@ -72,9 +72,9 @@ Phase 7 adds no client component, form, route handler, server action, database m
 
 ## Release gates
 
-- [ ] Commit and push the approved laptop changes after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and push the approved laptop changes at `97d0199` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 ## Rehearsal decision gates
 
@@ -93,3 +93,5 @@ Phase 7 adds no client component, form, route handler, server action, database m
 Phase 7 software completion is not authorization to create or run a rehearsal, evaluate a named supplier, receive supplier material, select a supplier, accept a contract, enable a live flight search, issue a ticket, or collect payment.
 
 The Phase 6 rehearsal-design boundary remains recorded in `docs/FLIGHTS_PHASE_6.md`.
+
+The isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_7_PREVIEW_EVIDENCE_2026-08-18.md`.

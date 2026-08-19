@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1–6 repository-verified, Git-published, and accepted in isolated Preview; Phase 7 authorization-readiness software repository-verified with release gates pending; all rehearsal execution, airline content, credentials, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1–7 repository-verified, Git-published, and accepted in isolated Preview; Phase 8 synthetic preflight-design software repository-verified with release gates pending; all preflight and rehearsal execution, airline content, credentials, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -339,9 +339,9 @@ Phase 7 rehearsal-authorization readiness software gates:
 
 Phase 7 release gates:
 
-- [ ] Commit and push the approved laptop changes after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and push the approved laptop changes at `97d0199` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 Phase 7 rehearsal-decision gates:
 
@@ -349,7 +349,30 @@ Phase 7 rehearsal-decision gates:
 - [ ] Make a separate one-time decision before creating any fictional fixture or running any synthetic scenario.
 - [ ] Record only sanitized results and resolve every finding without opening named supplier evaluation intake.
 
-The Flights Phase 7 rehearsal-authorization readiness and non-execution boundary is recorded in `docs/FLIGHTS_PHASE_7.md`.
+The Flights Phase 7 rehearsal-authorization readiness and non-execution boundary is recorded in `docs/FLIGHTS_PHASE_7.md`. The isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_7_PREVIEW_EVIDENCE_2026-08-18.md`.
+
+Phase 8 synthetic rehearsal preflight-design software gates:
+
+- [x] Define seven preflight-control artifacts without satisfying authorization, creating or inspecting a fixture, assigning a participant, starting preflight, or opening supplier evaluation intake.
+- [x] Define five immediate-stop safeguards for authorization prerequisites, real-data contamination, external connectivity, role conflicts, evidence handling, and teardown.
+- [x] Define ten separately owned preflight-readiness gates while keeping authorization unsatisfied and preflight, fixtures, roles, rehearsal execution, results, receipts, findings, candidates, evidence, scoring, recommendations, shortlist, contract, supplier selection, credentials, traffic, ticketing, and payment disabled.
+- [x] Extend the protected `/admin/flights` workspace without a database, form, mutation, environment variable, provider SDK, network request, external message, or Production change.
+- [x] Pass ESLint, TypeScript, 1,028 tests across 235 files, and the optimized 113-page Next.js build.
+
+Phase 8 release gates:
+
+- [ ] Commit and push the approved laptop changes after separate approval.
+- [ ] Deploy only to the isolated Preview project after separate approval.
+- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+
+Phase 8 preflight-decision gates:
+
+- [ ] Satisfy the separately controlled Phase 7 authorization prerequisite through accountable internal processes.
+- [ ] Approve the authorization scope, fictional-fixture manifest, no-real-data recheck, offline isolation proof, independent-role plan, observer controls, sanitized evidence schema, and teardown plan.
+- [ ] Make a separate action-time decision before creating any fictional fixture, assigning any participant, or starting any rehearsal activity.
+- [ ] Record only sanitized results and resolve every finding without opening named supplier evaluation intake.
+
+The Flights Phase 8 synthetic preflight-design and non-execution boundary is recorded in `docs/FLIGHTS_PHASE_8.md`.
 
 ## Overall completion rule
 
