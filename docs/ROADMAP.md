@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1–19 repository-verified, Git-published, and accepted in isolated Preview; Phase 20 is repository-verified locally; all provider contact, review execution, recommendation, supplier selection, airline content, credentials, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1–20 repository-verified, Git-published, and accepted in isolated Preview; all provider contact, review execution, recommendation, supplier selection, airline content, credentials, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -655,9 +655,9 @@ Phase 20 Duffel provider-contact execution-control design software gates:
 
 Phase 20 release gates:
 
-- [ ] Commit and publish the approved Phase 20 source to the private branch after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and publish the approved Phase 20 source at private-branch commit `f91e696` after separate approval.
+- [x] Deploy only to the isolated Preview project as deployment `dpl_AmJcFhKsPRXRRDA8YzEMmfARfEkT` after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 Phase 20 provider-contact execution decision gates:
 
@@ -667,7 +667,7 @@ Phase 20 provider-contact execution decision gates:
 - [ ] Make a new one-time action-time start decision outside this design immediately before one approved contact attempt; Phase 20 creates no send control.
 - [ ] Keep every response, evidence intake, scoring, recommendation, selection, contract, account, credential, Sandbox, ticketing, payment, deployment, and Production decision separately controlled.
 
-The Flights Phase 20 Duffel provider-contact execution-control and no-contact boundary is recorded in `docs/FLIGHTS_PHASE_20.md`. Actual Phase 18 authorization, Phase 19 preflight, Phase 20 execution, and provider contact remain blocked.
+The Flights Phase 20 Duffel provider-contact execution-control and no-contact boundary is recorded in `docs/FLIGHTS_PHASE_20.md`. Its isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_20_PREVIEW_EVIDENCE_2026-08-19.md`. Actual Phase 18 authorization, Phase 19 preflight, Phase 20 execution, and provider contact remain blocked.
 
 ## Overall completion rule
 
