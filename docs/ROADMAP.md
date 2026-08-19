@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1–9, Phase 11, and Phase 12 repository-verified, Git-published, and accepted in isolated Preview; Phase 10 repository-verified, Git-published, and deployed to isolated Preview with its distinct authenticated acceptance pending; all closeout, intake, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1–9, Phase 11, and Phase 12 repository-verified, Git-published, and accepted in isolated Preview; Phase 13 repository-verified locally and awaiting its separately approved release sequence; Phase 10 repository-verified, Git-published, and deployed to isolated Preview with its distinct authenticated acceptance pending; all closeout, intake, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -469,6 +469,32 @@ Phase 12 intake-preflight decision gates:
 - [ ] Make a new, one-time, scoped, expiring, revocable action-time decision outside this preflight immediately before intake could open.
 
 The Flights Phase 12 supplier-evaluation intake preflight and non-opening boundary is recorded in `docs/FLIGHTS_PHASE_12.md`. Its isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_12_PREVIEW_EVIDENCE_2026-08-19.md`.
+
+Phase 13 supplier-evaluation intake execution-control design software gates:
+
+- [x] Define seven intake execution controls without creating or satisfying Phase 11 authorization or a Phase 12 preflight receipt, opening an intake window, contacting a supplier, creating a candidate or case, creating a submission channel, receiving evidence, assigning a reviewer, sanitizing or quarantining evidence, scoring or selecting a supplier, or authorizing an external capability.
+- [x] Define five immediate-stop safeguards for missing prerequisites, widened scope, supplier or channel exposure, prohibited data, role conflicts and dissent, incomplete teardown, and downstream release.
+- [x] Define ten separately owned intake-execution gates while keeping authorization, preflight, execution decisions, intake, supplier contact, candidates, cases, channels, evidence, sanitation, quarantine, incidents, roles, conflict review, teardown, closeout, scoring, recommendations, shortlist, contract, supplier selection, credentials, traffic, ticketing, and payment disabled.
+- [x] Extend the protected `/admin/flights` workspace without a database, form, mutation, upload, storage path, environment variable, provider SDK, network request, external message, supplier identity, or Production change.
+- [x] Pass ESLint, TypeScript, 1,058 tests across 240 files, and the optimized 113-page Next.js build.
+
+Phase 13 release gates:
+
+- [ ] Commit the Phase 13 source and documentation after separate approval.
+- [ ] Push only the approved private laptop branch after separate approval.
+- [ ] Deploy only to the isolated Preview project after separate approval.
+- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+
+Phase 13 intake-execution decision gates:
+
+- [ ] Create and separately approve actual, current, one-time Phase 11 authorization and Phase 12 preflight receipts after every prerequisite and accountable review is satisfied.
+- [ ] Bind one candidate-neutral purpose, one separately identified supplier, allowed evidence, exclusions, owners, start, expiry, revocation, no delegation, no reuse, and no-selection boundary.
+- [ ] Approve one contact handoff and verify the isolated, least-privilege, logged, time-limited submission channel immediately before use.
+- [ ] Confirm evidence taxonomy, prohibited-data detection, sanitation, malware, quarantine, access, retention, deletion, incident, privacy, and contamination controls.
+- [ ] Confirm independent roles, conflicts, recusals, replacements, preserved dissent, exceptions, escalation, immediate-stop, no-restart, teardown, closeout, and no-downstream authority.
+- [ ] Make a new, one-time, scoped, expiring, revocable action-time decision outside this design immediately before contacting one supplier or opening one isolated intake window.
+
+The Flights Phase 13 supplier-evaluation intake execution-control design and non-execution boundary is recorded in `docs/FLIGHTS_PHASE_13.md`. Commit, private-branch push, isolated Preview deployment, and authenticated acceptance remain pending separate approval.
 
 ## Overall completion rule
 
