@@ -1,7 +1,7 @@
 # iRatePilot Flights — Phase 16
 
 Date: 2026-08-19
-Status: **Repository-verified locally; commit, private publication, isolated Preview deployment, authenticated acceptance, and every action-time or external gate remain pending**
+Status: **Repository-verified, Git-published, deployed, and authenticated browser-accepted in isolated Preview; action-time and external activation gates remain pending**
 
 ## Purpose
 
@@ -79,9 +79,9 @@ No supplier was contacted. No evidence or personal data was requested, received,
 
 ## Release gates
 
-- [ ] Commit and publish the approved Phase 16 source to the private backup branch after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and publish the approved Phase 16 source at private-branch commit `41f942f` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 ## Review-preflight decision gates
 
@@ -101,4 +101,4 @@ No supplier was contacted. No evidence or personal data was requested, received,
 
 Software completion is not evidence that Phase 15 authorization exists, preflight passed, review opened, evidence was reviewed, a supplier was scored or recommended, or an external capability is approved. It does not authorize supplier contact, supplier selection, live flight search, ticketing, payment, or Production traffic.
 
-The Phase 15 supplier-evidence review authorization and non-review boundary remains recorded in `docs/FLIGHTS_PHASE_15.md`. Its isolated Preview acceptance evidence remains recorded in `docs/FLIGHTS_PHASE_15_PREVIEW_EVIDENCE_2026-08-19.md`.
+The Phase 15 supplier-evidence review authorization and non-review boundary remains recorded in `docs/FLIGHTS_PHASE_15.md`. Its isolated Preview acceptance evidence remains recorded in `docs/FLIGHTS_PHASE_15_PREVIEW_EVIDENCE_2026-08-19.md`. The Phase 16 isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_16_PREVIEW_EVIDENCE_2026-08-19.md`.
