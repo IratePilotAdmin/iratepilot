@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1–18 repository-verified, Git-published, and accepted in isolated Preview; all provider contact, review execution, recommendation, supplier selection, airline content, credentials, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1–19 repository-verified, Git-published, and accepted in isolated Preview; Phase 20 is repository-verified locally; all provider contact, review execution, recommendation, supplier selection, airline content, credentials, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -644,6 +644,30 @@ Phase 19 provider-contact preflight decision gates:
 - [ ] Keep every response, evidence intake, scoring, recommendation, selection, contract, account, credential, Sandbox, ticketing, payment, deployment, and Production decision separately controlled.
 
 The Flights Phase 19 Duffel provider-contact preflight and no-opening boundary is recorded in `docs/FLIGHTS_PHASE_19.md`. Its isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_19_PREVIEW_EVIDENCE_2026-08-19.md`. Actual Phase 18 authorization, Phase 19 preflight, and provider contact remain blocked.
+
+Phase 20 Duffel provider-contact execution-control design software gates:
+
+- [x] Define seven controlled provider-contact stages without creating or verifying Phase 18 authorization or Phase 19 preflight; assigning a sender or approver; identifying a recipient; creating or approving a message, disclosure, channel, or window; contacting Duffel; receiving a response; or authorizing an external capability.
+- [x] Define five immediate-stop safeguards for missing authority or preflight, scope or message drift, identity or channel mismatch, conflicts, automation, retries, sensitive content, attachments, credentials, commitments, incidents, responses, incomplete closeout, and downstream release.
+- [x] Define ten separately owned provider-contact execution-control gates while keeping authorization, preflight, contact, responses, intake, cases, recommendations, selection, contracts, accounts, credentials, traffic, ticketing, and payments disabled.
+- [x] Extend the protected `/admin/flights` workspace without a database, form, button, mutation, upload, storage path, environment variable, provider SDK, network request, external message, recipient identity, sender identity, or Production change.
+- [x] Pass the focused Phase 20 test, ESLint, TypeScript, 1,097 tests across 247 files, and the optimized 113-page Next.js build.
+
+Phase 20 release gates:
+
+- [ ] Commit and publish the approved Phase 20 source to the private branch after separate approval.
+- [ ] Deploy only to the isolated Preview project after separate approval.
+- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+
+Phase 20 provider-contact execution decision gates:
+
+- [ ] Create and separately approve an actual Phase 18 authorization and a separately approved Phase 19 preflight receipt after every prerequisite is satisfied.
+- [ ] Bind one immutable Duffel-only purpose, message and disclosure version, accountable sender, independent approvers, official recipient role, authentic allowlisted channel, one manual attempt, fixed window, expiry, revocation, no delegation, no automation, no retry, no alternate channel, and immediate-stop conditions.
+- [ ] Reverify sensitive-data exclusions, privacy, security, recordkeeping, response quarantine, incident, abort, access-removal, attempt reconciliation, expiry, closeout, no restart, and no-downstream-authority controls.
+- [ ] Make a new one-time action-time start decision outside this design immediately before one approved contact attempt; Phase 20 creates no send control.
+- [ ] Keep every response, evidence intake, scoring, recommendation, selection, contract, account, credential, Sandbox, ticketing, payment, deployment, and Production decision separately controlled.
+
+The Flights Phase 20 Duffel provider-contact execution-control and no-contact boundary is recorded in `docs/FLIGHTS_PHASE_20.md`. Actual Phase 18 authorization, Phase 19 preflight, Phase 20 execution, and provider contact remain blocked.
 
 ## Overall completion rule
 
