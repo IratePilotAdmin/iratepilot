@@ -1,6 +1,6 @@
 # iRatePilot Flights — Phase 1
 
-Status: Local software implementation and supplier-offline verification complete; Preview release pending separate approval
+Status: Phase 1 software and isolated Preview browser acceptance complete; all airline content, ticketing, payment, and Production traffic remain disabled
 
 ## Purpose
 
@@ -27,7 +27,9 @@ This phase contains no airline, NDC, GDS, consolidator, ticketing, settlement, o
 ## Release gates
 
 - [x] Commit and push the approved laptop changes after separate approval.
-- [ ] Deploy to the isolated Preview project after separate approval and complete browser acceptance without adding provider credentials or traffic.
+- [x] Deploy to the isolated Preview project after separate approval and complete browser acceptance without adding provider credentials or traffic.
+
+The isolated Preview deployment and browser evidence are recorded in `docs/FLIGHTS_PHASE_1_PREVIEW_EVIDENCE_2026-08-18.md`.
 
 ## External activation gates
 
