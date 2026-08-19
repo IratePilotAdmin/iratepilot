@@ -1,6 +1,6 @@
 # iRatePilot Flights — Phase 3
 
-Status: Local supplier-selection planning software and repository verification complete; Git and isolated Preview release pending separate approval
+Status: Supplier-selection planning software, Git publication, isolated Preview deployment, and authenticated browser acceptance complete; all external activation gates remain closed
 
 ## Purpose
 
@@ -58,9 +58,11 @@ Even when every planning gate is marked complete in the pure model, all of these
 
 ## Release gates
 
-- [ ] Commit and push the approved laptop changes after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and push the approved laptop changes after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+
+The isolated Preview deployment and authenticated acceptance evidence are recorded in `docs/FLIGHTS_PHASE_3_PREVIEW_EVIDENCE_2026-08-18.md`.
 
 ## External activation gates
 

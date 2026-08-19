@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1 and 2 accepted in isolated Preview; Phase 3 planning software verified locally; all airline content, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1–3 accepted in isolated Preview; all airline content, credentials, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -268,11 +268,11 @@ Phase 3 supplier-selection planning software gates:
 
 Phase 3 release gates:
 
-- [ ] Commit and push the approved laptop changes after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and push the approved laptop changes after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
-The Flights Phase 3 selection and adapter-planning boundary is recorded in `docs/FLIGHTS_PHASE_3.md`.
+The Flights Phase 3 selection and adapter-planning boundary is recorded in `docs/FLIGHTS_PHASE_3.md`. The isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_3_PREVIEW_EVIDENCE_2026-08-18.md`.
 
 ## Overall completion rule
 
