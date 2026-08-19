@@ -1,6 +1,6 @@
 # iRatePilot Flights — Phase 12
 
-Status: Supplier-evaluation intake preflight design repository-verified locally; release gates pending
+Status: Supplier-evaluation intake preflight design repository-verified, Git-published, deployed, and authenticated browser-accepted in isolated Preview; action-time decision gates pending
 
 ## Purpose
 
@@ -79,10 +79,9 @@ Phase 12 adds no client component, form, route handler, server action, database 
 
 ## Release gates
 
-- [ ] Commit the approved laptop changes after separate approval.
-- [ ] Push only the approved private backup branch after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and push the approved laptop changes at `44c3d2c` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 ## Intake-preflight decision gates
 
@@ -101,4 +100,4 @@ Phase 12 adds no client component, form, route handler, server action, database 
 
 Phase 12 software completion would not be evidence that a Phase 11 authorization exists and would not authorize supplier evaluation intake, supplier contact, evidence receipt, scoring, supplier selection, live flight search, ticketing, payment, or Production traffic.
 
-The Phase 11 supplier-evaluation intake authorization and non-opening boundary remains recorded in `docs/FLIGHTS_PHASE_11.md`. Its isolated Preview acceptance evidence remains recorded in `docs/FLIGHTS_PHASE_11_PREVIEW_EVIDENCE_2026-08-19.md`.
+The Phase 11 supplier-evaluation intake authorization and non-opening boundary remains recorded in `docs/FLIGHTS_PHASE_11.md`. Its isolated Preview acceptance evidence remains recorded in `docs/FLIGHTS_PHASE_11_PREVIEW_EVIDENCE_2026-08-19.md`. The Phase 12 isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_12_PREVIEW_EVIDENCE_2026-08-19.md`.
