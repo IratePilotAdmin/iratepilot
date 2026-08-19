@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1–9 repository-verified, Git-published, and accepted in isolated Preview; Phase 10 repository-verified, Git-published, and deployed to isolated Preview with authenticated acceptance pending; Phase 11 supplier-evaluation intake authorization design repository-verified with release gates pending; all closeout, intake, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1–9 and Phase 11 repository-verified, Git-published, and accepted in isolated Preview; Phase 10 repository-verified, Git-published, and deployed to isolated Preview with its distinct authenticated acceptance pending; all closeout, intake, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -431,9 +431,9 @@ Phase 11 supplier-evaluation intake authorization design software gates:
 
 Phase 11 release gates:
 
-- [ ] Commit and push the approved laptop changes after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and push the approved laptop changes at `435573d` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 Phase 11 intake-opening decision gates:
 
@@ -443,7 +443,7 @@ Phase 11 intake-opening decision gates:
 - [ ] Approve independent reviewer and observer roles, conflicts, recusals, replacement, dissent, exception, stop, revocation, expiry, quarantine, closeout, and no-restart controls.
 - [ ] Make a new, one-time, scoped, expiring, revocable action-time decision outside this design immediately before intake could open.
 
-The Flights Phase 11 supplier-evaluation intake authorization and non-opening boundary is recorded in `docs/FLIGHTS_PHASE_11.md`.
+The Flights Phase 11 supplier-evaluation intake authorization and non-opening boundary is recorded in `docs/FLIGHTS_PHASE_11.md`. The isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_11_PREVIEW_EVIDENCE_2026-08-19.md`.
 
 ## Overall completion rule
 

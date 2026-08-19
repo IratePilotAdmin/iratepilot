@@ -1,6 +1,6 @@
 # iRatePilot Flights — Phase 11
 
-Status: Supplier-evaluation intake authorization design software and repository verification complete; release gates pending
+Status: Supplier-evaluation intake authorization design repository-verified, Git-published, deployed, and authenticated browser-accepted in isolated Preview; intake-opening decision gates pending
 
 ## Purpose
 
@@ -76,9 +76,9 @@ Phase 11 adds no client component, form, route handler, server action, database 
 
 ## Release gates
 
-- [ ] Commit and push the approved laptop changes after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and push the approved laptop changes at `435573d` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 ## Intake-opening decision gates
 
@@ -96,4 +96,4 @@ Phase 11 adds no client component, form, route handler, server action, database 
 
 Phase 11 software completion is not evidence that Phase 10 closeout exists and is not authorization to open supplier evaluation intake, contact or record a supplier, receive supplier material, score or select a supplier, accept a contract, enable a live flight search, issue a ticket, or collect payment.
 
-The Phase 10 synthetic rehearsal closeout, findings-disposition, and non-activation boundary remains recorded in `docs/FLIGHTS_PHASE_10.md`.
+The Phase 10 synthetic rehearsal closeout, findings-disposition, and non-activation boundary remains recorded in `docs/FLIGHTS_PHASE_10.md`. The isolated Phase 11 Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_11_PREVIEW_EVIDENCE_2026-08-19.md`.
