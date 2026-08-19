@@ -1,6 +1,6 @@
 # iRatePilot Flights — Phase 4
 
-Status: Local supplier due-diligence and contracting-readiness software and repository verification complete; Git and isolated Preview release pending separate approval; all external activation gates remain closed
+Status: Supplier due-diligence and contracting-readiness software, repository verification, Git publication, isolated Preview deployment, and authenticated browser acceptance complete; all external activation gates remain closed
 
 ## Purpose
 
@@ -67,9 +67,9 @@ Phase 4 adds no client component, form, API route, server action, database migra
 
 ## Release gates
 
-- [ ] Commit and push the approved laptop changes after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and push the approved laptop changes at `041301c` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 ## External activation gates
 
