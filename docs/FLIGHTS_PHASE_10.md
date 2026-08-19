@@ -1,6 +1,6 @@
 # iRatePilot Flights — Phase 10
 
-Status: Synthetic rehearsal closeout and findings-disposition design repository-verified, Git-published, and deployed to isolated Preview; authenticated browser acceptance pending
+Status: Synthetic rehearsal closeout and findings-disposition design repository-verified, Git-published, deployed, and authenticated browser-accepted in isolated Preview; closeout and external activation gates pending
 
 ## Purpose
 
@@ -80,7 +80,7 @@ Phase 10 adds no client component, form, route handler, server action, database 
 
 - [x] Commit and push the approved laptop changes at `0f83a63` after separate approval.
 - [x] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 ## Closeout decision gates
 
@@ -98,4 +98,4 @@ Phase 10 adds no client component, form, route handler, server action, database 
 
 Phase 10 software completion is not evidence that a rehearsal ran and is not authorization to close a rehearsal, evaluate a named supplier, receive supplier material, select a supplier, accept a contract, enable a live flight search, issue a ticket, or collect payment.
 
-The Phase 9 synthetic rehearsal execution-control and non-execution boundary remains recorded in `docs/FLIGHTS_PHASE_9.md`.
+The Phase 9 synthetic rehearsal execution-control and non-execution boundary remains recorded in `docs/FLIGHTS_PHASE_9.md`. The Phase 10 isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_10_PREVIEW_EVIDENCE_2026-08-19.md`.
