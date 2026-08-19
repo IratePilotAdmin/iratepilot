@@ -10,6 +10,7 @@ import { buildFlightEvaluationIntakePreflightDesign, flightEvaluationIntakePrefl
 import { buildFlightEvaluationReviewAuthorizationDesign, flightEvaluationReviewAuthorizationArtifacts, flightEvaluationReviewAuthorizationSafeguards } from "@/lib/flights/evaluation-review-authorization";
 import { buildFlightEvaluationReviewExecutionControlDesign, flightEvaluationReviewExecutionSafeguards, flightEvaluationReviewExecutionStages } from "@/lib/flights/evaluation-review-execution-control";
 import { buildFlightEvaluationReviewPreflightDesign, flightEvaluationReviewPreflightControls, flightEvaluationReviewPreflightSafeguards } from "@/lib/flights/evaluation-review-preflight";
+import { buildFlightProviderContactAuthorizationDesign, flightProviderContactAuthorizationArtifacts, flightProviderContactAuthorizationSafeguards } from "@/lib/flights/provider-contact-authorization";
 import { buildFlightEvaluationRehearsal, flightEvaluationRehearsalReceipts, flightEvaluationRehearsalScenarios } from "@/lib/flights/evaluation-rehearsal";
 import { buildFlightRehearsalAuthorizationReadiness, flightRehearsalAuthorizationArtifacts, flightRehearsalAuthorizationSafeguards } from "@/lib/flights/rehearsal-authorization";
 import { buildFlightRehearsalCloseoutDesign, flightRehearsalCloseoutArtifacts, flightRehearsalCloseoutSafeguards } from "@/lib/flights/rehearsal-closeout";
@@ -20,8 +21,8 @@ import { buildFlightSupplierReadiness, flightCapabilityGroups, flightSupplierPat
 import { buildFlightSupplierSelectionPlan, flightSandboxAdapterOperations, flightSupplierSelectionCriteria } from "@/lib/flights/supplier-selection";
 
 export const metadata: Metadata = {
-  title: "Flight supplier-evidence review execution-control design",
-  description: "Review the blocked supplier-evidence review execution boundary while authorization, preflight, evidence review, scoring, recommendations, selection, credentials, traffic, ticketing, payments, and Production remain disabled.",
+  title: "Duffel provider-contact authorization design",
+  description: "Review the blocked, read-only Duffel provider-contact authorization boundary while contact, evidence intake, commitments, accounts, credentials, traffic, ticketing, payments, and Production remain disabled.",
 };
 
 export default function Page() {
@@ -41,6 +42,39 @@ export default function Page() {
   const reviewAuthorization = buildFlightEvaluationReviewAuthorizationDesign();
   const reviewPreflight = buildFlightEvaluationReviewPreflightDesign();
   const reviewExecutionControl = buildFlightEvaluationReviewExecutionControlDesign();
+  const providerContactAuthorization = buildFlightProviderContactAuthorizationDesign();
+  const providerContactAuthorizationLocks = [
+    ["Provider-path preference", providerContactAuthorization.providerPathPreferenceState === "recorded" ? "Recorded" : "Pending"],
+    ["Primary intended path", providerContactAuthorization.primaryProviderPath === "duffel" ? "Duffel" : "Not recorded"],
+    ["Secondary intended path", providerContactAuthorization.secondaryProviderPath === "sabre" ? "Sabre" : "Not recorded"],
+    ["Parallel launch", providerContactAuthorization.parallelLaunchState === "not_authorized" ? "Not authorized" : "Authorized"],
+    ["Contact authorization", providerContactAuthorization.contactAuthorizationState === "blocked" ? "Blocked" : "Ready"],
+    ["Action-time decision", providerContactAuthorization.actionTimeDecisionState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Contact purpose", providerContactAuthorization.contactPurposeState === "not_bound" ? "Not bound" : "Bound"],
+    ["Sender", providerContactAuthorization.senderState === "not_assigned" ? "Not assigned" : "Assigned"],
+    ["Approvers", providerContactAuthorization.approverState === "not_assigned" ? "Not assigned" : "Assigned"],
+    ["Approved message", providerContactAuthorization.messageState === "not_created" ? "Not created" : "Created"],
+    ["Disclosures", providerContactAuthorization.disclosureState === "not_approved" ? "Not approved" : "Approved"],
+    ["Recipient", providerContactAuthorization.recipientState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Channel", providerContactAuthorization.channelState === "not_approved" ? "Not approved" : "Approved"],
+    ["Contact window", providerContactAuthorization.contactWindowState === "not_opened" ? "Not opened" : "Opened"],
+    ["Supplier contact", providerContactAuthorization.supplierContactState === "not_started" ? "Not started" : "Started"],
+    ["Contact attempts", `${providerContactAuthorization.contactAttemptCount}`],
+    ["Contact receipt", providerContactAuthorization.receiptState === "not_created" ? "Not created" : "Created"],
+    ["Provider response", providerContactAuthorization.responseState === "not_received" ? "Not received" : "Received"],
+    ["Evidence intake", providerContactAuthorization.evidenceIntakeState === "closed" ? "Closed" : "Open"],
+    ["Evaluation case", providerContactAuthorization.evaluationCaseState === "not_created" ? "Not created" : "Created"],
+    ["Recommendation", providerContactAuthorization.recommendationState === "not_issued" ? "Not issued" : "Issued"],
+    ["Supplier selection", providerContactAuthorization.selectionState === "not_selected" ? "Not selected" : "Selected"],
+    ["Contract", providerContactAuthorization.contractState === "not_received" ? "Not received" : "Received"],
+    ["Provider account", providerContactAuthorization.accountState === "not_created" ? "Not created" : "Created"],
+    ["Credentials", providerContactAuthorization.credentialsAccepted ? "Accepted" : "Not accepted"],
+    ["External network", providerContactAuthorization.externalNetworkAccess ? "Enabled" : "Disabled"],
+    ["Sandbox traffic", providerContactAuthorization.sandboxTrafficAuthorized ? "Enabled" : "Disabled"],
+    ["Production traffic", providerContactAuthorization.productionTrafficAuthorized ? "Enabled" : "Disabled"],
+    ["Ticketing", providerContactAuthorization.ticketingAuthorized ? "Enabled" : "Disabled"],
+    ["Flight payments", providerContactAuthorization.paymentAuthorized ? "Enabled" : "Disabled"],
+  ] as const;
   const reviewExecutionLocks = [
     ["Phase 15 authorization prerequisite", reviewExecutionControl.phase15AuthorizationPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
     ["Phase 16 preflight prerequisite", reviewExecutionControl.phase16PreflightPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
@@ -387,6 +421,77 @@ export default function Page() {
 
   return (
     <DashboardShell title="Admin Console" items={adminNavigation}>
+      <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 18 · Duffel contact-authorization design only</p>
+      <h1 className="mt-2 text-3xl font-bold">Duffel provider-contact authorization plan</h1>
+      <p className="mt-2 max-w-3xl text-slate-600">Define the narrow purpose, accountable sender, independent approvals, immutable message, truthful disclosures, official channel, recipient-role validation, data-minimization, one-contact limit, expiry, revocation, stop, incident, receipt, closeout, and no-commitment controls that would be required before a future Duffel diligence contact could be considered. The recorded Duffel-primary and Sabre-secondary preference is documentation only. This page cannot identify or contact a recipient, draft or send a message, submit a form, place a call, create an account or case, receive evidence, accept terms, recommend or select a supplier, enable traffic, issue tickets, collect payment, or change Production.</p>
+
+      <section className="mt-8 grid gap-4 lg:grid-cols-[1fr_1.6fr]">
+        <div className="rounded-2xl bg-slate-950 p-6 text-white">
+          <div className="flex items-center gap-3"><ShieldCheck className="h-6 w-6" /><strong>Duffel provider contact is blocked</strong></div>
+          <p className="mt-3 text-sm leading-6 text-slate-300">The staged provider-path preference is recorded, but no contact purpose, sender, approver, message, disclosure packet, recipient, channel, action-time decision, contact window, contact attempt, receipt, response, evidence intake, evaluation case, recommendation, selection, contract, account, credential, traffic, ticketing, or payment exists. Completing every Phase 18 design gate cannot authorize or imply contact.</p>
+          <div className="mt-6 text-4xl font-bold">{providerContactAuthorization.completedCount}/{providerContactAuthorization.totalCount}</div>
+          <p className="mt-1 text-xs uppercase tracking-wider text-slate-400">Phase 18 gates recorded complete</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {providerContactAuthorizationLocks.map(([label, status]) => (
+            <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5">
+              <CircleSlash2 className="h-5 w-5 text-rose-600" />
+              <strong className="mt-4 block">{label}</strong>
+              <span className={`mt-1 block text-sm font-medium ${status === "Recorded" || status === "Duffel" || status === "Sabre" ? "text-emerald-700" : "text-rose-700"}`}>{status}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Authorization packet blueprint only</p><h2 className="mt-2 text-2xl font-bold">Six provider-contact authorization artifacts</h2></div><ClipboardCheck className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Six static artifacts define what future accountable approval would need to bind. They do not create an owner, authority, recipient, address, message, disclosure, channel, window, send attempt, receipt, response, evidence, commitment, or external action.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {flightProviderContactAuthorizationArtifacts.map((artifact) => (
+            <article key={artifact.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold">{artifact.label}</h3>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{artifact.owner}</p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{artifact.authorizationRequirement}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-rose-700"><strong>Boundary:</strong> {artifact.nonContactBoundary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Any drift, ambiguity, sensitive data, or missing authority stops contact</p><h2 className="mt-2 text-2xl font-bold">Five immediate-stop contact safeguards</h2></div><Scale className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Five safeguards keep implied authority, recipient or purpose drift, unapproved messages, sensitive data, impersonation, retries, commitments, evidence intake, accounts, credentials, and downstream release fail closed.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {flightProviderContactAuthorizationSafeguards.map((safeguard) => (
+            <article key={safeguard.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold">{safeguard.label}</h3>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{safeguard.owner}</p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{safeguard.safeguard}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-rose-700"><strong>Fail closed:</strong> {safeguard.failClosedBoundary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10 rounded-2xl border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 p-6"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Phase 18 provider-contact authorization sequence</p><h2 className="mt-2 text-2xl font-bold">Ten separately owned provider-contact authorization gates</h2><p className="mt-2 text-sm text-slate-600">Every gate starts incomplete. Even a completed design cannot assign a sender, approve a message or channel, identify a recipient, open a contact window, contact Duffel, admit a response, recommend or select a supplier, or authorize any external capability.</p></div>
+        <div className="divide-y divide-slate-100">
+          {providerContactAuthorization.gates.map((gate, index) => (
+            <article key={gate.id} className="grid gap-3 p-6 md:grid-cols-[3rem_1fr_11rem] md:items-start">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">{index + 1}</span>
+              <div><h3 className="font-bold">{gate.label}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{gate.detail}</p></div>
+              <div className="md:text-right"><span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{gate.owner}</span><span className="mt-2 block text-sm font-medium text-amber-700">Not recorded</span></div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-12 border-t border-slate-200 pt-10">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Flights · Phase 17 · Evidence-review execution-control design only</p>
+        <h2 className="mt-2 text-2xl font-bold">Evidence-review execution-control reference</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600"><strong>Supplier-evidence review remains closed.</strong> Phase 17 software was accepted in isolated Preview, but no actual provider contact, response, evidence intake, Phase 15 authorization, Phase 16 preflight receipt, or Phase 17 review-opening decision exists. Phase 18 does not satisfy or bypass those controls.</p>
+      </section>
+
       <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 17 · Evidence-review execution-control design only</p>
       <h1 className="mt-2 text-3xl font-bold">Flight supplier-evidence review execution-control plan</h1>
       <p className="mt-2 max-w-3xl text-slate-600">Define the authorization, preflight, fixed-inventory, lineage, hash, rubric, role, access, one-criterion-at-a-time, observation, calculation, variance, dissent, finding, stop, work-product, expiry, closeout, and no-downstream-authority controls that a future supplier-evidence review would require. Phase 16 software was accepted in isolated Preview, but no actual Phase 15 authorization, Phase 16 preflight receipt, or action-time start decision exists. This page cannot contact a supplier, reopen intake, receive, restore, inspect, hash, admit, or review evidence, approve or run a rubric, assign reviewers, grant access, open a review window, release a criterion, calculate a score, recommend or shortlist a supplier, accept a contract or credentials, enable traffic, issue tickets, collect payment, or change Production.</p>
