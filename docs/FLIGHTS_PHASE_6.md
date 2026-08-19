@@ -1,6 +1,6 @@
 # iRatePilot Flights — Phase 6
 
-Status: Local synthetic-rehearsal design implementation and repository verification complete; Git publication and isolated Preview release require separate approval; all rehearsal-execution and external activation gates remain closed
+Status: Synthetic-rehearsal design software, private-branch publication, isolated Preview deployment, and authenticated browser acceptance complete; all rehearsal-execution and external activation gates remain closed
 
 ## Purpose
 
@@ -76,9 +76,9 @@ Phase 6 adds no client component, form, API route, server action, database migra
 
 ## Release gates
 
-- [ ] Commit and push the approved laptop changes after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and push the approved laptop changes at `6981d01` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 ## Rehearsal-execution gates
 
@@ -95,3 +95,5 @@ Phase 6 adds no client component, form, API route, server action, database migra
 - [ ] Make separate shortlist, contract, supplier-selection, credential-channel, implementation, sandbox, and Production decisions.
 
 Phase 6 software completion is not authorization to run a rehearsal, evaluate a named supplier, receive supplier material, select a supplier, accept a contract, or enable a live flight search or sale.
+
+The isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_6_PREVIEW_EVIDENCE_2026-08-18.md`.
