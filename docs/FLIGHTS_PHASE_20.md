@@ -1,7 +1,7 @@
 # iRatePilot Flights — Phase 20
 
 Date: 2026-08-19
-Status: **Repository-verified locally; Git publication, isolated Preview deployment, browser acceptance, and every action-time or external gate remain pending**
+Status: **Repository-verified, Git-published, deployed, and authenticated browser-accepted in isolated Preview; actual Phase 18 authorization, Phase 19 preflight, Phase 20 execution, and every action-time or external gate remain pending**
 
 ## Purpose
 
@@ -77,9 +77,9 @@ No provider was contacted. No recipient was identified. No message was created, 
 
 ## Release gates
 
-- [ ] Commit and publish the approved Phase 20 source to the private branch after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and publish the approved Phase 20 source at private-branch commit `f91e696` after separate approval.
+- [x] Deploy only to the isolated Preview project as deployment `dpl_AmJcFhKsPRXRRDA8YzEMmfARfEkT` after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 ## Provider-contact execution decision gates
 
@@ -92,4 +92,4 @@ No provider was contacted. No recipient was identified. No message was created, 
 
 Software completion is not evidence that actual Phase 18 authorization exists, Phase 19 preflight passed, contact started, a message was sent, Duffel responded, evidence was received, or any external capability is approved. It does not authorize supplier contact, supplier selection, live flight search, ticketing, payment, or Production traffic.
 
-The Phase 19 provider-contact preflight and no-opening boundary remains recorded in `docs/FLIGHTS_PHASE_19.md`. Its isolated Preview acceptance evidence remains recorded in `docs/FLIGHTS_PHASE_19_PREVIEW_EVIDENCE_2026-08-19.md`.
+The Phase 19 provider-contact preflight and no-opening boundary remains recorded in `docs/FLIGHTS_PHASE_19.md`. Its isolated Preview acceptance evidence remains recorded in `docs/FLIGHTS_PHASE_19_PREVIEW_EVIDENCE_2026-08-19.md`. The Phase 20 isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_20_PREVIEW_EVIDENCE_2026-08-19.md`.
