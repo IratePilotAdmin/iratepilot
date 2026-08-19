@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1–9 and Phases 11–13 repository-verified, Git-published, and accepted in isolated Preview; Phase 10 repository-verified, Git-published, and deployed to isolated Preview with its distinct authenticated acceptance pending; all closeout, intake, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1–9 and Phases 11–13 repository-verified, Git-published, and accepted in isolated Preview; Phase 14 repository-verified locally and awaiting its separately approved release sequence; Phase 10 repository-verified, Git-published, and deployed to isolated Preview with its distinct authenticated acceptance pending; all closeout, intake, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -494,6 +494,31 @@ Phase 13 intake-execution decision gates:
 - [ ] Make a new, one-time, scoped, expiring, revocable action-time decision outside this design immediately before contacting one supplier or opening one isolated intake window.
 
 The Flights Phase 13 supplier-evaluation intake execution-control design and non-execution boundary is recorded in `docs/FLIGHTS_PHASE_13.md`. Its isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_13_PREVIEW_EVIDENCE_2026-08-19.md`.
+
+Phase 14 supplier-evaluation intake closeout design software gates:
+
+- [x] Define seven intake closeout evidence artifacts without creating or satisfying Phase 11 authorization, a Phase 12 preflight receipt, or a Phase 13 execution record; contacting a supplier; creating a candidate, case, or channel; receiving evidence; reconciling an intake; deleting material; resolving incidents or findings; completing teardown; creating closeout; scoring or selecting a supplier; or authorizing an external capability.
+- [x] Define five findings-disposition safeguards for missing execution evidence, unreconciled data, incidents, findings, dissent, incomplete deletion or teardown, restart, scoring, selection, and downstream release.
+- [x] Define ten separately owned intake-closeout gates while keeping authorization, preflight, execution records, intake, supplier contact, candidates, cases, channels, evidence, sanitation, quarantine, incidents, roles, conflict review, retention, deletion, access removal, findings, teardown, closeout, scoring, recommendations, shortlist, contract, supplier selection, credentials, traffic, ticketing, and payment disabled.
+- [x] Extend the protected `/admin/flights` workspace without a database, form, mutation, deletion action, upload, storage path, environment variable, provider SDK, network request, external message, supplier identity, or Production change.
+- [x] Pass ESLint, TypeScript, 1,064 tests across 241 files, and the optimized 113-page Next.js build.
+
+Phase 14 release gates:
+
+- [ ] Commit and publish the approved Phase 14 source to the private branch after separate approval.
+- [ ] Deploy only to the isolated Preview project after separate approval.
+- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+
+Phase 14 intake-closeout decision gates:
+
+- [ ] Create and separately approve actual, current, one-time Phase 11 authorization, Phase 12 preflight, and Phase 13 execution records after every prerequisite and accountable review is satisfied.
+- [ ] Reconcile one authorized purpose, scope, window, contact handoff, candidate-neutral record, evaluation case, channel, receipt, evidence inventory, stop, and final disposition.
+- [ ] Confirm prohibited-data detection, malware review, sanitation, quarantine, isolation, incidents, contamination review, access history, permitted retention, copy inventory, deletion, and access removal through separate accountable reviews.
+- [ ] Reconcile independent roles, conflicts, recusals, replacements, preserved dissent, exceptions, overrides, stop decisions, findings, remediation owners, due dates, verification, and blockers.
+- [ ] Confirm authorization expiry, channel closure, teardown, no reuse, and no restart; any future intake requires new authorization, preflight, and execution decisions.
+- [ ] Make a new closeout decision outside this design only after every prerequisite and reconciliation requirement is satisfied.
+
+The Flights Phase 14 supplier-evaluation intake closeout, findings-disposition, and non-activation boundary is recorded in `docs/FLIGHTS_PHASE_14.md`.
 
 ## Overall completion rule
 

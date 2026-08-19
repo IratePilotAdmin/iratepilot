@@ -4,6 +4,7 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { adminNavigation } from "@/data/navigation";
 import { buildFlightEvaluationGovernance, flightEvaluationControls, flightEvaluationDecisionSafeguards } from "@/lib/flights/evaluation-governance";
 import { buildFlightEvaluationIntakeAuthorizationDesign, flightEvaluationIntakeAuthorizationArtifacts, flightEvaluationIntakeAuthorizationSafeguards } from "@/lib/flights/evaluation-intake-authorization";
+import { buildFlightEvaluationIntakeCloseoutDesign, flightEvaluationIntakeCloseoutArtifacts, flightEvaluationIntakeCloseoutSafeguards } from "@/lib/flights/evaluation-intake-closeout";
 import { buildFlightEvaluationIntakeExecutionControlDesign, flightEvaluationIntakeExecutionControls, flightEvaluationIntakeExecutionSafeguards } from "@/lib/flights/evaluation-intake-execution-control";
 import { buildFlightEvaluationIntakePreflightDesign, flightEvaluationIntakePreflightControls, flightEvaluationIntakePreflightSafeguards } from "@/lib/flights/evaluation-intake-preflight";
 import { buildFlightEvaluationRehearsal, flightEvaluationRehearsalReceipts, flightEvaluationRehearsalScenarios } from "@/lib/flights/evaluation-rehearsal";
@@ -16,8 +17,8 @@ import { buildFlightSupplierReadiness, flightCapabilityGroups, flightSupplierPat
 import { buildFlightSupplierSelectionPlan, flightSandboxAdapterOperations, flightSupplierSelectionCriteria } from "@/lib/flights/supplier-selection";
 
 export const metadata: Metadata = {
-  title: "Flight supplier-evaluation intake execution-control design",
-  description: "Review the blocked supplier-evaluation intake execution-control boundary while authorization, preflight, intake, supplier contact, evidence receipt, scoring, selection, credentials, traffic, ticketing, payments, and Production remain disabled.",
+  title: "Flight supplier-evaluation intake closeout design",
+  description: "Review the blocked supplier-evaluation intake closeout boundary while authorization, preflight, execution, intake, supplier contact, evidence receipt, scoring, selection, credentials, traffic, ticketing, payments, and Production remain disabled.",
 };
 
 export default function Page() {
@@ -33,6 +34,58 @@ export default function Page() {
   const intakeAuthorization = buildFlightEvaluationIntakeAuthorizationDesign();
   const intakePreflight = buildFlightEvaluationIntakePreflightDesign();
   const intakeExecutionControl = buildFlightEvaluationIntakeExecutionControlDesign();
+  const intakeCloseout = buildFlightEvaluationIntakeCloseoutDesign();
+  const intakeCloseoutLocks = [
+    ["Phase 11 authorization prerequisite", intakeCloseout.phase11AuthorizationPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
+    ["Phase 12 preflight prerequisite", intakeCloseout.phase12PreflightPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
+    ["Phase 13 execution-record prerequisite", intakeCloseout.phase13ExecutionRecordPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
+    ["Phase 13 software acceptance", intakeCloseout.phase13SoftwareAcceptanceState === "accepted_in_preview" ? "Accepted in Preview" : "Pending"],
+    ["Authorization reference", intakeCloseout.authorizationReferenceState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Preflight receipt", intakeCloseout.preflightReceiptState === "not_created" ? "Not created" : "Created"],
+    ["Execution record", intakeCloseout.executionRecordState === "not_created" ? "Not created" : "Created"],
+    ["Closeout control", intakeCloseout.closeoutControlState === "blocked" ? "Blocked" : "Ready"],
+    ["Scope reconciliation", intakeCloseout.scopeReconciliationState === "not_started" ? "Not started" : "Started"],
+    ["Intake window", intakeCloseout.intakeWindowState === "not_opened" ? "Not opened" : "Opened"],
+    ["Supplier contact", intakeCloseout.supplierContactState === "not_started" ? "Not started" : "Started"],
+    ["Contact handoff", intakeCloseout.contactHandoffState === "not_created" ? "Not created" : "Created"],
+    ["Candidate", intakeCloseout.candidateState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Evaluation case", intakeCloseout.evaluationCaseState === "not_created" ? "Not created" : "Created"],
+    ["Submission channel", intakeCloseout.submissionChannelState === "not_created" ? "Not created" : "Created"],
+    ["Supplier evidence", `${intakeCloseout.evidenceCount}`],
+    ["Evidence inventory", intakeCloseout.evidenceInventoryState === "not_created" ? "Not created" : "Created"],
+    ["Sanitation", intakeCloseout.sanitationState === "not_started" ? "Not started" : "Started"],
+    ["Quarantine", intakeCloseout.quarantineState === "not_started" ? "Not started" : "Started"],
+    ["Incident", intakeCloseout.incidentState === "not_created" ? "Not created" : "Created"],
+    ["Stop record", intakeCloseout.stopRecordState === "not_created" ? "Not created" : "Created"],
+    ["Contamination review", intakeCloseout.contaminationReviewState === "not_started" ? "Not started" : "Started"],
+    ["Retention", intakeCloseout.retentionState === "not_confirmed" ? "Not confirmed" : "Confirmed"],
+    ["Deletion", intakeCloseout.deletionState === "not_confirmed" ? "Not confirmed" : "Confirmed"],
+    ["Access removal", intakeCloseout.accessRemovalState === "not_confirmed" ? "Not confirmed" : "Confirmed"],
+    ["Reviewer", intakeCloseout.reviewerState === "not_assigned" ? "Not assigned" : "Assigned"],
+    ["Observer", intakeCloseout.observerState === "not_assigned" ? "Not assigned" : "Assigned"],
+    ["Conflict review", intakeCloseout.conflictReviewState === "not_started" ? "Not started" : "Started"],
+    ["Dissent", intakeCloseout.dissentState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Exceptions", intakeCloseout.exceptionState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Findings", `${intakeCloseout.findingCount}`],
+    ["Findings disposition", intakeCloseout.findingDispositionState === "not_started" ? "Not started" : "Started"],
+    ["Teardown", intakeCloseout.teardownState === "not_started" ? "Not started" : "Started"],
+    ["Authorization expiry", intakeCloseout.authorizationExpiryState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Closeout decision", intakeCloseout.closeoutDecisionState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Closeout", intakeCloseout.closeoutState === "not_created" ? "Not created" : "Created"],
+    ["Evaluation intake", intakeCloseout.evaluationIntakeState === "closed" ? "Closed" : "Open"],
+    ["Score", intakeCloseout.scoreState === "not_calculated" ? "Not calculated" : "Calculated"],
+    ["Recommendation", intakeCloseout.recommendationState === "not_issued" ? "Not issued" : "Issued"],
+    ["Shortlist", intakeCloseout.shortlistState === "not_created" ? "Not created" : "Created"],
+    ["Contract", intakeCloseout.contractState === "not_received" ? "Not received" : "Received"],
+    ["Supplier selection", intakeCloseout.selectionState === "not_selected" ? "Not selected" : "Selected"],
+    ["Credentials", intakeCloseout.credentialsAccepted ? "Accepted" : "Not accepted"],
+    ["External network", intakeCloseout.externalNetworkAccess ? "Enabled" : "Disabled"],
+    ["Sandbox adapter", intakeCloseout.sandboxAdapterImplemented ? "Implemented" : "Not implemented"],
+    ["Sandbox traffic", intakeCloseout.sandboxTrafficAuthorized ? "Enabled" : "Disabled"],
+    ["Production traffic", intakeCloseout.productionTrafficAuthorized ? "Enabled" : "Disabled"],
+    ["Ticketing", intakeCloseout.ticketingAuthorized ? "Enabled" : "Disabled"],
+    ["Flight payments", intakeCloseout.paymentAuthorized ? "Enabled" : "Disabled"],
+  ] as const;
   const intakeExecutionLocks = [
     ["Phase 11 authorization prerequisite", intakeExecutionControl.phase11AuthorizationPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
     ["Phase 12 preflight prerequisite", intakeExecutionControl.phase12PreflightPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
@@ -183,6 +236,77 @@ export default function Page() {
 
   return (
     <DashboardShell title="Admin Console" items={adminNavigation}>
+      <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 14 · Evaluation-intake closeout design only</p>
+      <h1 className="mt-2 text-3xl font-bold">Flight supplier-evaluation intake closeout plan</h1>
+      <p className="mt-2 max-w-3xl text-slate-600">Define the prerequisite references, scope and receipt reconciliation, evidence sanitation, retention, deletion, incident and quarantine disposition, independent dissent, findings ownership, expiry, teardown, no-restart, and separate closeout-decision controls that a future completed supplier-evaluation intake would require. Phase 13 software was accepted in isolated Preview, but no actual Phase 11 authorization, Phase 12 preflight receipt, or Phase 13 execution record exists. This page cannot contact a supplier, open or close intake, receive or inspect evidence, remove access, delete material, resolve an incident or finding, score or select a supplier, accept credentials, enable traffic, issue tickets, collect payment, or change Production.</p>
+
+      <section className="mt-8 grid gap-4 lg:grid-cols-[1fr_1.6fr]">
+        <div className="rounded-2xl bg-slate-950 p-6 text-white">
+          <div className="flex items-center gap-3"><ShieldCheck className="h-6 w-6" /><strong>Evaluation-intake closeout is blocked</strong></div>
+          <p className="mt-3 text-sm leading-6 text-slate-300">No separately approved Phase 11 authorization, Phase 12 preflight receipt, or Phase 13 execution record exists. No reconciliation, intake window, supplier contact, candidate, case, channel, evidence, inventory, sanitation, quarantine, incident, stop record, retention confirmation, deletion confirmation, access removal, role assignment, conflict review, dissent, exception, finding, teardown, expiry, closeout decision, score, recommendation, shortlist, contract, selection, credential, traffic, ticketing, or payment exists. Completing every design gate cannot close or imply an intake.</p>
+          <div className="mt-6 text-4xl font-bold">{intakeCloseout.completedCount}/{intakeCloseout.totalCount}</div>
+          <p className="mt-1 text-xs uppercase tracking-wider text-slate-400">Phase 14 gates recorded complete</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {intakeCloseoutLocks.map(([label, status]) => (
+            <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5">
+              <CircleSlash2 className="h-5 w-5 text-rose-600" />
+              <strong className="mt-4 block">{label}</strong>
+              <span className={`mt-1 block text-sm font-medium ${status === "Accepted in Preview" ? "text-emerald-700" : "text-rose-700"}`}>{status}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Closeout packet blueprint only</p><h2 className="mt-2 text-2xl font-bold">Intake closeout evidence artifacts</h2></div><ClipboardCheck className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Seven static artifacts define future execution-record reference, intake reconciliation, evidence sanitation and deletion, incident and quarantine disposition, independent dissent, findings ownership, and expiry-to-closeout proof. They create no prerequisite, identity, contact, channel, evidence, assignment, finding, deletion, teardown, decision, receipt, approval, or external action.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {flightEvaluationIntakeCloseoutArtifacts.map((artifact) => (
+            <article key={artifact.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold">{artifact.label}</h3>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{artifact.owner}</p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{artifact.closeoutRequirement}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-rose-700"><strong>Boundary:</strong> {artifact.nonRecordBoundary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">No implied intake, teardown, approval, or release</p><h2 className="mt-2 text-2xl font-bold">Findings-disposition safeguards</h2></div><Scale className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Five safeguards keep missing execution evidence, unreconciled data, incidents, findings, dissent, incomplete deletion or teardown, restart, scoring, selection, and every downstream release fail closed.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {flightEvaluationIntakeCloseoutSafeguards.map((safeguard) => (
+            <article key={safeguard.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold">{safeguard.label}</h3>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{safeguard.owner}</p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{safeguard.safeguard}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-rose-700"><strong>Fail closed:</strong> {safeguard.failClosedBoundary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10 rounded-2xl border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 p-6"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Phase 14 intake-closeout sequence</p><h2 className="mt-2 text-2xl font-bold">Ten separately owned intake-closeout gates</h2><p className="mt-2 text-sm text-slate-600">Every gate starts incomplete. Even a completed design cannot create authorization, preflight, or execution evidence, reconcile an intake, delete material, resolve an incident or finding, complete teardown, create a closeout receipt, score or select a supplier, or authorize an external capability.</p></div>
+        <div className="divide-y divide-slate-100">
+          {intakeCloseout.gates.map((gate, index) => (
+            <article key={gate.id} className="grid gap-3 p-6 md:grid-cols-[3rem_1fr_11rem] md:items-start">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">{index + 1}</span>
+              <div><h3 className="font-bold">{gate.label}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{gate.detail}</p></div>
+              <div className="md:text-right"><span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{gate.owner}</span><span className="mt-2 block text-sm font-medium text-amber-700">Not recorded</span></div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-12 border-t border-slate-200 pt-10">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Flights · Phase 13 · Evaluation-intake execution-control design only</p>
+        <h2 className="mt-2 text-2xl font-bold">Evaluation-intake execution-control design reference</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600"><strong>Evaluation-intake execution control is blocked.</strong> Phase 13 software is repository-verified, Git-published, deployed, and accepted in isolated Preview. That evidence confirms only the protected software surface; it does not create the separately accountable Phase 11 authorization, Phase 12 preflight receipt, or Phase 13 execution record that Phase 14 requires.</p>
+      </section>
+
       <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 13 · Evaluation-intake execution-control design only</p>
       <h1 className="mt-2 text-3xl font-bold">Flight supplier-evaluation intake execution-control plan</h1>
       <p className="mt-2 max-w-3xl text-slate-600">Define the dual-prerequisite, one-time window, contact handoff, isolated channel, evidence receipt, sanitation, quarantine, independent observation, immediate-stop, expiry, teardown, and closeout controls that a future supplier-evaluation intake would require at action time. Phase 12 software was accepted in isolated Preview, but no actual Phase 11 authorization or Phase 12 preflight receipt exists. This page cannot contact a supplier, open intake, create a candidate or case, create a submission channel, receive or inspect evidence, assign a reviewer, score or select a supplier, accept credentials, enable traffic, issue tickets, collect payment, or change Production.</p>
