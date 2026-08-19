@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1–9 and Phases 11–15 repository-verified, Git-published, and accepted in isolated Preview; Phase 10 repository-verified, Git-published, and deployed to isolated Preview with its distinct authenticated acceptance pending; Phase 16 repository-verified locally with commit, private publication, isolated Preview deployment, and acceptance pending; all authorization, preflight, review, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1–9 and Phases 11–16 repository-verified, Git-published, and accepted in isolated Preview; Phase 10 repository-verified, Git-published, and deployed to isolated Preview with its distinct authenticated acceptance pending; all authorization, preflight, review, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -555,9 +555,9 @@ Phase 16 supplier-evidence review preflight design software gates:
 
 Phase 16 release gates:
 
-- [ ] Commit and publish the approved Phase 16 source to the private backup branch after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and publish the approved Phase 16 source at private-branch commit `41f942f` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 Phase 16 evidence-review preflight decision gates:
 
@@ -568,7 +568,7 @@ Phase 16 evidence-review preflight decision gates:
 - [ ] Verify independent reviewers and observer, acknowledgments, current conflicts, recusals, replacements, blind-review rules, least-privilege access, isolated sessions, variance treatment, preserved dissent, controlled exceptions, explicit overrides, findings, escalation, and stop authority.
 - [ ] Make a new one-time action-time decision outside this design only after every preflight item is independently verified; review opening remains separate.
 
-The Flights Phase 16 supplier-evidence review preflight and no-opening boundary is recorded in `docs/FLIGHTS_PHASE_16.md`.
+The Flights Phase 16 supplier-evidence review preflight and no-opening boundary is recorded in `docs/FLIGHTS_PHASE_16.md`. Its isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_16_PREVIEW_EVIDENCE_2026-08-19.md`.
 
 ## Overall completion rule
 
