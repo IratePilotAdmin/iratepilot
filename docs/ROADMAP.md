@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1–9 and Phases 11–15 repository-verified, Git-published, and accepted in isolated Preview; Phase 10 repository-verified, Git-published, and deployed to isolated Preview with its distinct authenticated acceptance pending; all closeout, intake, evidence review, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1–9 and Phases 11–15 repository-verified, Git-published, and accepted in isolated Preview; Phase 10 repository-verified, Git-published, and deployed to isolated Preview with its distinct authenticated acceptance pending; Phase 16 repository-verified locally with commit, private publication, isolated Preview deployment, and acceptance pending; all authorization, preflight, review, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -544,6 +544,31 @@ Phase 15 evidence-review authorization decision gates:
 - [ ] Make a new, one-time, scoped, expiring, revocable action-time decision outside this design immediately before a fixed evidence inventory could enter review.
 
 The Flights Phase 15 supplier-evidence review authorization and non-review boundary is recorded in `docs/FLIGHTS_PHASE_15.md`. Its isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_15_PREVIEW_EVIDENCE_2026-08-19.md`.
+
+Phase 16 supplier-evidence review preflight design software gates:
+
+- [x] Define seven review-preflight controls without creating or verifying Phase 15 authorization; reopening intake; contacting a supplier; creating a candidate, case, or channel; admitting evidence; hashing supplier material; approving a rubric; assigning a reviewer; granting access; opening review; scoring or selecting a supplier; or authorizing an external capability.
+- [x] Define five immediate-stop safeguards for missing authority, inventory or rubric drift, new intake, conflicts, overprivileged access, suppressed dissent, incomplete closeout, recommendation, selection, and downstream release.
+- [x] Define ten separately owned review-preflight gates while keeping authorization, evidence, rubrics, review roles, access, review, scoring, recommendations, shortlist, commercial diligence, contracts, supplier selection, credentials, traffic, ticketing, and payment disabled.
+- [x] Extend the protected `/admin/flights` workspace without a database, form, mutation, upload, storage path, scoring engine, environment variable, provider SDK, network request, external message, supplier identity, reviewer identity, or Production change.
+- [x] Pass ESLint, TypeScript, 1,076 tests across 243 files, and the optimized 113-page Next.js build.
+
+Phase 16 release gates:
+
+- [ ] Commit and publish the approved Phase 16 source to the private backup branch after separate approval.
+- [ ] Deploy only to the isolated Preview project after separate approval.
+- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+
+Phase 16 evidence-review preflight decision gates:
+
+- [ ] Create and separately approve an actual, current, scoped, expiring, revocable Phase 15 authorization after every Phase 15 decision prerequisite is satisfied.
+- [ ] Fix and verify one sanitized, lineaged, hashed, allowlisted evidence inventory with permitted use, exclusions, access, retention, deletion, prohibited-data, incident, contamination, and reproducibility controls; do not reopen intake or add material.
+- [ ] Verify the objective review purpose and frozen rubric version, criteria, weights, thresholds, missing-evidence treatment, calculation rules, change control, and no-retrofitting boundary before any evidence is inspected.
+- [ ] Recheck legal, commercial, privacy, security, confidentiality, jurisdiction, and data-use authority without accepting a proposal or contract.
+- [ ] Verify independent reviewers and observer, acknowledgments, current conflicts, recusals, replacements, blind-review rules, least-privilege access, isolated sessions, variance treatment, preserved dissent, controlled exceptions, explicit overrides, findings, escalation, and stop authority.
+- [ ] Make a new one-time action-time decision outside this design only after every preflight item is independently verified; review opening remains separate.
+
+The Flights Phase 16 supplier-evidence review preflight and no-opening boundary is recorded in `docs/FLIGHTS_PHASE_16.md`.
 
 ## Overall completion rule
 

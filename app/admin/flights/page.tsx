@@ -8,6 +8,7 @@ import { buildFlightEvaluationIntakeCloseoutDesign, flightEvaluationIntakeCloseo
 import { buildFlightEvaluationIntakeExecutionControlDesign, flightEvaluationIntakeExecutionControls, flightEvaluationIntakeExecutionSafeguards } from "@/lib/flights/evaluation-intake-execution-control";
 import { buildFlightEvaluationIntakePreflightDesign, flightEvaluationIntakePreflightControls, flightEvaluationIntakePreflightSafeguards } from "@/lib/flights/evaluation-intake-preflight";
 import { buildFlightEvaluationReviewAuthorizationDesign, flightEvaluationReviewAuthorizationArtifacts, flightEvaluationReviewAuthorizationSafeguards } from "@/lib/flights/evaluation-review-authorization";
+import { buildFlightEvaluationReviewPreflightDesign, flightEvaluationReviewPreflightControls, flightEvaluationReviewPreflightSafeguards } from "@/lib/flights/evaluation-review-preflight";
 import { buildFlightEvaluationRehearsal, flightEvaluationRehearsalReceipts, flightEvaluationRehearsalScenarios } from "@/lib/flights/evaluation-rehearsal";
 import { buildFlightRehearsalAuthorizationReadiness, flightRehearsalAuthorizationArtifacts, flightRehearsalAuthorizationSafeguards } from "@/lib/flights/rehearsal-authorization";
 import { buildFlightRehearsalCloseoutDesign, flightRehearsalCloseoutArtifacts, flightRehearsalCloseoutSafeguards } from "@/lib/flights/rehearsal-closeout";
@@ -18,8 +19,8 @@ import { buildFlightSupplierReadiness, flightCapabilityGroups, flightSupplierPat
 import { buildFlightSupplierSelectionPlan, flightSandboxAdapterOperations, flightSupplierSelectionCriteria } from "@/lib/flights/supplier-selection";
 
 export const metadata: Metadata = {
-  title: "Flight supplier-evidence review authorization design",
-  description: "Review the blocked supplier-evidence review authorization boundary while closeout, evidence admission, review, scoring, recommendations, selection, credentials, traffic, ticketing, payments, and Production remain disabled.",
+  title: "Flight supplier-evidence review preflight design",
+  description: "Review the blocked supplier-evidence review preflight boundary while authorization, evidence admission, review, scoring, recommendations, selection, credentials, traffic, ticketing, payments, and Production remain disabled.",
 };
 
 export default function Page() {
@@ -37,6 +38,56 @@ export default function Page() {
   const intakeExecutionControl = buildFlightEvaluationIntakeExecutionControlDesign();
   const intakeCloseout = buildFlightEvaluationIntakeCloseoutDesign();
   const reviewAuthorization = buildFlightEvaluationReviewAuthorizationDesign();
+  const reviewPreflight = buildFlightEvaluationReviewPreflightDesign();
+  const reviewPreflightLocks = [
+    ["Phase 15 authorization prerequisite", reviewPreflight.phase15AuthorizationPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
+    ["Phase 15 software acceptance", reviewPreflight.phase15SoftwareAcceptanceState === "accepted_in_preview" ? "Accepted in Preview" : "Pending"],
+    ["Authorization reference", reviewPreflight.authorizationReferenceState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Review preflight", reviewPreflight.preflightState === "blocked" ? "Blocked" : "Ready"],
+    ["Action-time decision", reviewPreflight.preflightDecisionState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Evidence review", reviewPreflight.evaluationReviewState === "closed" ? "Closed" : "Open"],
+    ["Review window", reviewPreflight.reviewWindowState === "not_opened" ? "Not opened" : "Opened"],
+    ["Supplier contact", reviewPreflight.supplierContactState === "not_started" ? "Not started" : "Started"],
+    ["Candidate", reviewPreflight.candidateState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Evaluation case", reviewPreflight.evaluationCaseState === "not_created" ? "Not created" : "Created"],
+    ["Submission channel", reviewPreflight.submissionChannelState === "not_created" ? "Not created" : "Created"],
+    ["Supplier evidence", `${reviewPreflight.evidenceCount}`],
+    ["Evidence inventory", reviewPreflight.evidenceInventoryState === "not_created" ? "Not created" : "Created"],
+    ["Evidence inventory hash", reviewPreflight.evidenceInventoryHashState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Evidence lineage", reviewPreflight.evidenceLineageState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Admissibility review", reviewPreflight.admissibilityReviewState === "not_started" ? "Not started" : "Started"],
+    ["Rubric", reviewPreflight.rubricState === "not_approved" ? "Not approved" : "Approved"],
+    ["Rubric version", reviewPreflight.rubricVersionState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Rubric freeze", reviewPreflight.rubricFreezeState === "not_confirmed" ? "Not confirmed" : "Confirmed"],
+    ["Reviewer", reviewPreflight.reviewerState === "not_assigned" ? "Not assigned" : "Assigned"],
+    ["Observer", reviewPreflight.observerState === "not_assigned" ? "Not assigned" : "Assigned"],
+    ["Conflict review", reviewPreflight.conflictReviewState === "not_started" ? "Not started" : "Started"],
+    ["Review access", reviewPreflight.accessState === "not_granted" ? "Not granted" : "Granted"],
+    ["Privacy and security review", reviewPreflight.privacySecurityReviewState === "not_started" ? "Not started" : "Started"],
+    ["Retention", reviewPreflight.retentionState === "not_confirmed" ? "Not confirmed" : "Confirmed"],
+    ["Deletion", reviewPreflight.deletionState === "not_confirmed" ? "Not confirmed" : "Confirmed"],
+    ["Work-product plan", reviewPreflight.workProductPlanState === "not_approved" ? "Not approved" : "Approved"],
+    ["Variance review", reviewPreflight.varianceReviewState === "not_started" ? "Not started" : "Started"],
+    ["Dissent", reviewPreflight.dissentState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Exceptions", reviewPreflight.exceptionState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Stop plan", reviewPreflight.stopPlanState === "not_approved" ? "Not approved" : "Approved"],
+    ["Closeout plan", reviewPreflight.closeoutPlanState === "not_approved" ? "Not approved" : "Approved"],
+    ["Score", reviewPreflight.scoreState === "not_calculated" ? "Not calculated" : "Calculated"],
+    ["Scorecard", reviewPreflight.scorecardState === "not_created" ? "Not created" : "Created"],
+    ["Findings", `${reviewPreflight.findingCount}`],
+    ["Recommendation", reviewPreflight.recommendationState === "not_issued" ? "Not issued" : "Issued"],
+    ["Shortlist", reviewPreflight.shortlistState === "not_created" ? "Not created" : "Created"],
+    ["Commercial diligence", reviewPreflight.commercialDiligenceState === "not_started" ? "Not started" : "Started"],
+    ["Contract", reviewPreflight.contractState === "not_received" ? "Not received" : "Received"],
+    ["Supplier selection", reviewPreflight.selectionState === "not_selected" ? "Not selected" : "Selected"],
+    ["Credentials", reviewPreflight.credentialsAccepted ? "Accepted" : "Not accepted"],
+    ["External network", reviewPreflight.externalNetworkAccess ? "Enabled" : "Disabled"],
+    ["Sandbox adapter", reviewPreflight.sandboxAdapterImplemented ? "Implemented" : "Not implemented"],
+    ["Sandbox traffic", reviewPreflight.sandboxTrafficAuthorized ? "Enabled" : "Disabled"],
+    ["Production traffic", reviewPreflight.productionTrafficAuthorized ? "Enabled" : "Disabled"],
+    ["Ticketing", reviewPreflight.ticketingAuthorized ? "Enabled" : "Disabled"],
+    ["Flight payments", reviewPreflight.paymentAuthorized ? "Enabled" : "Disabled"],
+  ] as const;
   const reviewAuthorizationLocks = [
     ["Phase 14 closeout prerequisite", reviewAuthorization.phase14CloseoutPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
     ["Phase 14 software acceptance", reviewAuthorization.phase14SoftwareAcceptanceState === "accepted_in_preview" ? "Accepted in Preview" : "Pending"],
@@ -279,6 +330,77 @@ export default function Page() {
 
   return (
     <DashboardShell title="Admin Console" items={adminNavigation}>
+      <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 16 · Evidence-review preflight design only</p>
+      <h1 className="mt-2 text-3xl font-bold">Flight supplier-evidence review preflight plan</h1>
+      <p className="mt-2 max-w-3xl text-slate-600">Define the authorization-reference, fixed-inventory, lineage, hash, rubric-freeze, reviewer-role, conflict, access, privacy, security, retention, work-product, variance, dissent, exception, stop, expiry, closeout, and no-release checks that must pass immediately before a future supplier-evidence review could be considered. Phase 15 software was accepted in isolated Preview, but no actual Phase 15 authorization exists. This page cannot contact a supplier, reopen intake, receive, restore, inspect, hash, or admit evidence, approve or change a rubric, assign reviewers, grant access, open review, calculate scores, recommend or shortlist a supplier, accept a contract or credentials, enable traffic, issue tickets, collect payment, or change Production.</p>
+
+      <section className="mt-8 grid gap-4 lg:grid-cols-[1fr_1.6fr]">
+        <div className="rounded-2xl bg-slate-950 p-6 text-white">
+          <div className="flex items-center gap-3"><ShieldCheck className="h-6 w-6" /><strong>Supplier-evidence review preflight is blocked</strong></div>
+          <p className="mt-3 text-sm leading-6 text-slate-300">No separately approved actual Phase 15 authorization exists. No authorization reference, action-time decision, review window, supplier contact, candidate, case, channel, evidence, inventory, inventory hash, lineage, admissibility review, rubric, rubric version or freeze, reviewer, observer, conflict review, access, privacy or security review, retention, deletion, work-product plan, variance review, dissent, exception, stop plan, closeout plan, score, scorecard, finding, recommendation, shortlist, commercial diligence, contract, selection, credential, traffic, ticketing, or payment exists. Completing every design gate cannot open or imply evidence review.</p>
+          <div className="mt-6 text-4xl font-bold">{reviewPreflight.completedCount}/{reviewPreflight.totalCount}</div>
+          <p className="mt-1 text-xs uppercase tracking-wider text-slate-400">Phase 16 gates recorded complete</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {reviewPreflightLocks.map(([label, status]) => (
+            <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5">
+              <CircleSlash2 className="h-5 w-5 text-rose-600" />
+              <strong className="mt-4 block">{label}</strong>
+              <span className={`mt-1 block text-sm font-medium ${status === "Accepted in Preview" ? "text-emerald-700" : "text-rose-700"}`}>{status}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Review-preflight packet blueprint only</p><h2 className="mt-2 text-2xl font-bold">Evidence-review preflight controls</h2></div><ClipboardCheck className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Seven static controls define the future authorization reference, fixed inventory and lineage recheck, frozen rubric, independent roles and access, privacy and work-product plan, variance and stop plan, and expiring no-release boundary. They create no prerequisite, identity, evidence, hash, assignment, access, rubric, score, finding, recommendation, approval, or external action.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {flightEvaluationReviewPreflightControls.map((control) => (
+            <article key={control.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold">{control.label}</h3>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{control.owner}</p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{control.preflightRequirement}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-rose-700"><strong>Boundary:</strong> {control.nonOpeningBoundary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Any drift or missing prerequisite stops review</p><h2 className="mt-2 text-2xl font-bold">Immediate-stop review safeguards</h2></div><Scale className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Five safeguards keep missing authority, inventory or rubric drift, new intake, conflicted or overprivileged access, suppressed dissent, incomplete closeout, and every downstream release fail closed.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {flightEvaluationReviewPreflightSafeguards.map((safeguard) => (
+            <article key={safeguard.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold">{safeguard.label}</h3>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{safeguard.owner}</p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{safeguard.safeguard}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-rose-700"><strong>Fail closed:</strong> {safeguard.failClosedBoundary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10 rounded-2xl border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 p-6"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Phase 16 evidence-review preflight sequence</p><h2 className="mt-2 text-2xl font-bold">Ten separately owned evidence-review preflight gates</h2><p className="mt-2 text-sm text-slate-600">Every gate starts incomplete. Even a completed design cannot create Phase 15 authorization, admit or review evidence, approve or change a rubric, assign a reviewer, grant access, calculate a score, recommend or shortlist a supplier, select a supplier, or authorize an external capability.</p></div>
+        <div className="divide-y divide-slate-100">
+          {reviewPreflight.gates.map((gate, index) => (
+            <article key={gate.id} className="grid gap-3 p-6 md:grid-cols-[3rem_1fr_11rem] md:items-start">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">{index + 1}</span>
+              <div><h3 className="font-bold">{gate.label}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{gate.detail}</p></div>
+              <div className="md:text-right"><span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{gate.owner}</span><span className="mt-2 block text-sm font-medium text-amber-700">Not recorded</span></div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-12 border-t border-slate-200 pt-10">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Flights · Phase 15 · Evidence-review authorization design only</p>
+        <h2 className="mt-2 text-2xl font-bold">Evidence-review authorization design reference</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600"><strong>Supplier-evidence review authorization is blocked.</strong> Phase 15 software is repository-verified, Git-published, deployed, and accepted in isolated Preview. That evidence confirms only the protected software surface; it does not create the separately accountable actual Phase 15 authorization that Phase 16 requires.</p>
+      </section>
+
       <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 15 · Evidence-review authorization design only</p>
       <h1 className="mt-2 text-3xl font-bold">Flight supplier-evidence review authorization plan</h1>
       <p className="mt-2 max-w-3xl text-slate-600">Define the closeout prerequisite, fixed evidence inventory, source lineage, admissibility, objective rubric, version freeze, independent review, conflicts, variance, dissent, exceptions, audit, reproducibility, expiry, revocation, and no-selection controls that a future supplier-evidence review authorization would require. Phase 14 software was accepted in isolated Preview, but no actual Phase 14 intake closeout exists. This page cannot contact a supplier, reopen intake, receive or restore evidence, admit material, open review, assign reviewers, calculate scores, recommend or shortlist a supplier, accept a contract or credentials, enable traffic, issue tickets, collect payment, or change Production.</p>
