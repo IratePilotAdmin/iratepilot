@@ -91,7 +91,7 @@ Official sources:
 
 ## Evidence gaps shared by every shortlisted provider
 
-Public sources do not establish the terms iRatePilot would actually receive. No provider may be scored, recommended, selected, or integrated until attributable, current evidence is approved for intake and independently reviewed for:
+Public sources do not establish the terms iRatePilot would actually receive. A separately approved public-evidence provisional comparison is recorded in `docs/FLIGHTS_PROVIDER_PUBLIC_EVIDENCE_MATRIX_2026-08-19.md`; its missing-evidence deductions and totals are not formal provider scores. No provider may be formally scored, recommended, selected, or integrated until attributable, current evidence is approved for intake and independently reviewed for:
 
 - exact United States airline and fare coverage by distribution source;
 - search-to-book economics, booking and servicing fees, deposits, reserves, minimums, incentives, and payment timing;
@@ -104,8 +104,8 @@ Public sources do not establish the terms iRatePilot would actually receive. No 
 
 ## Result and next boundary
 
-Research result: `three_provider_preliminary_shortlist_recorded`.
+Research result: `three_provider_preliminary_shortlist_recorded`. Public-evidence comparison: `provisional_complete`.
 
 Supplier-selection state: `not_selected`. Supplier-contact state: `not_started`. Contract state: `not_received`. Credentials: `not_accepted`. Sandbox and Production traffic: `disabled`. Ticketing and flight payments: `disabled`.
 
-Any next step involving a provider name, contact, questionnaire, account, non-public document, commercial term, contract, credential, Sandbox call, scoring, recommendation, or selection requires a new explicit approval and must follow the existing Phase 11 through Phase 17 authorization, preflight, intake, review, and execution controls.
+Any next step involving provider contact, a questionnaire, account, non-public document, commercial term, contract, credential, Sandbox call, formal scoring, recommendation, or selection requires a new explicit approval and must follow the existing Phase 11 through Phase 17 authorization, preflight, intake, review, and execution controls.
