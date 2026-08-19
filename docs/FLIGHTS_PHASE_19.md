@@ -1,7 +1,7 @@
 # iRatePilot Flights — Phase 19
 
 Date: 2026-08-19
-Status: **Repository-verified locally; Git publication, isolated Preview deployment, browser acceptance, and every action-time or external gate remain pending**
+Status: **Repository-verified, Git-published, deployed, and authenticated browser-accepted in isolated Preview; actual Phase 18 authorization and every action-time or external gate remain pending**
 
 ## Purpose
 
@@ -75,9 +75,9 @@ Duffel, Sabre, Travelport, Amadeus, airlines, agencies, and consolidators were n
 
 ## Release gates
 
-- [ ] Commit and publish the approved Phase 19 source to the private branch after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and publish the approved Phase 19 source at private-branch commit `80c8e7a` after separate approval.
+- [x] Deploy only to the isolated Preview project as deployment `dpl_6TEhtT7Ams1LdaoJWdojFKhNGGot` after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 ## Provider-contact preflight decision gates
 
@@ -88,4 +88,4 @@ Duffel, Sabre, Travelport, Amadeus, airlines, agencies, and consolidators were n
 
 Software completion is not provider-contact preflight or contact authority and does not imply that Duffel was contacted, responded, supplied evidence, accepted iRatePilot, or was recommended, selected, contracted, credentialed, connected, or activated.
 
-The Phase 18 authorization and non-contact boundary remains recorded in `docs/FLIGHTS_PHASE_18.md`; Phase 19 does not satisfy or bypass it. The documentation-only provider-path preference remains recorded in `docs/FLIGHTS_PROVIDER_PATH_DECISION_2026-08-19.md`.
+The Phase 18 authorization and non-contact boundary remains recorded in `docs/FLIGHTS_PHASE_18.md`; Phase 19 does not satisfy or bypass it. The documentation-only provider-path preference remains recorded in `docs/FLIGHTS_PROVIDER_PATH_DECISION_2026-08-19.md`. The isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_19_PREVIEW_EVIDENCE_2026-08-19.md`.
