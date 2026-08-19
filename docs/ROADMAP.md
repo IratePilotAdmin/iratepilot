@@ -596,6 +596,8 @@ The Flights Phase 17 supplier-evidence review execution-control and no-execution
 
 Public-source provider research and an unscored, non-selection preliminary shortlist are recorded in `docs/FLIGHTS_PROVIDER_RESEARCH_SHORTLIST_2026-08-19.md`. No supplier was contacted, scored, recommended, selected, contracted, credentialed, or connected.
 
+A separately approved named-provider public-evidence matrix and conservative provisional scores are recorded in `docs/FLIGHTS_PROVIDER_PUBLIC_EVIDENCE_MATRIX_2026-08-19.md`. The scores measure public documentation completeness only and create no formal score, recommendation, selection, contact, contract, account, credential, traffic, payment, deployment, or Production authority.
+
 ## Overall completion rule
 
 Repository completion means `npm run check` passes and every public surface accurately describes its current mode. Commercial completion additionally requires all provider, data, legal, operational, and production release gates to be satisfied with recorded evidence. Software readiness must never be treated as authorization to enable live transactions.
