@@ -4,13 +4,14 @@ import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { adminNavigation } from "@/data/navigation";
 import { buildFlightEvaluationGovernance, flightEvaluationControls, flightEvaluationDecisionSafeguards } from "@/lib/flights/evaluation-governance";
 import { buildFlightEvaluationRehearsal, flightEvaluationRehearsalReceipts, flightEvaluationRehearsalScenarios } from "@/lib/flights/evaluation-rehearsal";
+import { buildFlightRehearsalAuthorizationReadiness, flightRehearsalAuthorizationArtifacts, flightRehearsalAuthorizationSafeguards } from "@/lib/flights/rehearsal-authorization";
 import { buildFlightSupplierDueDiligence, flightSupplierContractLanes, flightSupplierEvidenceWorkstreams } from "@/lib/flights/supplier-due-diligence";
 import { buildFlightSupplierReadiness, flightCapabilityGroups, flightSupplierPaths } from "@/lib/flights/supplier-readiness";
 import { buildFlightSupplierSelectionPlan, flightSandboxAdapterOperations, flightSupplierSelectionCriteria } from "@/lib/flights/supplier-selection";
 
 export const metadata: Metadata = {
-  title: "Flight supplier evaluation rehearsal plan",
-  description: "Review the supplier-free synthetic evaluation rehearsal design while fixtures, scenarios, candidates, evidence, scoring, credentials, traffic, ticketing, payments, and Production remain disabled.",
+  title: "Flight rehearsal authorization readiness",
+  description: "Review the supplier-free synthetic rehearsal authorization requirements while authorization, fixtures, roles, scenarios, candidates, credentials, traffic, ticketing, payments, and Production remain disabled.",
 };
 
 export default function Page() {
@@ -19,40 +20,48 @@ export default function Page() {
   const diligence = buildFlightSupplierDueDiligence();
   const governance = buildFlightEvaluationGovernance();
   const rehearsal = buildFlightEvaluationRehearsal();
+  const authorization = buildFlightRehearsalAuthorizationReadiness();
   const locks = [
-    ["Rehearsal", rehearsal.rehearsalState === "not_run" ? "Not run" : "Run"],
-    ["Synthetic fixture", rehearsal.syntheticFixtureState === "not_created" ? "Not created" : "Created"],
-    ["Scenario results", `${rehearsal.scenarioResultCount}`],
-    ["Rehearsal receipts", rehearsal.receiptState === "not_created" ? "Not created" : "Created"],
-    ["Observer", rehearsal.observerState === "not_assigned" ? "Not assigned" : "Assigned"],
-    ["Evaluation intake", rehearsal.evaluationIntakeState === "closed" ? "Closed" : "Open"],
-    ["Candidate", rehearsal.candidateState === "not_recorded" ? "Not recorded" : "Recorded"],
-    ["Evaluation case", rehearsal.evaluationCaseState === "not_created" ? "Not created" : "Created"],
-    ["Score", rehearsal.scoreState === "not_calculated" ? "Not calculated" : "Calculated"],
-    ["Recommendation", rehearsal.recommendationState === "not_issued" ? "Not issued" : "Issued"],
-    ["Shortlist", rehearsal.shortlistState === "not_created" ? "Not created" : "Created"],
-    ["Supplier selection", rehearsal.selectionState === "not_selected" ? "Not selected" : "Selected"],
-    ["Contract", rehearsal.contractState === "not_received" ? "Not received" : "Received"],
-    ["Credentials", rehearsal.credentialsAccepted ? "Accepted" : "Not accepted"],
-    ["Sandbox adapter", rehearsal.sandboxAdapterImplemented ? "Implemented" : "Not implemented"],
-    ["Sandbox traffic", rehearsal.sandboxTrafficAuthorized ? "Enabled" : "Disabled"],
-    ["Production traffic", rehearsal.productionTrafficAuthorized ? "Enabled" : "Disabled"],
-    ["Ticketing", rehearsal.ticketingAuthorized ? "Enabled" : "Disabled"],
-    ["Flight payments", rehearsal.paymentAuthorized ? "Enabled" : "Disabled"],
+    ["Authorization", authorization.authorizationState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Policy", authorization.policyState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Fixture standard", authorization.fixtureStandardState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Attestation", authorization.attestationState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Roles", authorization.roleAssignmentState === "not_assigned" ? "Not assigned" : "Assigned"],
+    ["Observer", authorization.observerState === "not_assigned" ? "Not assigned" : "Assigned"],
+    ["Rehearsal", authorization.rehearsalState === "not_run" ? "Not run" : "Run"],
+    ["Synthetic fixture", authorization.syntheticFixtureState === "not_created" ? "Not created" : "Created"],
+    ["Scenario results", `${authorization.scenarioResultCount}`],
+    ["Rehearsal receipts", authorization.receiptState === "not_created" ? "Not created" : "Created"],
+    ["Findings", `${authorization.findingCount}`],
+    ["Evaluation intake", authorization.evaluationIntakeState === "closed" ? "Closed" : "Open"],
+    ["Candidate", authorization.candidateState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Evaluation case", authorization.evaluationCaseState === "not_created" ? "Not created" : "Created"],
+    ["Score", authorization.scoreState === "not_calculated" ? "Not calculated" : "Calculated"],
+    ["Recommendation", authorization.recommendationState === "not_issued" ? "Not issued" : "Issued"],
+    ["Shortlist", authorization.shortlistState === "not_created" ? "Not created" : "Created"],
+    ["Supplier selection", authorization.selectionState === "not_selected" ? "Not selected" : "Selected"],
+    ["Contract", authorization.contractState === "not_received" ? "Not received" : "Received"],
+    ["Credentials", authorization.credentialsAccepted ? "Accepted" : "Not accepted"],
+    ["External network", authorization.externalNetworkAccess ? "Enabled" : "Disabled"],
+    ["Sandbox adapter", authorization.sandboxAdapterImplemented ? "Implemented" : "Not implemented"],
+    ["Sandbox traffic", authorization.sandboxTrafficAuthorized ? "Enabled" : "Disabled"],
+    ["Production traffic", authorization.productionTrafficAuthorized ? "Enabled" : "Disabled"],
+    ["Ticketing", authorization.ticketingAuthorized ? "Enabled" : "Disabled"],
+    ["Flight payments", authorization.paymentAuthorized ? "Enabled" : "Disabled"],
   ] as const;
 
   return (
     <DashboardShell title="Admin Console" items={adminNavigation}>
-      <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 6 · Synthetic rehearsal design only</p>
-      <h1 className="mt-2 text-3xl font-bold">Flight supplier evaluation rehearsal plan</h1>
-      <p className="mt-2 max-w-3xl text-slate-600">Design how internal reviewers would rehearse evidence rejection, recusal, exception, and recommendation boundaries with fictional data before any named supplier evaluation is considered. No fixture, scenario result, receipt, candidate, supplier material, credential, or external contact is recorded.</p>
+      <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 7 · Rehearsal authorization readiness only</p>
+      <h1 className="mt-2 text-3xl font-bold">Flight synthetic rehearsal authorization plan</h1>
+      <p className="mt-2 max-w-3xl text-slate-600">Define the approvals, attestations, role separation, stop conditions, sanitized evidence rules, and closeout boundary required before a one-time fictional tabletop rehearsal could be separately considered. This page does not request or record authorization, create a fixture, assign anyone, run a scenario, or open supplier evaluation intake.</p>
 
       <section className="mt-8 grid gap-4 lg:grid-cols-[1fr_1.6fr]">
         <div className="rounded-2xl bg-slate-950 p-6 text-white">
-          <div className="flex items-center gap-3"><ShieldCheck className="h-6 w-6" /><strong>Synthetic rehearsal has not run</strong></div>
-          <p className="mt-3 text-sm leading-6 text-slate-300">No fictional fixture, scenario result, receipt, candidate, or supplier evidence exists. Rehearsal-plan completion cannot start a rehearsal, open intake, calculate a score, issue a recommendation, create a shortlist, select a supplier, accept credentials, enable traffic, issue tickets, collect payment, or change Production.</p>
-          <div className="mt-6 text-4xl font-bold">{rehearsal.completedCount}/{rehearsal.totalCount}</div>
-          <p className="mt-1 text-xs uppercase tracking-wider text-slate-400">Phase 6 gates recorded complete</p>
+          <div className="flex items-center gap-3"><ShieldCheck className="h-6 w-6" /><strong>No rehearsal authorization is recorded</strong></div>
+          <p className="mt-3 text-sm leading-6 text-slate-300">No policy approval, fixture standard, attestation, participant assignment, fictional fixture, scenario result, receipt, finding, candidate, or supplier evidence exists. Completing this design cannot authorize or run a rehearsal, contact a supplier, open intake, accept credentials, enable traffic, issue tickets, collect payment, or change Production.</p>
+          <div className="mt-6 text-4xl font-bold">{authorization.completedCount}/{authorization.totalCount}</div>
+          <p className="mt-1 text-xs uppercase tracking-wider text-slate-400">Phase 7 gates recorded complete</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {locks.map(([label, status]) => (
@@ -63,6 +72,55 @@ export default function Page() {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Decision packet design only</p><h2 className="mt-2 text-2xl font-bold">Authorization packet artifacts</h2></div><ClipboardCheck className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Six artifacts define what accountable owners would need to approve before a one-time fictional rehearsal decision could be considered. They are static requirements and create no record, assignment, fixture, authorization, or external action.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {flightRehearsalAuthorizationArtifacts.map((artifact) => (
+            <article key={artifact.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold">{artifact.label}</h3>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{artifact.owner}</p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{artifact.requiredDecision}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-rose-700"><strong>Boundary:</strong> {artifact.activationBoundary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Authorization cannot self-activate</p><h2 className="mt-2 text-2xl font-bold">Fail-closed authorization safeguards</h2></div><Scale className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Five safeguards keep fictional data, external connectivity, participant independence, one-time scope, findings, and downstream release decisions separately controlled.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {flightRehearsalAuthorizationSafeguards.map((safeguard) => (
+            <article key={safeguard.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold">{safeguard.label}</h3>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{safeguard.owner}</p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{safeguard.safeguard}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-rose-700"><strong>Fail closed:</strong> {safeguard.failClosedBoundary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10 rounded-2xl border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 p-6"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Phase 7 decision sequence</p><h2 className="mt-2 text-2xl font-bold">Ten separately owned authorization-readiness gates</h2><p className="mt-2 text-sm text-slate-600">Every gate starts incomplete. Even a completed packet cannot record authorization, create a fixture, assign roles, run a rehearsal, record a result, or authorize a named supplier evaluation.</p></div>
+        <div className="divide-y divide-slate-100">
+          {authorization.gates.map((gate, index) => (
+            <article key={gate.id} className="grid gap-3 p-6 md:grid-cols-[3rem_1fr_11rem] md:items-start">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">{index + 1}</span>
+              <div><h3 className="font-bold">{gate.label}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{gate.detail}</p></div>
+              <div className="md:text-right"><span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{gate.owner}</span><span className="mt-2 block text-sm font-medium text-amber-700">Not recorded</span></div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-12 border-t border-slate-200 pt-10">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Flights · Phase 6 · Synthetic rehearsal design only</p>
+        <h2 className="mt-2 text-2xl font-bold">Synthetic rehearsal design reference</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600"><strong>Synthetic rehearsal has not run.</strong> Phase 6 remains a static reference for fictional scenarios and sanitized receipt safeguards. It cannot create a fixture, assign a reviewer, record a result, or authorize Phase 7.</p>
       </section>
 
       <section className="mt-10">
