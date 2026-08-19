@@ -11,6 +11,7 @@ import { buildFlightEvaluationReviewAuthorizationDesign, flightEvaluationReviewA
 import { buildFlightEvaluationReviewExecutionControlDesign, flightEvaluationReviewExecutionSafeguards, flightEvaluationReviewExecutionStages } from "@/lib/flights/evaluation-review-execution-control";
 import { buildFlightEvaluationReviewPreflightDesign, flightEvaluationReviewPreflightControls, flightEvaluationReviewPreflightSafeguards } from "@/lib/flights/evaluation-review-preflight";
 import { buildFlightProviderContactAuthorizationDesign, flightProviderContactAuthorizationArtifacts, flightProviderContactAuthorizationSafeguards } from "@/lib/flights/provider-contact-authorization";
+import { buildFlightProviderContactCloseoutDesign, flightProviderContactCloseoutArtifacts, flightProviderContactCloseoutSafeguards } from "@/lib/flights/provider-contact-closeout";
 import { buildFlightProviderContactExecutionControlDesign, flightProviderContactExecutionSafeguards, flightProviderContactExecutionStages } from "@/lib/flights/provider-contact-execution-control";
 import { buildFlightProviderContactPreflightDesign, flightProviderContactPreflightControls, flightProviderContactPreflightSafeguards } from "@/lib/flights/provider-contact-preflight";
 import { buildFlightEvaluationRehearsal, flightEvaluationRehearsalReceipts, flightEvaluationRehearsalScenarios } from "@/lib/flights/evaluation-rehearsal";
@@ -23,8 +24,8 @@ import { buildFlightSupplierReadiness, flightCapabilityGroups, flightSupplierPat
 import { buildFlightSupplierSelectionPlan, flightSandboxAdapterOperations, flightSupplierSelectionCriteria } from "@/lib/flights/supplier-selection";
 
 export const metadata: Metadata = {
-  title: "Duffel provider-contact execution-control design",
-  description: "Review the blocked, read-only Duffel provider-contact execution boundary while authorization, preflight, contact, responses, evidence intake, commitments, accounts, credentials, traffic, ticketing, payments, and Production remain disabled.",
+  title: "Duffel provider-contact closeout design",
+  description: "Review the blocked, read-only Duffel provider-contact closeout boundary while authorization, preflight, execution, contact, delivery, responses, closeout, replies, intake, commitments, accounts, credentials, traffic, ticketing, payments, and Production remain disabled.",
 };
 
 export default function Page() {
@@ -44,6 +45,57 @@ export default function Page() {
   const reviewAuthorization = buildFlightEvaluationReviewAuthorizationDesign();
   const reviewPreflight = buildFlightEvaluationReviewPreflightDesign();
   const reviewExecutionControl = buildFlightEvaluationReviewExecutionControlDesign();
+  const providerContactCloseout = buildFlightProviderContactCloseoutDesign();
+  const providerContactCloseoutLocks = [
+    ["Phase 18 authorization prerequisite", providerContactCloseout.phase18AuthorizationPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
+    ["Phase 19 preflight prerequisite", providerContactCloseout.phase19PreflightPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
+    ["Phase 20 execution record prerequisite", providerContactCloseout.phase20ExecutionRecordPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
+    ["Phase 20 software acceptance", providerContactCloseout.phase20SoftwareAcceptanceState === "accepted_in_preview" ? "Accepted in Preview" : "Pending"],
+    ["Authorization reference", providerContactCloseout.authorizationReferenceState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Preflight receipt", providerContactCloseout.preflightReceiptState === "not_created" ? "Not created" : "Created"],
+    ["Execution record", providerContactCloseout.executionRecordState === "not_created" ? "Not created" : "Created"],
+    ["Closeout control", providerContactCloseout.closeoutControlState === "blocked" ? "Blocked" : "Ready"],
+    ["Scope reconciliation", providerContactCloseout.scopeReconciliationState === "not_started" ? "Not started" : "Started"],
+    ["Message", providerContactCloseout.messageState === "not_created" ? "Not created" : "Created"],
+    ["Recipient role", providerContactCloseout.recipientRoleState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Channel", providerContactCloseout.channelState === "not_approved" ? "Not approved" : "Approved"],
+    ["Contact window", providerContactCloseout.contactWindowState === "not_opened" ? "Not opened" : "Opened"],
+    ["Supplier contact", providerContactCloseout.supplierContactState === "not_started" ? "Not started" : "Started"],
+    ["Contact attempts", `${providerContactCloseout.contactAttemptCount}`],
+    ["Delivery", providerContactCloseout.deliveryState === "not_attempted" ? "Not attempted" : "Attempted"],
+    ["Contact receipt", providerContactCloseout.receiptState === "not_created" ? "Not created" : "Created"],
+    ["Provider response", providerContactCloseout.responseState === "not_received" ? "Not received" : "Received"],
+    ["Response quarantine", providerContactCloseout.responseQuarantineState === "not_created" ? "Not created" : "Created"],
+    ["Response disposition", providerContactCloseout.responseDispositionState === "not_started" ? "Not started" : "Started"],
+    ["Incident", providerContactCloseout.incidentState === "not_created" ? "Not created" : "Created"],
+    ["Stop record", providerContactCloseout.stopRecordState === "not_created" ? "Not created" : "Created"],
+    ["Access removal", providerContactCloseout.accessRemovalState === "not_confirmed" ? "Not confirmed" : "Confirmed"],
+    ["Retention", providerContactCloseout.retentionState === "not_confirmed" ? "Not confirmed" : "Confirmed"],
+    ["Deletion", providerContactCloseout.deletionState === "not_confirmed" ? "Not confirmed" : "Confirmed"],
+    ["Audit record", providerContactCloseout.auditRecordState === "not_created" ? "Not created" : "Created"],
+    ["Role acknowledgments", providerContactCloseout.roleAcknowledgmentState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Conflict review", providerContactCloseout.conflictReviewState === "not_started" ? "Not started" : "Started"],
+    ["Dissent", providerContactCloseout.dissentState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Exceptions", providerContactCloseout.exceptionState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Findings", `${providerContactCloseout.findingCount}`],
+    ["Finding disposition", providerContactCloseout.findingDispositionState === "not_started" ? "Not started" : "Started"],
+    ["Authorization expiry", providerContactCloseout.authorizationExpiryState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Closeout decision", providerContactCloseout.closeoutDecisionState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Closeout", providerContactCloseout.closeoutState === "not_created" ? "Not created" : "Created"],
+    ["Evidence intake", providerContactCloseout.evidenceIntakeState === "closed" ? "Closed" : "Open"],
+    ["Evaluation case", providerContactCloseout.evaluationCaseState === "not_created" ? "Not created" : "Created"],
+    ["Recommendation", providerContactCloseout.recommendationState === "not_issued" ? "Not issued" : "Issued"],
+    ["Supplier selection", providerContactCloseout.selectionState === "not_selected" ? "Not selected" : "Selected"],
+    ["Contract", providerContactCloseout.contractState === "not_received" ? "Not received" : "Received"],
+    ["Provider account", providerContactCloseout.accountState === "not_created" ? "Not created" : "Created"],
+    ["Credentials", providerContactCloseout.credentialsAccepted ? "Accepted" : "Not accepted"],
+    ["External network", providerContactCloseout.externalNetworkAccess ? "Enabled" : "Disabled"],
+    ["Sandbox adapter", providerContactCloseout.sandboxAdapterImplemented ? "Implemented" : "Not implemented"],
+    ["Sandbox traffic", providerContactCloseout.sandboxTrafficAuthorized ? "Enabled" : "Disabled"],
+    ["Production traffic", providerContactCloseout.productionTrafficAuthorized ? "Enabled" : "Disabled"],
+    ["Ticketing", providerContactCloseout.ticketingAuthorized ? "Enabled" : "Disabled"],
+    ["Flight payments", providerContactCloseout.paymentAuthorized ? "Enabled" : "Disabled"],
+  ] as const;
   const providerContactExecutionControl = buildFlightProviderContactExecutionControlDesign();
   const providerContactExecutionLocks = [
     ["Phase 18 authorization prerequisite", providerContactExecutionControl.phase18AuthorizationPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
@@ -512,6 +564,77 @@ export default function Page() {
 
   return (
     <DashboardShell title="Admin Console" items={adminNavigation}>
+      <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 21 · Duffel contact closeout design only</p>
+      <h1 className="mt-2 text-3xl font-bold">Duffel provider-contact closeout plan</h1>
+      <p className="mt-2 max-w-3xl text-slate-600">Define the fail-closed reconciliation and closeout boundary for a possible future, separately authorized single Duffel diligence contact: actual Phase 18 authorization, a separately approved Phase 19 preflight receipt, a separately approved Phase 20 execution record, immutable scope and message, accountable roles, authentic channel, attempt and delivery outcome, minimal receipt, responses and quarantine, incidents and stops, access removal, retention and deletion, audit, findings, expiry, no retry, no restart, and no downstream authority. Phase 20 software was accepted in isolated Preview, but no actual authorization, preflight, execution, contact, delivery, receipt, response, or closeout evidence exists. This page has no closeout or reply control and cannot identify or contact a recipient, create or transmit a message, reconcile an attempt, open or inspect a response, admit evidence, accept terms, recommend or select a supplier, create an account, accept credentials, enable traffic, issue tickets, collect payment, or change Production.</p>
+
+      <section className="mt-8 grid gap-4 lg:grid-cols-[1fr_1.6fr]">
+        <div className="rounded-2xl bg-slate-950 p-6 text-white">
+          <div className="flex items-center gap-3"><ShieldCheck className="h-6 w-6" /><strong>Duffel provider-contact closeout is blocked</strong></div>
+          <p className="mt-3 text-sm leading-6 text-slate-300">Phase 20 software acceptance is recorded, but no actual Phase 18 authorization, Phase 19 preflight receipt, Phase 20 execution record, message, recipient role, channel, contact window, attempt, delivery, receipt, response, quarantine item, incident, stop, access-removal record, retention or deletion proof, audit record, finding, expiry record, closeout decision, closeout receipt, reply, intake, case, recommendation, selection, contract, account, credential, traffic, ticketing, or payment exists. Completing every Phase 21 design gate cannot prove contact or create closeout.</p>
+          <div className="mt-6 text-4xl font-bold">{providerContactCloseout.completedCount}/{providerContactCloseout.totalCount}</div>
+          <p className="mt-1 text-xs uppercase tracking-wider text-slate-400">Phase 21 gates recorded complete</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {providerContactCloseoutLocks.map(([label, status]) => (
+            <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5">
+              <CircleSlash2 className="h-5 w-5 text-rose-600" />
+              <strong className="mt-4 block">{label}</strong>
+              <span className={`mt-1 block text-sm font-medium ${status === "Accepted in Preview" ? "text-emerald-700" : "text-rose-700"}`}>{status}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Contact closeout blueprint only</p><h2 className="mt-2 text-2xl font-bold">Seven provider-contact closeout evidence artifacts</h2></div><ClipboardCheck className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Seven static artifacts define how a future separately authorized attempt would have to be reconciled from prerequisite records through expiry and closeout. They do not create or validate authorization, preflight, execution, roles, a message, a recipient, a channel, a window, an attempt, delivery, a receipt, a response, quarantine, an incident, access removal, retention, deletion, audit evidence, a finding, closeout, a reply, intake, commitment, or external action.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {flightProviderContactCloseoutArtifacts.map((artifact) => (
+            <article key={artifact.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold">{artifact.label}</h3>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{artifact.owner}</p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{artifact.closeoutRequirement}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-rose-700"><strong>Boundary:</strong> {artifact.nonRecordBoundary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Any missing, altered, sensitive, unresolved, retained, or disputed evidence blocks closeout</p><h2 className="mt-2 text-2xl font-bold">Five closeout reconciliation safeguards</h2></div><Scale className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Five safeguards keep implied execution, authority or scope drift, duplicate or automated attempts, delivery and receipt mismatch, responses, quarantine, incidents, stops, access, retention, deletion, expiry, replies, retries, restarts, and downstream release fail closed.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {flightProviderContactCloseoutSafeguards.map((safeguard) => (
+            <article key={safeguard.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold">{safeguard.label}</h3>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{safeguard.owner}</p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{safeguard.safeguard}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-rose-700"><strong>Fail closed:</strong> {safeguard.failClosedBoundary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10 rounded-2xl border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 p-6"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Phase 21 provider-contact closeout sequence</p><h2 className="mt-2 text-2xl font-bold">Ten separately owned provider-contact closeout gates</h2><p className="mt-2 text-sm text-slate-600">Every gate starts incomplete. Even a completed design cannot satisfy actual Phase 18 authorization, Phase 19 preflight, or Phase 20 execution; prove that contact occurred; reconcile an attempt; create a closeout receipt; reply to Duffel; admit or rely on a response; recommend or select a supplier; or authorize any external capability.</p></div>
+        <div className="divide-y divide-slate-100">
+          {providerContactCloseout.gates.map((gate, index) => (
+            <article key={gate.id} className="grid gap-3 p-6 md:grid-cols-[3rem_1fr_11rem] md:items-start">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">{index + 1}</span>
+              <div><h3 className="font-bold">{gate.label}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{gate.detail}</p></div>
+              <div className="md:text-right"><span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{gate.owner}</span><span className="mt-2 block text-sm font-medium text-amber-700">Not recorded</span></div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-12 border-t border-slate-200 pt-10">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Flights · Phase 20 · Duffel contact execution-control design only</p>
+        <h2 className="mt-2 text-2xl font-bold">Provider-contact execution-control reference</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600"><strong>Actual provider-contact execution remains unsatisfied.</strong> Phase 20 software was accepted in isolated Preview, but no actual Phase 18 authorization, Phase 19 preflight receipt, Phase 20 execution record, sender, approver, message, recipient role, channel, contact window, attempt, delivery, or receipt exists. Phase 21 does not create, satisfy, replace, or bypass Phase 18, Phase 19, or Phase 20 authority.</p>
+      </section>
+
       <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 20 · Duffel contact execution-control design only</p>
       <h1 className="mt-2 text-3xl font-bold">Duffel provider-contact execution-control plan</h1>
       <p className="mt-2 max-w-3xl text-slate-600">Define the fail-closed control sequence for a possible future single Duffel diligence contact: actual Phase 18 authorization, a separately approved Phase 19 preflight receipt, immutable scope and message, accountable independent roles, official recipient role and authentic channel, one manual attempt, a fixed window, two-person release, immediate stops, response quarantine, incident handling, minimal audit, expiry, closeout, and no-downstream authority. Phase 19 software was accepted in isolated Preview, but no actual authorization or preflight exists. This page has no send control and cannot identify or contact a recipient, create or transmit a message, open a window, receive or inspect a response, admit evidence, accept terms, recommend or select a supplier, create an account, accept credentials, enable traffic, issue tickets, collect payment, or change Production.</p>
