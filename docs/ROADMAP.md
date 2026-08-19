@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1–5 accepted in isolated Preview and Git-published; all airline content, credentials, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1–5 accepted in isolated Preview and Git-published; Phase 6 synthetic-rehearsal design implemented and repository-verified locally, with Git publication and isolated Preview release pending separate approval; all rehearsal execution, airline content, credentials, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -305,6 +305,29 @@ Phase 5 release gates:
 - [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 The Flights Phase 5 evaluation-governance boundary is recorded in `docs/FLIGHTS_PHASE_5.md`. The isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_5_PREVIEW_EVIDENCE_2026-08-18.md`.
+
+Phase 6 synthetic evaluation-rehearsal software gates:
+
+- [x] Define six fictional rehearsal scenarios for evidence rejection, freshness, comparability, recusal, exception concurrence, and recommendation authority without using supplier or passenger data.
+- [x] Define five sanitized receipt safeguards without creating a fixture, receipt, storage path, reviewer assignment, or execution engine.
+- [x] Define ten separately owned rehearsal-design gates while keeping rehearsal execution, intake, candidates, evidence, scoring, recommendations, shortlist, contract, supplier selection, credentials, implementation, traffic, ticketing, and payment disabled.
+- [x] Extend the protected `/admin/flights` workspace without a database, form, mutation, environment variable, provider SDK, or network request.
+- [x] Pass ESLint, TypeScript, 1,014 tests across 233 files, and the optimized 113-page Next.js build.
+
+Phase 6 release gates:
+
+- [ ] Commit and push the approved laptop changes after separate approval.
+- [ ] Deploy only to the isolated Preview project after separate approval.
+- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+
+Phase 6 rehearsal-execution gates:
+
+- [ ] Approve a fictional fixture standard and attest that no real supplier, passenger, credential, endpoint, schedule, fare, availability, or commercial data is present.
+- [ ] Name separately accountable reviewers and observers through an approved internal process.
+- [ ] Make a separate decision before creating a fictional fixture or running any synthetic scenario.
+- [ ] Record sanitized rehearsal results and resolve findings without opening named supplier evaluation intake.
+
+The Flights Phase 6 synthetic-rehearsal boundary is recorded in `docs/FLIGHTS_PHASE_6.md`.
 
 ## Overall completion rule
 
