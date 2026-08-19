@@ -215,6 +215,33 @@ The combined isolated Preview acceptance evidence for Phases 2–5 is recorded i
 
 The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPERATIONS_CENTER_PHASE_5_SYNTHETIC_CHECK_RUNBOOK.md`. It requires three independently authenticated Preview administrators; the current two-operator environment cannot satisfy the requester-plus-two-approver quorum.
 
+## Phase 6 — Flight planning and supplier readiness
+
+Status: **Phase 1 local software and supplier-offline verification complete; Preview release pending; all airline content, ticketing, payment, and Production traffic disabled**
+
+The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
+
+Software gates:
+
+- [x] Add the `/flights` planning surface and customer navigation.
+- [x] Validate flight-planning input without external network traffic.
+- [x] Clearly disclose that live fares, inventory, ticketing, and payment are unavailable.
+- [x] Pass ESLint, TypeScript, 982 tests across 228 files, and the optimized 112-page Next.js build.
+
+Release gates:
+
+- [x] Commit and push the approved laptop changes after separate approval.
+- [ ] Deploy to isolated Preview after separate approval and complete browser acceptance with no provider credentials or traffic.
+
+External activation gates:
+
+- [ ] Select and contract an authorized airline-content and ticketing path.
+- [ ] Complete provider sandbox certification and servicing-readiness acceptance.
+- [ ] Obtain passenger-data, payment, fraud, settlement, legal, support, and Production-release approvals.
+- [ ] Make a separate Production decision before enabling airline traffic, flight payments, or ticketing.
+
+The Flights Phase 1 design and safety boundary are recorded in `docs/FLIGHTS_PHASE_1.md`.
+
 ## Overall completion rule
 
 Repository completion means `npm run check` passes and every public surface accurately describes its current mode. Commercial completion additionally requires all provider, data, legal, operational, and production release gates to be satisfied with recorded evidence. Software readiness must never be treated as authorization to enable live transactions.

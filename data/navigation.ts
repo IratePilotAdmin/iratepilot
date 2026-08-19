@@ -1,5 +1,6 @@
 export const customerNavigation = [
   { href: "/search", label: "Hotels" },
+  { href: "/flights", label: "Flights" },
   { href: "/vacation-homes", label: "Vacation homes" },
   { href: "/deals", label: "Deals" },
   { href: "/rewards", label: "Rewards" },
