@@ -69,3 +69,5 @@ Phase 2 adds no database migration, API route, server action, environment variab
 Phase 2 software completion is not supplier approval and never authorizes a live flight sale.
 
 The isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_2_PREVIEW_EVIDENCE_2026-08-18.md`.
+
+The next planning-only phase is recorded in `docs/FLIGHTS_PHASE_3.md`; it does not select a supplier or change this Phase 2 activation boundary.

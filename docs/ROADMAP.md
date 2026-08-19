@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1 and 2 accepted in isolated Preview; all airline content, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1 and 2 accepted in isolated Preview; Phase 3 planning software verified locally; all airline content, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -257,6 +257,22 @@ Phase 2 release gates:
 - [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 The Flights Phase 2 supplier-readiness design and fail-closed boundary are recorded in `docs/FLIGHTS_PHASE_2.md`. The isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_2_PREVIEW_EVIDENCE_2026-08-18.md`.
+
+Phase 3 supplier-selection planning software gates:
+
+- [x] Define a vendor-neutral, one-hundred-point supplier-selection rubric without recording a candidate, score, shortlist, or selection.
+- [x] Define four provider-neutral sandbox adapter operations as design contracts only.
+- [x] Define eight separately owned decision gates while keeping supplier selection, credentials, implementation, traffic, ticketing, and payment disabled.
+- [x] Extend the protected `/admin/flights` workspace without a database, mutation, environment variable, provider SDK, or network request.
+- [x] Pass ESLint, TypeScript, 993 tests across 230 files, and the optimized 113-page Next.js build.
+
+Phase 3 release gates:
+
+- [ ] Commit and push the approved laptop changes after separate approval.
+- [ ] Deploy only to the isolated Preview project after separate approval.
+- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+
+The Flights Phase 3 selection and adapter-planning boundary is recorded in `docs/FLIGHTS_PHASE_3.md`.
 
 ## Overall completion rule
 
