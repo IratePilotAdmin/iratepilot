@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1–3 accepted in isolated Preview; all airline content, credentials, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1–3 accepted in isolated Preview; Phase 4 due-diligence software is verified locally; all airline content, credentials, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -273,6 +273,22 @@ Phase 3 release gates:
 - [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 The Flights Phase 3 selection and adapter-planning boundary is recorded in `docs/FLIGHTS_PHASE_3.md`. The isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_3_PREVIEW_EVIDENCE_2026-08-18.md`.
+
+Phase 4 supplier due-diligence software gates:
+
+- [x] Define seven candidate-evidence workstreams without recording a supplier identity, response, document, quote, score, shortlist, or representation.
+- [x] Define six contract-review lanes without receiving, negotiating, approving, signing, or activating an agreement.
+- [x] Define nine separately owned diligence gates while keeping candidate, contract, supplier selection, credentials, implementation, traffic, ticketing, and payment disabled.
+- [x] Extend the protected `/admin/flights` workspace without a database, form, mutation, environment variable, provider SDK, or network request.
+- [x] Pass ESLint, TypeScript, 1,000 tests across 231 files, and the optimized 113-page Next.js build.
+
+Phase 4 release gates:
+
+- [ ] Commit and push the approved laptop changes after separate approval.
+- [ ] Deploy only to the isolated Preview project after separate approval.
+- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+
+The Flights Phase 4 due-diligence and contracting-readiness boundary is recorded in `docs/FLIGHTS_PHASE_4.md`.
 
 ## Overall completion rule
 

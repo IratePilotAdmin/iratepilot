@@ -66,8 +66,8 @@ describe("flight supplier selection phase 3", () => {
 
   it("keeps the administrator workspace server-rendered, read-only, and network-free", () => {
     const page = read("app/admin/flights/page.tsx");
-    expect(page).toContain("Flights · Phase 3 · Planning only");
-    expect(page).toContain("No supplier selected");
+    expect(page).toContain("Phase 3 planning reference");
+    expect(page).toContain("One-hundred-point selection rubric");
     expect(page).toContain("Adapter design only");
     expect(page).not.toContain("fetch(");
     expect(page).not.toContain("process.env");
