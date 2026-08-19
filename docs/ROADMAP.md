@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1–9 and Phases 11–13 repository-verified, Git-published, and accepted in isolated Preview; Phase 14 repository-verified locally and awaiting its separately approved release sequence; Phase 10 repository-verified, Git-published, and deployed to isolated Preview with its distinct authenticated acceptance pending; all closeout, intake, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1–9 and Phases 11–14 repository-verified, Git-published, and accepted in isolated Preview; Phase 10 repository-verified, Git-published, and deployed to isolated Preview with its distinct authenticated acceptance pending; all closeout, intake, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -505,9 +505,9 @@ Phase 14 supplier-evaluation intake closeout design software gates:
 
 Phase 14 release gates:
 
-- [ ] Commit and publish the approved Phase 14 source to the private branch after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and publish the approved Phase 14 source at private-branch commit `c8bfb04` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 Phase 14 intake-closeout decision gates:
 
@@ -518,7 +518,7 @@ Phase 14 intake-closeout decision gates:
 - [ ] Confirm authorization expiry, channel closure, teardown, no reuse, and no restart; any future intake requires new authorization, preflight, and execution decisions.
 - [ ] Make a new closeout decision outside this design only after every prerequisite and reconciliation requirement is satisfied.
 
-The Flights Phase 14 supplier-evaluation intake closeout, findings-disposition, and non-activation boundary is recorded in `docs/FLIGHTS_PHASE_14.md`.
+The Flights Phase 14 supplier-evaluation intake closeout, findings-disposition, and non-activation boundary is recorded in `docs/FLIGHTS_PHASE_14.md`. Its isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_14_PREVIEW_EVIDENCE_2026-08-19.md`.
 
 ## Overall completion rule
 

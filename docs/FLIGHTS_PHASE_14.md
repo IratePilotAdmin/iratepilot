@@ -1,6 +1,6 @@
 # iRatePilot Flights — Phase 14
 
-Status: Supplier-evaluation intake closeout design repository-verified locally; release and all action-time decision gates pending
+Status: Supplier-evaluation intake closeout design repository-verified, Git-published, deployed, and authenticated browser-accepted in isolated Preview; action-time decision gates pending
 
 ## Purpose
 
@@ -77,9 +77,9 @@ Phase 14 adds no client component, form, route handler, server action, database 
 
 ## Release gates
 
-- [ ] Commit and publish the approved Phase 14 source to the private branch after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+- [x] Commit and publish the approved Phase 14 source at private-branch commit `c8bfb04` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 ## Intake-closeout decision gates
 
@@ -98,4 +98,4 @@ Phase 14 adds no client component, form, route handler, server action, database 
 
 Phase 14 software completion is not evidence that a supplier-evaluation intake ran or closed and does not authorize supplier contact, evidence receipt, deletion, closeout, scoring, supplier selection, live flight search, ticketing, payment, or Production traffic.
 
-The Phase 13 supplier-evaluation intake execution-control and non-execution boundary remains recorded in `docs/FLIGHTS_PHASE_13.md`. Its isolated Preview acceptance evidence remains recorded in `docs/FLIGHTS_PHASE_13_PREVIEW_EVIDENCE_2026-08-19.md`.
+The Phase 13 supplier-evaluation intake execution-control and non-execution boundary remains recorded in `docs/FLIGHTS_PHASE_13.md`. Its isolated Preview acceptance evidence remains recorded in `docs/FLIGHTS_PHASE_13_PREVIEW_EVIDENCE_2026-08-19.md`. The Phase 14 isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_14_PREVIEW_EVIDENCE_2026-08-19.md`.
