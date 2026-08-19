@@ -104,7 +104,7 @@ Public sources do not establish the terms iRatePilot would actually receive. A s
 
 ## Result and next boundary
 
-Research result: `three_provider_preliminary_shortlist_recorded`. Public-evidence comparison: `provisional_complete`.
+Research result: `three_provider_preliminary_shortlist_recorded`. Public-evidence comparison: `provisional_complete`. Subsequent documentation-only provider-path preference: `duffel_primary_sabre_secondary`, recorded in `docs/FLIGHTS_PROVIDER_PATH_DECISION_2026-08-19.md`.
 
 Supplier-selection state: `not_selected`. Supplier-contact state: `not_started`. Contract state: `not_received`. Credentials: `not_accepted`. Sandbox and Production traffic: `disabled`. Ticketing and flight payments: `disabled`.
 
