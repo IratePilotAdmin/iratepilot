@@ -1,6 +1,6 @@
 # iRatePilot Flights — Phase 10
 
-Status: Synthetic rehearsal closeout and findings-disposition design software and repository verification complete; release gates pending
+Status: Synthetic rehearsal closeout and findings-disposition design repository-verified, Git-published, and deployed to isolated Preview; authenticated browser acceptance pending
 
 ## Purpose
 
@@ -78,8 +78,8 @@ Phase 10 adds no client component, form, route handler, server action, database 
 
 ## Release gates
 
-- [ ] Commit and push the approved laptop changes after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
+- [x] Commit and push the approved laptop changes at `0f83a63` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
 - [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 ## Closeout decision gates

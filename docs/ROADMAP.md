@@ -217,7 +217,7 @@ The optional synthetic receipt-check closeout is defined in `docs/AUTOMATION_OPE
 
 ## Phase 6 — Flight planning and supplier readiness
 
-Status: **Flights Phases 1–9 repository-verified, Git-published, and accepted in isolated Preview; Phase 10 synthetic rehearsal closeout and findings-disposition design software repository-verified with release gates pending; all authorization, preflight, rehearsal execution, closeout, airline content, credentials, ticketing, payment, and Production traffic disabled**
+Status: **Flights Phases 1–9 repository-verified, Git-published, and accepted in isolated Preview; Phase 10 repository-verified, Git-published, and deployed to isolated Preview with authenticated acceptance pending; Phase 11 supplier-evaluation intake authorization design repository-verified with release gates pending; all closeout, intake, supplier contact, airline content, credentials, ticketing, payment, and Production traffic disabled**
 
 The first Flights phase adds a supplier-offline consumer planning surface. It validates route, date, cabin, and traveler details without contacting an airline or displaying schedules, fares, availability, or tickets.
 
@@ -407,8 +407,8 @@ Phase 10 synthetic rehearsal closeout and findings-disposition design software g
 
 Phase 10 release gates:
 
-- [ ] Commit and push the approved laptop changes after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
+- [x] Commit and push the approved laptop changes at `0f83a63` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
 - [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
 
 Phase 10 closeout decision gates:
@@ -419,7 +419,31 @@ Phase 10 closeout decision gates:
 - [ ] Resolve every blocking finding and independent objection without waiver, suppression, or conversion into downstream authority.
 - [ ] Make a separate closeout decision before creating a closeout receipt; require a new authorization and preflight cycle before any future rehearsal could be considered.
 
-The Flights Phase 10 synthetic rehearsal closeout, findings-disposition, and non-activation boundary is recorded in `docs/FLIGHTS_PHASE_10.md`.
+The Flights Phase 10 synthetic rehearsal closeout, findings-disposition, and non-activation boundary is recorded in `docs/FLIGHTS_PHASE_10.md`. Its authenticated Preview acceptance remains pending; no acceptance evidence is claimed.
+
+Phase 11 supplier-evaluation intake authorization design software gates:
+
+- [x] Define six intake-authorization artifacts without satisfying Phase 10 closeout, opening intake, contacting a supplier, creating a candidate or case, creating a submission channel, receiving evidence, assigning a reviewer, opening an authorization window, scoring or selecting a supplier, or authorizing an external capability.
+- [x] Define five intake-opening safeguards for implied intake, supplier contact, candidate neutrality, data minimization, evidence channels, downstream decisions, and external release.
+- [x] Define ten separately owned intake-authorization gates while keeping closeout, intake, supplier contact, candidates, cases, channels, evidence, roles, conflict review, authorization, scoring, recommendations, shortlist, contract, supplier selection, credentials, traffic, ticketing, and payment disabled.
+- [x] Extend the protected `/admin/flights` workspace without a database, form, mutation, upload, storage path, environment variable, provider SDK, network request, external message, supplier identity, or Production change.
+- [x] Pass ESLint, TypeScript, 1,046 tests across 238 files, and the optimized 113-page Next.js build.
+
+Phase 11 release gates:
+
+- [ ] Commit and push the approved laptop changes after separate approval.
+- [ ] Deploy only to the isolated Preview project after separate approval.
+- [ ] Complete authenticated browser acceptance at `/admin/flights` and record evidence after separate approval.
+
+Phase 11 intake-opening decision gates:
+
+- [ ] Create and separately approve an actual Phase 10 closeout only after a separately authorized rehearsal has run and all closeout evidence, teardown, findings, dissent, expiration, and no-restart requirements are satisfied.
+- [ ] Approve a narrow evaluation purpose, supplier path, objective eligibility criteria, exclusions, owners, duration, and explicit no-selection boundary.
+- [ ] Approve legal and commercial authority, the contact model, an allowlisted evidence channel and taxonomy, least-privilege access, retention, deletion, sanitation, prohibited-data, malware, incident, and privacy controls.
+- [ ] Approve independent reviewer and observer roles, conflicts, recusals, replacement, dissent, exception, stop, revocation, expiry, quarantine, closeout, and no-restart controls.
+- [ ] Make a new, one-time, scoped, expiring, revocable action-time decision outside this design immediately before intake could open.
+
+The Flights Phase 11 supplier-evaluation intake authorization and non-opening boundary is recorded in `docs/FLIGHTS_PHASE_11.md`.
 
 ## Overall completion rule
 

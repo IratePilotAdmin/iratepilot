@@ -3,6 +3,7 @@ import { Circle, CircleSlash2, ClipboardCheck, Network, Plane, Route, Scale, Shi
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { adminNavigation } from "@/data/navigation";
 import { buildFlightEvaluationGovernance, flightEvaluationControls, flightEvaluationDecisionSafeguards } from "@/lib/flights/evaluation-governance";
+import { buildFlightEvaluationIntakeAuthorizationDesign, flightEvaluationIntakeAuthorizationArtifacts, flightEvaluationIntakeAuthorizationSafeguards } from "@/lib/flights/evaluation-intake-authorization";
 import { buildFlightEvaluationRehearsal, flightEvaluationRehearsalReceipts, flightEvaluationRehearsalScenarios } from "@/lib/flights/evaluation-rehearsal";
 import { buildFlightRehearsalAuthorizationReadiness, flightRehearsalAuthorizationArtifacts, flightRehearsalAuthorizationSafeguards } from "@/lib/flights/rehearsal-authorization";
 import { buildFlightRehearsalCloseoutDesign, flightRehearsalCloseoutArtifacts, flightRehearsalCloseoutSafeguards } from "@/lib/flights/rehearsal-closeout";
@@ -13,8 +14,8 @@ import { buildFlightSupplierReadiness, flightCapabilityGroups, flightSupplierPat
 import { buildFlightSupplierSelectionPlan, flightSandboxAdapterOperations, flightSupplierSelectionCriteria } from "@/lib/flights/supplier-selection";
 
 export const metadata: Metadata = {
-  title: "Flight rehearsal closeout design",
-  description: "Review the supplier-free synthetic rehearsal closeout and findings-disposition controls while execution, teardown, findings, closeout, supplier intake, credentials, traffic, ticketing, payments, and Production remain disabled.",
+  title: "Flight supplier-evaluation intake authorization design",
+  description: "Review the candidate-neutral supplier-evaluation intake authorization boundary while intake, supplier contact, evidence receipt, scoring, selection, credentials, traffic, ticketing, payments, and Production remain disabled.",
 };
 
 export default function Page() {
@@ -27,7 +28,36 @@ export default function Page() {
   const preflight = buildFlightRehearsalPreflightDesign();
   const executionControl = buildFlightRehearsalExecutionControlDesign();
   const closeout = buildFlightRehearsalCloseoutDesign();
-  const locks = [
+  const intakeAuthorization = buildFlightEvaluationIntakeAuthorizationDesign();
+  const intakeLocks = [
+    ["Phase 10 closeout prerequisite", intakeAuthorization.phase10CloseoutPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
+    ["Phase 10 Preview acceptance", intakeAuthorization.phase10PreviewAcceptanceState === "pending" ? "Pending" : "Complete"],
+    ["Intake authorization", intakeAuthorization.intakeAuthorizationState === "blocked" ? "Blocked" : "Ready"],
+    ["Evaluation intake", intakeAuthorization.evaluationIntakeState === "closed" ? "Closed" : "Open"],
+    ["Supplier contact", intakeAuthorization.supplierContactState === "not_started" ? "Not started" : "Started"],
+    ["Candidate", intakeAuthorization.candidateState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Evaluation case", intakeAuthorization.evaluationCaseState === "not_created" ? "Not created" : "Created"],
+    ["Submission channel", intakeAuthorization.submissionChannelState === "not_created" ? "Not created" : "Created"],
+    ["Supplier evidence", `${intakeAuthorization.evidenceCount}`],
+    ["Reviewer", intakeAuthorization.reviewerState === "not_assigned" ? "Not assigned" : "Assigned"],
+    ["Observer", intakeAuthorization.observerState === "not_assigned" ? "Not assigned" : "Assigned"],
+    ["Conflict review", intakeAuthorization.conflictReviewState === "not_started" ? "Not started" : "Started"],
+    ["Authorization decision", intakeAuthorization.authorizationDecisionState === "not_recorded" ? "Not recorded" : "Recorded"],
+    ["Authorization window", intakeAuthorization.authorizationWindowState === "not_opened" ? "Not opened" : "Opened"],
+    ["Score", intakeAuthorization.scoreState === "not_calculated" ? "Not calculated" : "Calculated"],
+    ["Recommendation", intakeAuthorization.recommendationState === "not_issued" ? "Not issued" : "Issued"],
+    ["Shortlist", intakeAuthorization.shortlistState === "not_created" ? "Not created" : "Created"],
+    ["Supplier selection", intakeAuthorization.selectionState === "not_selected" ? "Not selected" : "Selected"],
+    ["Contract", intakeAuthorization.contractState === "not_received" ? "Not received" : "Received"],
+    ["Credentials", intakeAuthorization.credentialsAccepted ? "Accepted" : "Not accepted"],
+    ["External network", intakeAuthorization.externalNetworkAccess ? "Enabled" : "Disabled"],
+    ["Sandbox adapter", intakeAuthorization.sandboxAdapterImplemented ? "Implemented" : "Not implemented"],
+    ["Sandbox traffic", intakeAuthorization.sandboxTrafficAuthorized ? "Enabled" : "Disabled"],
+    ["Production traffic", intakeAuthorization.productionTrafficAuthorized ? "Enabled" : "Disabled"],
+    ["Ticketing", intakeAuthorization.ticketingAuthorized ? "Enabled" : "Disabled"],
+    ["Flight payments", intakeAuthorization.paymentAuthorized ? "Enabled" : "Disabled"],
+  ] as const;
+  const closeoutLocks = [
     ["Authorization prerequisite", closeout.authorizationPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
     ["Preflight prerequisite", closeout.preflightPrerequisiteState === "not_satisfied" ? "Not satisfied" : "Satisfied"],
     ["Execution record", closeout.executionRecordState === "not_created" ? "Not created" : "Created"],
@@ -71,9 +101,76 @@ export default function Page() {
 
   return (
     <DashboardShell title="Admin Console" items={adminNavigation}>
-      <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 10 · Rehearsal closeout design only</p>
-      <h1 className="mt-2 text-3xl font-bold">Flight synthetic rehearsal closeout plan</h1>
-      <p className="mt-2 max-w-3xl text-slate-600">Define the scenario disposition, abort record, sanitized observation inventory, fictional-fixture deletion proof, findings ownership, authorization expiration, and no-downstream-authority controls that a future closeout would require after a separately authorized and completed fictional rehearsal. This page cannot imply that a rehearsal ran, start teardown, delete a fixture, record or resolve a finding, create a receipt, approve closeout, or open supplier evaluation intake.</p>
+      <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 11 · Evaluation-intake authorization design only</p>
+      <h1 className="mt-2 text-3xl font-bold">Flight supplier-evaluation intake authorization plan</h1>
+      <p className="mt-2 max-w-3xl text-slate-600">Define the prerequisite, purpose, candidate-neutral entry, evidence-channel, independent-review, expiry, revocation, and no-downstream-authority controls that a future supplier-evaluation intake-opening decision would require. Phase 10 authenticated Preview acceptance and its actual closeout prerequisite remain incomplete. This page cannot contact a supplier, open intake, create a candidate or case, receive evidence, assign a reviewer, score or select a supplier, accept credentials, enable traffic, issue tickets, collect payment, or change Production.</p>
+
+      <section className="mt-8 grid gap-4 lg:grid-cols-[1fr_1.6fr]">
+        <div className="rounded-2xl bg-slate-950 p-6 text-white">
+          <div className="flex items-center gap-3"><ShieldCheck className="h-6 w-6" /><strong>Evaluation-intake authorization is blocked</strong></div>
+          <p className="mt-3 text-sm leading-6 text-slate-300">No separately approved Phase 10 closeout exists and Phase 10 authenticated Preview acceptance remains pending. No intake decision, window, supplier contact, candidate, evaluation case, submission channel, evidence, reviewer, observer, conflict review, score, recommendation, shortlist, contract, selection, credential, traffic, ticketing, or payment exists. Completing every design gate cannot open intake or create downstream authority.</p>
+          <div className="mt-6 text-4xl font-bold">{intakeAuthorization.completedCount}/{intakeAuthorization.totalCount}</div>
+          <p className="mt-1 text-xs uppercase tracking-wider text-slate-400">Phase 11 gates recorded complete</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {intakeLocks.map(([label, status]) => (
+            <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5">
+              <CircleSlash2 className="h-5 w-5 text-rose-600" />
+              <strong className="mt-4 block">{label}</strong>
+              <span className="mt-1 block text-sm font-medium text-rose-700">{status}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Authorization packet blueprint only</p><h2 className="mt-2 text-2xl font-bold">Intake authorization artifacts</h2></div><ClipboardCheck className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Six static artifacts define the future closeout prerequisite, evaluation charter, candidate-neutral entry rules, evidence channel, independent review, and expiring no-release authority. They create no closeout, contact, candidate, case, channel, evidence, assignment, decision, approval, storage path, or external action.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {flightEvaluationIntakeAuthorizationArtifacts.map((artifact) => (
+            <article key={artifact.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold">{artifact.label}</h3>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{artifact.owner}</p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{artifact.authorizationRequirement}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-rose-700"><strong>Boundary:</strong> {artifact.nonOpeningBoundary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">No inferred intake or authority</p><h2 className="mt-2 text-2xl font-bold">Intake-opening safeguards</h2></div><Scale className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Five safeguards keep implied intake, supplier contact, candidate bias, unapproved data channels, scoring, selection, implementation, and every external release fail closed.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {flightEvaluationIntakeAuthorizationSafeguards.map((safeguard) => (
+            <article key={safeguard.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <h3 className="font-bold">{safeguard.label}</h3>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{safeguard.owner}</p>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{safeguard.safeguard}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-rose-700"><strong>Fail closed:</strong> {safeguard.failClosedBoundary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10 rounded-2xl border border-slate-200 bg-white">
+        <div className="border-b border-slate-200 p-6"><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Phase 11 intake-authorization sequence</p><h2 className="mt-2 text-2xl font-bold">Ten separately owned intake-authorization gates</h2><p className="mt-2 text-sm text-slate-600">Every gate starts incomplete. Even a completed design cannot satisfy Phase 10 closeout, open intake, contact a supplier, create a candidate or case, receive evidence, assign a reviewer, score or select a supplier, or authorize an external capability.</p></div>
+        <div className="divide-y divide-slate-100">
+          {intakeAuthorization.gates.map((gate, index) => (
+            <article key={gate.id} className="grid gap-3 p-6 md:grid-cols-[3rem_1fr_11rem] md:items-start">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">{index + 1}</span>
+              <div><h3 className="font-bold">{gate.label}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{gate.detail}</p></div>
+              <div className="md:text-right"><span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{gate.owner}</span><span className="mt-2 block text-sm font-medium text-amber-700">Not recorded</span></div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-12 border-t border-slate-200 pt-10">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Flights · Phase 10 · Rehearsal closeout design only</p>
+        <h2 className="mt-2 text-2xl font-bold">Synthetic rehearsal closeout design reference</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600"><strong>Rehearsal closeout is blocked.</strong> Phase 10 software is repository-verified, Git-published, and deployed to isolated Preview, while authenticated browser acceptance is still pending. More importantly, no separately authorized rehearsal ran, so no actual closeout prerequisite exists. Phase 10 remains a static reference and cannot open supplier evaluation intake.</p>
+      </section>
 
       <section className="mt-8 grid gap-4 lg:grid-cols-[1fr_1.6fr]">
         <div className="rounded-2xl bg-slate-950 p-6 text-white">
@@ -83,7 +180,7 @@ export default function Page() {
           <p className="mt-1 text-xs uppercase tracking-wider text-slate-400">Phase 10 gates recorded complete</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {locks.map(([label, status]) => (
+          {closeoutLocks.map(([label, status]) => (
             <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5">
               <CircleSlash2 className="h-5 w-5 text-rose-600" />
               <strong className="mt-4 block">{label}</strong>
