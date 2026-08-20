@@ -2,7 +2,7 @@
 
 Prepared: August 20, 2026
 
-Status: **Software complete and repository-verified locally; every release or external-action gate remains pending**
+Status: **Software, private publication, isolated Preview deployment, authenticated browser acceptance, and Preview evidence documentation complete; every external-action gate remains pending**
 
 ## Purpose
 
@@ -53,10 +53,10 @@ The model always reports the following as false:
 
 ## Release gates
 
-- [ ] Commit the Phase 3 software and documentation after separate approval.
-- [ ] Reconcile and push the approved private branch without force-push after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/cars` and record evidence after separate approval.
+- [x] Commit the Phase 3 software and documentation after separate approval.
+- [x] Reconcile and push the approved private branch without force-push after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/cars` and record evidence after separate approval.
 
 ## External activation gates
 
@@ -67,4 +67,4 @@ The model always reports the following as false:
 - [ ] Certify live inventory, pricing, policies, reservations, payments, privacy, accessibility, operations, and security in later package phases.
 - [ ] Make a separate Production decision.
 
-No release or external activation is authorized by this document.
+The release evidence is recorded in `docs/CAR_RENTALS_PHASE_3_PREVIEW_EVIDENCE_2026-08-20.md`. No external activation is authorized by this document.
