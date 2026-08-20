@@ -2,7 +2,7 @@
 
 Prepared: August 20, 2026
 
-Status: **Software, private publication, isolated Preview deployment, and authenticated browser acceptance complete; evidence publication and every external-action gate remain pending**
+Status: **Software, private publication, isolated Preview deployment, authenticated browser acceptance, and evidence publication complete; every external-action gate remains pending**
 
 ## Purpose
 
@@ -73,4 +73,4 @@ The model always reports the following as false:
 - [ ] Certify live total pricing, policies, repricing, reservations, payments, privacy, operations, and security in later package phases.
 - [ ] Make a separate Production decision.
 
-The isolated Preview acceptance evidence is recorded in `docs/CAR_RENTALS_PHASE_4_PREVIEW_EVIDENCE_2026-08-20.md`. No external activation is authorized by this document.
+The isolated Preview acceptance evidence is recorded in `docs/CAR_RENTALS_PHASE_4_PREVIEW_EVIDENCE_2026-08-20.md` and was published to the private branch at `c24380d7769ae8d146688593f1fe8ebeb98e9573`. No external activation is authorized by this document.
