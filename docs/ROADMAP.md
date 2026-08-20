@@ -697,7 +697,7 @@ The Flights Phase 21 Duffel provider-contact closeout and no-reply boundary is r
 
 ## Phase 7 — Car-rental complete package
 
-Status: **Phase 1 software complete and repository-verified locally; release, supplier connectivity, reservations, payments, and Production remain pending**
+Status: **Phase 1 released and accepted in isolated Preview; Phase 2 software complete and repository-verified locally; Phase 2 release, supplier connectivity, reservations, payments, and Production remain pending**
 
 Phase 1 adds a supplier-offline consumer planning surface at `/cars`. Travelers can validate pickup and return locations, dates, times, a driver age range, and a vehicle class without contacting a rental company or displaying vehicles, rates, taxes, fees, protection products, availability, or reservations.
 
@@ -714,6 +714,23 @@ Phase 1 release gates:
 - [x] Deploy only to the isolated Preview project after separate approval.
 - [x] Complete browser acceptance at `/cars` without provider credentials, supplier traffic, reservations, or payments.
 
+Phase 2 adds a protected, read-only supplier-readiness workspace at `/admin/cars`. It evaluates neutral direct rental-company, broker, aggregator, and GDS paths; maps required certification capabilities; and displays eleven activation gates that start incomplete. It cannot contact a supplier, create an account, accept credentials, make a network request, reserve a vehicle, or authorize payment.
+
+Phase 2 software gates:
+
+- [x] Add `/admin/cars` to administrator navigation only.
+- [x] Define four neutral supply paths and four complete capability categories without provider claims.
+- [x] Define eleven independently owned activation gates while keeping every runtime authority disabled.
+- [x] Keep the administrator workspace read-only, provider-neutral, network-free, and free of transactional controls.
+- [x] Pass focused tests, ESLint, TypeScript, 1,113 tests across 250 files, and the optimized 115-page Next.js build.
+
+Phase 2 release gates:
+
+- [ ] Commit and reconcile the approved laptop changes after separate approval.
+- [ ] Push the approved private branch without force-push after separate approval.
+- [ ] Deploy only to the isolated Preview project after separate approval.
+- [ ] Complete authenticated browser acceptance at `/admin/cars` and record evidence after separate approval.
+
 External activation gates:
 
 - [ ] Select and contract an authorized rental-company, broker, aggregator, or GDS inventory and booking path.
@@ -721,7 +738,7 @@ External activation gates:
 - [ ] Approve driver-data, eligibility, protection-product, deposit, payment, fraud, dispute, legal, accessibility, support, and incident-response procedures.
 - [ ] Make a separate Production decision before enabling supplier traffic, car-rental reservations, or payments.
 
-The Phase 1 boundary is recorded in `docs/CAR_RENTALS_PHASE_1.md`. The complete 12-phase commercial sequence is recorded in `docs/CAR_RENTALS_ROADMAP.md`. Isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_1_PREVIEW_EVIDENCE_2026-08-19.md`.
+The Phase 1 boundary is recorded in `docs/CAR_RENTALS_PHASE_1.md`. The Phase 2 boundary is recorded in `docs/CAR_RENTALS_PHASE_2.md`. The complete 12-phase commercial sequence is recorded in `docs/CAR_RENTALS_ROADMAP.md`. Phase 1 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_1_PREVIEW_EVIDENCE_2026-08-19.md`.
 
 ## Overall completion rule
 

@@ -2,7 +2,7 @@
 
 Prepared: August 19, 2026
 
-Status: **Phase 1 software complete and repository-verified locally; commit, private push, isolated Preview deployment, browser acceptance, supplier contact, contracts, credentials, traffic, reservations, payments, and Production remain pending**
+Status: **Phase 1 released and accepted in isolated Preview; Phase 2 software complete and repository-verified locally; Phase 2 release, supplier contact, contracts, accounts, credentials, traffic, reservations, payments, and Production remain pending**
 
 ## Package objective
 
@@ -22,6 +22,12 @@ Build a commercially credible car-rental vertical while separating completed sof
 10. **Provider adapter and sandbox certification** — allowlisted operations, scoped credentials, idempotency, retries, timeouts, webhooks, audit evidence, and fail-closed kill switches.
 11. **Commercial and compliance readiness** — contracts, commissions or markups, disclosures, insurance or protection wording, accessibility, consumer law, support ownership, SLAs, and incident response.
 12. **Controlled launch** — isolated Preview acceptance, sandbox evidence, limited pilot, observability, rollback, independent release review, and a separate Production decision.
+
+## Current phase evidence
+
+- Phase 1 software, private publication, isolated Preview deployment, and browser acceptance are complete. Its boundary is recorded in `docs/CAR_RENTALS_PHASE_1.md`, and its Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_1_PREVIEW_EVIDENCE_2026-08-19.md`.
+- Phase 2 introduces the protected, read-only supplier-readiness workspace. Its software and release boundaries are recorded in `docs/CAR_RENTALS_PHASE_2.md`.
+- Phase 2 commit, private publication, isolated Preview deployment, authenticated browser acceptance, named-provider research, supplier contact, accounts, contracts, credentials, traffic, reservations, payments, and Production remain pending.
 
 ## Overall completion model
 
