@@ -2,7 +2,7 @@
 
 Prepared: August 19, 2026
 
-Status: **Phases 1–2 released and accepted in isolated Preview; supplier contact, contracts, accounts, credentials, traffic, reservations, payments, and Production remain pending**
+Status: **Phases 1–2 released and accepted in isolated Preview; Phase 3 software is complete and repository-verified locally with release pending; supplier contact, contracts, accounts, credentials, traffic, reservations, payments, and Production remain pending**
 
 ## Package objective
 
@@ -28,6 +28,8 @@ Build a commercially credible car-rental vertical while separating completed sof
 - Phase 1 software, private publication, isolated Preview deployment, and browser acceptance are complete. Its boundary is recorded in `docs/CAR_RENTALS_PHASE_1.md`, and its Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_1_PREVIEW_EVIDENCE_2026-08-19.md`.
 - Phase 2 introduces the protected, read-only supplier-readiness workspace. Its software and release boundaries are recorded in `docs/CAR_RENTALS_PHASE_2.md`, and its Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_2_PREVIEW_EVIDENCE_2026-08-20.md`.
 - Phase 2 commit, private publication, isolated Preview deployment, and authenticated browser acceptance are complete. Named-provider research, supplier contact, accounts, contracts, credentials, traffic, reservations, payments, and Production remain pending.
+- Phase 3 defines provider-neutral contracts for locations, opening hours, vehicle-class equivalency, capacity, transmission, powertrain, accessibility, and features. Its local software and fail-closed boundary are recorded in `docs/CAR_RENTALS_PHASE_3.md`.
+- Phase 3 passes focused tests, ESLint, TypeScript, 1,120 tests across 251 files, and the optimized 115-page Next.js build. Commit, private publication, isolated Preview deployment, authenticated browser acceptance, and Preview evidence remain pending.
 
 ## Overall completion model
 

@@ -697,7 +697,7 @@ The Flights Phase 21 Duffel provider-contact closeout and no-reply boundary is r
 
 ## Phase 7 — Car-rental complete package
 
-Status: **Phases 1–2 released and accepted in isolated Preview; supplier connectivity, reservations, payments, and Production remain pending**
+Status: **Phases 1–2 released and accepted in isolated Preview; Phase 3 software is complete and repository-verified locally with release pending; supplier connectivity, reservations, payments, and Production remain pending**
 
 Phase 1 adds a supplier-offline consumer planning surface at `/cars`. Travelers can validate pickup and return locations, dates, times, a driver age range, and a vehicle class without contacting a rental company or displaying vehicles, rates, taxes, fees, protection products, availability, or reservations.
 
@@ -731,6 +731,24 @@ Phase 2 release gates:
 - [x] Deploy only to the isolated Preview project after separate approval.
 - [x] Complete authenticated browser acceptance at `/admin/cars` and record evidence after separate approval.
 
+Phase 3 defines a provider-neutral canonical inventory contract for location identity, seven-day opening hours, vehicle-class equivalency, passenger and luggage capacity, transmission, fuel or powertrain, accessibility states and features, and reviewed vehicle features. It validates synthetic facts locally, preserves unknown states, rejects malformed or conflicting records, and cannot ingest supplier data or create a live provider mapping.
+
+Phase 3 software gates:
+
+- [x] Define all eight roadmap normalization contracts and their consumer-safety boundaries.
+- [x] Define controlled vocabularies with explicit unknown or unspecified states.
+- [x] Define ten independently owned normalization gates that start incomplete and cannot confer runtime authority.
+- [x] Add a pure local validator for complete, incomplete, malformed, conflicting, unsupported, and duplicate inventory facts.
+- [x] Extend the protected `/admin/cars` workspace with read-only Phase 3 references while preserving Phase 2.
+- [x] Pass focused tests, ESLint, TypeScript, 1,120 tests across 251 files, and the optimized 115-page Next.js build.
+
+Phase 3 release gates:
+
+- [ ] Commit and reconcile the approved laptop changes after separate approval.
+- [ ] Push the approved private branch without force-push after separate approval.
+- [ ] Deploy only to the isolated Preview project after separate approval.
+- [ ] Complete authenticated browser acceptance at `/admin/cars` and record evidence after separate approval.
+
 External activation gates:
 
 - [ ] Select and contract an authorized rental-company, broker, aggregator, or GDS inventory and booking path.
@@ -738,7 +756,7 @@ External activation gates:
 - [ ] Approve driver-data, eligibility, protection-product, deposit, payment, fraud, dispute, legal, accessibility, support, and incident-response procedures.
 - [ ] Make a separate Production decision before enabling supplier traffic, car-rental reservations, or payments.
 
-The Phase 1 boundary is recorded in `docs/CAR_RENTALS_PHASE_1.md`. The Phase 2 boundary is recorded in `docs/CAR_RENTALS_PHASE_2.md`. The complete 12-phase commercial sequence is recorded in `docs/CAR_RENTALS_ROADMAP.md`. Phase 1 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_1_PREVIEW_EVIDENCE_2026-08-19.md`, and Phase 2 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_2_PREVIEW_EVIDENCE_2026-08-20.md`.
+The Phase 1 boundary is recorded in `docs/CAR_RENTALS_PHASE_1.md`. The Phase 2 boundary is recorded in `docs/CAR_RENTALS_PHASE_2.md`. The Phase 3 local software and fail-closed boundary are recorded in `docs/CAR_RENTALS_PHASE_3.md`. The complete 12-phase commercial sequence is recorded in `docs/CAR_RENTALS_ROADMAP.md`. Phase 1 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_1_PREVIEW_EVIDENCE_2026-08-19.md`, and Phase 2 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_2_PREVIEW_EVIDENCE_2026-08-20.md`. Phase 3 Preview evidence remains pending.
 
 ## Overall completion rule
 
