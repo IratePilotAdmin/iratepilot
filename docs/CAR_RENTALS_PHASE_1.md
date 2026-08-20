@@ -1,6 +1,6 @@
 # iRatePilot Car Rentals — Phase 1
 
-Status: **Software complete locally; commit, private push, isolated Preview deployment, browser acceptance, supplier connectivity, reservations, payment, and Production remain pending**
+Status: **Software, private publication, isolated Preview deployment, and browser acceptance complete; supplier connectivity, reservations, payment, and Production remain pending**
 
 ## Purpose
 
@@ -27,9 +27,9 @@ This phase contains no rental company, broker, aggregator, GDS, payment, protect
 
 ## Release gates
 
-- [ ] Commit and push the approved laptop changes after separate approval.
-- [ ] Deploy to the isolated Preview project after separate approval.
-- [ ] Complete browser acceptance at `/cars` without adding provider credentials or traffic.
+- [x] Commit and push the approved laptop changes after separate approval.
+- [x] Deploy to the isolated Preview project after separate approval.
+- [x] Complete browser acceptance at `/cars` without adding provider credentials or traffic.
 
 ## External activation gates
 
@@ -42,4 +42,4 @@ This phase contains no rental company, broker, aggregator, GDS, payment, protect
 
 Software completion never authorizes a provider connection or live car-rental sale.
 
-The complete planned development sequence is recorded in `docs/CAR_RENTALS_ROADMAP.md`.
+The complete planned development sequence is recorded in `docs/CAR_RENTALS_ROADMAP.md`. Isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_1_PREVIEW_EVIDENCE_2026-08-19.md`.

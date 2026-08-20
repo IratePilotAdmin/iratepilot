@@ -710,9 +710,9 @@ Phase 1 software gates:
 
 Phase 1 release gates:
 
-- [ ] Commit and push the approved laptop changes after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete browser acceptance at `/cars` without provider credentials, supplier traffic, reservations, or payments.
+- [x] Commit and push the approved laptop changes after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete browser acceptance at `/cars` without provider credentials, supplier traffic, reservations, or payments.
 
 External activation gates:
 
@@ -721,7 +721,7 @@ External activation gates:
 - [ ] Approve driver-data, eligibility, protection-product, deposit, payment, fraud, dispute, legal, accessibility, support, and incident-response procedures.
 - [ ] Make a separate Production decision before enabling supplier traffic, car-rental reservations, or payments.
 
-The Phase 1 boundary is recorded in `docs/CAR_RENTALS_PHASE_1.md`. The complete 12-phase commercial sequence is recorded in `docs/CAR_RENTALS_ROADMAP.md`.
+The Phase 1 boundary is recorded in `docs/CAR_RENTALS_PHASE_1.md`. The complete 12-phase commercial sequence is recorded in `docs/CAR_RENTALS_ROADMAP.md`. Isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_1_PREVIEW_EVIDENCE_2026-08-19.md`.
 
 ## Overall completion rule
 
