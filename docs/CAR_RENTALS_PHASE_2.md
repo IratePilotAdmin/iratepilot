@@ -1,6 +1,6 @@
 # iRatePilot Car Rentals — Phase 2
 
-Status: **Software complete and repository-verified locally; commit, private publication, isolated Preview deployment, browser acceptance, and every external activation remain pending**
+Status: **Software, private publication, isolated Preview deployment, and authenticated browser acceptance complete; every external activation remains pending**
 
 ## Purpose
 
@@ -34,10 +34,10 @@ Even if evidence is recorded for all eleven gates, the model keeps supplier cont
 
 ## Release gates
 
-- [ ] Commit the approved Phase 2 source after separate approval.
-- [ ] Reconcile and push the approved private branch without force-push after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/cars` and record evidence after separate approval.
+- [x] Commit the approved Phase 2 source after separate approval.
+- [x] Reconcile and push the approved private branch without force-push after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/cars` and record evidence after separate approval.
 
 ## External activation gates
 
