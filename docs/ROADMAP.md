@@ -695,6 +695,34 @@ Phase 21 provider-contact closeout decision gates:
 
 The Flights Phase 21 Duffel provider-contact closeout and no-reply boundary is recorded in `docs/FLIGHTS_PHASE_21.md`. Its isolated Preview acceptance evidence is recorded in `docs/FLIGHTS_PHASE_21_PREVIEW_EVIDENCE_2026-08-19.md`. Actual Phase 18 authorization, Phase 19 preflight, Phase 20 execution, provider contact, response handling, and closeout remain blocked.
 
+## Phase 7 — Car-rental complete package
+
+Status: **Phase 1 software complete and repository-verified locally; release, supplier connectivity, reservations, payments, and Production remain pending**
+
+Phase 1 adds a supplier-offline consumer planning surface at `/cars`. Travelers can validate pickup and return locations, dates, times, a driver age range, and a vehicle class without contacting a rental company or displaying vehicles, rates, taxes, fees, protection products, availability, or reservations.
+
+Phase 1 software gates:
+
+- [x] Add `/cars` to customer navigation, the footer, and the sitemap.
+- [x] Validate location, date, time, return-location, duration, driver-age-band, and vehicle-class input without external traffic.
+- [x] Clearly disclose that live vehicles, rates, policies, reservations, eligibility decisions, and payments are unavailable.
+- [x] Pass ESLint, TypeScript, 1,108 tests across 249 files, and the optimized 114-page Next.js build.
+
+Phase 1 release gates:
+
+- [ ] Commit and push the approved laptop changes after separate approval.
+- [ ] Deploy only to the isolated Preview project after separate approval.
+- [ ] Complete browser acceptance at `/cars` without provider credentials, supplier traffic, reservations, or payments.
+
+External activation gates:
+
+- [ ] Select and contract an authorized rental-company, broker, aggregator, or GDS inventory and booking path.
+- [ ] Complete sandbox certification for locations, availability, total pricing, policies, repricing, reservations, changes, cancellations, refunds, and authenticated webhooks.
+- [ ] Approve driver-data, eligibility, protection-product, deposit, payment, fraud, dispute, legal, accessibility, support, and incident-response procedures.
+- [ ] Make a separate Production decision before enabling supplier traffic, car-rental reservations, or payments.
+
+The Phase 1 boundary is recorded in `docs/CAR_RENTALS_PHASE_1.md`. The complete 12-phase commercial sequence is recorded in `docs/CAR_RENTALS_ROADMAP.md`.
+
 ## Overall completion rule
 
 Repository completion means `npm run check` passes and every public surface accurately describes its current mode. Commercial completion additionally requires all provider, data, legal, operational, and production release gates to be satisfied with recorded evidence. Software readiness must never be treated as authorization to enable live transactions.
