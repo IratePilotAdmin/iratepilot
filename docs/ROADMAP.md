@@ -697,7 +697,7 @@ The Flights Phase 21 Duffel provider-contact closeout and no-reply boundary is r
 
 ## Phase 7 — Car-rental complete package
 
-Status: **Phases 1–3 released, accepted in isolated Preview, and documented; supplier connectivity, reservations, payments, and Production remain pending**
+Status: **Phases 1–3 released, accepted in isolated Preview, and documented; Phase 4 software verified locally with release pending; supplier connectivity, reservations, payments, and Production remain pending**
 
 Phase 1 adds a supplier-offline consumer planning surface at `/cars`. Travelers can validate pickup and return locations, dates, times, a driver age range, and a vehicle class without contacting a rental company or displaying vehicles, rates, taxes, fees, protection products, availability, or reservations.
 
@@ -749,6 +749,24 @@ Phase 3 release gates:
 - [x] Deploy only to the isolated Preview project after separate approval.
 - [x] Complete authenticated browser acceptance at `/admin/cars` and record evidence after separate approval.
 
+Phase 4 defines a provider-neutral canonical total-price and policy contract for base rates, taxes, mandatory fees, one-way fees, airport surcharges, mileage, fuel or charging, deposits, protection products, and exclusions. It uses integer minor-unit arithmetic, exact total reconciliation, explicit unknown states, and pure local validation without ingesting supplier quotes or creating a live price.
+
+Phase 4 software gates:
+
+- [x] Define all ten roadmap pricing and policy contracts and their consumer-safety boundaries.
+- [x] Define controlled line-item, trip, mileage, fuel or charging, deposit, protection, and exclusion vocabularies.
+- [x] Define twelve independently owned pricing and policy gates that start incomplete and cannot confer runtime authority.
+- [x] Add a pure local validator for exact totals and complete, incomplete, hidden, duplicate, mismatched, unsupported, and inconsistent facts.
+- [x] Extend the protected `/admin/cars` workspace with read-only Phase 4 references while preserving Phases 3 and 2.
+- [x] Pass focused tests, ESLint, TypeScript, 1,128 tests across 252 files, and the optimized 115-page Next.js build.
+
+Phase 4 release gates:
+
+- [ ] Commit and reconcile the approved laptop changes after separate approval.
+- [ ] Push the approved private branch without force-push after separate approval.
+- [ ] Deploy only to the isolated Preview project after separate approval.
+- [ ] Complete authenticated browser acceptance at `/admin/cars` and record evidence after separate approval.
+
 External activation gates:
 
 - [ ] Select and contract an authorized rental-company, broker, aggregator, or GDS inventory and booking path.
@@ -756,7 +774,7 @@ External activation gates:
 - [ ] Approve driver-data, eligibility, protection-product, deposit, payment, fraud, dispute, legal, accessibility, support, and incident-response procedures.
 - [ ] Make a separate Production decision before enabling supplier traffic, car-rental reservations, or payments.
 
-The Phase 1 boundary is recorded in `docs/CAR_RENTALS_PHASE_1.md`. The Phase 2 boundary is recorded in `docs/CAR_RENTALS_PHASE_2.md`. The Phase 3 software and fail-closed boundary are recorded in `docs/CAR_RENTALS_PHASE_3.md`. The complete 12-phase commercial sequence is recorded in `docs/CAR_RENTALS_ROADMAP.md`. Phase 1 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_1_PREVIEW_EVIDENCE_2026-08-19.md`, Phase 2 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_2_PREVIEW_EVIDENCE_2026-08-20.md`, and Phase 3 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_3_PREVIEW_EVIDENCE_2026-08-20.md`.
+The Phase 1 boundary is recorded in `docs/CAR_RENTALS_PHASE_1.md`. The Phase 2 boundary is recorded in `docs/CAR_RENTALS_PHASE_2.md`. The Phase 3 software and fail-closed boundary are recorded in `docs/CAR_RENTALS_PHASE_3.md`. The Phase 4 software and fail-closed boundary are recorded in `docs/CAR_RENTALS_PHASE_4.md`. The complete 12-phase commercial sequence is recorded in `docs/CAR_RENTALS_ROADMAP.md`. Phase 1 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_1_PREVIEW_EVIDENCE_2026-08-19.md`, Phase 2 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_2_PREVIEW_EVIDENCE_2026-08-20.md`, and Phase 3 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_3_PREVIEW_EVIDENCE_2026-08-20.md`.
 
 ## Overall completion rule
 

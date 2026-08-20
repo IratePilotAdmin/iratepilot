@@ -2,7 +2,7 @@
 
 Prepared: August 19, 2026
 
-Status: **Phases 1–3 released, accepted in isolated Preview, and documented; supplier contact, contracts, accounts, credentials, traffic, reservations, payments, and Production remain pending**
+Status: **Phases 1–3 released, accepted in isolated Preview, and documented; Phase 4 software verified locally with release pending; supplier contact, contracts, accounts, credentials, traffic, reservations, payments, and Production remain pending**
 
 ## Package objective
 
@@ -30,6 +30,7 @@ Build a commercially credible car-rental vertical while separating completed sof
 - Phase 2 commit, private publication, isolated Preview deployment, and authenticated browser acceptance are complete. Named-provider research, supplier contact, accounts, contracts, credentials, traffic, reservations, payments, and Production remain pending.
 - Phase 3 defines provider-neutral contracts for locations, opening hours, vehicle-class equivalency, capacity, transmission, powertrain, accessibility, and features. Its software and fail-closed boundary are recorded in `docs/CAR_RENTALS_PHASE_3.md`.
 - Phase 3 passes focused tests, ESLint, TypeScript, 1,120 tests across 251 files, and the optimized 115-page Next.js build. Commit `bd186223`, private publication, isolated Preview deployment, and authenticated browser acceptance are complete. Evidence is recorded in `docs/CAR_RENTALS_PHASE_3_PREVIEW_EVIDENCE_2026-08-20.md`.
+- Phase 4 defines provider-neutral contracts for base rates, taxes, mandatory fees, one-way fees, airport surcharges, mileage, fuel or charging, deposits, protection products, and exclusions. It uses integer minor-unit arithmetic, exact total reconciliation, explicit unknown states, and pure local validation. It passes focused tests, ESLint, TypeScript, 1,128 tests across 252 files, and the optimized 115-page Next.js build. Its software and fail-closed boundary are recorded in `docs/CAR_RENTALS_PHASE_4.md`; commit, private publication, Preview deployment, and authenticated acceptance remain pending separate approval.
 
 ## Overall completion model
 
