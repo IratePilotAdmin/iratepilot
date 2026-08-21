@@ -21,6 +21,20 @@ import {
   carRentalTransmissions,
 } from "@/lib/cars/inventory-normalization";
 import {
+  buildCarRentalPaymentRiskPlan,
+  carRentalAuthorizationHoldStates,
+  carRentalChargebackStates,
+  carRentalDepositStates as carRentalPaymentDepositStates,
+  carRentalFraudReviewStates,
+  carRentalPaymentCollectionModels,
+  carRentalPaymentRiskContracts,
+  carRentalPaymentRiskProhibitedFields,
+  carRentalPaymentRiskRecordedFields,
+  carRentalReceiptReconciliationStates,
+  carRentalRefundEvidenceStates,
+  carRentalTaxDisclosureStates,
+} from "@/lib/cars/payment-risk-controls";
+import {
   buildCarRentalPricingPolicyPlan,
   carRentalDepositStates,
   carRentalFuelChargingPolicyKinds,
@@ -54,11 +68,12 @@ import {
 } from "@/lib/cars/supplier-readiness";
 
 export const metadata: Metadata = {
-  title: "Car Rentals reservation lifecycle safety | iRatePilot Admin",
-  description: "Read-only, provider-neutral car-rental reservation lifecycle, driver-eligibility, privacy, quote, pricing, policy, and inventory contracts.",
+  title: "Car Rentals payment and risk controls | iRatePilot Admin",
+  description: "Read-only, provider-neutral car-rental payment, risk, reservation lifecycle, driver-eligibility, privacy, quote, pricing, policy, and inventory contracts.",
 };
 
 export default function AdminCarsPage() {
+  const paymentRisk = buildCarRentalPaymentRiskPlan();
   const reservationLifecycle = buildCarRentalReservationLifecyclePlan();
   const driverPrivacy = buildCarRentalDriverPrivacyPlan();
   const quoteReprice = buildCarRentalQuoteRepricePlan();
@@ -69,20 +84,86 @@ export default function AdminCarsPage() {
   return (
     <DashboardShell title="Admin Console" items={adminNavigation}>
       <div className="mx-auto max-w-7xl">
-        <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Car Rentals · Phase 7</p>
+        <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Car Rentals · Phase 8</p>
         <div className="mt-2 grid gap-6 lg:grid-cols-[1fr_320px] lg:items-end">
           <div>
-            <h1 className="text-3xl font-bold text-slate-950">Reservation lifecycle safety workspace</h1>
-            <p className="mt-3 max-w-3xl leading-7 text-slate-600">Review provider-neutral contracts for create, confirm, modify, cancel, no-show, pickup, extension, early return, late return, refund, and supplier-reference reconciliation. Every record is sanitized and synthetic; no event contacts a supplier, changes a reservation, or moves money.</p>
+            <h1 className="text-3xl font-bold text-slate-950">Payment and risk controls workspace</h1>
+            <p className="mt-3 max-w-3xl leading-7 text-slate-600">Review provider-neutral, non-transactional contracts for pay-now versus pay-at-counter, deposits, authorization holds, fraud, chargebacks, refunds, currency, taxes, and receipt accuracy. Every record is sanitized and synthetic; no control collects payment data, contacts a supplier or processor, or moves money.</p>
           </div>
           <div className="rounded-2xl border border-amber-300 bg-amber-50 p-5">
-            <div className="flex items-center gap-3 text-amber-950"><ShieldAlert className="h-5 w-5" /><strong>Reservation lifecycle design only</strong></div>
-            <p className="mt-2 text-sm leading-6 text-amber-900">{reservationLifecycle.completedCount} of {reservationLifecycle.totalCount} gates recorded. No supplier request, reservation, refund, payment, or runtime authority is enabled.</p>
+            <div className="flex items-center gap-3 text-amber-950"><ShieldAlert className="h-5 w-5" /><strong>Payment and risk design only</strong></div>
+            <p className="mt-2 text-sm leading-6 text-amber-900">{paymentRisk.completedCount} of {paymentRisk.totalCount} gates recorded. No supplier request, processor request, reservation, collection, capture, hold, deposit, refund, chargeback, or runtime authority is enabled.</p>
           </div>
         </div>
 
         <section className="mt-10">
+          <div className="flex items-center gap-3"><Calculator className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Phase 8 payment and risk controls</p></div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">Nine provider-neutral payment and risk contracts</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Each contract validates sanitized accounting and control evidence only. A structurally valid fixture remains a local design artifact and never becomes a payment request, processor decision, supplier receipt, deposit, hold, refund, dispute, or reservation.</p>
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            {carRentalPaymentRiskContracts.map((contract) => (
+              <article key={contract.id} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="font-semibold text-slate-950">{contract.label}</h3>
+                <p className="mt-3 text-sm leading-6 text-slate-600">{contract.validationRule}</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {contract.requiredFields.map((field) => <span key={field} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">{field}</span>)}
+                </div>
+                <p className="mt-4 border-t border-slate-100 pt-4 text-sm leading-6 text-slate-500"><strong className="text-slate-700">Boundary:</strong> {contract.safetyBoundary}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-12">
+          <div className="flex items-center gap-3"><ReceiptText className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Controlled accounting and risk evidence</p></div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">Explicit models, uncertainty, and minimized fields</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Exact integer-minor-unit totals and explicit unresolved states fail closed without payment-card, bank, token, billing, identity, raw-reference, credential, supplier, or processor data.</p>
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Collection models</h3><p className="mt-3 text-sm leading-6 text-slate-300">{carRentalPaymentCollectionModels.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Deposit states</h3><p className="mt-3 text-sm leading-6 text-slate-300">{carRentalPaymentDepositStates.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Authorization holds</h3><p className="mt-3 text-sm leading-6 text-slate-300">{carRentalAuthorizationHoldStates.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Fraud review</h3><p className="mt-3 text-sm leading-6 text-slate-300">{carRentalFraudReviewStates.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Chargeback states</h3><p className="mt-3 text-sm leading-6 text-slate-300">{carRentalChargebackStates.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Refund evidence</h3><p className="mt-3 text-sm leading-6 text-slate-300">{carRentalRefundEvidenceStates.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Tax disclosure</h3><p className="mt-3 text-sm leading-6 text-slate-300">{carRentalTaxDisclosureStates.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Receipt reconciliation</h3><p className="mt-3 text-sm leading-6 text-slate-300">{carRentalReceiptReconciliationStates.join(" · ").replaceAll("_", " ")}</p></article>
+          </div>
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            <article className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
+              <h3 className="font-semibold text-emerald-950">Minimized payment-risk field allowlist</h3>
+              <p className="mt-3 text-sm leading-6 text-emerald-900">{carRentalPaymentRiskRecordedFields.join(" · ").replaceAll("_", " ")}</p>
+            </article>
+            <article className="rounded-2xl border border-red-200 bg-red-50 p-6">
+              <h3 className="font-semibold text-red-950">Prohibited payment and identity data</h3>
+              <p className="mt-3 text-sm leading-6 text-red-900">{carRentalPaymentRiskProhibitedFields.join(" · ").replaceAll("_", " ")}</p>
+            </article>
+          </div>
+        </section>
+
+        <section className="mt-12">
+          <div className="flex items-center gap-3"><ClipboardCheck className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Phase 8 contract gates</p></div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">Twelve separately owned payment and risk gates</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Every gate starts incomplete. Completing the design checklist cannot contact a supplier or processor, collect payment data, reserve a vehicle, place a hold, collect a deposit, capture payment, execute a refund, act on a chargeback, enable traffic, or authorize Production.</p>
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            {paymentRisk.gates.map((gate, index) => (
+              <article key={gate.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <Circle className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[.14em] text-slate-400">Gate {index + 1} · {gate.owner}</p>
+                    <h3 className="mt-1 font-semibold text-slate-950">{gate.label}</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{gate.detail}</p>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-12 border-t border-slate-200 pt-12">
           <div className="flex items-center gap-3"><Workflow className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Phase 7 reservation lifecycle safety</p></div>
+          <p className="sr-only">Phase 7 reservation lifecycle reference</p>
+          <p className="sr-only">Reservation lifecycle safety workspace</p>
           <h2 className="mt-2 text-2xl font-bold text-slate-950">Eleven provider-neutral reservation lifecycle contracts</h2>
           <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Each contract validates an append-only sanitized timeline and explicit outcomes. A structurally valid fixture remains a local design artifact and never becomes a supplier reservation, modification, cancellation, refund, or confirmation.</p>
           <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -465,7 +546,7 @@ export default function AdminCarsPage() {
 
         <section className="mt-12 rounded-2xl border border-red-300 bg-red-50 p-6">
           <div className="flex items-center gap-3 text-red-950"><KeyRound className="h-5 w-5" /><h2 className="text-lg font-bold">Runtime hard stop</h2></div>
-          <p className="mt-3 max-w-4xl text-sm leading-6 text-red-900">No supplier has been contacted or connected. No live reservation is created, confirmed, modified, cancelled, marked no-show, picked up, extended, returned, or refunded. No raw supplier reference, traveler identity, license, credential, or payment data is collected. No personal driver data is collected or verified. No supplier inventory is ingested. No supplier quote is ingested or repriced. No provider mapping exists. Supplier research or contact, accounts, contracts, credentials, external verification or traffic, live inventory, rates, policies, eligibility decisions, reservations, refunds, payments, database migrations, deployment, and Production changes remain outside Phase 7 and require separate approval.</p>
+          <p className="mt-3 max-w-4xl text-sm leading-6 text-red-900">No supplier has been contacted or connected. No processor has been contacted or connected. No live reservation is created, confirmed, modified, cancelled, marked no-show, picked up, extended, returned, or refunded. No payment card, bank account, payment token, billing identity, raw reference, traveler identity, license, or credential data is collected. No personal driver data is collected or verified. No collection, capture, deposit, authorization hold, refund, chargeback, receipt, tax, fraud, or money-movement action occurs. No supplier inventory is ingested. No supplier quote is ingested or repriced. No provider mapping exists. Supplier or payment-provider research or contact, accounts, contracts, credentials, external verification or traffic, live inventory, rates, policies, eligibility decisions, reservations, payment activity, refunds, migrations, deployment, and Production changes remain outside Phase 8 and require separate approval.</p>
         </section>
       </div>
     </DashboardShell>

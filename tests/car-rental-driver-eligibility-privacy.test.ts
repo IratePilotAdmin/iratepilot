@@ -285,7 +285,7 @@ describe("car-rental driver eligibility and privacy phase 6", () => {
     const packageRoadmap = read("docs/CAR_RENTALS_ROADMAP.md");
     const roadmap = read("docs/ROADMAP.md");
 
-    expect(page).toContain("Car Rentals · Phase 7");
+    expect(page).toContain("Car Rentals · Phase 8");
     expect(page).toContain("Driver eligibility and privacy workspace");
     expect(page).toContain("Eight provider-neutral eligibility and privacy contracts");
     expect(page).toContain("Twelve separately owned eligibility and privacy gates");

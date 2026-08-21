@@ -282,14 +282,14 @@ describe("car-rental reservation lifecycle phase 7", () => {
     const packageRoadmap = read("docs/CAR_RENTALS_ROADMAP.md");
     const roadmap = read("docs/ROADMAP.md");
 
-    expect(page).toContain("Car Rentals · Phase 7");
+    expect(page).toContain("Car Rentals · Phase 8");
     expect(page).toContain("Reservation lifecycle safety workspace");
     expect(page).toContain("Eleven provider-neutral reservation lifecycle contracts");
     expect(page).toContain("Twelve separately owned reservation lifecycle gates");
     expect(page).toContain("Phase 6 driver eligibility and privacy reference");
     expect(page).not.toMatch(/fetch\(|createClient\(|<form|<button|use server|use client/);
     expect(phase).toContain("Reservation Lifecycle Safety");
-    expect(packageRoadmap).toContain("Phase 7 software is verified locally with release pending");
+    expect(packageRoadmap).toContain("Phase 7 defines provider-neutral, append-only contracts");
     expect(roadmap).toContain("Phase 7 reservation lifecycle software gates");
   });
 });
