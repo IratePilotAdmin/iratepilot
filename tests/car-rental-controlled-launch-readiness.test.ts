@@ -247,8 +247,8 @@ describe("car-rental controlled launch readiness phase 12", () => {
     expect(phaseEleven).toContain("evidence recording complete");
     expect(phaseTwelve).toContain("Controlled Launch Readiness");
     expect(phaseTwelve).toContain("1250611f802bd6fd8118242edf6045fb4e5d7d32");
-    expect(packageRoadmap).toContain("Phases 1–11 released, accepted, and documented");
-    expect(packageRoadmap).toContain("Phase 12 software is verified locally with release pending");
+    expect(packageRoadmap).toContain("All 12 software phases are released, accepted, and documented in isolated Preview");
+    expect(packageRoadmap).toContain("Current released-and-accepted software completion: **12 of 12 phases (100%)**");
   });
 
   it("keeps the administrator workspace read-only and explicit about Phase 12", () => {
@@ -260,7 +260,7 @@ describe("car-rental controlled launch readiness phase 12", () => {
     expect(page).toContain("Seven provider-neutral controlled-launch contracts");
     expect(page).toContain("Twelve separately owned controlled-launch gates");
     expect(page).toContain("Phase 11 commercial and compliance reference");
-    expect(page).toContain("remain outside Phase 12 and require separate approval");
+    expect(page).toContain("remain outside this local connector preparation and require separate approval");
     expect(page).not.toContain("remain outside Phase 11 and require separate approval");
     expect(page).not.toMatch(/fetch\(|createClient\(|<form|<button|use server|use client/);
     expect(roadmap).toContain("Phase 12 controlled-launch readiness software gates");

@@ -204,8 +204,8 @@ describe("car-rental provider adapter and sandbox certification phase 10", () =>
     expect(evidence).toContain("088637df4ebb6ffd697048749e55a86a48d1db63");
     expect(phaseNine).toContain("evidence publication complete");
     expect(phaseTen).toContain("Provider Adapter and Sandbox Certification");
-    expect(packageRoadmap).toContain("Phases 1–11 released, accepted, and documented");
-    expect(packageRoadmap).toContain("Phase 12 software is verified locally with release pending");
+    expect(packageRoadmap).toContain("All 12 software phases are released, accepted, and documented in isolated Preview");
+    expect(packageRoadmap).toContain("Current released-and-accepted software completion: **12 of 12 phases (100%)**");
   });
 
   it("keeps the administrator workspace read-only, network-free, and explicit about Phase 10", () => {

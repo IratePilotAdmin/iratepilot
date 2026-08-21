@@ -222,9 +222,9 @@ describe("car-rental operations and customer support phase 9", () => {
     expect(phaseNineEvidence).toContain("698bf3eaec38fbcec416d86c22342d8640e33c99");
     expect(phaseNineEvidence).toContain("dpl_3VS3ogNxcmeFNUaTaskt5Uyu5JTP");
     expect(phase).toContain("Operations and Customer Support");
-    expect(packageRoadmap).toContain("Phases 1–11 released, accepted, and documented");
+    expect(packageRoadmap).toContain("All 12 software phases are released, accepted, and documented in isolated Preview");
     expect(packageRoadmap).toContain("Current local software-roadmap completion: **12 of 12 phases (100%)**");
-    expect(packageRoadmap).toContain("Current released-and-accepted software completion: **11 of 12 phases (92%)**");
+    expect(packageRoadmap).toContain("Current released-and-accepted software completion: **12 of 12 phases (100%)**");
   });
 
   it("keeps the administrator workspace read-only, network-free, and explicit about Phase 9", () => {

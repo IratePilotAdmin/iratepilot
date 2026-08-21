@@ -238,7 +238,7 @@ describe("car-rental payment and risk controls phase 8", () => {
     expect(page).toContain("Phase 7 reservation lifecycle reference");
     expect(page).not.toMatch(/fetch\(|createClient\(|<form|<button|use server|use client/);
     expect(phase).toContain("Payment and Risk Controls");
-    expect(packageRoadmap).toContain("Phases 1–11 released, accepted, and documented");
+    expect(packageRoadmap).toContain("All 12 software phases are released, accepted, and documented in isolated Preview");
     expect(roadmap).toContain("Phase 8 payment and risk-control software gates");
   });
 });

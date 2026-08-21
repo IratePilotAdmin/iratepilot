@@ -93,6 +93,11 @@ import {
   carRentalProviderAdapterContracts,
 } from "@/lib/cars/provider-adapter-certification";
 import {
+  buildCarRentalNamedConnectorPlan,
+  carRentalConnectorProhibitedFields,
+  carRentalConnectorRecordedFields,
+} from "@/lib/cars/provider-connectors";
+import {
   buildCarRentalPricingPolicyPlan,
   carRentalDepositStates,
   carRentalFuelChargingPolicyKinds,
@@ -127,10 +132,11 @@ import {
 
 export const metadata: Metadata = {
   title: "Car Rentals controlled launch readiness | iRatePilot Admin",
-  description: "Read-only, provider-neutral car-rental controlled-launch, commercial, compliance, adapter, operations, support, payment, risk, reservation, privacy, pricing, policy, and inventory contracts.",
+  description: "Read-only car-rental controlled-launch workspace with disabled Sabre, Travelport, and generic aggregator connector contracts plus provider-neutral commercial, compliance, adapter, operations, support, payment, risk, reservation, privacy, pricing, policy, and inventory controls.",
 };
 
 export default function AdminCarsPage() {
+  const namedConnectors = buildCarRentalNamedConnectorPlan();
   const controlledLaunch = buildCarRentalControlledLaunchPlan();
   const commercialCompliance = buildCarRentalCommercialCompliancePlan();
   const adapterCertification = buildCarRentalProviderAdapterPlan();
@@ -157,6 +163,49 @@ export default function AdminCarsPage() {
             <p className="mt-2 text-sm leading-6 text-amber-900">{controlledLaunch.completedCount} of {controlledLaunch.totalCount} gates recorded. No commit, push, deployment, supplier action, account, credential, traffic, live pilot, reservation, refund, payment, migration, or Production authority is enabled.</p>
           </div>
         </div>
+
+        <section className="mt-10 rounded-3xl border border-sky-200 bg-sky-50 p-6 lg:p-8">
+          <div className="flex items-center gap-3"><Network className="h-5 w-5 text-sky-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-sky-800">Connector preparation</p></div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">Sabre, Travelport, and aggregator connectors</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">Three local connector shells map the existing provider-neutral operation vocabulary. Every connector is offline-only, unprovisioned, capability-unverified, disconnected, and protected by two engaged traffic kill switches. No endpoint, credential, supplier account, external request, reservation action, payment action, deployment, migration, or Production authority is present.</p>
+          <div className="mt-5 grid gap-4 lg:grid-cols-3">
+            {namedConnectors.connectors.map((connector) => (
+              <article key={connector.id} className="rounded-2xl border border-sky-200 bg-white p-6 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="font-semibold text-slate-950">{connector.label}</h3>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">{connector.category}</span>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-slate-600">{connector.summary}</p>
+                <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                  <div className="rounded-xl bg-slate-50 p-3"><dt className="font-semibold uppercase tracking-wide text-slate-500">Connection</dt><dd className="mt-1 text-slate-800">{connector.connectionState}</dd></div>
+                  <div className="rounded-xl bg-slate-50 p-3"><dt className="font-semibold uppercase tracking-wide text-slate-500">Capability</dt><dd className="mt-1 text-slate-800">{connector.capabilityVerificationState.replaceAll("_", " ")}</dd></div>
+                  <div className="rounded-xl bg-slate-50 p-3"><dt className="font-semibold uppercase tracking-wide text-slate-500">Provisioning</dt><dd className="mt-1 text-slate-800">{connector.provisioningState.replaceAll("_", " ")}</dd></div>
+                  <div className="rounded-xl bg-slate-50 p-3"><dt className="font-semibold uppercase tracking-wide text-slate-500">Offline intents</dt><dd className="mt-1 text-slate-800">{connector.intendedOperationKinds.length}</dd></div>
+                </dl>
+                <p className="mt-4 border-t border-slate-100 pt-4 text-sm leading-6 text-slate-500"><strong className="text-slate-700">Boundary:</strong> {connector.safetyBoundary}</p>
+              </article>
+            ))}
+          </div>
+          <div className="mt-5 grid gap-4 md:grid-cols-3">
+            <article className="rounded-2xl bg-slate-950 p-5 text-white"><h3 className="font-semibold">Runtime state</h3><p className="mt-2 text-sm leading-6 text-slate-300">{namedConnectors.provisionedConnectorCount} of {namedConnectors.connectors.length} provisioned · {namedConnectors.connectedConnectorCount} connected · {namedConnectors.externalRequestCount} external requests.</p></article>
+            <article className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5"><h3 className="font-semibold text-emerald-950">Minimized allowlist</h3><p className="mt-2 text-sm leading-6 text-emerald-900">{carRentalConnectorRecordedFields.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl border border-red-200 bg-red-50 p-5"><h3 className="font-semibold text-red-950">Prohibited data</h3><p className="mt-2 text-sm leading-6 text-red-900">{carRentalConnectorProhibitedFields.join(" · ").replaceAll("_", " ")}</p></article>
+          </div>
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            {namedConnectors.gates.map((gate, index) => (
+              <article key={gate.id} className="rounded-2xl border border-sky-200 bg-white p-5">
+                <div className="flex items-start gap-3">
+                  <Circle className="mt-0.5 h-5 w-5 shrink-0 text-sky-500" />
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[.14em] text-slate-400">Connector gate {index + 1} · {gate.owner}</p>
+                    <h3 className="mt-1 font-semibold text-slate-950">{gate.label}</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{gate.detail}</p>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
 
         <section className="mt-10">
           <div className="flex items-center gap-3"><Workflow className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Phase 12 controlled launch readiness</p></div>
@@ -858,7 +907,7 @@ export default function AdminCarsPage() {
 
         <section className="mt-12 rounded-2xl border border-red-300 bg-red-50 p-6">
           <div className="flex items-center gap-3 text-red-950"><KeyRound className="h-5 w-5" /><h2 className="text-lg font-bold">Runtime hard stop</h2></div>
-          <p className="mt-3 max-w-4xl text-sm leading-6 text-red-900">No supplier has been researched, selected, contacted, or connected. No provider mapping, account, live endpoint, credential request, credential receipt, credential material, socket, job, queue, webhook receiver, external request, sandbox connection, sandbox certification, controlled pilot, monitoring activation, rollback execution, Preview deployment, or Production traffic exists. Both application and database traffic kill switches remain engaged. No processor, counter, roadside provider, insurer, claims service, police service, emergency service, medical service, or traveler is contacted or connected. No live support case is opened. No roadside or emergency assistance is dispatched. No vehicle is sourced, replaced, assigned, or upgraded. No damage claim is filed, accepted, denied, priced, or settled. No live reservation is created, confirmed, modified, cancelled, marked no-show, picked up, extended, returned, or refunded. No payment card, bank account, payment token, billing identity, raw reference, traveler identity, license, vehicle identifier, precise location, medical information, accident narrative, police report, insurance policy, raw request, raw response, raw webhook payload, raw observability log, pilot-participant identity, reviewer identity, Production approval, or credential data is collected. No personal driver data is collected or verified. No collection, capture, deposit, authorization hold, refund, chargeback, receipt, tax, fraud, claim, or money-movement action occurs. No supplier inventory, quote, or policy is ingested or repriced. Supplier or service research or contact, contracts, accounts, credentials, external verification or traffic, actual sandbox certification, live pilot, live inventory, rates, policies, eligibility decisions, support operations, reservations, payment activity, refunds, migrations, deployment, and Production changes remain outside Phase 12 and require separate approval.</p>
+          <p className="mt-3 max-w-4xl text-sm leading-6 text-red-900">Sabre, Travelport, and one generic aggregator connector now exist only as disabled local software contracts. No car-rental supplier has been commercially selected, contacted, provisioned, certified, or connected. No provider mapping, account, live endpoint, credential request, credential receipt, credential material, socket, job, queue, webhook receiver, external request, sandbox connection, sandbox certification, controlled pilot, monitoring activation, rollback execution, Preview deployment, or Production traffic exists. Both application and database traffic kill switches remain engaged. No processor, counter, roadside provider, insurer, claims service, police service, emergency service, medical service, or traveler is contacted or connected. No live support case is opened. No roadside or emergency assistance is dispatched. No vehicle is sourced, replaced, assigned, or upgraded. No damage claim is filed, accepted, denied, priced, or settled. No live reservation is created, confirmed, modified, cancelled, marked no-show, picked up, extended, returned, or refunded. No payment card, bank account, payment token, billing identity, raw reference, traveler identity, license, vehicle identifier, precise location, medical information, accident narrative, police report, insurance policy, raw request, raw response, raw webhook payload, raw observability log, pilot-participant identity, reviewer identity, Production approval, or credential data is collected. No personal driver data is collected or verified. No collection, capture, deposit, authorization hold, refund, chargeback, receipt, tax, fraud, claim, or money-movement action occurs. No supplier inventory, quote, or policy is ingested or repriced. Supplier or service contact, contracts, accounts, credentials, provider capability verification, external traffic, actual sandbox certification, live pilot, live inventory, rates, policies, eligibility decisions, support operations, reservations, payment activity, refunds, migrations, deployment, and Production changes remain outside this local connector preparation and require separate approval.</p>
         </section>
       </div>
     </DashboardShell>
