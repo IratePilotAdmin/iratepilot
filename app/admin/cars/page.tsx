@@ -3,6 +3,20 @@ import { Accessibility, BriefcaseBusiness, Building2, Calculator, Car, CheckCirc
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { adminNavigation } from "@/data/navigation";
 import {
+  buildCarRentalControlledLaunchPlan,
+  carRentalControlledLaunchContracts,
+  carRentalControlledLaunchProhibitedFields,
+  carRentalControlledLaunchRecordedFields,
+  carRentalControlledLaunchResultStates,
+  carRentalIndependentReleaseReviewStates,
+  carRentalLimitedPilotControlStates,
+  carRentalObservabilityReadinessStates,
+  carRentalPreviewAcceptanceStates,
+  carRentalProductionDecisionStates,
+  carRentalRollbackReadinessStates,
+  carRentalSandboxEvidenceStates,
+} from "@/lib/cars/controlled-launch-readiness";
+import {
   buildCarRentalCommercialCompliancePlan,
   carRentalAccessibilityReadinessStates,
   carRentalCommercialAgreementStates,
@@ -112,11 +126,12 @@ import {
 } from "@/lib/cars/supplier-readiness";
 
 export const metadata: Metadata = {
-  title: "Car Rentals commercial and compliance readiness | iRatePilot Admin",
-  description: "Read-only, provider-neutral car-rental commercial, compliance, adapter, operations, support, payment, risk, reservation, privacy, pricing, policy, and inventory contracts.",
+  title: "Car Rentals controlled launch readiness | iRatePilot Admin",
+  description: "Read-only, provider-neutral car-rental controlled-launch, commercial, compliance, adapter, operations, support, payment, risk, reservation, privacy, pricing, policy, and inventory contracts.",
 };
 
 export default function AdminCarsPage() {
+  const controlledLaunch = buildCarRentalControlledLaunchPlan();
   const commercialCompliance = buildCarRentalCommercialCompliancePlan();
   const adapterCertification = buildCarRentalProviderAdapterPlan();
   const operationsSupport = buildCarRentalOperationsSupportPlan();
@@ -131,19 +146,80 @@ export default function AdminCarsPage() {
   return (
     <DashboardShell title="Admin Console" items={adminNavigation}>
       <div className="mx-auto max-w-7xl">
-        <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Car Rentals · Phase 11</p>
+        <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Car Rentals · Phase 12</p>
         <div className="mt-2 grid gap-6 lg:grid-cols-[1fr_320px] lg:items-end">
           <div>
-            <h1 className="text-3xl font-bold text-slate-950">Commercial and compliance readiness workspace</h1>
-            <p className="mt-3 max-w-3xl leading-7 text-slate-600">Review provider-neutral, offline-only contracts for agreement readiness, commission or markup structure, consumer disclosures, insurance and protection wording, accessibility, consumer-law controls, support ownership, service levels, and incident response. Every record is sanitized and synthetic; no control contacts a supplier, executes a contract, provides legal advice, opens an account, accepts credentials, makes a reservation, issues a refund, moves money, or changes Production.</p>
+            <h1 className="text-3xl font-bold text-slate-950">Controlled launch readiness workspace</h1>
+            <p className="mt-3 max-w-3xl leading-7 text-slate-600">Review provider-neutral, offline-only contracts for isolated Preview acceptance, sandbox evidence, limited-pilot controls, observability, rollback, independent release review, and a separate Production decision. Every record is sanitized and synthetic; no control deploys, connects to a supplier, opens traffic, starts a pilot, changes a reservation, issues a refund, moves money, migrates data, or changes Production.</p>
           </div>
           <div className="rounded-2xl border border-amber-300 bg-amber-50 p-5">
             <div className="flex items-center gap-3 text-amber-950"><ShieldAlert className="h-5 w-5" /><strong>Offline readiness design only</strong></div>
-            <p className="mt-2 text-sm leading-6 text-amber-900">{commercialCompliance.completedCount} of {commercialCompliance.totalCount} gates recorded. No supplier action, contract execution, legal representation, account, credential, traffic, reservation, refund, payment, migration, or Production authority is enabled.</p>
+            <p className="mt-2 text-sm leading-6 text-amber-900">{controlledLaunch.completedCount} of {controlledLaunch.totalCount} gates recorded. No commit, push, deployment, supplier action, account, credential, traffic, live pilot, reservation, refund, payment, migration, or Production authority is enabled.</p>
           </div>
         </div>
 
         <section className="mt-10">
+          <div className="flex items-center gap-3"><Workflow className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Phase 12 controlled launch readiness</p></div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">Seven provider-neutral controlled-launch contracts</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Each contract validates minimized offline-fixture evidence only. A structurally valid record remains an internal release-design artifact and never becomes a Preview deployment, sandbox connection, supplier certification, live pilot, monitoring activation, rollback execution, reservation, refund, payment, migration, or Production approval.</p>
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            {carRentalControlledLaunchContracts.map((contract) => (
+              <article key={contract.id} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="font-semibold text-slate-950">{contract.label}</h3>
+                <p className="mt-3 text-sm leading-6 text-slate-600">{contract.validationRule}</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {contract.requiredFields.map((field) => <span key={field} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">{field}</span>)}
+                </div>
+                <p className="mt-4 border-t border-slate-100 pt-4 text-sm leading-6 text-slate-500"><strong className="text-slate-700">Boundary:</strong> {contract.safetyBoundary}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-12">
+          <div className="flex items-center gap-3"><History className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Controlled launch-readiness evidence</p></div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">Explicit acceptance, evidence, pilot, monitoring, rollback, review, and Production states</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Controlled labels, digest-only evidence, and two engaged traffic kill switches fail closed without supplier identities, endpoints, credentials, raw payloads or logs, travelers, drivers, payment data, precise locations, pilot participants, reviewer identities, live references, or Production approval.</p>
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Preview and sandbox</h3><p className="mt-3 text-sm leading-6 text-slate-300">Preview: {carRentalPreviewAcceptanceStates.join(" · ").replaceAll("_", " ")}<br />Sandbox: {carRentalSandboxEvidenceStates.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Pilot and observability</h3><p className="mt-3 text-sm leading-6 text-slate-300">Pilot: {carRentalLimitedPilotControlStates.join(" · ").replaceAll("_", " ")}<br />Observability: {carRentalObservabilityReadinessStates.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Rollback and review</h3><p className="mt-3 text-sm leading-6 text-slate-300">Rollback: {carRentalRollbackReadinessStates.join(" · ").replaceAll("_", " ")}<br />Review: {carRentalIndependentReleaseReviewStates.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Production boundary</h3><p className="mt-3 text-sm leading-6 text-slate-300">Decision: {carRentalProductionDecisionStates.join(" · ").replaceAll("_", " ")}<br />Result: {carRentalControlledLaunchResultStates.join(" · ").replaceAll("_", " ")}</p></article>
+          </div>
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            <article className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
+              <h3 className="font-semibold text-emerald-950">Minimized controlled-launch field allowlist</h3>
+              <p className="mt-3 text-sm leading-6 text-emerald-900">{carRentalControlledLaunchRecordedFields.join(" · ").replaceAll("_", " ")}</p>
+            </article>
+            <article className="rounded-2xl border border-red-200 bg-red-50 p-6">
+              <h3 className="font-semibold text-red-950">Prohibited supplier, credential, payload, identity, and release data</h3>
+              <p className="mt-3 text-sm leading-6 text-red-900">{carRentalControlledLaunchProhibitedFields.join(" · ").replaceAll("_", " ")}</p>
+            </article>
+          </div>
+        </section>
+
+        <section className="mt-12">
+          <div className="flex items-center gap-3"><ClipboardCheck className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Phase 12 contract gates</p></div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">Twelve separately owned controlled-launch gates</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Every gate starts incomplete. Completing the offline checklist cannot commit or push code, deploy Preview, select or contact a supplier, create an account, accept credentials, connect to a sandbox, enable traffic, start a pilot, activate monitoring, execute rollback, transact, migrate data, or authorize Production.</p>
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            {controlledLaunch.gates.map((gate, index) => (
+              <article key={gate.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <Circle className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[.14em] text-slate-400">Gate {index + 1} · {gate.owner}</p>
+                    <h3 className="mt-1 font-semibold text-slate-950">{gate.label}</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{gate.detail}</p>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-12 border-t border-slate-200 pt-12">
+          <p className="sr-only">Phase 11 commercial and compliance reference — Commercial and compliance readiness workspace</p>
           <div className="flex items-center gap-3"><BriefcaseBusiness className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Phase 11 commercial and compliance readiness</p></div>
           <h2 className="mt-2 text-2xl font-bold text-slate-950">Nine provider-neutral commercial and compliance contracts</h2>
           <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Each contract validates minimized offline-fixture evidence only. A structurally valid record remains an internal design artifact and never becomes a supplier relationship, executed agreement, pricing decision, insurance promise, legal opinion, support commitment, live incident, reservation, refund, payment, or Production release.</p>
@@ -782,7 +858,7 @@ export default function AdminCarsPage() {
 
         <section className="mt-12 rounded-2xl border border-red-300 bg-red-50 p-6">
           <div className="flex items-center gap-3 text-red-950"><KeyRound className="h-5 w-5" /><h2 className="text-lg font-bold">Runtime hard stop</h2></div>
-          <p className="mt-3 max-w-4xl text-sm leading-6 text-red-900">No supplier has been researched, selected, contacted, or connected. No provider mapping, account, live endpoint, credential request, credential receipt, credential material, socket, job, queue, webhook receiver, external request, sandbox connection, sandbox certification, or Production traffic exists. Both application and database traffic kill switches remain engaged. No processor, counter, roadside provider, insurer, claims service, police service, emergency service, medical service, or traveler is contacted or connected. No live support case is opened. No roadside or emergency assistance is dispatched. No vehicle is sourced, replaced, assigned, or upgraded. No damage claim is filed, accepted, denied, priced, or settled. No live reservation is created, confirmed, modified, cancelled, marked no-show, picked up, extended, returned, or refunded. No payment card, bank account, payment token, billing identity, raw reference, traveler identity, license, vehicle identifier, precise location, medical information, accident narrative, police report, insurance policy, raw request, raw response, raw webhook payload, or credential data is collected. No personal driver data is collected or verified. No collection, capture, deposit, authorization hold, refund, chargeback, receipt, tax, fraud, claim, or money-movement action occurs. No supplier inventory, quote, or policy is ingested or repriced. Supplier or service research or contact, contracts, accounts, credentials, external verification or traffic, actual sandbox certification, live inventory, rates, policies, eligibility decisions, support operations, reservations, payment activity, refunds, migrations, deployment, and Production changes remain outside Phase 11 and require separate approval.</p>
+          <p className="mt-3 max-w-4xl text-sm leading-6 text-red-900">No supplier has been researched, selected, contacted, or connected. No provider mapping, account, live endpoint, credential request, credential receipt, credential material, socket, job, queue, webhook receiver, external request, sandbox connection, sandbox certification, controlled pilot, monitoring activation, rollback execution, Preview deployment, or Production traffic exists. Both application and database traffic kill switches remain engaged. No processor, counter, roadside provider, insurer, claims service, police service, emergency service, medical service, or traveler is contacted or connected. No live support case is opened. No roadside or emergency assistance is dispatched. No vehicle is sourced, replaced, assigned, or upgraded. No damage claim is filed, accepted, denied, priced, or settled. No live reservation is created, confirmed, modified, cancelled, marked no-show, picked up, extended, returned, or refunded. No payment card, bank account, payment token, billing identity, raw reference, traveler identity, license, vehicle identifier, precise location, medical information, accident narrative, police report, insurance policy, raw request, raw response, raw webhook payload, raw observability log, pilot-participant identity, reviewer identity, Production approval, or credential data is collected. No personal driver data is collected or verified. No collection, capture, deposit, authorization hold, refund, chargeback, receipt, tax, fraud, claim, or money-movement action occurs. No supplier inventory, quote, or policy is ingested or repriced. Supplier or service research or contact, contracts, accounts, credentials, external verification or traffic, actual sandbox certification, live pilot, live inventory, rates, policies, eligibility decisions, support operations, reservations, payment activity, refunds, migrations, deployment, and Production changes remain outside Phase 12 and require separate approval.</p>
         </section>
       </div>
     </DashboardShell>

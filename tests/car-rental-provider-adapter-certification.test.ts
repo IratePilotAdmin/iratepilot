@@ -204,15 +204,15 @@ describe("car-rental provider adapter and sandbox certification phase 10", () =>
     expect(evidence).toContain("088637df4ebb6ffd697048749e55a86a48d1db63");
     expect(phaseNine).toContain("evidence publication complete");
     expect(phaseTen).toContain("Provider Adapter and Sandbox Certification");
-    expect(packageRoadmap).toContain("Phases 1–10 released, accepted, and documented");
-    expect(packageRoadmap).toContain("Phase 11 software is verified locally with release pending");
+    expect(packageRoadmap).toContain("Phases 1–11 released, accepted, and documented");
+    expect(packageRoadmap).toContain("Phase 12 software is verified locally with release pending");
   });
 
   it("keeps the administrator workspace read-only, network-free, and explicit about Phase 10", () => {
     const page = read("app/admin/cars/page.tsx");
     const roadmap = read("docs/ROADMAP.md");
 
-    expect(page).toContain("Car Rentals · Phase 11");
+    expect(page).toContain("Car Rentals · Phase 12");
     expect(page).toContain("Phase 10 provider adapter certification reference");
     expect(page).toContain("Provider adapter and sandbox certification workspace");
     expect(page).toContain("Nine provider-neutral offline adapter contracts");
