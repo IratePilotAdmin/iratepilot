@@ -282,7 +282,7 @@ describe("car-rental reservation lifecycle phase 7", () => {
     const packageRoadmap = read("docs/CAR_RENTALS_ROADMAP.md");
     const roadmap = read("docs/ROADMAP.md");
 
-    expect(page).toContain("Car Rentals · Phase 10");
+    expect(page).toContain("Car Rentals · Phase 11");
     expect(page).toContain("Reservation lifecycle safety workspace");
     expect(page).toContain("Eleven provider-neutral reservation lifecycle contracts");
     expect(page).toContain("Twelve separately owned reservation lifecycle gates");

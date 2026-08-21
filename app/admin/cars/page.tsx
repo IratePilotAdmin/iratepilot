@@ -1,7 +1,23 @@
 import type { Metadata } from "next";
-import { Accessibility, Building2, Calculator, Car, CheckCircle2, Circle, ClipboardCheck, Database, Fuel, GitCompareArrows, History, KeyRound, Network, ReceiptText, ShieldAlert, UserCheck, Workflow } from "lucide-react";
+import { Accessibility, BriefcaseBusiness, Building2, Calculator, Car, CheckCircle2, Circle, ClipboardCheck, Database, Fuel, GitCompareArrows, History, KeyRound, Network, ReceiptText, Scale, ShieldAlert, UserCheck, Workflow } from "lucide-react";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { adminNavigation } from "@/data/navigation";
+import {
+  buildCarRentalCommercialCompliancePlan,
+  carRentalAccessibilityReadinessStates,
+  carRentalCommercialAgreementStates,
+  carRentalCommercialComplianceContracts,
+  carRentalCommercialReadinessProhibitedFields,
+  carRentalCommercialReadinessRecordedFields,
+  carRentalCommercialReadinessResultStates,
+  carRentalCompensationModels,
+  carRentalConsumerLawReviewStates,
+  carRentalDisclosureStates,
+  carRentalIncidentResponseStates,
+  carRentalProtectionWordingStates,
+  carRentalServiceLevelStates,
+  carRentalSupportOwnershipStates,
+} from "@/lib/cars/commercial-compliance-readiness";
 import {
   buildCarRentalDriverPrivacyPlan,
   carRentalDeletionStates,
@@ -96,11 +112,12 @@ import {
 } from "@/lib/cars/supplier-readiness";
 
 export const metadata: Metadata = {
-  title: "Car Rentals provider adapter certification | iRatePilot Admin",
-  description: "Read-only, provider-neutral car-rental adapter, offline certification, operations, support, payment, risk, reservation lifecycle, driver-eligibility, privacy, quote, pricing, policy, and inventory contracts.",
+  title: "Car Rentals commercial and compliance readiness | iRatePilot Admin",
+  description: "Read-only, provider-neutral car-rental commercial, compliance, adapter, operations, support, payment, risk, reservation, privacy, pricing, policy, and inventory contracts.",
 };
 
 export default function AdminCarsPage() {
+  const commercialCompliance = buildCarRentalCommercialCompliancePlan();
   const adapterCertification = buildCarRentalProviderAdapterPlan();
   const operationsSupport = buildCarRentalOperationsSupportPlan();
   const paymentRisk = buildCarRentalPaymentRiskPlan();
@@ -114,19 +131,81 @@ export default function AdminCarsPage() {
   return (
     <DashboardShell title="Admin Console" items={adminNavigation}>
       <div className="mx-auto max-w-7xl">
-        <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Car Rentals · Phase 10</p>
+        <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Car Rentals · Phase 11</p>
         <div className="mt-2 grid gap-6 lg:grid-cols-[1fr_320px] lg:items-end">
           <div>
-            <h1 className="text-3xl font-bold text-slate-950">Provider adapter and sandbox certification workspace</h1>
-            <p className="mt-3 max-w-3xl leading-7 text-slate-600">Review provider-neutral, offline-only contracts for adapter identity, operation allowlisting, non-secret scope labels, idempotency, retries, timeouts, webhook fixtures, audit evidence, and dual fail-closed kill switches. Every record is sanitized and synthetic; no control selects or contacts a supplier, accepts credentials, opens a connection, certifies a sandbox, changes a reservation, issues a refund, or moves money.</p>
+            <h1 className="text-3xl font-bold text-slate-950">Commercial and compliance readiness workspace</h1>
+            <p className="mt-3 max-w-3xl leading-7 text-slate-600">Review provider-neutral, offline-only contracts for agreement readiness, commission or markup structure, consumer disclosures, insurance and protection wording, accessibility, consumer-law controls, support ownership, service levels, and incident response. Every record is sanitized and synthetic; no control contacts a supplier, executes a contract, provides legal advice, opens an account, accepts credentials, makes a reservation, issues a refund, moves money, or changes Production.</p>
           </div>
           <div className="rounded-2xl border border-amber-300 bg-amber-50 p-5">
-            <div className="flex items-center gap-3 text-amber-950"><ShieldAlert className="h-5 w-5" /><strong>Offline adapter design only</strong></div>
-            <p className="mt-2 text-sm leading-6 text-amber-900">{adapterCertification.completedCount} of {adapterCertification.totalCount} gates recorded. No provider, account, credential, endpoint, external traffic, webhook receiver, sandbox certification, reservation mutation, refund, payment, or runtime authority is enabled.</p>
+            <div className="flex items-center gap-3 text-amber-950"><ShieldAlert className="h-5 w-5" /><strong>Offline readiness design only</strong></div>
+            <p className="mt-2 text-sm leading-6 text-amber-900">{commercialCompliance.completedCount} of {commercialCompliance.totalCount} gates recorded. No supplier action, contract execution, legal representation, account, credential, traffic, reservation, refund, payment, migration, or Production authority is enabled.</p>
           </div>
         </div>
 
         <section className="mt-10">
+          <div className="flex items-center gap-3"><BriefcaseBusiness className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Phase 11 commercial and compliance readiness</p></div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">Nine provider-neutral commercial and compliance contracts</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Each contract validates minimized offline-fixture evidence only. A structurally valid record remains an internal design artifact and never becomes a supplier relationship, executed agreement, pricing decision, insurance promise, legal opinion, support commitment, live incident, reservation, refund, payment, or Production release.</p>
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            {carRentalCommercialComplianceContracts.map((contract) => (
+              <article key={contract.id} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="font-semibold text-slate-950">{contract.label}</h3>
+                <p className="mt-3 text-sm leading-6 text-slate-600">{contract.validationRule}</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {contract.requiredFields.map((field) => <span key={field} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">{field}</span>)}
+                </div>
+                <p className="mt-4 border-t border-slate-100 pt-4 text-sm leading-6 text-slate-500"><strong className="text-slate-700">Boundary:</strong> {contract.safetyBoundary}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-12">
+          <div className="flex items-center gap-3"><Scale className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Controlled commercial-readiness evidence</p></div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">Explicit terms, disclosure, ownership, SLA, and incident states</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Controlled labels and digest-only evidence fail closed without provider identities, counterparties, signed terms, percentages, amounts, customer or driver data, payment details, credentials, legal advice, insurance documents, claims, precise locations, or live references.</p>
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Agreement and compensation</h3><p className="mt-3 text-sm leading-6 text-slate-300">Agreement: {carRentalCommercialAgreementStates.join(" · ").replaceAll("_", " ")}<br />Model: {carRentalCompensationModels.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Disclosures and protection</h3><p className="mt-3 text-sm leading-6 text-slate-300">Disclosure: {carRentalDisclosureStates.join(" · ").replaceAll("_", " ")}<br />Protection: {carRentalProtectionWordingStates.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Accessibility and consumer law</h3><p className="mt-3 text-sm leading-6 text-slate-300">Accessibility: {carRentalAccessibilityReadinessStates.join(" · ").replaceAll("_", " ")}<br />Consumer law: {carRentalConsumerLawReviewStates.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Support and response</h3><p className="mt-3 text-sm leading-6 text-slate-300">Ownership: {carRentalSupportOwnershipStates.join(" · ").replaceAll("_", " ")}<br />SLA: {carRentalServiceLevelStates.join(" · ").replaceAll("_", " ")}<br />Incident: {carRentalIncidentResponseStates.join(" · ").replaceAll("_", " ")}</p></article>
+          </div>
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            <article className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
+              <h3 className="font-semibold text-emerald-950">Minimized commercial-readiness field allowlist</h3>
+              <p className="mt-3 text-sm leading-6 text-emerald-900">{carRentalCommercialReadinessRecordedFields.join(" · ").replaceAll("_", " ")}</p>
+              <p className="mt-3 text-sm leading-6 text-emerald-900">Result states: {carRentalCommercialReadinessResultStates.join(" · ").replaceAll("_", " ")}</p>
+            </article>
+            <article className="rounded-2xl border border-red-200 bg-red-50 p-6">
+              <h3 className="font-semibold text-red-950">Prohibited commercial, legal, payment, and sensitive data</h3>
+              <p className="mt-3 text-sm leading-6 text-red-900">{carRentalCommercialReadinessProhibitedFields.join(" · ").replaceAll("_", " ")}</p>
+            </article>
+          </div>
+        </section>
+
+        <section className="mt-12">
+          <div className="flex items-center gap-3"><ClipboardCheck className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Phase 11 contract gates</p></div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">Twelve separately owned commercial-readiness gates</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Every gate starts incomplete. Completing the offline checklist cannot research or contact a supplier, negotiate or execute a contract, set rates, publish disclosures, promise coverage, provide legal advice, file anything, staff support, bind an SLA, open an incident, accept credentials, enable traffic, transact, migrate data, or authorize Production.</p>
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            {commercialCompliance.gates.map((gate, index) => (
+              <article key={gate.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <Circle className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[.14em] text-slate-400">Gate {index + 1} · {gate.owner}</p>
+                    <h3 className="mt-1 font-semibold text-slate-950">{gate.label}</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{gate.detail}</p>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-12 border-t border-slate-200 pt-12">
+          <p className="sr-only">Phase 10 provider adapter certification reference — Provider adapter and sandbox certification workspace</p>
           <div className="flex items-center gap-3"><Network className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Phase 10 provider adapter and sandbox certification</p></div>
           <h2 className="mt-2 text-2xl font-bold text-slate-950">Nine provider-neutral offline adapter contracts</h2>
           <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Each contract validates minimized fixture evidence only. A structurally valid record remains an offline design artifact and never becomes a provider mapping, credential, network request, webhook receiver, sandbox result, reservation change, refund, payment, or Production release.</p>
