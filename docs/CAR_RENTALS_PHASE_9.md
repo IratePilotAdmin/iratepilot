@@ -2,7 +2,7 @@
 
 Prepared: August 21, 2026
 
-Status: **Software and repository verification complete locally; commit, push, deployment, supplier activity, support action, roadside or emergency action, claims, migrations, and Production remain pending**
+Status: **Software, private publication, isolated Preview deployment, and authenticated browser acceptance complete; evidence publication, supplier activity, support action, roadside or emergency action, claims, migrations, and Production remain pending**
 
 ## Purpose
 
@@ -68,10 +68,12 @@ The model always reports the following as false:
 
 ## Release gates
 
-- [ ] Commit the Phase 9 software and documentation only after separate approval.
-- [ ] Reconcile and push the approved private branch without force-push only after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/cars` and record evidence after separate approval.
+- [x] Commit the Phase 9 software and documentation after separate approval at `698bf3eaec38fbcec416d86c22342d8640e33c99`.
+- [x] Reconcile and publish the approved private branch with `force=false` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval as `dpl_3VS3ogNxcmeFNUaTaskt5Uyu5JTP`.
+- [x] Complete authenticated browser acceptance at `/admin/cars` and prepare evidence in `docs/CAR_RENTALS_PHASE_9_PREVIEW_EVIDENCE_2026-08-21.md`.
+
+Preview evidence publication remains a separate commit-and-private-push gate.
 
 ## External activation gates
 
@@ -80,4 +82,4 @@ The model always reports the following as false:
 - [ ] Certify pickup-failure, counter-dispute, class-substitution, upgrade, breakdown, accident, roadside, damage-claim, emergency, privacy, security, audit, support, and incident behavior separately.
 - [ ] Approve migrations, deployment, and Production through their own later gates.
 
-No release, supplier, support, roadside, insurer, claims, police, emergency, reservation, refund, payment, migration, deployment, or Production authority is created by this document.
+The completed isolated Preview release creates no supplier, support, roadside, insurer, claims, police, emergency, reservation, refund, payment, migration, or Production authority.

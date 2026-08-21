@@ -697,7 +697,7 @@ The Flights Phase 21 Duffel provider-contact closeout and no-reply boundary is r
 
 ## Phase 7 — Car-rental complete package
 
-Status: **Phases 1–8 released, accepted, and documented in isolated Preview; Phase 9 software is verified locally with release pending; supplier connectivity, support action, reservations, payment activity, and Production remain pending**
+Status: **Phases 1–9 released and accepted in isolated Preview; Phase 9 evidence publication and Phases 10–12 remain pending; supplier connectivity, support action, reservations, payment activity, and Production remain pending**
 
 Phase 1 adds a supplier-offline consumer planning surface at `/cars`. Travelers can validate pickup and return locations, dates, times, a driver age range, and a vehicle class without contacting a rental company or displaying vehicles, rates, taxes, fees, protection products, availability, or reservations.
 
@@ -861,10 +861,10 @@ Phase 9 operations and customer-support software gates:
 
 Phase 9 release gates:
 
-- [ ] Commit and reconcile the approved laptop changes only after separate approval.
-- [ ] Push the approved private branch without force-push only after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/cars` and record evidence only after separate approval.
+- [x] Commit and reconcile the approved laptop changes after separate approval at `698bf3eaec38fbcec416d86c22342d8640e33c99`.
+- [x] Publish the approved private branch with `force=false` after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval as `dpl_3VS3ogNxcmeFNUaTaskt5Uyu5JTP`.
+- [x] Complete authenticated browser acceptance at `/admin/cars` and prepare evidence in `docs/CAR_RENTALS_PHASE_9_PREVIEW_EVIDENCE_2026-08-21.md`.
 
 External activation gates:
 
@@ -873,7 +873,7 @@ External activation gates:
 - [ ] Approve driver-data, eligibility, protection-product, deposit, payment, fraud, dispute, legal, accessibility, support, and incident-response procedures.
 - [ ] Make a separate Production decision before enabling supplier traffic, car-rental reservations, or payments.
 
-The Phase 1 boundary is recorded in `docs/CAR_RENTALS_PHASE_1.md`. The Phase 2 boundary is recorded in `docs/CAR_RENTALS_PHASE_2.md`. The Phase 3 software and fail-closed boundary are recorded in `docs/CAR_RENTALS_PHASE_3.md`. The Phase 4 software and fail-closed boundary are recorded in `docs/CAR_RENTALS_PHASE_4.md`. The Phase 5 software and fail-closed boundary are recorded in `docs/CAR_RENTALS_PHASE_5.md`. The Phase 6 software, fail-closed boundary, and isolated Preview evidence are recorded in `docs/CAR_RENTALS_PHASE_6.md` and `docs/CAR_RENTALS_PHASE_6_PREVIEW_EVIDENCE_2026-08-20.md`. The Phase 7 software, fail-closed boundary, and isolated Preview evidence are recorded in `docs/CAR_RENTALS_PHASE_7.md` and `docs/CAR_RENTALS_PHASE_7_PREVIEW_EVIDENCE_2026-08-21.md`. The Phase 8 software, fail-closed boundary, and isolated Preview evidence are recorded in `docs/CAR_RENTALS_PHASE_8.md` and `docs/CAR_RENTALS_PHASE_8_PREVIEW_EVIDENCE_2026-08-21.md`. The Phase 9 software and fail-closed boundary are recorded in `docs/CAR_RENTALS_PHASE_9.md`. The complete 12-phase commercial sequence is recorded in `docs/CAR_RENTALS_ROADMAP.md`. Phase 1 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_1_PREVIEW_EVIDENCE_2026-08-19.md`, Phase 2 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_2_PREVIEW_EVIDENCE_2026-08-20.md`, Phase 3 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_3_PREVIEW_EVIDENCE_2026-08-20.md`, Phase 4 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_4_PREVIEW_EVIDENCE_2026-08-20.md`, Phase 5 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_5_PREVIEW_EVIDENCE_2026-08-20.md`, Phase 6 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_6_PREVIEW_EVIDENCE_2026-08-20.md`, Phase 7 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_7_PREVIEW_EVIDENCE_2026-08-21.md`, and Phase 8 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_8_PREVIEW_EVIDENCE_2026-08-21.md`.
+The Phase 1 boundary is recorded in `docs/CAR_RENTALS_PHASE_1.md`. The Phase 2 boundary is recorded in `docs/CAR_RENTALS_PHASE_2.md`. The Phase 3 software and fail-closed boundary are recorded in `docs/CAR_RENTALS_PHASE_3.md`. The Phase 4 software and fail-closed boundary are recorded in `docs/CAR_RENTALS_PHASE_4.md`. The Phase 5 software and fail-closed boundary are recorded in `docs/CAR_RENTALS_PHASE_5.md`. The Phase 6 software, fail-closed boundary, and isolated Preview evidence are recorded in `docs/CAR_RENTALS_PHASE_6.md` and `docs/CAR_RENTALS_PHASE_6_PREVIEW_EVIDENCE_2026-08-20.md`. The Phase 7 software, fail-closed boundary, and isolated Preview evidence are recorded in `docs/CAR_RENTALS_PHASE_7.md` and `docs/CAR_RENTALS_PHASE_7_PREVIEW_EVIDENCE_2026-08-21.md`. The Phase 8 software, fail-closed boundary, and isolated Preview evidence are recorded in `docs/CAR_RENTALS_PHASE_8.md` and `docs/CAR_RENTALS_PHASE_8_PREVIEW_EVIDENCE_2026-08-21.md`. The Phase 9 software, fail-closed boundary, and prepared isolated Preview evidence are recorded in `docs/CAR_RENTALS_PHASE_9.md` and `docs/CAR_RENTALS_PHASE_9_PREVIEW_EVIDENCE_2026-08-21.md`. The complete 12-phase commercial sequence is recorded in `docs/CAR_RENTALS_ROADMAP.md`. Phase 1 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_1_PREVIEW_EVIDENCE_2026-08-19.md`, Phase 2 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_2_PREVIEW_EVIDENCE_2026-08-20.md`, Phase 3 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_3_PREVIEW_EVIDENCE_2026-08-20.md`, Phase 4 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_4_PREVIEW_EVIDENCE_2026-08-20.md`, Phase 5 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_5_PREVIEW_EVIDENCE_2026-08-20.md`, Phase 6 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_6_PREVIEW_EVIDENCE_2026-08-20.md`, Phase 7 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_7_PREVIEW_EVIDENCE_2026-08-21.md`, Phase 8 isolated Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_8_PREVIEW_EVIDENCE_2026-08-21.md`, and Phase 9 isolated Preview evidence is prepared locally in `docs/CAR_RENTALS_PHASE_9_PREVIEW_EVIDENCE_2026-08-21.md`.
 
 ## Overall completion rule
 
