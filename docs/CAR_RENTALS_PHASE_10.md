@@ -2,7 +2,7 @@
 
 Prepared: August 21, 2026
 
-Status: **Software and repository verification complete locally; commit, push, deployment, supplier research or contact, accounts, credentials, external traffic, actual sandbox certification, reservations, refunds, payments, migrations, and Production remain pending**
+Status: **Software, repository verification, private publication, isolated Preview deployment, authenticated browser acceptance, and evidence recording complete; supplier research or contact, accounts, credentials, external traffic, actual sandbox certification, reservations, refunds, payments, migrations, and Production remain pending**
 
 ## Purpose
 
@@ -68,10 +68,10 @@ The model always reports the following as false:
 
 ## Release gates
 
-- [ ] Commit the Phase 10 software and documentation only after separate approval.
-- [ ] Reconcile and push the approved private branch without force-push only after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/cars` and record evidence only after separate approval.
+- [x] Commit the Phase 10 software and documentation only after separate approval.
+- [x] Reconcile and push the approved private branch without force-push only after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval.
+- [x] Complete authenticated browser acceptance at `/admin/cars` and record evidence only after separate approval.
 
 ## External activation gates
 
@@ -79,5 +79,7 @@ The model always reports the following as false:
 - [ ] Approve a named provider mapping, least-privilege scopes, secrets handling, endpoint allowlist, egress policy, monitoring, incident response, and both kill-switch release decisions separately.
 - [ ] Connect to and certify an actual isolated supplier sandbox for locations, availability, quotes, repricing, reservation lifecycle, refunds, webhooks, retries, timeouts, idempotency, security, privacy, audit, support, and failure behavior separately.
 - [ ] Approve migrations, controlled pilot, deployment, and Production through their own later gates.
+
+The approved isolated Preview acceptance is recorded in `docs/CAR_RENTALS_PHASE_10_PREVIEW_EVIDENCE_2026-08-21.md`.
 
 No provider, credential, sandbox, webhook, traffic, reservation, refund, payment, migration, deployment, or Production authority is created by this document.
