@@ -258,7 +258,7 @@ describe("car-rental quote and reprice safety phase 5", () => {
 
   it("keeps the administrator workspace read-only, network-free, and explicit about the Phase 5 boundary", () => {
     const page = read("app/admin/cars/page.tsx");
-    expect(page).toContain("Car Rentals · Phase 6");
+    expect(page).toContain("Car Rentals · Phase 7");
     expect(page).toContain("Phase 5 quote and reprice safety");
     expect(page).toContain("Twelve separately owned quote and reprice gates");
     expect(page).toContain("No supplier quote is ingested or repriced");

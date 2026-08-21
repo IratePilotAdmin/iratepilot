@@ -171,7 +171,7 @@ describe("car-rental pricing and policy phase 4", () => {
 
   it("keeps the Phase 4 reference read-only and explicit inside the current administrator workspace", () => {
     const page = read("app/admin/cars/page.tsx");
-    expect(page).toContain("Car Rentals · Phase 6");
+    expect(page).toContain("Car Rentals · Phase 7");
     expect(page).toContain("Phase 4 pricing and policy reference");
     expect(page).toContain("Twelve separately owned pricing and policy gates");
     expect(page).toContain("No supplier quote is ingested");

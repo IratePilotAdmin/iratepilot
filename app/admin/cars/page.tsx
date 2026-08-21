@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Accessibility, Building2, Calculator, Car, CheckCircle2, Circle, ClipboardCheck, Database, Fuel, GitCompareArrows, KeyRound, Network, ReceiptText, ShieldAlert, UserCheck } from "lucide-react";
+import { Accessibility, Building2, Calculator, Car, CheckCircle2, Circle, ClipboardCheck, Database, Fuel, GitCompareArrows, History, KeyRound, Network, ReceiptText, ShieldAlert, UserCheck, Workflow } from "lucide-react";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { adminNavigation } from "@/data/navigation";
 import {
@@ -38,17 +38,28 @@ import {
   carRentalQuoteRepriceContracts,
 } from "@/lib/cars/quote-reprice";
 import {
+  buildCarRentalReservationLifecyclePlan,
+  carRentalReservationEventKinds,
+  carRentalReservationEventOutcomes,
+  carRentalReservationLifecycleContracts,
+  carRentalReservationLifecycleStates,
+  carRentalReservationProhibitedFields,
+  carRentalReservationRecordedFields,
+  carRentalSupplierReferenceStates,
+} from "@/lib/cars/reservation-lifecycle";
+import {
   buildCarRentalSupplierReadiness,
   carRentalCapabilityGroups,
   carRentalSupplierPaths,
 } from "@/lib/cars/supplier-readiness";
 
 export const metadata: Metadata = {
-  title: "Car Rentals driver eligibility and privacy | iRatePilot Admin",
-  description: "Read-only, provider-neutral car-rental driver-eligibility, privacy, quote, pricing, policy, and inventory contracts.",
+  title: "Car Rentals reservation lifecycle safety | iRatePilot Admin",
+  description: "Read-only, provider-neutral car-rental reservation lifecycle, driver-eligibility, privacy, quote, pricing, policy, and inventory contracts.",
 };
 
 export default function AdminCarsPage() {
+  const reservationLifecycle = buildCarRentalReservationLifecyclePlan();
   const driverPrivacy = buildCarRentalDriverPrivacyPlan();
   const quoteReprice = buildCarRentalQuoteRepricePlan();
   const pricingPolicy = buildCarRentalPricingPolicyPlan();
@@ -58,20 +69,94 @@ export default function AdminCarsPage() {
   return (
     <DashboardShell title="Admin Console" items={adminNavigation}>
       <div className="mx-auto max-w-7xl">
-        <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Car Rentals · Phase 6</p>
+        <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Car Rentals · Phase 7</p>
         <div className="mt-2 grid gap-6 lg:grid-cols-[1fr_320px] lg:items-end">
           <div>
-            <h1 className="text-3xl font-bold text-slate-950">Driver eligibility and privacy workspace</h1>
-            <p className="mt-3 max-w-3xl leading-7 text-slate-600">Review provider-neutral contracts for minimum age, license rules, residency, additional drivers, geographic restrictions, data minimization, retention, and deletion. No personal driver data is collected, no identity or license document is verified, and no eligibility result creates booking authority.</p>
+            <h1 className="text-3xl font-bold text-slate-950">Reservation lifecycle safety workspace</h1>
+            <p className="mt-3 max-w-3xl leading-7 text-slate-600">Review provider-neutral contracts for create, confirm, modify, cancel, no-show, pickup, extension, early return, late return, refund, and supplier-reference reconciliation. Every record is sanitized and synthetic; no event contacts a supplier, changes a reservation, or moves money.</p>
           </div>
           <div className="rounded-2xl border border-amber-300 bg-amber-50 p-5">
-            <div className="flex items-center gap-3 text-amber-950"><ShieldAlert className="h-5 w-5" /><strong>Eligibility and privacy design only</strong></div>
-            <p className="mt-2 text-sm leading-6 text-amber-900">{driverPrivacy.completedCount} of {driverPrivacy.totalCount} gates recorded. No personal data is collected or verified, and every runtime authority remains disabled.</p>
+            <div className="flex items-center gap-3 text-amber-950"><ShieldAlert className="h-5 w-5" /><strong>Reservation lifecycle design only</strong></div>
+            <p className="mt-2 text-sm leading-6 text-amber-900">{reservationLifecycle.completedCount} of {reservationLifecycle.totalCount} gates recorded. No supplier request, reservation, refund, payment, or runtime authority is enabled.</p>
           </div>
         </div>
 
         <section className="mt-10">
+          <div className="flex items-center gap-3"><Workflow className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Phase 7 reservation lifecycle safety</p></div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">Eleven provider-neutral reservation lifecycle contracts</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Each contract validates an append-only sanitized timeline and explicit outcomes. A structurally valid fixture remains a local design artifact and never becomes a supplier reservation, modification, cancellation, refund, or confirmation.</p>
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            {carRentalReservationLifecycleContracts.map((contract) => (
+              <article key={contract.id} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="font-semibold text-slate-950">{contract.label}</h3>
+                <p className="mt-3 text-sm leading-6 text-slate-600">{contract.validationRule}</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {contract.requiredFields.map((field) => <span key={field} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">{field}</span>)}
+                </div>
+                <p className="mt-4 border-t border-slate-100 pt-4 text-sm leading-6 text-slate-500"><strong className="text-slate-700">Boundary:</strong> {contract.safetyBoundary}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-12">
+          <div className="flex items-center gap-3"><History className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Controlled lifecycle evidence</p></div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">Append-only states, outcomes, and minimized fields</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Strictly ordered UTC events, unique request fingerprints, exact integer-minor-unit refund bounds, and digest-only reconciliation fail closed without storing raw supplier references or traveler, license, credential, or payment data.</p>
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <article className="rounded-2xl bg-slate-950 p-6 text-white">
+              <h3 className="font-semibold">Lifecycle states</h3>
+              <p className="mt-3 text-sm leading-6 text-slate-300">{carRentalReservationLifecycleStates.join(" · ").replaceAll("_", " ")}</p>
+            </article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white">
+              <h3 className="font-semibold">Event kinds</h3>
+              <p className="mt-3 text-sm leading-6 text-slate-300">{carRentalReservationEventKinds.join(" · ").replaceAll("_", " ")}</p>
+            </article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white">
+              <h3 className="font-semibold">Event outcomes</h3>
+              <p className="mt-3 text-sm leading-6 text-slate-300">{carRentalReservationEventOutcomes.join(" · ").replaceAll("_", " ")}</p>
+            </article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white">
+              <h3 className="font-semibold">Reference reconciliation</h3>
+              <p className="mt-3 text-sm leading-6 text-slate-300">{carRentalSupplierReferenceStates.join(" · ").replaceAll("_", " ")}</p>
+            </article>
+          </div>
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            <article className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
+              <h3 className="font-semibold text-emerald-950">Minimized lifecycle field allowlist</h3>
+              <p className="mt-3 text-sm leading-6 text-emerald-900">{carRentalReservationRecordedFields.join(" · ").replaceAll("_", " ")}</p>
+            </article>
+            <article className="rounded-2xl border border-red-200 bg-red-50 p-6">
+              <h3 className="font-semibold text-red-950">Prohibited lifecycle data</h3>
+              <p className="mt-3 text-sm leading-6 text-red-900">{carRentalReservationProhibitedFields.join(" · ").replaceAll("_", " ")}</p>
+            </article>
+          </div>
+        </section>
+
+        <section className="mt-12">
+          <div className="flex items-center gap-3"><ClipboardCheck className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Phase 7 contract gates</p></div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">Twelve separately owned reservation lifecycle gates</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Every gate starts incomplete. Completing the design checklist cannot contact a supplier, create or change a reservation, record a live pickup or return, issue a refund, enable traffic, or authorize payment.</p>
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            {reservationLifecycle.gates.map((gate, index) => (
+              <article key={gate.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <Circle className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[.14em] text-slate-400">Gate {index + 1} · {gate.owner}</p>
+                    <h3 className="mt-1 font-semibold text-slate-950">{gate.label}</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{gate.detail}</p>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-12 border-t border-slate-200 pt-12">
           <div className="flex items-center gap-3"><UserCheck className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Phase 6 driver eligibility and privacy</p></div>
+          <p className="sr-only">Phase 6 driver eligibility and privacy reference</p>
+          <p className="sr-only">Driver eligibility and privacy workspace</p>
           <h2 className="mt-2 text-2xl font-bold text-slate-950">Eight provider-neutral eligibility and privacy contracts</h2>
           <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Each contract validates sanitized rule metadata and explicit outcomes without collecting real identity, license, address, contact, or biometric data. A structurally valid fixture remains non-transactional and never becomes a supplier eligibility decision.</p>
           <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -380,7 +465,7 @@ export default function AdminCarsPage() {
 
         <section className="mt-12 rounded-2xl border border-red-300 bg-red-50 p-6">
           <div className="flex items-center gap-3 text-red-950"><KeyRound className="h-5 w-5" /><h2 className="text-lg font-bold">Runtime hard stop</h2></div>
-          <p className="mt-3 max-w-4xl text-sm leading-6 text-red-900">No supplier has been contacted or connected. No personal driver data is collected, no identity or license is verified, and no live eligibility decision is issued. No supplier inventory is ingested. No supplier quote is ingested or repriced. No provider mapping exists, and no live total price or policy acceptance is available. Supplier research or contact, accounts, contracts, credentials, external verification or traffic, live inventory, rates, policies, eligibility decisions, reservations, payments, database migrations, deployment, and Production changes remain outside Phase 6 and require separate approval.</p>
+          <p className="mt-3 max-w-4xl text-sm leading-6 text-red-900">No supplier has been contacted or connected. No live reservation is created, confirmed, modified, cancelled, marked no-show, picked up, extended, returned, or refunded. No raw supplier reference, traveler identity, license, credential, or payment data is collected. No personal driver data is collected or verified. No supplier inventory is ingested. No supplier quote is ingested or repriced. No provider mapping exists. Supplier research or contact, accounts, contracts, credentials, external verification or traffic, live inventory, rates, policies, eligibility decisions, reservations, refunds, payments, database migrations, deployment, and Production changes remain outside Phase 7 and require separate approval.</p>
         </section>
       </div>
     </DashboardShell>

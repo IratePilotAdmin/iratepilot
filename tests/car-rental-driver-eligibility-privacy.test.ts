@@ -285,7 +285,7 @@ describe("car-rental driver eligibility and privacy phase 6", () => {
     const packageRoadmap = read("docs/CAR_RENTALS_ROADMAP.md");
     const roadmap = read("docs/ROADMAP.md");
 
-    expect(page).toContain("Car Rentals · Phase 6");
+    expect(page).toContain("Car Rentals · Phase 7");
     expect(page).toContain("Driver eligibility and privacy workspace");
     expect(page).toContain("Eight provider-neutral eligibility and privacy contracts");
     expect(page).toContain("Twelve separately owned eligibility and privacy gates");
@@ -293,7 +293,7 @@ describe("car-rental driver eligibility and privacy phase 6", () => {
     expect(page).toContain("Phase 5 quote and reprice reference");
     expect(page).not.toMatch(/fetch\(|createClient\(|<form|<button|use server|use client/);
     expect(phase).toContain("Driver Eligibility and Privacy");
-    expect(packageRoadmap).toContain("Phase 6 software is verified locally with release pending");
+    expect(packageRoadmap).toContain("evidence publication at `84f8b3ebde9f7830fabde7af99199e0e122813e4` are complete");
     expect(roadmap).toContain("Phase 6 driver eligibility and privacy software gates");
   });
 });
