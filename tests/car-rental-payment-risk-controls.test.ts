@@ -231,14 +231,14 @@ describe("car-rental payment and risk controls phase 8", () => {
     const packageRoadmap = read("docs/CAR_RENTALS_ROADMAP.md");
     const roadmap = read("docs/ROADMAP.md");
 
-    expect(page).toContain("Car Rentals · Phase 8");
+    expect(page).toContain("Car Rentals · Phase 9");
     expect(page).toContain("Payment and risk controls workspace");
     expect(page).toContain("Nine provider-neutral payment and risk contracts");
     expect(page).toContain("Twelve separately owned payment and risk gates");
     expect(page).toContain("Phase 7 reservation lifecycle reference");
     expect(page).not.toMatch(/fetch\(|createClient\(|<form|<button|use server|use client/);
     expect(phase).toContain("Payment and Risk Controls");
-    expect(packageRoadmap).toContain("Phase 8 software is verified locally with release pending");
+    expect(packageRoadmap).toContain("Phases 1–8 released, accepted, and documented");
     expect(roadmap).toContain("Phase 8 payment and risk-control software gates");
   });
 });

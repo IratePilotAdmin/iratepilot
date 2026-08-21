@@ -2,7 +2,7 @@
 
 Prepared: August 21, 2026
 
-Status: **Software and repository verification complete locally; commit, push, deployment, supplier activity, payment activity, migrations, and Production remain pending**
+Status: **Software, commit, private publication, isolated Preview deployment, authenticated acceptance, and evidence are complete; supplier activity, processor activity, reservations, payment activity, migrations, and Production remain pending**
 
 ## Purpose
 
@@ -63,10 +63,10 @@ The model always reports the following as false:
 
 ## Release gates
 
-- [ ] Commit the Phase 8 software and documentation only after separate approval.
-- [ ] Reconcile and push the approved private branch without force-push only after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/cars` and record evidence after separate approval.
+- [x] Commit the Phase 8 software and documentation after separate approval at `437273d71d54132fe317cb35446e2d2b3566d45f`.
+- [x] Reconcile and push the approved private branch without force-push after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval as `dpl_GsRUHDzPK4h2w5PWseMDNqX5jvhK`.
+- [x] Complete authenticated browser acceptance at `/admin/cars` and record evidence in `docs/CAR_RENTALS_PHASE_8_PREVIEW_EVIDENCE_2026-08-21.md`.
 
 ## External activation gates
 

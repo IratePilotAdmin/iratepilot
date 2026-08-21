@@ -35,6 +35,22 @@ import {
   carRentalTaxDisclosureStates,
 } from "@/lib/cars/payment-risk-controls";
 import {
+  buildCarRentalOperationsSupportPlan,
+  carRentalCounterDisputeStates,
+  carRentalDamageClaimStates,
+  carRentalEmergencyEscalationStates,
+  carRentalOperationsCaseKinds,
+  carRentalOperationsCaseStates,
+  carRentalOperationsProhibitedFields,
+  carRentalOperationsRecordedFields,
+  carRentalOperationsSupportContracts,
+  carRentalOperationsUrgencies,
+  carRentalRoadsideAssistanceStates,
+  carRentalSupportOutcomes,
+  carRentalUpgradeStates,
+  carRentalVehicleClassResolutionStates,
+} from "@/lib/cars/operations-support";
+import {
   buildCarRentalPricingPolicyPlan,
   carRentalDepositStates,
   carRentalFuelChargingPolicyKinds,
@@ -68,11 +84,12 @@ import {
 } from "@/lib/cars/supplier-readiness";
 
 export const metadata: Metadata = {
-  title: "Car Rentals payment and risk controls | iRatePilot Admin",
-  description: "Read-only, provider-neutral car-rental payment, risk, reservation lifecycle, driver-eligibility, privacy, quote, pricing, policy, and inventory contracts.",
+  title: "Car Rentals operations and customer support | iRatePilot Admin",
+  description: "Read-only, provider-neutral car-rental operations, support, payment, risk, reservation lifecycle, driver-eligibility, privacy, quote, pricing, policy, and inventory contracts.",
 };
 
 export default function AdminCarsPage() {
+  const operationsSupport = buildCarRentalOperationsSupportPlan();
   const paymentRisk = buildCarRentalPaymentRiskPlan();
   const reservationLifecycle = buildCarRentalReservationLifecyclePlan();
   const driverPrivacy = buildCarRentalDriverPrivacyPlan();
@@ -84,19 +101,85 @@ export default function AdminCarsPage() {
   return (
     <DashboardShell title="Admin Console" items={adminNavigation}>
       <div className="mx-auto max-w-7xl">
-        <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Car Rentals · Phase 8</p>
+        <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Car Rentals · Phase 9</p>
         <div className="mt-2 grid gap-6 lg:grid-cols-[1fr_320px] lg:items-end">
           <div>
-            <h1 className="text-3xl font-bold text-slate-950">Payment and risk controls workspace</h1>
-            <p className="mt-3 max-w-3xl leading-7 text-slate-600">Review provider-neutral, non-transactional contracts for pay-now versus pay-at-counter, deposits, authorization holds, fraud, chargebacks, refunds, currency, taxes, and receipt accuracy. Every record is sanitized and synthetic; no control collects payment data, contacts a supplier or processor, or moves money.</p>
+            <h1 className="text-3xl font-bold text-slate-950">Operations and customer support workspace</h1>
+            <p className="mt-3 max-w-3xl leading-7 text-slate-600">Review provider-neutral, non-operational contracts for pickup failures, counter disputes, unavailable vehicle classes, upgrades, breakdowns, accidents, roadside assistance, damage claims, and emergency escalation. Every record is sanitized and synthetic; no control contacts a supplier or service, dispatches help, changes a reservation, files a claim, or moves money.</p>
           </div>
           <div className="rounded-2xl border border-amber-300 bg-amber-50 p-5">
-            <div className="flex items-center gap-3 text-amber-950"><ShieldAlert className="h-5 w-5" /><strong>Payment and risk design only</strong></div>
-            <p className="mt-2 text-sm leading-6 text-amber-900">{paymentRisk.completedCount} of {paymentRisk.totalCount} gates recorded. No supplier request, processor request, reservation, collection, capture, hold, deposit, refund, chargeback, or runtime authority is enabled.</p>
+            <div className="flex items-center gap-3 text-amber-950"><ShieldAlert className="h-5 w-5" /><strong>Operations and support design only</strong></div>
+            <p className="mt-2 text-sm leading-6 text-amber-900">{operationsSupport.completedCount} of {operationsSupport.totalCount} gates recorded. No supplier contact, support contact, roadside dispatch, emergency call, vehicle replacement, upgrade, claim, reservation change, refund, payment, or runtime authority is enabled.</p>
           </div>
         </div>
 
         <section className="mt-10">
+          <div className="flex items-center gap-3"><History className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Phase 9 operations and customer support</p></div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">Nine provider-neutral operations and support contracts</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Each contract validates minimized case evidence, exact UTC ordering, and explicit unresolved outcomes only. A structurally valid fixture remains a local design artifact and never becomes a supplier request, service dispatch, emergency call, vehicle assignment, claim, reservation change, refund, or payment.</p>
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            {carRentalOperationsSupportContracts.map((contract) => (
+              <article key={contract.id} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="font-semibold text-slate-950">{contract.label}</h3>
+                <p className="mt-3 text-sm leading-6 text-slate-600">{contract.validationRule}</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {contract.requiredFields.map((field) => <span key={field} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">{field}</span>)}
+                </div>
+                <p className="mt-4 border-t border-slate-100 pt-4 text-sm leading-6 text-slate-500"><strong className="text-slate-700">Boundary:</strong> {contract.safetyBoundary}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-12">
+          <div className="flex items-center gap-3"><Database className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Controlled case and escalation evidence</p></div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">Explicit outcomes, ordered timestamps, and minimized fields</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Case identity, UTC ordering, terminal evidence digests, and case-specific states fail closed without traveler, license, vehicle, precise-location, payment, medical, narrative, claim-document, supplier-reference, or credential data.</p>
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Case kinds</h3><p className="mt-3 text-sm leading-6 text-slate-300">{carRentalOperationsCaseKinds.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Case states</h3><p className="mt-3 text-sm leading-6 text-slate-300">{carRentalOperationsCaseStates.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Urgency</h3><p className="mt-3 text-sm leading-6 text-slate-300">{carRentalOperationsUrgencies.join(" · ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Support outcomes</h3><p className="mt-3 text-sm leading-6 text-slate-300">{carRentalSupportOutcomes.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Counter disputes</h3><p className="mt-3 text-sm leading-6 text-slate-300">{carRentalCounterDisputeStates.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Class and upgrades</h3><p className="mt-3 text-sm leading-6 text-slate-300">Class: {carRentalVehicleClassResolutionStates.join(" · ").replaceAll("_", " ")}<br />Upgrade: {carRentalUpgradeStates.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Roadside and damage</h3><p className="mt-3 text-sm leading-6 text-slate-300">Roadside: {carRentalRoadsideAssistanceStates.join(" · ").replaceAll("_", " ")}<br />Damage: {carRentalDamageClaimStates.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Emergency escalation</h3><p className="mt-3 text-sm leading-6 text-slate-300">{carRentalEmergencyEscalationStates.join(" · ").replaceAll("_", " ")}</p></article>
+          </div>
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            <article className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
+              <h3 className="font-semibold text-emerald-950">Minimized operations-support field allowlist</h3>
+              <p className="mt-3 text-sm leading-6 text-emerald-900">{carRentalOperationsRecordedFields.join(" · ").replaceAll("_", " ")}</p>
+            </article>
+            <article className="rounded-2xl border border-red-200 bg-red-50 p-6">
+              <h3 className="font-semibold text-red-950">Prohibited sensitive and operational data</h3>
+              <p className="mt-3 text-sm leading-6 text-red-900">{carRentalOperationsProhibitedFields.join(" · ").replaceAll("_", " ")}</p>
+            </article>
+          </div>
+        </section>
+
+        <section className="mt-12">
+          <div className="flex items-center gap-3"><ClipboardCheck className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Phase 9 contract gates</p></div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">Twelve separately owned operations and support gates</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Every gate starts incomplete. Completing the design checklist cannot contact a supplier or service, open a live support case, dispatch roadside or emergency assistance, replace a vehicle, fulfill an upgrade, submit a claim, change a reservation, issue a refund, move money, enable traffic, or authorize Production.</p>
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            {operationsSupport.gates.map((gate, index) => (
+              <article key={gate.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <Circle className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[.14em] text-slate-400">Gate {index + 1} · {gate.owner}</p>
+                    <h3 className="mt-1 font-semibold text-slate-950">{gate.label}</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{gate.detail}</p>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-12 border-t border-slate-200 pt-12">
+          <p className="sr-only">Phase 8 payment and risk reference</p>
+          <p className="sr-only">Payment and risk controls workspace</p>
           <div className="flex items-center gap-3"><Calculator className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Phase 8 payment and risk controls</p></div>
           <h2 className="mt-2 text-2xl font-bold text-slate-950">Nine provider-neutral payment and risk contracts</h2>
           <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Each contract validates sanitized accounting and control evidence only. A structurally valid fixture remains a local design artifact and never becomes a payment request, processor decision, supplier receipt, deposit, hold, refund, dispute, or reservation.</p>
@@ -546,7 +629,7 @@ export default function AdminCarsPage() {
 
         <section className="mt-12 rounded-2xl border border-red-300 bg-red-50 p-6">
           <div className="flex items-center gap-3 text-red-950"><KeyRound className="h-5 w-5" /><h2 className="text-lg font-bold">Runtime hard stop</h2></div>
-          <p className="mt-3 max-w-4xl text-sm leading-6 text-red-900">No supplier has been contacted or connected. No processor has been contacted or connected. No live reservation is created, confirmed, modified, cancelled, marked no-show, picked up, extended, returned, or refunded. No payment card, bank account, payment token, billing identity, raw reference, traveler identity, license, or credential data is collected. No personal driver data is collected or verified. No collection, capture, deposit, authorization hold, refund, chargeback, receipt, tax, fraud, or money-movement action occurs. No supplier inventory is ingested. No supplier quote is ingested or repriced. No provider mapping exists. Supplier or payment-provider research or contact, accounts, contracts, credentials, external verification or traffic, live inventory, rates, policies, eligibility decisions, reservations, payment activity, refunds, migrations, deployment, and Production changes remain outside Phase 8 and require separate approval.</p>
+          <p className="mt-3 max-w-4xl text-sm leading-6 text-red-900">No supplier has been contacted or connected. No processor has been contacted or connected. No counter, roadside provider, insurer, claims service, police service, emergency service, medical service, or traveler is contacted or connected. No live support case is opened. No roadside or emergency assistance is dispatched. No vehicle is sourced, replaced, assigned, or upgraded. No damage claim is filed, accepted, denied, priced, or settled. No live reservation is created, confirmed, modified, cancelled, marked no-show, picked up, extended, returned, or refunded. No payment card, bank account, payment token, billing identity, raw reference, traveler identity, license, vehicle identifier, precise location, medical information, accident narrative, police report, insurance policy, or credential data is collected. No personal driver data is collected or verified. No collection, capture, deposit, authorization hold, refund, chargeback, receipt, tax, fraud, claim, or money-movement action occurs. No supplier inventory is ingested. No supplier quote is ingested or repriced. No provider mapping exists. Supplier, payment-provider, roadside, insurance, claims, emergency, or support-provider research or contact, accounts, contracts, credentials, external verification or traffic, live inventory, rates, policies, eligibility decisions, support operations, reservations, payment activity, refunds, migrations, deployment, and Production changes remain outside Phase 9 and require separate approval.</p>
         </section>
       </div>
     </DashboardShell>
