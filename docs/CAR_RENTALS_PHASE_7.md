@@ -2,7 +2,7 @@
 
 Prepared: August 20, 2026
 
-Status: **Software implementation and full repository verification complete locally; every release or external-action gate remains pending**
+Status: **Software, private publication, isolated Preview deployment, and authenticated browser acceptance complete; evidence publication is approved and every external-action gate remains pending**
 
 ## Purpose
 
@@ -65,10 +65,10 @@ The model always reports the following as false:
 
 ## Release gates
 
-- [ ] Commit the Phase 7 software and documentation after separate approval.
-- [ ] Reconcile and push the approved private branch without force-push after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/cars` and record evidence after separate approval.
+- [x] Commit the Phase 7 software and documentation after separate approval at `ea22b4c933f68e6d5a6c7b9cbddd79b02c29eacd`.
+- [x] Reconcile and push the approved private branch without force-push after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval as `dpl_Dnxb9YWJgszvXpAiz9kzTwT7a9zu`.
+- [x] Complete authenticated browser acceptance at `/admin/cars` and record evidence after separate approval.
 
 ## External activation gates
 
