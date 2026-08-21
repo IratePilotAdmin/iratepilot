@@ -2,7 +2,7 @@
 
 Prepared: August 21, 2026
 
-Status: **Local implementation and repository verification complete; commit, private publication, isolated Preview deployment, authenticated acceptance, supplier action, accounts, credentials, traffic, live pilot, transactions, migrations, and Production remain pending**
+Status: **Software, repository verification, private publication, isolated Preview deployment, authenticated browser acceptance, and evidence recording complete; supplier action, accounts, credentials, traffic, live pilot, transactions, migrations, and Production remain pending**
 
 ## Purpose
 
@@ -62,10 +62,10 @@ The plan and validator always report the following as false:
 
 ## Release gates
 
-- [ ] Commit the Phase 12 software and documentation after separate approval.
-- [ ] Reconcile and push the approved private branch without force-push after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/cars` and record evidence after separate approval.
+- [x] Commit the Phase 12 software and documentation at `2ac865997e2527cc615ae5dfdfe3011d28419fb6` after separate approval.
+- [x] Reconcile and push the approved private branch without force-push after separate approval; local and tracked private branch divergence was `0 0` before this evidence-only reconciliation.
+- [x] Deploy only to the isolated Preview project after separate approval; deployment `dpl_HkY1gGyQHbg6ACTrovqQrddyRR32` reached `READY`.
+- [x] Complete authenticated browser acceptance at `/admin/cars` and record evidence after separate approval.
 
 ## External activation gates
 
@@ -76,3 +76,5 @@ The plan and validator always report the following as false:
 - [ ] Make a new, explicit Production decision after all provider, legal, privacy, accessibility, security, operations, support, payment, pilot, observability, rollback, and release evidence is complete.
 
 No supplier relationship, certification, pilot, monitoring activation, rollback execution, deployment, reservation, refund, payment, migration, release authority, Production approval, or Production change is created by this software or document.
+
+The Phase 12 isolated Preview acceptance evidence is recorded in `docs/CAR_RENTALS_PHASE_12_PREVIEW_EVIDENCE_2026-08-21.md`.
