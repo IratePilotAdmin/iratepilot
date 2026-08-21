@@ -152,7 +152,7 @@ describe("car-rental inventory normalization phase 3", () => {
     const page = read("app/admin/cars/page.tsx");
     expect(page).toContain("Phase 3 normalization reference");
     expect(page).toContain("Provider-neutral inventory contracts");
-    expect(page).toContain("No supplier inventory is ingested");
+    expect(page).toContain("No supplier inventory, quote, or policy is ingested or repriced");
     expect(page).toContain("Phase 2 activation reference");
     expect(page).not.toContain("fetch(");
     expect(page).not.toContain("process.env");

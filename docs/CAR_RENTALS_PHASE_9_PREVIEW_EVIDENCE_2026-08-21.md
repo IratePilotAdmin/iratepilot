@@ -2,15 +2,17 @@
 
 Recorded: August 21, 2026
 
-Status: **Commit, private-branch synchronization, isolated Preview deployment, and authenticated browser acceptance complete; evidence publication, supplier activity, support action, claims, reservations, refunds, payments, migrations, and Production remain pending**
+Status: **Commit, private-branch synchronization, isolated Preview deployment, authenticated browser acceptance, and evidence publication complete; supplier activity, support action, claims, reservations, refunds, payments, migrations, and Production remain pending**
 
 ## Source and publication evidence
 
 - Source commit: `698bf3eaec38fbcec416d86c22342d8640e33c99`
+- Evidence publication commit: `088637df4ebb6ffd697048749e55a86a48d1db63`
 - Private branch: `agent/align-homepage-pilot-claims`
 - Local and tracked private branch: synchronized with divergence `0 0`
 - Publication method: authenticated Git-data fast-forward with `force=false`
 - Force-push: not used
+- Evidence publication method: authenticated Git-data fast-forward with `force=false`
 - Isolated Vercel project: `iratepilotadmin-private-preview`
 - Deployment ID: `dpl_3VS3ogNxcmeFNUaTaskt5Uyu5JTP`
 - Deployment target: `preview`

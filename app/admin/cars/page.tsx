@@ -51,6 +51,18 @@ import {
   carRentalVehicleClassResolutionStates,
 } from "@/lib/cars/operations-support";
 import {
+  buildCarRentalProviderAdapterPlan,
+  carRentalAdapterKillSwitchStates,
+  carRentalAdapterOperationKinds,
+  carRentalAdapterProhibitedFields,
+  carRentalAdapterRecordedFields,
+  carRentalAdapterResponseOutcomes,
+  carRentalAdapterRetryOutcomes,
+  carRentalAdapterScopeLabels,
+  carRentalAdapterWebhookStates,
+  carRentalProviderAdapterContracts,
+} from "@/lib/cars/provider-adapter-certification";
+import {
   buildCarRentalPricingPolicyPlan,
   carRentalDepositStates,
   carRentalFuelChargingPolicyKinds,
@@ -84,11 +96,12 @@ import {
 } from "@/lib/cars/supplier-readiness";
 
 export const metadata: Metadata = {
-  title: "Car Rentals operations and customer support | iRatePilot Admin",
-  description: "Read-only, provider-neutral car-rental operations, support, payment, risk, reservation lifecycle, driver-eligibility, privacy, quote, pricing, policy, and inventory contracts.",
+  title: "Car Rentals provider adapter certification | iRatePilot Admin",
+  description: "Read-only, provider-neutral car-rental adapter, offline certification, operations, support, payment, risk, reservation lifecycle, driver-eligibility, privacy, quote, pricing, policy, and inventory contracts.",
 };
 
 export default function AdminCarsPage() {
+  const adapterCertification = buildCarRentalProviderAdapterPlan();
   const operationsSupport = buildCarRentalOperationsSupportPlan();
   const paymentRisk = buildCarRentalPaymentRiskPlan();
   const reservationLifecycle = buildCarRentalReservationLifecyclePlan();
@@ -101,19 +114,80 @@ export default function AdminCarsPage() {
   return (
     <DashboardShell title="Admin Console" items={adminNavigation}>
       <div className="mx-auto max-w-7xl">
-        <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Car Rentals · Phase 9</p>
+        <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Car Rentals · Phase 10</p>
         <div className="mt-2 grid gap-6 lg:grid-cols-[1fr_320px] lg:items-end">
           <div>
-            <h1 className="text-3xl font-bold text-slate-950">Operations and customer support workspace</h1>
-            <p className="mt-3 max-w-3xl leading-7 text-slate-600">Review provider-neutral, non-operational contracts for pickup failures, counter disputes, unavailable vehicle classes, upgrades, breakdowns, accidents, roadside assistance, damage claims, and emergency escalation. Every record is sanitized and synthetic; no control contacts a supplier or service, dispatches help, changes a reservation, files a claim, or moves money.</p>
+            <h1 className="text-3xl font-bold text-slate-950">Provider adapter and sandbox certification workspace</h1>
+            <p className="mt-3 max-w-3xl leading-7 text-slate-600">Review provider-neutral, offline-only contracts for adapter identity, operation allowlisting, non-secret scope labels, idempotency, retries, timeouts, webhook fixtures, audit evidence, and dual fail-closed kill switches. Every record is sanitized and synthetic; no control selects or contacts a supplier, accepts credentials, opens a connection, certifies a sandbox, changes a reservation, issues a refund, or moves money.</p>
           </div>
           <div className="rounded-2xl border border-amber-300 bg-amber-50 p-5">
-            <div className="flex items-center gap-3 text-amber-950"><ShieldAlert className="h-5 w-5" /><strong>Operations and support design only</strong></div>
-            <p className="mt-2 text-sm leading-6 text-amber-900">{operationsSupport.completedCount} of {operationsSupport.totalCount} gates recorded. No supplier contact, support contact, roadside dispatch, emergency call, vehicle replacement, upgrade, claim, reservation change, refund, payment, or runtime authority is enabled.</p>
+            <div className="flex items-center gap-3 text-amber-950"><ShieldAlert className="h-5 w-5" /><strong>Offline adapter design only</strong></div>
+            <p className="mt-2 text-sm leading-6 text-amber-900">{adapterCertification.completedCount} of {adapterCertification.totalCount} gates recorded. No provider, account, credential, endpoint, external traffic, webhook receiver, sandbox certification, reservation mutation, refund, payment, or runtime authority is enabled.</p>
           </div>
         </div>
 
         <section className="mt-10">
+          <div className="flex items-center gap-3"><Network className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Phase 10 provider adapter and sandbox certification</p></div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">Nine provider-neutral offline adapter contracts</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Each contract validates minimized fixture evidence only. A structurally valid record remains an offline design artifact and never becomes a provider mapping, credential, network request, webhook receiver, sandbox result, reservation change, refund, payment, or Production release.</p>
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            {carRentalProviderAdapterContracts.map((contract) => (
+              <article key={contract.id} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="font-semibold text-slate-950">{contract.label}</h3>
+                <p className="mt-3 text-sm leading-6 text-slate-600">{contract.validationRule}</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {contract.requiredFields.map((field) => <span key={field} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">{field}</span>)}
+                </div>
+                <p className="mt-4 border-t border-slate-100 pt-4 text-sm leading-6 text-slate-500"><strong className="text-slate-700">Boundary:</strong> {contract.safetyBoundary}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-12">
+          <div className="flex items-center gap-3"><Database className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Controlled offline certification evidence</p></div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">Explicit operations, retries, webhook states, and engaged kill switches</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Operation-specific scope labels, bounded attempts and timeouts, digest-only evidence, and two independent engaged kill switches fail closed without provider, endpoint, credential, payload, identity, driver, payment, location, or live-reference data.</p>
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Allowlisted operations</h3><p className="mt-3 text-sm leading-6 text-slate-300">{carRentalAdapterOperationKinds.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Non-secret scope labels</h3><p className="mt-3 text-sm leading-6 text-slate-300">{carRentalAdapterScopeLabels.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Response and retry outcomes</h3><p className="mt-3 text-sm leading-6 text-slate-300">Response: {carRentalAdapterResponseOutcomes.join(" · ").replaceAll("_", " ")}<br />Retry: {carRentalAdapterRetryOutcomes.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl bg-slate-950 p-6 text-white"><h3 className="font-semibold">Webhook and kill-switch states</h3><p className="mt-3 text-sm leading-6 text-slate-300">Webhook: {carRentalAdapterWebhookStates.join(" · ").replaceAll("_", " ")}<br />Kill switches: {carRentalAdapterKillSwitchStates.join(" · ")}</p></article>
+          </div>
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            <article className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
+              <h3 className="font-semibold text-emerald-950">Minimized adapter-certification field allowlist</h3>
+              <p className="mt-3 text-sm leading-6 text-emerald-900">{carRentalAdapterRecordedFields.join(" · ").replaceAll("_", " ")}</p>
+            </article>
+            <article className="rounded-2xl border border-red-200 bg-red-50 p-6">
+              <h3 className="font-semibold text-red-950">Prohibited provider, credential, payload, and customer data</h3>
+              <p className="mt-3 text-sm leading-6 text-red-900">{carRentalAdapterProhibitedFields.join(" · ").replaceAll("_", " ")}</p>
+            </article>
+          </div>
+        </section>
+
+        <section className="mt-12">
+          <div className="flex items-center gap-3"><ClipboardCheck className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Phase 10 contract gates</p></div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">Twelve separately owned adapter-certification gates</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Every gate starts incomplete. Completing the offline design checklist cannot select or contact a provider, create an account, request or accept credentials, release either kill switch, connect to a sandbox, receive a webhook, change a reservation, issue a refund, move money, enable traffic, or authorize Production.</p>
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            {adapterCertification.gates.map((gate, index) => (
+              <article key={gate.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <Circle className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[.14em] text-slate-400">Gate {index + 1} · {gate.owner}</p>
+                    <h3 className="mt-1 font-semibold text-slate-950">{gate.label}</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{gate.detail}</p>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-12 border-t border-slate-200 pt-12">
+          <p className="sr-only">Phase 9 operations and support reference</p>
           <div className="flex items-center gap-3"><History className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Phase 9 operations and customer support</p></div>
           <h2 className="mt-2 text-2xl font-bold text-slate-950">Nine provider-neutral operations and support contracts</h2>
           <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Each contract validates minimized case evidence, exact UTC ordering, and explicit unresolved outcomes only. A structurally valid fixture remains a local design artifact and never becomes a supplier request, service dispatch, emergency call, vehicle assignment, claim, reservation change, refund, or payment.</p>
@@ -629,7 +703,7 @@ export default function AdminCarsPage() {
 
         <section className="mt-12 rounded-2xl border border-red-300 bg-red-50 p-6">
           <div className="flex items-center gap-3 text-red-950"><KeyRound className="h-5 w-5" /><h2 className="text-lg font-bold">Runtime hard stop</h2></div>
-          <p className="mt-3 max-w-4xl text-sm leading-6 text-red-900">No supplier has been contacted or connected. No processor has been contacted or connected. No counter, roadside provider, insurer, claims service, police service, emergency service, medical service, or traveler is contacted or connected. No live support case is opened. No roadside or emergency assistance is dispatched. No vehicle is sourced, replaced, assigned, or upgraded. No damage claim is filed, accepted, denied, priced, or settled. No live reservation is created, confirmed, modified, cancelled, marked no-show, picked up, extended, returned, or refunded. No payment card, bank account, payment token, billing identity, raw reference, traveler identity, license, vehicle identifier, precise location, medical information, accident narrative, police report, insurance policy, or credential data is collected. No personal driver data is collected or verified. No collection, capture, deposit, authorization hold, refund, chargeback, receipt, tax, fraud, claim, or money-movement action occurs. No supplier inventory is ingested. No supplier quote is ingested or repriced. No provider mapping exists. Supplier, payment-provider, roadside, insurance, claims, emergency, or support-provider research or contact, accounts, contracts, credentials, external verification or traffic, live inventory, rates, policies, eligibility decisions, support operations, reservations, payment activity, refunds, migrations, deployment, and Production changes remain outside Phase 9 and require separate approval.</p>
+          <p className="mt-3 max-w-4xl text-sm leading-6 text-red-900">No supplier has been researched, selected, contacted, or connected. No provider mapping, account, live endpoint, credential request, credential receipt, credential material, socket, job, queue, webhook receiver, external request, sandbox connection, sandbox certification, or Production traffic exists. Both application and database traffic kill switches remain engaged. No processor, counter, roadside provider, insurer, claims service, police service, emergency service, medical service, or traveler is contacted or connected. No live support case is opened. No roadside or emergency assistance is dispatched. No vehicle is sourced, replaced, assigned, or upgraded. No damage claim is filed, accepted, denied, priced, or settled. No live reservation is created, confirmed, modified, cancelled, marked no-show, picked up, extended, returned, or refunded. No payment card, bank account, payment token, billing identity, raw reference, traveler identity, license, vehicle identifier, precise location, medical information, accident narrative, police report, insurance policy, raw request, raw response, raw webhook payload, or credential data is collected. No personal driver data is collected or verified. No collection, capture, deposit, authorization hold, refund, chargeback, receipt, tax, fraud, claim, or money-movement action occurs. No supplier inventory, quote, or policy is ingested or repriced. Supplier or service research or contact, contracts, accounts, credentials, external verification or traffic, actual sandbox certification, live inventory, rates, policies, eligibility decisions, support operations, reservations, payment activity, refunds, migrations, deployment, and Production changes remain outside Phase 10 and require separate approval.</p>
         </section>
       </div>
     </DashboardShell>

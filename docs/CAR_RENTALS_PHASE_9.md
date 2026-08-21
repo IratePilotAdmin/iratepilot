@@ -2,7 +2,7 @@
 
 Prepared: August 21, 2026
 
-Status: **Software, private publication, isolated Preview deployment, and authenticated browser acceptance complete; evidence publication, supplier activity, support action, roadside or emergency action, claims, migrations, and Production remain pending**
+Status: **Software, private publication, isolated Preview deployment, authenticated browser acceptance, and evidence publication complete; supplier activity, support action, roadside or emergency action, claims, migrations, and Production remain pending**
 
 ## Purpose
 
@@ -72,8 +72,7 @@ The model always reports the following as false:
 - [x] Reconcile and publish the approved private branch with `force=false` after separate approval.
 - [x] Deploy only to the isolated Preview project after separate approval as `dpl_3VS3ogNxcmeFNUaTaskt5Uyu5JTP`.
 - [x] Complete authenticated browser acceptance at `/admin/cars` and prepare evidence in `docs/CAR_RENTALS_PHASE_9_PREVIEW_EVIDENCE_2026-08-21.md`.
-
-Preview evidence publication remains a separate commit-and-private-push gate.
+- [x] Publish the reconciled Preview evidence to the private branch with `force=false` at `088637df4ebb6ffd697048749e55a86a48d1db63`.
 
 ## External activation gates
 

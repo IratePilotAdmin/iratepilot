@@ -222,7 +222,7 @@ describe("car-rental operations and customer support phase 9", () => {
     expect(phaseNineEvidence).toContain("698bf3eaec38fbcec416d86c22342d8640e33c99");
     expect(phaseNineEvidence).toContain("dpl_3VS3ogNxcmeFNUaTaskt5Uyu5JTP");
     expect(phase).toContain("Operations and Customer Support");
-    expect(packageRoadmap).toContain("Phases 1–9 released and accepted in isolated Preview");
+    expect(packageRoadmap).toContain("Phases 1–9 released, accepted, and documented");
     expect(packageRoadmap).toContain("Current software-roadmap completion: **9 of 12 phases (75%)**");
   });
 
@@ -230,8 +230,8 @@ describe("car-rental operations and customer support phase 9", () => {
     const page = read("app/admin/cars/page.tsx");
     const roadmap = read("docs/ROADMAP.md");
 
-    expect(page).toContain("Car Rentals · Phase 9");
-    expect(page).toContain("Operations and customer support workspace");
+    expect(page).toContain("Car Rentals · Phase 10");
+    expect(page).toContain("Phase 9 operations and support reference");
     expect(page).toContain("Nine provider-neutral operations and support contracts");
     expect(page).toContain("Twelve separately owned operations and support gates");
     expect(page).toContain("Phase 8 payment and risk reference");
