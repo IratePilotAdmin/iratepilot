@@ -229,6 +229,8 @@ describe("car-rental commercial and compliance readiness phase 11", () => {
     expect(page).toContain("Nine provider-neutral commercial and compliance contracts");
     expect(page).toContain("Twelve separately owned commercial-readiness gates");
     expect(page).toContain("Phase 10 provider adapter certification reference");
+    expect(page).toContain("remain outside Phase 11 and require separate approval");
+    expect(page).not.toContain("remain outside Phase 10 and require separate approval");
     expect(page).not.toMatch(/fetch\(|createClient\(|<form|<button|use server|use client/);
     expect(roadmap).toContain("Phase 11 commercial and compliance readiness software gates");
   });
