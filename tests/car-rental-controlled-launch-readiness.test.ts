@@ -256,7 +256,8 @@ describe("car-rental controlled launch readiness phase 12", () => {
     const roadmap = read("docs/ROADMAP.md");
 
     expect(page).toContain("Car Rentals · Phase 12");
-    expect(page).toContain("Controlled launch readiness workspace");
+    expect(page).toContain("Live connector activation control center");
+    expect(page).toContain("Phase 12 controlled launch readiness");
     expect(page).toContain("Seven provider-neutral controlled-launch contracts");
     expect(page).toContain("Twelve separately owned controlled-launch gates");
     expect(page).toContain("Phase 11 commercial and compliance reference");

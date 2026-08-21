@@ -47,6 +47,14 @@ Build a commercially credible car-rental vertical while separating completed sof
 - Named connector preparation does not change the 12-phase completion count and does not satisfy any external commercial-activation gate. Provider contact, contracts, accounts, credentials, capability verification, sandbox connectivity, certification, external traffic, deployment, migration, and Production still require separate approval.
 - The design and its public-reference boundary are recorded in `docs/CAR_RENTALS_PROVIDER_CONNECTORS.md`.
 
+## Live connector activation program
+
+- A local activation-readiness control center now defines separate tracks for Sabre, Travelport, and one future aggregator, with ten required stages per connector.
+- Sabre and Travelport remain technical candidates only. The aggregator track is explicitly blocked by a provider-selection requirement.
+- All three tracks remain at 0 of 10 stages, with no account, verified capability, credential, sandbox connection, certification, operational acceptance, external request, or Production decision.
+- Completing the local activation-planning checklist cannot contact a supplier or enable an account, credential, sandbox, traffic, transaction, migration, deployment, or Production action.
+- The activation controls, blockers, and next approval boundary are recorded in `docs/CAR_RENTALS_CONNECTOR_ACTIVATION_READINESS.md`.
+
 ## Overall completion model
 
 - Phase completion proves only the software and evidence explicitly listed for that phase.
@@ -55,4 +63,5 @@ Build a commercially credible car-rental vertical while separating completed sof
 - The package is commercially complete only after all 12 phases, supplier sandbox certification, operational acceptance, legal and payment approvals, controlled-pilot evidence, and a separate Production launch decision are complete.
 - Current local software-roadmap completion: **12 of 12 phases (100%)**.
 - Current released-and-accepted software completion: **12 of 12 phases (100%)**.
+- Current live connector activation: **0 of 3 connectors**.
 - Current live commercial-activation completion: **0 of 4 external activation gate groups**.

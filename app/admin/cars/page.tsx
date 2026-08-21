@@ -98,6 +98,11 @@ import {
   carRentalConnectorRecordedFields,
 } from "@/lib/cars/provider-connectors";
 import {
+  buildCarRentalConnectorActivationPlan,
+  carRentalConnectorActivationProhibitedFields,
+  carRentalConnectorActivationRecordedFields,
+} from "@/lib/cars/connector-activation-readiness";
+import {
   buildCarRentalPricingPolicyPlan,
   carRentalDepositStates,
   carRentalFuelChargingPolicyKinds,
@@ -131,11 +136,12 @@ import {
 } from "@/lib/cars/supplier-readiness";
 
 export const metadata: Metadata = {
-  title: "Car Rentals controlled launch readiness | iRatePilot Admin",
-  description: "Read-only car-rental controlled-launch workspace with disabled Sabre, Travelport, and generic aggregator connector contracts plus provider-neutral commercial, compliance, adapter, operations, support, payment, risk, reservation, privacy, pricing, policy, and inventory controls.",
+  title: "Car Rentals connector activation readiness | iRatePilot Admin",
+  description: "Read-only car-rental live-connector activation control center with fail-closed Sabre, Travelport, and unselected aggregator tracks plus the completed provider-neutral software roadmap.",
 };
 
 export default function AdminCarsPage() {
+  const connectorActivation = buildCarRentalConnectorActivationPlan();
   const namedConnectors = buildCarRentalNamedConnectorPlan();
   const controlledLaunch = buildCarRentalControlledLaunchPlan();
   const commercialCompliance = buildCarRentalCommercialCompliancePlan();
@@ -152,17 +158,58 @@ export default function AdminCarsPage() {
   return (
     <DashboardShell title="Admin Console" items={adminNavigation}>
       <div className="mx-auto max-w-7xl">
-        <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Car Rentals · Phase 12</p>
+        <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Car Rentals · Live connector activation readiness</p>
         <div className="mt-2 grid gap-6 lg:grid-cols-[1fr_320px] lg:items-end">
           <div>
-            <h1 className="text-3xl font-bold text-slate-950">Controlled launch readiness workspace</h1>
-            <p className="mt-3 max-w-3xl leading-7 text-slate-600">Review provider-neutral, offline-only contracts for isolated Preview acceptance, sandbox evidence, limited-pilot controls, observability, rollback, independent release review, and a separate Production decision. Every record is sanitized and synthetic; no control deploys, connects to a supplier, opens traffic, starts a pilot, changes a reservation, issues a refund, moves money, migrates data, or changes Production.</p>
+            <h1 className="text-3xl font-bold text-slate-950">Live connector activation control center</h1>
+            <p className="mt-3 max-w-3xl leading-7 text-slate-600">Track the exact provider, commercial, account, capability, security, credential, sandbox, certification, operations, and Production decisions required to activate Sabre, Travelport, and one future aggregator. This workspace starts the activation program without contacting a supplier or enabling external traffic.</p>
           </div>
           <div className="rounded-2xl border border-amber-300 bg-amber-50 p-5">
-            <div className="flex items-center gap-3 text-amber-950"><ShieldAlert className="h-5 w-5" /><strong>Offline readiness design only</strong></div>
-            <p className="mt-2 text-sm leading-6 text-amber-900">{controlledLaunch.completedCount} of {controlledLaunch.totalCount} gates recorded. No commit, push, deployment, supplier action, account, credential, traffic, live pilot, reservation, refund, payment, migration, or Production authority is enabled.</p>
+            <div className="flex items-center gap-3 text-amber-950"><ShieldAlert className="h-5 w-5" /><strong>{connectorActivation.activeConnectorCount} of {connectorActivation.tracks.length} live</strong></div>
+            <p className="mt-2 text-sm leading-6 text-amber-900">All three activation tracks are fail-closed. Accounts, credentials, sandbox traffic, reservations, payments, migrations, and Production remain disabled.</p>
           </div>
         </div>
+
+        <section className="mt-10 rounded-3xl border border-violet-200 bg-violet-50 p-6 lg:p-8">
+          <div className="flex items-center gap-3"><Workflow className="h-5 w-5 text-violet-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-violet-800">Live activation program</p></div>
+          <h2 className="mt-2 text-2xl font-bold text-slate-950">Three activation tracks, all fail-closed</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">Each connector must pass ten separately owned stages. Sabre and Travelport remain candidates only; the aggregator track is blocked until a provider is selected. A completed local planning review cannot create provider authority or activate a connector.</p>
+          <div className="mt-5 grid gap-4 lg:grid-cols-3">
+            {connectorActivation.tracks.map((track) => (
+              <article key={track.connectorId} className="rounded-2xl border border-violet-200 bg-white p-6 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="font-semibold text-slate-950">{track.label}</h3>
+                  <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-700">Not live</span>
+                </div>
+                <p className="mt-3 text-sm leading-6 text-slate-600">{track.blocker}</p>
+                <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
+                  <div className="rounded-xl bg-slate-50 p-3"><dt className="font-semibold uppercase tracking-wide text-slate-500">Stages</dt><dd className="mt-1 text-slate-800">{track.completedStageCount} of {track.totalStageCount}</dd></div>
+                  <div className="rounded-xl bg-slate-50 p-3"><dt className="font-semibold uppercase tracking-wide text-slate-500">Connection</dt><dd className="mt-1 text-slate-800">{track.connectionState}</dd></div>
+                  <div className="col-span-2 rounded-xl bg-violet-50 p-3"><dt className="font-semibold uppercase tracking-wide text-violet-700">Next required gate</dt><dd className="mt-1 leading-5 text-violet-950">{track.nextRequiredGate}</dd></div>
+                </dl>
+              </article>
+            ))}
+          </div>
+          <div className="mt-5 grid gap-4 md:grid-cols-3">
+            <article className="rounded-2xl bg-slate-950 p-5 text-white"><h3 className="font-semibold">Activation state</h3><p className="mt-2 text-sm leading-6 text-slate-300">{connectorActivation.activeConnectorCount} of {connectorActivation.tracks.length} live · {connectorActivation.provisionedAccountCount} accounts · {connectorActivation.sandboxCertifiedConnectorCount} sandbox certified · {connectorActivation.externalRequestCount} external requests.</p></article>
+            <article className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5"><h3 className="font-semibold text-emerald-950">Minimized allowlist</h3><p className="mt-2 text-sm leading-6 text-emerald-900">{carRentalConnectorActivationRecordedFields.join(" · ").replaceAll("_", " ")}</p></article>
+            <article className="rounded-2xl border border-red-200 bg-red-50 p-5"><h3 className="font-semibold text-red-950">Prohibited activation data</h3><p className="mt-2 text-sm leading-6 text-red-900">{carRentalConnectorActivationProhibitedFields.join(" · ").replaceAll("_", " ")}</p></article>
+          </div>
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            {connectorActivation.stages.map((stage, index) => (
+              <article key={stage.id} className="rounded-2xl border border-violet-200 bg-white p-5">
+                <div className="flex items-start gap-3">
+                  <Circle className="mt-0.5 h-5 w-5 shrink-0 text-violet-500" />
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[.14em] text-slate-400">Activation stage {index + 1} · {stage.owner}</p>
+                    <h3 className="mt-1 font-semibold text-slate-950">{stage.label}</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{stage.detail}</p>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
 
         <section className="mt-10 rounded-3xl border border-sky-200 bg-sky-50 p-6 lg:p-8">
           <div className="flex items-center gap-3"><Network className="h-5 w-5 text-sky-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-sky-800">Connector preparation</p></div>
@@ -208,6 +255,7 @@ export default function AdminCarsPage() {
         </section>
 
         <section className="mt-10">
+          <p className="sr-only">Car Rentals · Phase 12</p>
           <div className="flex items-center gap-3"><Workflow className="h-5 w-5 text-brand-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Phase 12 controlled launch readiness</p></div>
           <h2 className="mt-2 text-2xl font-bold text-slate-950">Seven provider-neutral controlled-launch contracts</h2>
           <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">Each contract validates minimized offline-fixture evidence only. A structurally valid record remains an internal release-design artifact and never becomes a Preview deployment, sandbox connection, supplier certification, live pilot, monitoring activation, rollback execution, reservation, refund, payment, migration, or Production approval.</p>
