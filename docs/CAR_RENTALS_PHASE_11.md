@@ -2,7 +2,7 @@
 
 Prepared: August 21, 2026
 
-Status: **Software and repository verification complete locally; commit, private publication, Preview deployment, browser acceptance, supplier action, contracts, accounts, credentials, external traffic, transactions, migrations, and Production remain pending**
+Status: **Commit, private publication, isolated Preview deployment, authenticated browser acceptance, and evidence recording complete; supplier action, contracts, accounts, credentials, external traffic, transactions, migrations, and Production remain pending**
 
 ## Purpose
 
@@ -58,10 +58,10 @@ The plan and validator always report the following as false:
 
 ## Release gates
 
-- [ ] Commit the Phase 11 software and documentation only after separate approval.
-- [ ] Reconcile and push the approved private branch without force-push only after separate approval.
-- [ ] Deploy only to the isolated Preview project after separate approval.
-- [ ] Complete authenticated browser acceptance at `/admin/cars` and record evidence only after separate approval.
+- [x] Commit the Phase 11 software and documentation after separate approval at `451b0129fe74438daac8a3bc24531e97f126b874`.
+- [x] Reconcile and push the approved private branch without force-push after separate approval.
+- [x] Deploy only to the isolated Preview project after separate approval as dashboard deployment `oH654g7gmenQDGsxPMzAo6NcJfif`.
+- [x] Complete authenticated browser acceptance at `/admin/cars` and record evidence after separate approval in `docs/CAR_RENTALS_PHASE_11_PREVIEW_EVIDENCE_2026-08-21.md`.
 
 ## External activation gates
 
@@ -69,5 +69,7 @@ The plan and validator always report the following as false:
 - [ ] Obtain qualified legal, accessibility, insurance or protection, consumer-law, disclosure, commercial, and tax review separately; this software does not provide legal advice or represent compliance.
 - [ ] Approve named support ownership, service levels, incident response, monitoring, escalation, and operational staffing separately.
 - [ ] Complete actual supplier sandbox certification and approve migrations, controlled pilot, deployment, and Production through their own later gates.
+
+The approved isolated Preview acceptance is recorded in `docs/CAR_RENTALS_PHASE_11_PREVIEW_EVIDENCE_2026-08-21.md`.
 
 No supplier relationship, executed agreement, commission or markup rate, consumer disclosure, insurance or protection promise, legal advice, accessibility certification, support commitment, SLA, incident action, credential, traffic, reservation, refund, payment, migration, deployment, or Production authority is created by this document.
