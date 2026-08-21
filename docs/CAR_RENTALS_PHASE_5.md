@@ -2,7 +2,7 @@
 
 Prepared: August 20, 2026
 
-Status: **Software, private publication, isolated Preview deployment, and authenticated browser acceptance complete; evidence publication and every external-action gate remain pending**
+Status: **Software, private publication, isolated Preview deployment, authenticated browser acceptance, and evidence publication complete; every external-action gate remains pending**
 
 ## Purpose
 

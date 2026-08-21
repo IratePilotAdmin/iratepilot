@@ -2,7 +2,7 @@
 
 Recorded: August 20, 2026 at 9:04 PM CDT
 
-Status: **Authenticated isolated-Preview acceptance complete; evidence publication awaits separate approval**
+Status: **Authenticated isolated-Preview acceptance complete; evidence published to the private branch at `e93038ade26b20c231d9ca38eb16b06aac3cf244`**
 
 ## Published source
 
