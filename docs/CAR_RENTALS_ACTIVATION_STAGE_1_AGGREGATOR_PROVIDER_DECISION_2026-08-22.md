@@ -6,7 +6,7 @@ Mode: **published documentation decision with a later local source/UI reconcilia
 
 Decision ID: `cars-aggregator-stage-1-provider-decision-2026-08-22-01`
 
-Status: **the aggregator-only commercial-diligence decision package is committed and privately published at `931c342dd5fc6d2d753073c3d6e2e6a69111680c`; the current local source/UI reconciliation records Carnect for aggregator Stage 1 only, with Sabre at 0 of 10, Travelport at 0 of 10, and Aggregator at 1 of 10; that reconciliation is repository-verified but remains local, uncommitted, undeployed, and unaccepted, while the accepted Preview remains the historical 0 of 10 for every connector, runtime binding remains unbound, 0 of 3 connectors are live, all 29 conditions and all sole-owner conflicts remain unresolved, Stage 2 contact remains unauthorized, and both traffic kill switches remain engaged**
+Status: **the aggregator-only commercial-diligence decision package is committed and privately published at `931c342dd5fc6d2d753073c3d6e2e6a69111680c`; the source/UI reconciliation records Carnect for aggregator Stage 1 only, with Sabre at 0 of 10, Travelport at 0 of 10, and Aggregator at 1 of 10, and is repository-verified, committed, and privately published at `87f53acc7314eba0d97163b0e37464548c7e8a25` but remains undeployed and unaccepted; the accepted Preview remains the historical 0 of 10 for every connector, runtime binding remains unbound, 0 of 3 connectors are live, all 29 conditions and all sole-owner conflicts remain unresolved, Stage 2 contact remains unauthorized, and both traffic kill switches remain engaged**
 
 ## Approved decision
 
@@ -20,7 +20,7 @@ Status: **the aggregator-only commercial-diligence decision package is committed
 
 ## Local source and accepted Preview boundary
 
-The decision artifact and its six documentation reconciliations are committed and privately published at `931c342dd5fc6d2d753073c3d6e2e6a69111680c`. A later, separately approved local source/UI reconciliation now represents this exact aggregator-only decision in `lib/cars/connector-activation-readiness.ts` and the read-only `/admin/cars` workspace. That current worktree reconciliation is local, uncommitted, undeployed, and unaccepted; it does not change the accepted isolated Preview.
+The decision artifact and its six documentation reconciliations are committed and privately published at `931c342dd5fc6d2d753073c3d6e2e6a69111680c`. A later, separately approved source/UI reconciliation represents this exact aggregator-only decision in `lib/cars/connector-activation-readiness.ts` and the read-only `/admin/cars` workspace. That reconciliation is repository-verified, committed, and privately published at `87f53acc7314eba0d97163b0e37464548c7e8a25` but remains undeployed and unaccepted; it does not change the accepted isolated Preview.
 
 Current local source state:
 
@@ -51,4 +51,4 @@ Provider contact authorization remains Stage 2, is false in the current local so
 
 ## Next approval boundary
 
-The current source/UI reconciliation is repository-verified locally: 42 focused provider-decision and activation-safety tests pass in the primary suite, 55 tests pass across the three directly affected Car Rentals suites, full ESLint passes, TypeScript passes with no emitted files, the full repository suite passes 1,284 tests across 262 files, and the optimized Next.js build generates 115 pages including static `/admin/cars`. It remains uncommitted, unpushed, undeployed, and unaccepted. Commit and private publication, isolated Preview deployment, and authenticated Preview acceptance each require their own later approval and evidence. Stage 2 provider-contact authorization remains a later, separate decision and cannot be inferred from local Aggregator Stage 1 completion.
+The source/UI reconciliation is repository-verified: 42 focused provider-decision and activation-safety tests pass in the primary suite, 55 tests pass across the three directly affected Car Rentals suites, full ESLint passes, TypeScript passes with no emitted files, the full repository suite passes 1,284 tests across 262 files, and the optimized Next.js build generates 115 pages including static `/admin/cars`. It is committed and privately published at `87f53acc7314eba0d97163b0e37464548c7e8a25` but remains undeployed and unaccepted. Isolated Preview deployment and authenticated Preview acceptance each require their own later approval and evidence. Stage 2 provider-contact authorization remains a later, separate decision and cannot be inferred from Aggregator Stage 1 completion.

@@ -2,7 +2,7 @@
 
 Prepared: August 21, 2026
 
-Status: **the original offline connector shells are privately published and accepted in isolated Preview; the August 22 runtime-label and boundary-copy reconciliation is repository-verified locally but remains uncommitted, unpushed, undeployed, and unaccepted**
+Status: **the original offline connector shells are privately published and accepted in isolated Preview; the August 22 runtime-label and boundary-copy reconciliation is repository-verified, committed, and privately published at `87f53acc7314eba0d97163b0e37464548c7e8a25` but remains undeployed and unaccepted**
 
 ## Objective
 
@@ -39,4 +39,4 @@ Any live provider work requires a new authorization covering the exact provider 
 
 This document does not authorize any of those actions.
 
-August 22 reconciliation: the generic connector label and boundary copy now distinguish Carnect's commercial-diligence-only Stage 1 source decision from the still-unbound runtime connector. This display-only reconciliation is included in the locally verified 1,284-test, full-ESLint, TypeScript, and 115-page build result; it remains uncommitted, unpushed, undeployed, and unaccepted.
+August 22 reconciliation: the generic connector label and boundary copy now distinguish Carnect's commercial-diligence-only Stage 1 source decision from the still-unbound runtime connector. This display-only reconciliation is included in the verified 1,284-test, full-ESLint, TypeScript, and 115-page build result and is committed and privately published at `87f53acc7314eba0d97163b0e37464548c7e8a25`; it remains undeployed and unaccepted.
