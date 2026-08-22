@@ -646,3 +646,738 @@ export const carRentalSyntheticProviderDecisionReadinessFixture: CarRentalProvid
   recordedFields: carRentalProviderDecisionReadinessRecordedFields,
   prohibitedDataDetected: false,
 };
+
+export const CAR_RENTAL_PROVIDER_PATH_SEQUENCING_MODE = "provider_path_sequencing_local_only" as const;
+export const CAR_RENTAL_PROVIDER_PATH_SEQUENCING_EVIDENCE_MODE = "local_documentation" as const;
+export const CAR_RENTAL_PROVIDER_PATH_DECISION_ID = "cars-provider-path-decision-2026-08-22-01" as const;
+export const CAR_RENTAL_PROVIDER_PATH_DECISION_RECORDED_DATE = "2026-08-22" as const;
+export const CAR_RENTAL_PROVIDER_PATH_DECISION_SOURCE_COMMIT = "9a587281b8347bf24d5c49550afb6ddf14c1ac39" as const;
+export const CAR_RENTAL_PROVIDER_PATH_DECISION_SOURCE_DIGEST = "8b0e7ad0ca0eb10191cad295f4830f05649699ac0e810c948453284c85ab757b" as const;
+
+export const carRentalCompletedProviderDecisionReadinessEvidence: CarRentalProviderDecisionReadinessEvidence = {
+  research_artifact_reconciled: true,
+  decision_question_defined: true,
+  candidate_scope_frozen: true,
+  public_evidence_limits_acknowledged: true,
+  unknowns_and_hard_stops_reviewed: true,
+  owners_and_conflicts_reviewed: true,
+  separate_decision_boundary_acknowledged: true,
+};
+
+export const carRentalProviderPathSequencingProviderIds = Object.freeze([
+  "carnect",
+  "sabre",
+  "travelport",
+  "cartrawler",
+  "booking_com_demand",
+  "economybookings",
+  "discovercars",
+] as const);
+
+export const carRentalUnselectedDecisionAlternativeIds = Object.freeze([
+  "cartrawler",
+  "booking_com_demand",
+  "economybookings",
+  "discovercars",
+] as const);
+
+export const carRentalProviderPathAggregatorDiligencePriorityIds = Object.freeze([
+  ...carRentalAggregatorShortlistCandidateIds,
+] as const);
+
+export const carRentalProviderPathAggregatorResearchAlternateIds = Object.freeze([
+  ...carRentalAggregatorAlternateCandidateIds,
+] as const);
+
+export type CarRentalProviderPathSequencingProviderId = (typeof carRentalProviderPathSequencingProviderIds)[number];
+export type CarRentalUnselectedDecisionAlternativeId = (typeof carRentalUnselectedDecisionAlternativeIds)[number];
+export type CarRentalProviderPathDecisionKind = "phased_diligence_sequencing";
+export type CarRentalProviderPathDecisionDisposition =
+  | "primary_aggregator_diligence_path"
+  | "secondary_enterprise_diligence_path"
+  | "conditional_hold"
+  | "unselected_decision_alternative";
+export type CarRentalProviderPathResearchClassification =
+  | "diligence_priority_candidate"
+  | "technical_secondary_candidate"
+  | "conditional_enterprise_candidate"
+  | "research_alternate";
+export type CarRentalProviderPathSelectionState = "not_recorded";
+export type CarRentalRuntimeProviderBindingState = "unbound";
+export type CarRentalSoleOwnerConflictState = "unresolved";
+
+export type CarRentalProviderPathSequencingEntry = {
+  providerId: CarRentalProviderPathSequencingProviderId;
+  label: string;
+  pathCategory: "aggregator" | "enterprise";
+  disposition: CarRentalProviderPathDecisionDisposition;
+  researchClassification: CarRentalProviderPathResearchClassification;
+  conditionalConditionId: "TRAVELPORT-01" | null;
+  conditionalRequirement: "written_core_category_eligibility_or_approved_exception" | null;
+  selectedForRuntime: false;
+  contactAuthorized: false;
+};
+
+export const carRentalProviderPathSequencingEntries: readonly Readonly<CarRentalProviderPathSequencingEntry>[] = Object.freeze(([
+  {
+    providerId: "carnect",
+    label: "Carnect",
+    pathCategory: "aggregator",
+    disposition: "primary_aggregator_diligence_path",
+    researchClassification: "diligence_priority_candidate",
+    conditionalConditionId: null,
+    conditionalRequirement: null,
+    selectedForRuntime: false,
+    contactAuthorized: false,
+  },
+  {
+    providerId: "sabre",
+    label: "Sabre",
+    pathCategory: "enterprise",
+    disposition: "secondary_enterprise_diligence_path",
+    researchClassification: "technical_secondary_candidate",
+    conditionalConditionId: null,
+    conditionalRequirement: null,
+    selectedForRuntime: false,
+    contactAuthorized: false,
+  },
+  {
+    providerId: "travelport",
+    label: "Travelport",
+    pathCategory: "enterprise",
+    disposition: "conditional_hold",
+    researchClassification: "conditional_enterprise_candidate",
+    conditionalConditionId: "TRAVELPORT-01",
+    conditionalRequirement: "written_core_category_eligibility_or_approved_exception",
+    selectedForRuntime: false,
+    contactAuthorized: false,
+  },
+  {
+    providerId: "cartrawler",
+    label: "CarTrawler",
+    pathCategory: "aggregator",
+    disposition: "unselected_decision_alternative",
+    researchClassification: "diligence_priority_candidate",
+    conditionalConditionId: null,
+    conditionalRequirement: null,
+    selectedForRuntime: false,
+    contactAuthorized: false,
+  },
+  {
+    providerId: "booking_com_demand",
+    label: "Booking.com Demand API",
+    pathCategory: "aggregator",
+    disposition: "unselected_decision_alternative",
+    researchClassification: "diligence_priority_candidate",
+    conditionalConditionId: null,
+    conditionalRequirement: null,
+    selectedForRuntime: false,
+    contactAuthorized: false,
+  },
+  {
+    providerId: "economybookings",
+    label: "EconomyBookings",
+    pathCategory: "aggregator",
+    disposition: "unselected_decision_alternative",
+    researchClassification: "research_alternate",
+    conditionalConditionId: null,
+    conditionalRequirement: null,
+    selectedForRuntime: false,
+    contactAuthorized: false,
+  },
+  {
+    providerId: "discovercars",
+    label: "DiscoverCars",
+    pathCategory: "aggregator",
+    disposition: "unselected_decision_alternative",
+    researchClassification: "research_alternate",
+    conditionalConditionId: null,
+    conditionalRequirement: null,
+    selectedForRuntime: false,
+    contactAuthorized: false,
+  },
+] satisfies readonly CarRentalProviderPathSequencingEntry[]).map((entry) => Object.freeze(entry)));
+
+export const CAR_RENTAL_PROVIDER_PATH_CLASSIFIED_CONDITION_COUNT = 29 as const;
+export const CAR_RENTAL_PROVIDER_PATH_UNRESOLVED_BLOCKING_COUNT = 12 as const;
+export const CAR_RENTAL_PROVIDER_PATH_PROVIDER_VERIFICATION_COUNT = 17 as const;
+
+export const carRentalProviderPathUnresolvedBlockingConditionIds = Object.freeze([
+  "ALL-01",
+  "ALL-11",
+  "SABRE-02",
+  "SABRE-03",
+  "TRAVELPORT-01",
+  "TRAVELPORT-03",
+  "TRAVELPORT-04",
+  "AGG-01",
+  "AGG-02",
+  "AGG-03",
+  "CARNECT-01",
+  "BOOKING-01",
+] as const);
+
+export const carRentalProviderPathProviderVerificationConditionIds = Object.freeze([
+  "ALL-02",
+  "ALL-03",
+  "ALL-04",
+  "ALL-05",
+  "ALL-06",
+  "ALL-07",
+  "ALL-08",
+  "ALL-09",
+  "ALL-10",
+  "SABRE-01",
+  "SABRE-04",
+  "TRAVELPORT-02",
+  "TRAVELPORT-05",
+  "CARTRAWLER-01",
+  "BOOKING-02",
+  "ECONOMY-01",
+  "DISCOVER-01",
+] as const);
+
+export type CarRentalProviderPathConditionId =
+  | (typeof carRentalProviderPathUnresolvedBlockingConditionIds)[number]
+  | (typeof carRentalProviderPathProviderVerificationConditionIds)[number];
+export type CarRentalProviderPathConditionState = "unresolved_blocking" | "later_provider_verification_required";
+export type CarRentalProviderPathCondition = {
+  id: CarRentalProviderPathConditionId;
+  state: CarRentalProviderPathConditionState;
+};
+
+export const carRentalProviderPathConditions: readonly Readonly<CarRentalProviderPathCondition>[] = Object.freeze([
+  ...carRentalProviderPathUnresolvedBlockingConditionIds.map((id) => ({ id, state: "unresolved_blocking" as const })),
+  ...carRentalProviderPathProviderVerificationConditionIds.map((id) => ({ id, state: "later_provider_verification_required" as const })),
+].map((condition) => Object.freeze(condition)));
+
+export const carRentalProviderPathOwnerConstraint = Object.freeze({
+  id: "OWNERS-01",
+  state: "recorded_constraint",
+} as const);
+
+export const carRentalProviderPathSoleOwnerConflicts = Object.freeze([
+  { id: "CONFLICT-01", state: "unresolved_conflict" },
+  { id: "CONFLICT-02", state: "unresolved_conflict" },
+  { id: "CONFLICT-03", state: "unresolved_conflict" },
+].map((conflict) => Object.freeze(conflict))) as readonly Readonly<{
+  id: "CONFLICT-01" | "CONFLICT-02" | "CONFLICT-03";
+  state: "unresolved_conflict";
+}>[];
+
+export const carRentalProviderPathCompletedActivationStageIds = Object.freeze([]) as readonly [];
+
+export const carRentalProviderPathZeroActivationTrackStageCounts: Readonly<Record<CarRentalConnectorId, 0>> = Object.freeze({
+  sabre: 0,
+  travelport: 0,
+  aggregator: 0,
+});
+
+export function buildCarRentalProviderPathSequencingPlan() {
+  const readiness = buildCarRentalProviderDecisionReadinessPlan(carRentalCompletedProviderDecisionReadinessEvidence);
+  const activation = buildCarRentalConnectorActivationPlan();
+
+  return {
+    mode: CAR_RENTAL_PROVIDER_PATH_SEQUENCING_MODE,
+    decisionId: CAR_RENTAL_PROVIDER_PATH_DECISION_ID,
+    decisionRecordedDate: CAR_RENTAL_PROVIDER_PATH_DECISION_RECORDED_DATE,
+    decisionKind: "phased_diligence_sequencing",
+    localSequencingDecisionRecorded: true,
+    decisionPaths: carRentalProviderPathSequencingEntries,
+    primaryAggregatorProviderId: "carnect",
+    secondaryEnterpriseProviderId: "sabre",
+    conditionalHoldProviderId: "travelport",
+    conditionalHoldConditionId: "TRAVELPORT-01",
+    conditionalHoldRequirement: "written_core_category_eligibility_or_approved_exception",
+    unselectedDecisionAlternativeIds: carRentalUnselectedDecisionAlternativeIds,
+    decisionPacketReady: readiness.decisionPacketReady,
+    completedReadinessGateCount: readiness.completedReadinessGateCount,
+    totalReadinessGateCount: readiness.totalReadinessGateCount,
+    classifiedConditionCount: CAR_RENTAL_PROVIDER_PATH_CLASSIFIED_CONDITION_COUNT,
+    unresolvedBlockingConditionCount: CAR_RENTAL_PROVIDER_PATH_UNRESOLVED_BLOCKING_COUNT,
+    providerVerificationRequiredCount: CAR_RENTAL_PROVIDER_PATH_PROVIDER_VERIFICATION_COUNT,
+    resolvedConditionCount: 0,
+    conditions: carRentalProviderPathConditions,
+    ownerConstraint: carRentalProviderPathOwnerConstraint,
+    soleOwnerConflicts: carRentalProviderPathSoleOwnerConflicts,
+    soleOwnerConflictState: "unresolved",
+    independentApprovalPresent: false,
+    separationOfDutiesPresent: false,
+    conditionResolutionPresent: false,
+    conflictResolutionPresent: false,
+    riskAcceptancePresent: false,
+    waiverOrOverridePresent: false,
+    formalRecommendationState: "not_issued",
+    commercialProviderSelectionState: "not_recorded",
+    providerSelected: false,
+    selectedProviderId: null,
+    runtimeProviderBindingState: "unbound",
+    runtimeProviderBinding: null,
+    activationProviderDecisionRecorded: false,
+    activationStageOneComplete: false,
+    completedActivationStageIds: carRentalProviderPathCompletedActivationStageIds,
+    parallelLaunchAuthorized: false,
+    activationTracks: activation.tracks.map((track) => ({
+      connectorId: track.connectorId,
+      completedStageCount: track.completedStageCount,
+      totalStageCount: track.totalStageCount,
+      active: track.active,
+      connectionState: track.connectionState,
+    })),
+    liveConnectorCount: activation.activeConnectorCount,
+    providerContactAuthorized: false,
+    providerAccountCreationAuthorized: false,
+    credentialHandlingAuthorized: false,
+    sandboxTrafficAuthorized: false,
+    externalTrafficAuthorized: false,
+    reservationMutationAuthorized: false,
+    refundExecutionAuthorized: false,
+    paymentAuthorized: false,
+    migrationAuthorized: false,
+    deploymentAuthorized: false,
+    productionAuthorized: false,
+    applicationKillSwitchState: "engaged",
+    databaseKillSwitchState: "engaged",
+  } as const;
+}
+
+export const carRentalProviderPathSequencingRecordedFields = Object.freeze([
+  "decision_case_id",
+  "evidence_mode",
+  "decision_artifact_id",
+  "decision_source_commit",
+  "decision_recorded_date",
+  "decision_kind",
+  "decision_paths",
+  "primary_aggregator_provider_id",
+  "secondary_enterprise_provider_id",
+  "conditional_hold_provider_id",
+  "conditional_hold_condition_id",
+  "conditional_hold_requirement",
+  "unselected_decision_alternative_ids",
+  "aggregator_diligence_priority_ids",
+  "aggregator_research_alternate_ids",
+  "classified_condition_count",
+  "unresolved_blocking_condition_count",
+  "provider_verification_required_count",
+  "resolved_condition_count",
+  "conditions",
+  "owner_constraint",
+  "sole_owner_conflicts",
+  "sole_owner_conflict_state",
+  "independent_approval_present",
+  "separation_of_duties_present",
+  "condition_resolution_present",
+  "conflict_resolution_present",
+  "risk_acceptance_present",
+  "waiver_or_override_present",
+  "formal_recommendation_state",
+  "commercial_provider_selection_state",
+  "provider_selected",
+  "selected_provider_id",
+  "runtime_provider_binding_state",
+  "runtime_provider_binding",
+  "activation_provider_decision_recorded",
+  "activation_stage_one_complete",
+  "completed_activation_stage_ids",
+  "parallel_launch_authorized",
+  "activation_track_stage_counts",
+  "live_connector_count",
+  "evidence_digest",
+  "provider_contact_made",
+  "provider_account_present",
+  "credential_material_present",
+  "sandbox_connection_present",
+  "external_request_attempted",
+  "reservation_action_attempted",
+  "refund_action_attempted",
+  "payment_action_attempted",
+  "migration_attempted",
+  "deployment_attempted",
+  "production_authorized",
+  "application_kill_switch_state",
+  "database_kill_switch_state",
+] as const);
+
+export const carRentalProviderPathSequencingProhibitedFields = Object.freeze([
+  "provider_contact_identity",
+  "provider_contact_message",
+  "provider_submission",
+  "provider_application",
+  "executed_contract",
+  "commercial_rate",
+  "formal_score",
+  "weighted_score",
+  "formal_recommendation",
+  "runtime_provider_id",
+  "provider_account_id",
+  "provider_endpoint",
+  "sandbox_endpoint",
+  "production_endpoint",
+  "api_key",
+  "client_id",
+  "client_secret",
+  "access_token",
+  "refresh_token",
+  "credential_value",
+  "raw_request",
+  "raw_response",
+  "raw_webhook_payload",
+  "traveler_identity",
+  "driver_license",
+  "payment_card",
+  "bank_account",
+  "live_reservation_reference",
+  "production_approval",
+] as const);
+
+export type CarRentalProviderPathSequencingRecord = {
+  decisionCaseId: string;
+  evidenceMode: typeof CAR_RENTAL_PROVIDER_PATH_SEQUENCING_EVIDENCE_MODE;
+  decisionArtifactId: typeof CAR_RENTAL_PROVIDER_PATH_DECISION_ID;
+  decisionSourceCommit: typeof CAR_RENTAL_PROVIDER_PATH_DECISION_SOURCE_COMMIT;
+  decisionRecordedDate: typeof CAR_RENTAL_PROVIDER_PATH_DECISION_RECORDED_DATE;
+  decisionKind: CarRentalProviderPathDecisionKind;
+  decisionPaths: readonly CarRentalProviderPathSequencingEntry[];
+  primaryAggregatorProviderId: "carnect";
+  secondaryEnterpriseProviderId: "sabre";
+  conditionalHoldProviderId: "travelport";
+  conditionalHoldConditionId: "TRAVELPORT-01";
+  conditionalHoldRequirement: "written_core_category_eligibility_or_approved_exception";
+  unselectedDecisionAlternativeIds: readonly CarRentalUnselectedDecisionAlternativeId[];
+  aggregatorDiligencePriorityIds: readonly CarRentalAggregatorShortlistCandidateId[];
+  aggregatorResearchAlternateIds: readonly CarRentalAggregatorAlternateCandidateId[];
+  classifiedConditionCount: 29;
+  unresolvedBlockingConditionCount: 12;
+  providerVerificationRequiredCount: 17;
+  resolvedConditionCount: 0;
+  conditions: readonly CarRentalProviderPathCondition[];
+  ownerConstraint: typeof carRentalProviderPathOwnerConstraint;
+  soleOwnerConflicts: typeof carRentalProviderPathSoleOwnerConflicts;
+  soleOwnerConflictState: CarRentalSoleOwnerConflictState;
+  independentApprovalPresent: false;
+  separationOfDutiesPresent: false;
+  conditionResolutionPresent: false;
+  conflictResolutionPresent: false;
+  riskAcceptancePresent: false;
+  waiverOrOverridePresent: false;
+  formalRecommendationState: CarRentalFormalRecommendationState;
+  commercialProviderSelectionState: CarRentalProviderPathSelectionState;
+  providerSelected: false;
+  selectedProviderId: null;
+  runtimeProviderBindingState: CarRentalRuntimeProviderBindingState;
+  runtimeProviderBinding: null;
+  activationProviderDecisionRecorded: false;
+  activationStageOneComplete: false;
+  completedActivationStageIds: readonly [];
+  parallelLaunchAuthorized: false;
+  activationTrackStageCounts: Readonly<Record<CarRentalConnectorId, 0>>;
+  liveConnectorCount: 0;
+  evidenceDigest: string;
+  providerContactMade: false;
+  providerAccountPresent: false;
+  credentialMaterialPresent: false;
+  sandboxConnectionPresent: false;
+  externalRequestAttempted: false;
+  reservationActionAttempted: false;
+  refundActionAttempted: false;
+  paymentActionAttempted: false;
+  migrationAttempted: false;
+  deploymentAttempted: false;
+  productionAuthorized: false;
+  applicationKillSwitchState: CarRentalConnectorActivationKillSwitchState;
+  databaseKillSwitchState: CarRentalConnectorActivationKillSwitchState;
+  recordedFields: readonly string[];
+  prohibitedDataDetected: boolean;
+};
+
+const carRentalProviderPathSequencingRuntimeKeys = Object.freeze([
+  "decisionCaseId",
+  "evidenceMode",
+  "decisionArtifactId",
+  "decisionSourceCommit",
+  "decisionRecordedDate",
+  "decisionKind",
+  "decisionPaths",
+  "primaryAggregatorProviderId",
+  "secondaryEnterpriseProviderId",
+  "conditionalHoldProviderId",
+  "conditionalHoldConditionId",
+  "conditionalHoldRequirement",
+  "unselectedDecisionAlternativeIds",
+  "aggregatorDiligencePriorityIds",
+  "aggregatorResearchAlternateIds",
+  "classifiedConditionCount",
+  "unresolvedBlockingConditionCount",
+  "providerVerificationRequiredCount",
+  "resolvedConditionCount",
+  "conditions",
+  "ownerConstraint",
+  "soleOwnerConflicts",
+  "soleOwnerConflictState",
+  "independentApprovalPresent",
+  "separationOfDutiesPresent",
+  "conditionResolutionPresent",
+  "conflictResolutionPresent",
+  "riskAcceptancePresent",
+  "waiverOrOverridePresent",
+  "formalRecommendationState",
+  "commercialProviderSelectionState",
+  "providerSelected",
+  "selectedProviderId",
+  "runtimeProviderBindingState",
+  "runtimeProviderBinding",
+  "activationProviderDecisionRecorded",
+  "activationStageOneComplete",
+  "completedActivationStageIds",
+  "parallelLaunchAuthorized",
+  "activationTrackStageCounts",
+  "liveConnectorCount",
+  "evidenceDigest",
+  "providerContactMade",
+  "providerAccountPresent",
+  "credentialMaterialPresent",
+  "sandboxConnectionPresent",
+  "externalRequestAttempted",
+  "reservationActionAttempted",
+  "refundActionAttempted",
+  "paymentActionAttempted",
+  "migrationAttempted",
+  "deploymentAttempted",
+  "productionAuthorized",
+  "applicationKillSwitchState",
+  "databaseKillSwitchState",
+  "recordedFields",
+  "prohibitedDataDetected",
+] as const);
+
+function buildCarRentalProviderPathSequencingValidationResult(errors: string[]) {
+  const valid = errors.length === 0;
+
+  return {
+    valid,
+    localSequencingDecisionRecorded: valid,
+    conditionsPreserved: valid,
+    conflictsPreserved: valid,
+    providerSelected: false,
+    runtimeProviderBound: false,
+    activationProviderDecisionRecorded: false,
+    activationStageOneComplete: false,
+    liveConnectorCount: 0,
+    providerContactAuthorized: false,
+    providerAccountCreationAuthorized: false,
+    credentialHandlingAuthorized: false,
+    sandboxTrafficAuthorized: false,
+    externalTrafficAuthorized: false,
+    reservationMutationAuthorized: false,
+    refundExecutionAuthorized: false,
+    paymentAuthorized: false,
+    migrationAuthorized: false,
+    deploymentAuthorized: false,
+    productionAuthorized: false,
+    errors,
+  } as const;
+}
+
+function sameExactDataValue(left: unknown, right: unknown, visited = new WeakMap<object, object>()): boolean {
+  if (Object.is(left, right)) return true;
+  if (typeof left !== "object" || left === null || typeof right !== "object" || right === null) return false;
+
+  try {
+    if (Array.isArray(left) !== Array.isArray(right)) return false;
+    if (Object.getPrototypeOf(left) !== Object.getPrototypeOf(right)) return false;
+
+    const priorMatch = visited.get(left);
+    if (priorMatch) return priorMatch === right;
+    visited.set(left, right);
+
+    const leftKeys = Reflect.ownKeys(left);
+    const rightKeys = Reflect.ownKeys(right);
+    if (leftKeys.length !== rightKeys.length || leftKeys.some((key, index) => key !== rightKeys[index])) return false;
+
+    return leftKeys.every((key) => {
+      const leftDescriptor = Object.getOwnPropertyDescriptor(left, key);
+      const rightDescriptor = Object.getOwnPropertyDescriptor(right, key);
+      if (!leftDescriptor || !rightDescriptor || !("value" in leftDescriptor) || !("value" in rightDescriptor)) return false;
+      return sameExactDataValue(leftDescriptor.value, rightDescriptor.value, visited);
+    });
+  } catch {
+    return false;
+  }
+}
+
+function hasExactOwnEnumerableDataKeys(value: object, expectedKeys: readonly string[]) {
+  try {
+    const actualKeys = Reflect.ownKeys(value);
+    return actualKeys.length === expectedKeys.length
+      && actualKeys.every((key) => {
+        if (typeof key !== "string" || !expectedKeys.includes(key)) return false;
+        const descriptor = Object.getOwnPropertyDescriptor(value, key);
+        return Boolean(descriptor && descriptor.enumerable && "value" in descriptor);
+      });
+  } catch {
+    return false;
+  }
+}
+
+function isPlainProviderPathRecord(value: unknown): value is Record<string, unknown> {
+  try {
+    return typeof value === "object"
+      && value !== null
+      && !Array.isArray(value)
+      && Object.getPrototypeOf(value) === Object.prototype;
+  } catch {
+    return false;
+  }
+}
+
+function validateCarRentalProviderPathSequencingRecordKnown(record: CarRentalProviderPathSequencingRecord) {
+  const errors: string[] = [];
+  const expectedConnectorIds = carRentalNamedConnectorDefinitions.map((connector) => connector.id);
+
+  if (typeof record.decisionCaseId !== "string" || !isStableToken(record.decisionCaseId)) errors.push("Provider-path decision case ID must be a stable opaque token.");
+  if (record.evidenceMode !== CAR_RENTAL_PROVIDER_PATH_SEQUENCING_EVIDENCE_MODE) errors.push("Provider-path decision evidence must remain local documentation.");
+  if (record.decisionArtifactId !== CAR_RENTAL_PROVIDER_PATH_DECISION_ID) errors.push("Provider-path decision must bind the controlled decision artifact.");
+  if (record.decisionSourceCommit !== CAR_RENTAL_PROVIDER_PATH_DECISION_SOURCE_COMMIT) errors.push("Provider-path decision source commit does not match the published artifact.");
+  if (record.decisionRecordedDate !== CAR_RENTAL_PROVIDER_PATH_DECISION_RECORDED_DATE) errors.push("Provider-path decision date does not match the controlled artifact.");
+  if (record.decisionKind !== "phased_diligence_sequencing") errors.push("Only the approved phased diligence sequencing decision may be represented.");
+  if (!Array.isArray(record.decisionPaths) || !sameExactDataValue(record.decisionPaths, carRentalProviderPathSequencingEntries)) errors.push("Provider-path entries must exactly match the approved sequencing decision and frozen research classifications.");
+  if (record.primaryAggregatorProviderId !== "carnect") errors.push("Carnect must remain the named primary aggregator diligence path.");
+  if (record.secondaryEnterpriseProviderId !== "sabre") errors.push("Sabre must remain the secondary enterprise diligence path.");
+  if (record.conditionalHoldProviderId !== "travelport"
+    || record.conditionalHoldConditionId !== "TRAVELPORT-01"
+    || record.conditionalHoldRequirement !== "written_core_category_eligibility_or_approved_exception") errors.push("Travelport must remain on the exact approved TRAVELPORT-01 conditional hold.");
+  if (!Array.isArray(record.unselectedDecisionAlternativeIds)
+    || hasDuplicates(record.unselectedDecisionAlternativeIds)
+    || !sameExactDataValue(record.unselectedDecisionAlternativeIds, carRentalUnselectedDecisionAlternativeIds)) errors.push("Unselected decision alternatives must exactly preserve the approved order.");
+  if (!Array.isArray(record.aggregatorDiligencePriorityIds)
+    || hasDuplicates(record.aggregatorDiligencePriorityIds)
+    || !sameExactDataValue(record.aggregatorDiligencePriorityIds, carRentalProviderPathAggregatorDiligencePriorityIds)) errors.push("Aggregator diligence-priority research classifications must remain unchanged.");
+  if (!Array.isArray(record.aggregatorResearchAlternateIds)
+    || hasDuplicates(record.aggregatorResearchAlternateIds)
+    || !sameExactDataValue(record.aggregatorResearchAlternateIds, carRentalProviderPathAggregatorResearchAlternateIds)) errors.push("Aggregator research-alternate classifications must remain unchanged.");
+  if (record.classifiedConditionCount !== CAR_RENTAL_PROVIDER_PATH_CLASSIFIED_CONDITION_COUNT
+    || record.unresolvedBlockingConditionCount !== CAR_RENTAL_PROVIDER_PATH_UNRESOLVED_BLOCKING_COUNT
+    || record.providerVerificationRequiredCount !== CAR_RENTAL_PROVIDER_PATH_PROVIDER_VERIFICATION_COUNT
+    || record.resolvedConditionCount !== 0
+    || record.unresolvedBlockingConditionCount + record.providerVerificationRequiredCount !== record.classifiedConditionCount
+    || !Array.isArray(record.conditions)
+    || !sameExactDataValue(record.conditions, carRentalProviderPathConditions)) errors.push("All 29 classified conditions must remain unresolved in their exact recorded categories.");
+  if (!sameExactDataValue(record.ownerConstraint, carRentalProviderPathOwnerConstraint)
+    || !Array.isArray(record.soleOwnerConflicts)
+    || !sameExactDataValue(record.soleOwnerConflicts, carRentalProviderPathSoleOwnerConflicts)
+    || record.soleOwnerConflictState !== "unresolved"
+    || record.independentApprovalPresent !== false
+    || record.separationOfDutiesPresent !== false
+    || record.conditionResolutionPresent !== false
+    || record.conflictResolutionPresent !== false
+    || record.riskAcceptancePresent !== false
+    || record.waiverOrOverridePresent !== false) errors.push("Sole-owner conflicts, unresolved conditions, and missing independent review must remain unchanged.");
+  if (record.formalRecommendationState !== "not_issued") errors.push("A formal provider recommendation has not been issued.");
+  if (record.commercialProviderSelectionState !== "not_recorded" || record.providerSelected !== false || record.selectedProviderId !== null) errors.push("Commercial provider selection is not recorded by path sequencing.");
+  if (record.runtimeProviderBindingState !== "unbound" || record.runtimeProviderBinding !== null) errors.push("Runtime provider binding must remain absent.");
+  if (record.activationProviderDecisionRecorded !== false
+    || record.activationStageOneComplete !== false
+    || !Array.isArray(record.completedActivationStageIds)
+    || record.completedActivationStageIds.length !== 0
+    || record.parallelLaunchAuthorized !== false) errors.push("Activation provider decision, stage 1, completed-stage inventory, and parallel launch must remain false or empty.");
+  if (typeof record.activationTrackStageCounts !== "object"
+    || record.activationTrackStageCounts === null
+    || Array.isArray(record.activationTrackStageCounts)
+    || !hasExactOwnEnumerableDataKeys(record.activationTrackStageCounts, expectedConnectorIds)
+    || !sameExactDataValue(record.activationTrackStageCounts, carRentalProviderPathZeroActivationTrackStageCounts)
+    || record.liveConnectorCount !== 0) errors.push("Every connector must remain at 0 of 10 activation stages and 0 of 3 live.");
+  if (typeof record.evidenceDigest !== "string" || record.evidenceDigest !== CAR_RENTAL_PROVIDER_PATH_DECISION_SOURCE_DIGEST || !isSha256Digest(record.evidenceDigest)) errors.push("Provider-path decision evidence digest must match the published decision artifact.");
+  if (record.providerContactMade !== false) errors.push("Provider contact is not authorized by path sequencing.");
+  if (record.providerAccountPresent !== false) errors.push("Provider accounts are not authorized by path sequencing.");
+  if (record.credentialMaterialPresent !== false) errors.push("Credential material is not authorized by path sequencing.");
+  if (record.sandboxConnectionPresent !== false || record.externalRequestAttempted !== false) errors.push("Sandbox or external provider traffic is not authorized by path sequencing.");
+  if (record.reservationActionAttempted !== false || record.refundActionAttempted !== false || record.paymentActionAttempted !== false) errors.push("Reservation, refund, or payment actions are not authorized by path sequencing.");
+  if (record.migrationAttempted !== false || record.deploymentAttempted !== false) errors.push("Migration or deployment is not authorized by path sequencing.");
+  if (record.productionAuthorized !== false) errors.push("Production is not authorized by path sequencing.");
+  if (record.applicationKillSwitchState !== "engaged") errors.push("Application traffic kill switch must remain engaged.");
+  if (record.databaseKillSwitchState !== "engaged") errors.push("Database traffic kill switch must remain engaged.");
+  if (!hasExactOwnEnumerableDataKeys(record, carRentalProviderPathSequencingRuntimeKeys)) errors.push("Provider-path sequencing record contains unsupported, hidden, accessor-backed, or prohibited runtime fields.");
+  if (!Array.isArray(record.recordedFields)) {
+    errors.push("Recorded-field inventory must be an array.");
+  } else {
+    if (hasDuplicates(record.recordedFields)) errors.push("Recorded-field inventory cannot contain duplicates.");
+    if (record.recordedFields.some((field) => !carRentalProviderPathSequencingRecordedFields.includes(field as (typeof carRentalProviderPathSequencingRecordedFields)[number]))) errors.push("Recorded-field inventory contains unsupported or prohibited fields.");
+    if (!sameExactDataValue(record.recordedFields, carRentalProviderPathSequencingRecordedFields)) errors.push("Recorded-field inventory must exactly match the minimized provider-path allowlist.");
+  }
+  if (record.prohibitedDataDetected !== false) errors.push("Contact, contract, score, recommendation, runtime binding, account, credential, endpoint, payload, identity, payment, live-reference, or Production-approval data blocks provider-path sequencing.");
+
+  return buildCarRentalProviderPathSequencingValidationResult(errors);
+}
+
+export function validateCarRentalProviderPathSequencingRecord(input: unknown) {
+  if (!isPlainProviderPathRecord(input)) {
+    return buildCarRentalProviderPathSequencingValidationResult(["Provider-path sequencing record must be a plain object."]);
+  }
+
+  try {
+    return validateCarRentalProviderPathSequencingRecordKnown(input as CarRentalProviderPathSequencingRecord);
+  } catch {
+    return buildCarRentalProviderPathSequencingValidationResult(["Provider-path sequencing record could not be read safely."]);
+  }
+}
+
+export const carRentalProviderPathSequencingRecord: CarRentalProviderPathSequencingRecord = Object.freeze({
+  decisionCaseId: "provider-path-sequencing-case-01",
+  evidenceMode: CAR_RENTAL_PROVIDER_PATH_SEQUENCING_EVIDENCE_MODE,
+  decisionArtifactId: CAR_RENTAL_PROVIDER_PATH_DECISION_ID,
+  decisionSourceCommit: CAR_RENTAL_PROVIDER_PATH_DECISION_SOURCE_COMMIT,
+  decisionRecordedDate: CAR_RENTAL_PROVIDER_PATH_DECISION_RECORDED_DATE,
+  decisionKind: "phased_diligence_sequencing",
+  decisionPaths: carRentalProviderPathSequencingEntries,
+  primaryAggregatorProviderId: "carnect",
+  secondaryEnterpriseProviderId: "sabre",
+  conditionalHoldProviderId: "travelport",
+  conditionalHoldConditionId: "TRAVELPORT-01",
+  conditionalHoldRequirement: "written_core_category_eligibility_or_approved_exception",
+  unselectedDecisionAlternativeIds: carRentalUnselectedDecisionAlternativeIds,
+  aggregatorDiligencePriorityIds: carRentalProviderPathAggregatorDiligencePriorityIds,
+  aggregatorResearchAlternateIds: carRentalProviderPathAggregatorResearchAlternateIds,
+  classifiedConditionCount: CAR_RENTAL_PROVIDER_PATH_CLASSIFIED_CONDITION_COUNT,
+  unresolvedBlockingConditionCount: CAR_RENTAL_PROVIDER_PATH_UNRESOLVED_BLOCKING_COUNT,
+  providerVerificationRequiredCount: CAR_RENTAL_PROVIDER_PATH_PROVIDER_VERIFICATION_COUNT,
+  resolvedConditionCount: 0,
+  conditions: carRentalProviderPathConditions,
+  ownerConstraint: carRentalProviderPathOwnerConstraint,
+  soleOwnerConflicts: carRentalProviderPathSoleOwnerConflicts,
+  soleOwnerConflictState: "unresolved",
+  independentApprovalPresent: false,
+  separationOfDutiesPresent: false,
+  conditionResolutionPresent: false,
+  conflictResolutionPresent: false,
+  riskAcceptancePresent: false,
+  waiverOrOverridePresent: false,
+  formalRecommendationState: "not_issued",
+  commercialProviderSelectionState: "not_recorded",
+  providerSelected: false,
+  selectedProviderId: null,
+  runtimeProviderBindingState: "unbound",
+  runtimeProviderBinding: null,
+  activationProviderDecisionRecorded: false,
+  activationStageOneComplete: false,
+  completedActivationStageIds: carRentalProviderPathCompletedActivationStageIds,
+  parallelLaunchAuthorized: false,
+  activationTrackStageCounts: carRentalProviderPathZeroActivationTrackStageCounts,
+  liveConnectorCount: 0,
+  evidenceDigest: CAR_RENTAL_PROVIDER_PATH_DECISION_SOURCE_DIGEST,
+  providerContactMade: false,
+  providerAccountPresent: false,
+  credentialMaterialPresent: false,
+  sandboxConnectionPresent: false,
+  externalRequestAttempted: false,
+  reservationActionAttempted: false,
+  refundActionAttempted: false,
+  paymentActionAttempted: false,
+  migrationAttempted: false,
+  deploymentAttempted: false,
+  productionAuthorized: false,
+  applicationKillSwitchState: "engaged",
+  databaseKillSwitchState: "engaged",
+  recordedFields: carRentalProviderPathSequencingRecordedFields,
+  prohibitedDataDetected: false,
+});

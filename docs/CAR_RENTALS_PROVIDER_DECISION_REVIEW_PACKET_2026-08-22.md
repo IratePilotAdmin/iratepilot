@@ -4,13 +4,13 @@ Prepared: August 22, 2026
 
 Mode: **local documentation only**
 
-Status: **all 7 internal review gates complete locally; readiness is `ready_for_internal_decision` and `decision_packet_ready` is true only for this local documentation packet; the owner has since answered the neutral question through the separate local phased-diligence decision recorded in `docs/CAR_RENTALS_PROVIDER_PATH_DECISION_2026-08-22.md`; formal recommendation remains `not_issued`, all 29 classified conditions and all sole-owner conflicts remain unresolved, and the committed model, accepted Preview, aggregator binding, and activation stage 1 remain unchanged**
+Status: **all 7 internal review gates complete locally; readiness is `ready_for_internal_decision` and `decision_packet_ready` is true only for this documentation packet; the owner later answered the neutral question through the separate phased-diligence decision recorded in `docs/CAR_RENTALS_PROVIDER_PATH_DECISION_2026-08-22.md`, and a still later approved local implementation now represents that sequence in a separate fail-closed source record; formal recommendation remains `not_issued`, all 29 classified conditions and all sole-owner conflicts remain unresolved, the activation record and accepted Preview remain provider-unselected with activation stage 1 incomplete, and the new representation has not been committed, published, deployed, or accepted in Preview**
 
 ## Approved internal scope
 
 This packet records the explicitly authorized Product + Research reconciliation of the existing 3-of-3 public research artifact, the separately authorized Executive + Product definition of a neutral internal decision question, the separately authorized Product + Architecture freeze of the exact candidate inventory for one internal review cycle, the separately authorized internal owner acknowledgement of the recorded public-evidence limitations, the separately authorized Commercial + Engineering + Security review and classification of every recorded unknown and hard stop, the separately authorized Executive + Governance review of canonical functional ownership and sole-owner conflicts, and the separately authorized Executive + Release acknowledgement of the separate provider-decision boundary. Completing Gate 7 made this packet ready for a later internal decision; it did not make that decision. The owner subsequently used a separate authorization to record the phased-diligence decision in `docs/CAR_RENTALS_PROVIDER_PATH_DECISION_2026-08-22.md`.
 
-This review-packet documentation does not change application code, tests, migrations, environment configuration, deployment configuration, the accepted Preview deployment, or Production. It is an internal owner risk acknowledgement only and does not claim independent legal review or provide legal advice. The subsequent decision record answers the question only for phased diligence; neither document authorizes scoring, a formal recommendation, runtime provider selection, connector binding, supplier contact, messages, forms, calls, applications, contracts, accounts, credentials, endpoints, sandbox or external traffic, reservations, refunds, payments, migrations, deployment, promotion, or any Production action.
+Completion of this review-packet documentation did not change application code, tests, migrations, environment configuration, deployment configuration, the accepted Preview deployment, or Production. It is an internal owner risk acknowledgement only and does not claim independent legal review or provide legal advice. The subsequent decision record answers the question only for phased diligence. The later local source-model reconciliation represents that answer separately while preserving every fail-closed activation invariant. None of these milestones authorizes scoring, a formal recommendation, commercial or runtime provider selection, connector binding, supplier contact, messages, forms, calls, applications, contracts, accounts, credentials, endpoints, sandbox or external traffic, reservations, refunds, payments, migrations, deployment, promotion, or any Production action.
 
 ## Artifact identity
 
@@ -364,8 +364,10 @@ Freeze controls:
 - Local business decision: recorded separately as phased diligence in `docs/CAR_RENTALS_PROVIDER_PATH_DECISION_2026-08-22.md`
 - Local decision paths: Carnect primary aggregator diligence; Sabre secondary enterprise diligence; Travelport conditional hold
 - Unselected decision alternatives: CarTrawler, Booking.com Demand API, EconomyBookings, DiscoverCars; Gate 3 research classifications remain unchanged
-- Committed source-model provider decision: not recorded
-- Committed source-model selected provider: none
+- Separate local source representation: implemented as `provider_path_sequencing_local_only`; not committed, published, deployed, or accepted in Preview
+- Commercial provider selection state: `not_recorded`; provider selected: false; `selectedProviderId`: null
+- Activation-readiness `providerDecisionRecorded`: false
+- Runtime provider binding: `unbound`; binding value: null
 - Candidate scope: frozen only for `cars-provider-decision-review-2026-08-22-cycle-01`
 - Aggregator binding: provider unselected
 - Activation stage 1: incomplete
@@ -381,6 +383,6 @@ Freeze controls:
 
 ## Next gate
 
-The separate Executive + Product provider-decision gate has now been completed only as a local phased-diligence decision in `docs/CAR_RENTALS_PROVIDER_PATH_DECISION_2026-08-22.md`. It was not inferred from packet readiness and does not authorize provider contact.
+The separate Executive + Product provider-decision gate was completed only as a phased-diligence decision in `docs/CAR_RENTALS_PROVIDER_PATH_DECISION_2026-08-22.md`. It was not inferred from packet readiness and does not authorize provider contact. A later, separately approved local source-model reconciliation now represents that exact sequence without recording a commercial provider selection, runtime binding, activation provider decision, completed stage, resolved condition, or resolved conflict.
 
-The next safe gate is local source-model reconciliation so the committed provider-decision record can represent the phased diligence decision without granting contact, account, credential, sandbox, traffic, transaction, deployment, or Production authority. This packet and the separate decision record remain local and uncommitted until an additional commit-and-publication authorization is given.
+The local source representation and five reconciled documents now pass 32 focused safety tests, ESLint, TypeScript, the full 1,274-test suite across 262 files, and the optimized 115-page Next.js build. They remain local and uncommitted. The next safe gate is a separately approved commit and normal private-branch push only; deployment and authenticated Preview acceptance remain separate later gates. Contact, account, credential, sandbox, traffic, transaction, migration, deployment, and Production authority remain outside scope.

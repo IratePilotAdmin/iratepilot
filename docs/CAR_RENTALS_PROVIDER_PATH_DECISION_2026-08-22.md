@@ -6,7 +6,7 @@ Mode: **local documentation only**
 
 Decision ID: `cars-provider-path-decision-2026-08-22-01`
 
-Status: **owner decision recorded locally for phased provider diligence; Carnect is the named primary aggregator diligence path, Sabre is the secondary enterprise diligence path, and Travelport is on conditional hold pending written Core Category eligibility or an approved exception; no provider contact or external authority is created, and the committed activation model and accepted Preview remain unchanged**
+Status: **owner decision recorded for phased provider diligence and now represented in a separate fail-closed source record locally; Carnect is the named primary aggregator diligence path, Sabre is the secondary enterprise diligence path, and Travelport is on conditional hold pending written Core Category eligibility or an approved exception; formal recommendation remains `not_issued`, all 29 conditions and all sole-owner conflicts remain unresolved, no provider contact or external authority is created, the activation record remains provider-unselected with stage 1 incomplete, and the new local representation has not been committed, published, deployed, or accepted in Preview**
 
 ## Decision authority and provenance
 
@@ -39,18 +39,20 @@ The selected Gate 2 option is a **phased multi-path approach**:
 
 The neutral question is answered only at the local business-documentation layer. No formal recommendation was issued because the owner made the decision directly. The decision does not resolve any of the 29 classified conditions and does not cure any sole-owner governance conflict.
 
-## Source-model and Preview reconciliation boundary
+## Local source-model and Preview boundary
 
-This documentation-only decision does not alter `lib/cars/connector-activation-readiness.ts`, application code, tests, fixtures, migrations, environment or deployment configuration, or the accepted isolated Preview.
+When first recorded, this decision was documentation-only and did not alter `lib/cars/connector-activation-readiness.ts`, application code, tests, fixtures, migrations, environment or deployment configuration, or the accepted isolated Preview. Under the later, separately approved local source-model reconciliation, `lib/cars/connector-activation-readiness.ts` now contains a distinct `provider_path_sequencing_local_only` record for this exact decision. That local record is not a commercial provider selection, activation provider-decision record, runtime connector binding, completed activation stage, deployment, or Preview acceptance.
 
-Therefore the existing technical records remain unchanged until a separately approved source-model reconciliation:
+The separate local sequencing record preserves the existing activation and accepted-Preview state:
 
-- committed `providerDecisionState`: `separate_decision_required`
-- committed `providerDecisionRecorded`: false
-- committed `selectedProviderId`: null
-- committed generic aggregator connector: `provider-unselected`
+- activation-readiness `providerDecisionState`: `separate_decision_required`
+- activation-readiness `providerDecisionRecorded`: false
+- commercial provider selection state: `not_recorded`
+- selected provider: false; `selectedProviderId`: null
+- runtime provider binding: `unbound`; binding value: null
+- generic aggregator connector: `provider-unselected`
 - accepted Preview internal review display: historical 0 of 7
-- committed and Preview activation stage 1: incomplete
+- activation stage 1: incomplete; completed activation stages: 0
 - Sabre activation: 0 of 10
 - Travelport activation: 0 of 10
 - Aggregator activation: 0 of 10
@@ -58,7 +60,7 @@ Therefore the existing technical records remain unchanged until a separately app
 - Application traffic kill switch: engaged
 - Database traffic kill switch: engaged
 
-The local decision may not be represented as a runtime selection or completed activation stage until that source-model reconciliation is separately authorized, implemented, verified, and released through its own gates.
+The local source record represents only the approved diligence sequence. It cannot be treated as a formal recommendation, commercial provider selection, runtime selection, connector binding, resolved condition or conflict, or completed activation stage. Its local implementation does not change the accepted Preview and grants no publication, deployment, or external authority.
 
 ## Unresolved conditions preserved
 
@@ -72,7 +74,15 @@ The local decision may not be represented as a runtime selection or completed ac
 ## Authority snapshot
 
 - Local phased diligence decision: recorded
+- Separate local source representation: implemented; not committed, published, deployed, or accepted in Preview
 - Formal recommendation: `not_issued`
+- Commercial provider selection: `not_recorded`
+- Selected provider: none
+- Runtime provider binding: unbound
+- Activation provider decision recorded: false
+- Activation stage 1 complete: false
+- Classified conditions: 29 unresolved; 12 `unresolved_blocking` and 17 `later_provider_verification_required`
+- Sole-owner conflicts: unresolved; independent approval and separation of duties remain absent
 - Provider contact authorization: false
 - Supplier messages, forms, calls, or applications: 0
 - Contracts or accepted provider terms: 0
@@ -88,6 +98,6 @@ The local decision may not be represented as a runtime selection or completed ac
 
 ## Next approval boundary
 
-The next safe gate is a local source-model reconciliation that can represent this phased diligence decision without creating contact or transaction authority. That gate would require separate approval and must keep both traffic kill switches engaged. Provider contact remains a later, separately scoped authorization after the decision is truthfully represented and verified.
+The source-model reconciliation is implemented and verified locally with 32 focused safety tests, ESLint, TypeScript, the full 1,274-test suite across 262 files, and the optimized 115-page Next.js build. All 29 conditions, all sole-owner conflicts, every false authority flag, the zero activation counters, and both engaged traffic kill switches remain unchanged. The next safe gate is a separately approved commit and normal private-branch push only. Deployment and authenticated Preview acceptance remain separate later approvals, and provider contact remains a later, separately scoped authorization.
 
-This decision record remains local and uncommitted until a separate commit-and-publication authorization is given.
+The new source-model implementation and these five documentation updates remain local and uncommitted under the current authorization; no publication, deployment, or Preview acceptance is claimed.

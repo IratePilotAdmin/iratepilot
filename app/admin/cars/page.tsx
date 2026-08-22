@@ -100,6 +100,8 @@ import {
 import {
   buildCarRentalConnectorActivationPlan,
   buildCarRentalProviderDecisionReadinessPlan,
+  buildCarRentalProviderPathSequencingPlan,
+  carRentalCompletedProviderDecisionReadinessEvidence,
   carRentalConnectorActivationProhibitedFields,
   carRentalConnectorActivationRecordedFields,
 } from "@/lib/cars/connector-activation-readiness";
@@ -138,11 +140,14 @@ import {
 
 export const metadata: Metadata = {
   title: "Car Rentals provider-decision readiness | iRatePilot Admin",
-  description: "Read-only car-rental provider-decision workspace with completed public research, no provider selection, fail-closed activation tracks, and the completed provider-neutral software roadmap.",
+  description: "Read-only car-rental provider-path workspace with a recorded diligence sequence, no commercial or runtime provider selection, and fail-closed activation tracks.",
 };
 
 export default function AdminCarsPage() {
-  const providerDecisionReadiness = buildCarRentalProviderDecisionReadinessPlan();
+  const providerDecisionReadiness = buildCarRentalProviderDecisionReadinessPlan(carRentalCompletedProviderDecisionReadinessEvidence);
+  const providerPathSequencing = buildCarRentalProviderPathSequencingPlan();
+  const principalProviderPaths = providerPathSequencing.decisionPaths.filter((path) => path.disposition !== "unselected_decision_alternative");
+  const unselectedProviderAlternatives = providerPathSequencing.decisionPaths.filter((path) => path.disposition === "unselected_decision_alternative");
   const connectorActivation = buildCarRentalConnectorActivationPlan();
   const namedConnectors = buildCarRentalNamedConnectorPlan();
   const controlledLaunch = buildCarRentalControlledLaunchPlan();
@@ -176,20 +181,56 @@ export default function AdminCarsPage() {
           <div className="flex items-center gap-3"><ClipboardCheck className="h-5 w-5 text-indigo-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-indigo-800">Provider-decision readiness</p></div>
           <div className="mt-2 grid gap-5 lg:grid-cols-[1fr_300px] lg:items-start">
             <div>
-              <h2 className="text-2xl font-bold text-slate-950">Public research complete; internal decision still separate</h2>
-              <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">3 of 3 public research tracks recorded for Sabre, Travelport, and a provider-unselected aggregator path. This is evidence for an internal review only. It does not create a formal recommendation, select a provider, complete activation stage 1, or authorize contact.</p>
+              <h2 className="text-2xl font-bold text-slate-950">Internal review complete; diligence sequence recorded locally</h2>
+              <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">The 3-of-3 public-research artifact and all seven internal review gates support a phased diligence sequence: Carnect first, Sabre second, and Travelport on conditional hold. This local record does not issue a formal recommendation, select or bind a provider for runtime use, complete activation stage 1, or authorize contact.</p>
             </div>
             <div className="rounded-2xl border border-amber-300 bg-amber-50 p-5">
               <p className="text-xs font-semibold uppercase tracking-[.14em] text-amber-800">Decision state</p>
-              <p className="mt-2 font-bold text-amber-950">No provider selected</p>
-              <p className="mt-2 text-sm leading-6 text-amber-900">Formal recommendation not issued · provider decision not recorded.</p>
+              <p className="mt-2 font-bold text-amber-950">No commercial or runtime provider selected</p>
+              <p className="mt-2 text-sm leading-6 text-amber-900">Local diligence sequence recorded · formal recommendation not issued · activation provider decision not recorded.</p>
             </div>
           </div>
 
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             <article className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5"><h3 className="font-semibold text-emerald-950">Public research</h3><p className="mt-2 text-sm leading-6 text-emerald-900">{providerDecisionReadiness.researchCompletedCount} of {providerDecisionReadiness.researchTotalCount} tracks recorded from public evidence.</p></article>
-            <article className="rounded-2xl border border-indigo-200 bg-white p-5"><h3 className="font-semibold text-slate-950">Internal readiness</h3><p className="mt-2 text-sm leading-6 text-slate-600">{providerDecisionReadiness.completedReadinessGateCount} of {providerDecisionReadiness.totalReadinessGateCount} review gates complete. A separate internal decision remains required.</p></article>
+            <article className="rounded-2xl border border-indigo-200 bg-white p-5"><h3 className="font-semibold text-slate-950">Internal readiness</h3><p className="mt-2 text-sm leading-6 text-slate-600">{providerDecisionReadiness.completedReadinessGateCount} of {providerDecisionReadiness.totalReadinessGateCount} review gates complete. Packet ready does not create activation authority.</p></article>
             <article className="rounded-2xl border border-red-200 bg-red-50 p-5"><h3 className="font-semibold text-red-950">External authority</h3><p className="mt-2 text-sm leading-6 text-red-900">0 provider contacts · 0 accounts · 0 credentials · 0 sandbox connections · 0 live connectors.</p></article>
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-violet-200 bg-white p-5 lg:p-6">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[.14em] text-violet-700">Provider-path sequence · local documentation only</p>
+                <h3 className="mt-1 text-xl font-bold text-slate-950">Phased diligence paths</h3>
+                <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">All {providerPathSequencing.classifiedConditionCount} recorded conditions remain unresolved: {providerPathSequencing.unresolvedBlockingConditionCount} blocking and {providerPathSequencing.providerVerificationRequiredCount} requiring later provider verification. The sole-owner conflicts also remain unresolved.</p>
+              </div>
+              <div className="rounded-xl bg-slate-950 px-4 py-3 text-sm text-white">Stage 1 incomplete · {providerPathSequencing.liveConnectorCount} of {providerPathSequencing.activationTracks.length} live</div>
+            </div>
+
+            <div className="mt-5 grid gap-4 lg:grid-cols-3">
+              {principalProviderPaths.map((path) => (
+                <article key={path.providerId} className="rounded-2xl border border-violet-200 bg-violet-50 p-5">
+                  <h4 className="font-semibold text-slate-950">{path.label}</h4>
+                  <p className="mt-2 text-sm font-medium text-violet-800">{path.disposition.replaceAll("_", " ")}</p>
+                  <p className="mt-2 text-xs leading-5 text-slate-600">Research class: {path.researchClassification.replaceAll("_", " ")}</p>
+                  {path.conditionalRequirement ? <p className="mt-2 text-xs leading-5 text-amber-800">Hold: written Core Category eligibility or an approved exception remains required.</p> : null}
+                </article>
+              ))}
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <h4 className="font-semibold text-slate-950">Unselected research alternatives</h4>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{unselectedProviderAlternatives.map((path) => path.label).join(" · ")}. These four candidates remain unselected, unbound, and unauthorized for contact or traffic.</p>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {providerPathSequencing.activationTracks.map((track) => (
+                <div key={track.connectorId} className="rounded-xl border border-slate-200 bg-white p-4 text-sm">
+                  <p className="font-semibold capitalize text-slate-950">{track.connectorId}</p>
+                  <p className="mt-1 text-slate-600">{track.completedStageCount} of {track.totalStageCount} activation stages · {track.connectionState}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="mt-5 grid gap-4 lg:grid-cols-3">
@@ -211,9 +252,9 @@ export default function AdminCarsPage() {
             {providerDecisionReadiness.gates.map((gate) => (
               <article key={gate.id} className="rounded-2xl border border-indigo-200 bg-white p-5">
                 <div className="flex items-start gap-3">
-                  <Circle className="mt-0.5 h-5 w-5 shrink-0 text-indigo-500" />
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[.14em] text-slate-400">Internal review · {gate.owner}</p>
+                    <p className="text-xs font-semibold uppercase tracking-[.14em] text-emerald-700">Completed internal review · {gate.owner}</p>
                     <h3 className="mt-1 font-semibold text-slate-950">{gate.label}</h3>
                     <p className="mt-2 text-sm leading-6 text-slate-600">{gate.detail}</p>
                   </div>
@@ -224,7 +265,7 @@ export default function AdminCarsPage() {
 
           <div className="mt-5 rounded-2xl bg-slate-950 p-5 text-white">
             <p className="font-semibold">Packet readiness is not provider approval.</p>
-            <p className="mt-2 text-sm leading-6 text-slate-300">Completing all seven internal checks would only make a review packet ready. Provider selection, contact, contracts, accounts, credentials, sandbox traffic, transactions, deployment, and Production each remain separately prohibited.</p>
+            <p className="mt-2 text-sm leading-6 text-slate-300">All seven internal checks make only the local review packet ready. The recorded diligence order is not a formal recommendation, commercial selection, runtime binding, supplier approval, or activation decision. Contact, contracts, accounts, credentials, sandbox traffic, transactions, deployment, and Production remain separately prohibited.</p>
           </div>
         </section>
 
