@@ -2,11 +2,11 @@
 
 Recorded: August 22, 2026
 
-Mode: **local documentation only**
+Mode: **published documentation decision with a later local source/UI reconciliation**
 
 Decision ID: `cars-aggregator-stage-1-provider-decision-2026-08-22-01`
 
-Status: **Carnect is selected only as the aggregator track's commercial-diligence provider at the documentation layer; canonical source and accepted Preview state remain unreconciled and fail-closed at 0 of 10 stages for every connector and 0 of 3 live**
+Status: **the aggregator-only commercial-diligence decision package is committed and privately published at `931c342dd5fc6d2d753073c3d6e2e6a69111680c`; the current local source/UI reconciliation records Carnect for aggregator Stage 1 only, with Sabre at 0 of 10, Travelport at 0 of 10, and Aggregator at 1 of 10; that reconciliation is repository-verified but remains local, uncommitted, undeployed, and unaccepted, while the accepted Preview remains the historical 0 of 10 for every connector, runtime binding remains unbound, 0 of 3 connectors are live, all 29 conditions and all sole-owner conflicts remain unresolved, Stage 2 contact remains unauthorized, and both traffic kill switches remain engaged**
 
 ## Approved decision
 
@@ -18,29 +18,28 @@ Status: **Carnect is selected only as the aggregator track's commercial-diligenc
 - CarTrawler, Booking.com Demand API, EconomyBookings, and DiscoverCars remain unselected alternatives with their recorded research classifications unchanged.
 - This direct owner decision is not a formal recommendation, contracted selection, runtime provider binding, supplier approval, or authorization to contact Carnect.
 
-## Canonical source and Preview boundary
+## Local source and accepted Preview boundary
 
-This decision is documentation-only. It does not change `lib/cars/connector-activation-readiness.ts`, application code, tests, fixtures, migrations, environment or deployment configuration, the published source, or the accepted isolated Preview.
+The decision artifact and its six documentation reconciliations are committed and privately published at `931c342dd5fc6d2d753073c3d6e2e6a69111680c`. A later, separately approved local source/UI reconciliation now represents this exact aggregator-only decision in `lib/cars/connector-activation-readiness.ts` and the read-only `/admin/cars` workspace. That current worktree reconciliation is local, uncommitted, undeployed, and unaccepted; it does not change the accepted isolated Preview.
 
-Until a later, separately approved source-model reconciliation:
+Current local source state:
 
-- commercial provider selection state remains `not_recorded` in the canonical source;
-- `providerSelected` remains false and `selectedProviderId` remains null;
-- activation-readiness `providerDecisionRecorded` remains false;
+- commercial-diligence selection state is `recorded`, with Carnect identified only for `aggregator_commercial_diligence_only`;
+- aggregator activation `providerDecisionRecorded` is true and aggregator activation Stage 1 is complete;
+- the only completed activation stage is Aggregator `provider_decision`;
+- Sabre remains at 0 of 10, Travelport remains at 0 of 10, and Aggregator is at 1 of 10;
 - the generic aggregator connector remains `provider-unselected`;
 - runtime provider binding remains `unbound` with a null binding value;
-- activation Stage 1 remains incomplete in source and Preview;
-- Sabre, Travelport, and Aggregator each remain at 0 of 10 activation stages;
 - 0 of 3 connectors are live; and
 - both application and database traffic kill switches remain engaged.
 
-The documentation decision must not be represented as canonical activation completion before that separate reconciliation is implemented, verified, released, and accepted under its own approvals.
+Accepted Preview state at source commit `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e` remains unchanged: provider decision false, provider selected false, selected provider null, activation Stage 1 incomplete, Sabre 0 of 10, Travelport 0 of 10, Aggregator 0 of 10, and 0 of 3 connectors live. The local Aggregator 1-of-10 source state must not be represented as deployed or accepted before a separate release and authenticated Preview acceptance.
 
 ## Unresolved conditions and governance
 
 - All 29 classified conditions remain unresolved: 12 `unresolved_blocking` and 17 `later_provider_verification_required`.
-- `ALL-01` remains open because canonical connector-specific provider-decision evidence is not yet reconciled.
-- `AGG-01` remains open because the generic connector is not yet bound in canonical source or runtime.
+- `ALL-01` remains open because contact authorization, commercial/legal approval, an organization account, credentials, sandbox access, certification, operational acceptance, and all later activation prerequisites remain absent; the accepted Preview also has not accepted the local Stage 1 reconciliation.
+- `AGG-01` remains open because the generic connector remains `provider-unselected` and unbound at runtime; a commercial-diligence selection does not create runtime binding.
 - `AGG-02` remains open because this direct owner decision must not be inferred from the earlier diligence ordering or treated as independent review.
 - `TRAVELPORT-01` remains open and Travelport remains on conditional hold.
 - `OWNERS-01` and `CONFLICT-01` through `CONFLICT-03` remain unresolved.
@@ -48,8 +47,8 @@ The documentation decision must not be represented as canonical activation compl
 
 ## External-authority boundary
 
-Provider contact authorization remains Stage 2 and is not granted by this decision. No message, form, call, application, contract, account, credential, endpoint, sandbox connection, external provider request, live inventory, reservation, change, cancellation, refund, payment, migration, deployment, Production promotion, or Production change is authorized or performed.
+Provider contact authorization remains Stage 2, is false in the current local source, and is not granted by this decision or reconciliation. No message, form, call, application, contract, account, credential, endpoint, sandbox connection, external provider request, live inventory, reservation, change, cancellation, refund, payment, migration, deployment, Production promotion, or Production change is authorized or performed.
 
 ## Next approval boundary
 
-The next safe gate is a separately approved local source-model reconciliation for this aggregator-scoped documentation decision. That later gate may represent the decision in a distinct fail-closed source record while keeping runtime binding unbound, every external-authority flag false, both kill switches engaged, and the accepted Preview unchanged until a separate release approval. Stage 2 provider-contact authorization remains later and separate.
+The current source/UI reconciliation is repository-verified locally: 42 focused provider-decision and activation-safety tests pass in the primary suite, 55 tests pass across the three directly affected Car Rentals suites, full ESLint passes, TypeScript passes with no emitted files, the full repository suite passes 1,284 tests across 262 files, and the optimized Next.js build generates 115 pages including static `/admin/cars`. It remains uncommitted, unpushed, undeployed, and unaccepted. Commit and private publication, isolated Preview deployment, and authenticated Preview acceptance each require their own later approval and evidence. Stage 2 provider-contact authorization remains a later, separate decision and cannot be inferred from local Aggregator Stage 1 completion.

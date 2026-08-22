@@ -54,7 +54,7 @@ describe("car-rental supplier readiness phase 2", () => {
     const page = read("app/admin/cars/page.tsx");
     expect(page).toContain("Phase 2 activation reference");
     expect(page).toContain("Every gate starts incomplete");
-    expect(page).toContain("No car-rental supplier has been commercially selected, contacted, provisioned, certified, or connected");
+    expect(page).toContain("no car-rental supplier is contracted or runtime-bound, contacted, provisioned, certified, or connected");
     expect(page).not.toContain("fetch(");
     expect(page).not.toContain("process.env");
     expect(page).not.toContain("use server");

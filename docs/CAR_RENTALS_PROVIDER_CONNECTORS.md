@@ -2,7 +2,7 @@
 
 Prepared: August 21, 2026
 
-Status: **local implementation and repository verification only**
+Status: **the original offline connector shells are privately published and accepted in isolated Preview; the August 22 runtime-label and boundary-copy reconciliation is repository-verified locally but remains uncommitted, unpushed, undeployed, and unaccepted**
 
 ## Objective
 
@@ -14,7 +14,7 @@ Add fail-closed connector shells for Sabre, Travelport, and one generic aggregat
 | --- | --- | --- | --- | --- | --- |
 | Sabre | GDS | Offline contract only | Not started | Not verified | Disabled |
 | Travelport | GDS | Offline contract only | Not started | Not verified | Disabled |
-| Aggregator (provider unselected) | Aggregator | Offline contract only | Not started | Not verified | Disabled |
+| Aggregator (runtime provider unselected) | Aggregator | Offline contract only | Not started | Not verified | Disabled |
 
 The three entries map only to the existing Phase 10 provider-neutral operation vocabulary. The operation inventory is an internal design target, not evidence that a provider offers, has approved, or has enabled any capability for iRatePilot.
 
@@ -31,10 +31,12 @@ The three entries map only to the existing Phase 10 provider-neutral operation v
 
 - Sabre's official workflow repository documents that its APIs require provisioning and credentials, distinguishes test and Production environments, and warns that Production actions may affect live inventory and incur charges. This connector therefore contains no endpoints or credentials and makes no Sabre car-rental capability claim: <https://github.com/SabreDevStudio/SabreAPIsWorkflows>
 - Travelport's official Universal API material publicly documents vehicle search, location, details, rules, and related vehicle workflows. Those public pages do not establish iRatePilot entitlement, current product fit, certification, or connection authority: <https://support.travelport.com/webhelp/uapi/Content/Getting_Started/High_Level_Overviews/Vehicle_Details_Overview.htm> and <https://support.travelport.com/webhelp/uapi/Content/SampleWeb/XMLFiles/1V_Air_Vehicle_Hotel/Vehicle_Search-1V.htm>
-- No aggregator company is selected. The generic entry remains a placeholder until separately authorized research, commercial review, security review, and provider onboarding occur.
+- No aggregator company is contracted or runtime-bound. Carnect's later commercial-diligence selection is a separate fail-closed Stage 1 source decision; the generic runtime entry remains a disabled placeholder pending separate commercial, security, onboarding, release, and Production decisions.
 
 ## Separate future gates
 
 Any live provider work requires a new authorization covering the exact provider and scope. At minimum, that later gate must separately address provider research, supplier contact, commercial terms, account ownership, current API capability verification, security and privacy review, credential handling, isolated sandbox connectivity, certification evidence, operational acceptance, payment and refund controls, rollback, and a separate Production decision.
 
 This document does not authorize any of those actions.
+
+August 22 reconciliation: the generic connector label and boundary copy now distinguish Carnect's commercial-diligence-only Stage 1 source decision from the still-unbound runtime connector. This display-only reconciliation is included in the locally verified 1,284-test, full-ESLint, TypeScript, and 115-page build result; it remains uncommitted, unpushed, undeployed, and unaccepted.

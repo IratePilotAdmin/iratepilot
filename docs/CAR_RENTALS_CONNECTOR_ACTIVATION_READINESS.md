@@ -4,7 +4,7 @@ Prepared: August 21, 2026
 
 Reconciled: August 22, 2026
 
-Status: **the earlier readiness source and the current hardened provider-path sequencing source are published and accepted in isolated Preview; public research is recorded for 3 of 3 paths; the local 7-of-7 review packet is complete; the owner recorded a separate phased-diligence decision naming Carnect as the primary aggregator path, Sabre as the secondary enterprise path, and Travelport as conditional hold, and has now recorded a documentation-layer aggregator Stage 1 decision selecting Carnect for commercial diligence only; the hardened fail-closed source is committed and privately published at `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e`, accepted in isolated Preview deployment `dpl_AeXKzroVXPYC7p6dPCofz2vmjRhJ`, and documented in the evidence package privately published at `c9ba7c964878af5a7120b8fc41d70f9ad6348b43`; formal recommendation remains unissued, all 29 conditions and all sole-owner conflicts remain unresolved, canonical source and accepted Preview remain provider-unselected with activation stage 1 incomplete and every track at 0 of 10, and 0 of 3 connectors are live**
+Status: **the earlier readiness and hardened provider-path sequencing sources are published and accepted in isolated Preview; public research is recorded for 3 of 3 paths and the local review packet is 7 of 7; the aggregator-only commercial-diligence decision package is privately published at `931c342dd5fc6d2d753073c3d6e2e6a69111680c`; the current repository-verified local source/UI reconciliation records Carnect for aggregator Stage 1 only, with Sabre at 0 of 10, Travelport at 0 of 10, and Aggregator at 1 of 10, but remains uncommitted, undeployed, and unaccepted; the accepted Preview remains historically 0 of 10 for every connector, runtime binding remains unbound, formal recommendation remains unissued, all 29 conditions and all sole-owner conflicts remain unresolved, Stage 2 contact is unauthorized, 0 of 3 connectors are live, and both traffic kill switches remain engaged**
 
 ## Objective
 
@@ -16,13 +16,13 @@ Start the live-connector activation program for Sabre, Travelport, and one futur
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Sabre | Recorded | Not recorded | Not verified | Not created | Not connected | Disabled | No |
 | Travelport | Recorded | Not recorded | Not verified | Not created | Not connected | Disabled | No |
-| Aggregator (provider unselected) | Shortlist recorded | Documentation decision recorded; canonical reconciliation required | Not verified | Not created | Not connected | Disabled | No |
+| Aggregator (runtime provider unselected) | Shortlist recorded | Carnect recorded locally for commercial diligence only; accepted Preview unchanged | Not verified | Not created | Not connected | Disabled | No |
 
 Public research is complete for the three controlled paths. Sabre has a technical-secondary disposition based on official public evidence. Travelport remains a conditional enterprise candidate because written Core Category eligibility or an exception is still required. The aggregator research inventory records Carnect, CarTrawler, and Booking.com Demand as priority candidates, with EconomyBookings and DiscoverCars retained as alternates. These are research dispositions only—not formal scores, recommendations, selections, contracted capabilities, or provider authority.
 
-The table above reports the activation-readiness record, not a commercial provider selection. The phased-diligence decision names Carnect as the primary aggregator diligence path, Sabre as the secondary enterprise diligence path, and Travelport as conditional hold; it retains CarTrawler, Booking.com Demand API, EconomyBookings, and DiscoverCars as unselected alternatives while preserving their frozen Gate 3 research classifications. A separately approved source-model reconciliation represents this exact sequence in a distinct `provider_path_sequencing_local_only` record. It does not record a commercial provider selection, change `providerDecisionRecorded`, select or bind the aggregator, complete activation stage 1, or change the table. The hardened representation is committed and privately published at `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e` and accepted in isolated Preview deployment `dpl_AeXKzroVXPYC7p6dPCofz2vmjRhJ`.
+The table above reports activation readiness, not a contracted or runtime provider selection. The phased-diligence decision names Carnect as the primary aggregator diligence path, Sabre as the secondary enterprise diligence path, and Travelport as conditional hold; it retains CarTrawler, Booking.com Demand API, EconomyBookings, and DiscoverCars as unselected alternatives while preserving their frozen Gate 3 research classifications. A separately approved source-model reconciliation represents this exact sequence in a distinct `provider_path_sequencing_local_only` record. It does not record a commercial provider selection, change `providerDecisionRecorded`, select or bind the aggregator, complete activation stage 1, or change the table. The hardened representation is committed and privately published at `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e` and accepted in isolated Preview deployment `dpl_AeXKzroVXPYC7p6dPCofz2vmjRhJ`.
 
-A later, separately authorized documentation-layer Stage 1 decision selects Carnect as the aggregator track's commercial-diligence provider only. That local decision is recorded in `docs/CAR_RENTALS_ACTIVATION_STAGE_1_AGGREGATOR_PROVIDER_DECISION_2026-08-22.md`; it does not change the canonical table, source fields, accepted Preview, runtime binding, counters, conditions, conflicts, or external authority shown here.
+A later, separately authorized aggregator Stage 1 decision selects Carnect as the aggregator track's commercial-diligence provider only. Its decision package is committed and privately published at `931c342dd5fc6d2d753073c3d6e2e6a69111680c`. The current local source/UI reconciliation records that decision as Aggregator Stage 1 complete and Aggregator 1 of 10 while keeping Sabre and Travelport at 0 of 10. It is repository-verified but remains uncommitted, unpushed, undeployed, and unaccepted; it does not change the accepted Preview, runtime binding, unresolved conditions or conflicts, or external authority.
 
 ## Internal provider-decision readiness
 
@@ -34,12 +34,13 @@ A later, separately authorized documentation-layer Stage 1 decision selects Carn
 - Local phased-diligence decision recorded: yes, in `docs/CAR_RENTALS_PROVIDER_PATH_DECISION_2026-08-22.md`.
 - Separate provider-path sequencing source record and validator hardening: implemented and verified in `lib/cars/connector-activation-readiness.ts`, committed and privately published at `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e`, and accepted in isolated Preview deployment `dpl_AeXKzroVXPYC7p6dPCofz2vmjRhJ`.
 - Preview evidence record: `docs/CAR_RENTALS_PROVIDER_PATH_SEQUENCING_PREVIEW_EVIDENCE_2026-08-22.md`, committed and privately published with the five current-state documentation reconciliations at `c9ba7c964878af5a7120b8fc41d70f9ad6348b43`.
-- Commercial provider selection state: `not_recorded`; provider selected: false; `selectedProviderId`: null.
-- Documentation-layer aggregator Stage 1 decision: Carnect selected for commercial diligence only; canonical source and accepted Preview reconciliation pending.
+- Local source commercial-diligence selection: `recorded`; Carnect selected for `aggregator_commercial_diligence_only`; formal recommendation remains `not_issued` and no contracted provider exists.
+- Local source activation: aggregator `providerDecisionRecorded` true and Stage 1 complete; Sabre 0 of 10, Travelport 0 of 10, Aggregator 1 of 10.
+- Accepted Preview activation at `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e`: provider decision false, provider selected false, `selectedProviderId` null, Stage 1 incomplete, and all three tracks 0 of 10.
 - Runtime provider binding state: `unbound`; binding value: null; generic aggregator remains `provider-unselected`.
-- Activation-readiness `providerDecisionRecorded`: false.
-- Activation stage 1 complete: no.
 - Live connectors: 0 of 3.
+- Stage 2 provider-contact authorization: false.
+- Current source/UI reconciliation release state: repository-verified locally; uncommitted, unpushed, undeployed, and unaccepted.
 
 The seven internal checks reconcile the research artifact, define the decision question, freeze one candidate scope, acknowledge public-evidence limitations, review material unknowns and hard stops, review functional owners and conflicts, and acknowledge the separate provider-decision boundary. Completing all seven makes only an internal review packet ready. It cannot issue a recommendation, select a provider, complete activation stage 1, or authorize an external action.
 
@@ -47,14 +48,14 @@ The validator includes one explicitly marked `offline_fixture` with all seven ga
 
 ## Local verification
 
-- 33 focused provider-decision, provider-path sequencing, and connector-activation safety tests pass.
-- ESLint passes.
+- Current local Stage 1 reconciliation: 42 focused provider-decision and activation-safety tests pass in the primary suite; 55 tests pass across the three directly affected Car Rentals suites.
+- Full ESLint passes.
 - TypeScript passes with no emitted files.
-- The full repository suite passes: 1,275 tests across 262 files.
+- The full repository suite passes: 1,284 tests across 262 files.
 - The optimized Next.js build passes with 115 generated pages, including static `/admin/cars`.
-- Adversarial coverage rejects serialization masking, sparse arrays, symbols, hidden fields and counters, accessor-backed state, mutable canonical evidence, provider selection or binding, activation-stage advancement, released kill switches, and every external-authority mutation.
+- Adversarial coverage rejects serialization masking, sparse arrays, symbols, hidden fields and counters, accessor-backed state, mutable canonical evidence, disguised built-ins with hidden internal slots, alternate case identifiers, provider or runtime binding, out-of-scope track advancement, accepted-Preview mutation, released kill switches, and every external-authority mutation.
 
-These results verify the accepted source at `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e`. Its private publication, isolated Preview deployment, and authenticated `/admin/cars` acceptance are complete. The evidence record and five current-state documentation reconciliations were subsequently committed and privately published at `c9ba7c964878af5a7120b8fc41d70f9ad6348b43`.
+The historical 33-test, 1,275-test, 115-page verification for accepted source `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e` remains recorded in its Preview evidence. The current results above verify only the local Aggregator Stage 1 reconciliation; they do not publish or deploy it. The earlier source's private publication, isolated Preview deployment, authenticated `/admin/cars` acceptance, and evidence publication at `c9ba7c964878af5a7120b8fc41d70f9ad6348b43` remain complete.
 
 ## Isolated Preview release evidence
 
@@ -99,10 +100,11 @@ This documentation reconciliation performs no deployment. It records the newer i
 - Reconciliation result: Sabre, Travelport, and the provider-unselected aggregator path are present with their public-evidence limits; no discrepancy or private/provider-supplied claim was added.
 - All seven local documentation gates: complete; their completion alone did not complete the separate provider-decision gate.
 - Gate 2 answer at Gate 7 completion: none; the option set was unranked and unscored. The Gate 3 scope freeze did not answer the question, select a provider, define a primary or secondary path, or bind the aggregator connector.
-- Current canonical source and accepted Preview state: `ready_for_internal_decision` with `decision_packet_ready` true; the provider-path sequencing decision is represented in a distinct fail-closed source record; formal recommendation is not issued, commercial provider selection is `not_recorded`, selected provider is none, runtime binding is unbound, activation stage 1 remains incomplete, and every track remains at 0 of 10.
+- Current local source state: `ready_for_internal_decision` with `decision_packet_ready` true; formal recommendation is not issued; the aggregator-only commercial-diligence decision is recorded for Carnect; aggregator `providerDecisionRecorded` and Stage 1 are true; Sabre is 0 of 10, Travelport is 0 of 10, and Aggregator is 1 of 10; runtime binding remains unbound.
+- Accepted Preview state: provider decision false, provider selected false, selected provider null, Stage 1 incomplete, and every track 0 of 10 at `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e`.
 - Review packet: `docs/CAR_RENTALS_PROVIDER_DECISION_REVIEW_PACKET_2026-08-22.md`.
 - Separate local decision record: `docs/CAR_RENTALS_PROVIDER_PATH_DECISION_2026-08-22.md`; Carnect primary aggregator diligence, Sabre secondary enterprise diligence, Travelport conditional hold, and four unselected decision alternatives with their frozen research classifications preserved.
-- Subsequent documentation-layer aggregator Stage 1 record: `docs/CAR_RENTALS_ACTIVATION_STAGE_1_AGGREGATOR_PROVIDER_DECISION_2026-08-22.md`; Carnect selected for commercial diligence only, pending canonical source and accepted Preview reconciliation.
+- Subsequent aggregator Stage 1 record: `docs/CAR_RENTALS_ACTIVATION_STAGE_1_AGGREGATOR_PROVIDER_DECISION_2026-08-22.md`; its decision package is privately published at `931c342dd5fc6d2d753073c3d6e2e6a69111680c`, and its local source/UI reconciliation is implemented but remains uncommitted, undeployed, and unaccepted.
 
 The Gates 1–7 evidence remains documentation-only and did not itself change the earlier accepted Preview. The provider-path source representation and validator hardening are committed and privately published at `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e` and reflected in the separately authorized accepted Preview deployment. The newer evidence record and five current-state documentation reconciliations are committed and privately published at `c9ba7c964878af5a7120b8fc41d70f9ad6348b43`.
 
@@ -141,10 +143,10 @@ Current boundary: the separate local source record preserves Travelport's condit
 
 ### Aggregator
 
-- Public shortlist research is recorded, and Carnect is now selected only at the documentation layer as the aggregator track's commercial-diligence provider. No canonical or runtime provider is selected or bound to the generic connector.
-- The canonical activation record still has no provider decision or aggregator binding; the separate local sequencing record is not a commercial selection or runtime binding, and no contact authorization, commercial review, account, credential, sandbox, certification, or operational acceptance exists.
+- Public shortlist research is recorded, and the current local source records Carnect only as the aggregator track's commercial-diligence provider. No runtime provider is selected or bound to the generic connector.
+- The local activation record completes only aggregator Stage 1; no Stage 2 contact authorization, commercial/legal approval, account, credential, sandbox, certification, operational acceptance, or runtime binding exists.
 
-Current boundary: the new documentation artifact records the direct aggregator-only Stage 1 commercial-diligence decision for Carnect, while the separate local source record still represents Carnect only as the named primary aggregator diligence path. Canonical source and accepted Preview remain unreconciled, the runtime connector remains provider-unselected, every track remains at 0 of 10, activation stage 1 remains incomplete there, and contact remains unauthorized.
+Current boundary: the local source/UI reconciliation represents the direct aggregator-only Stage 1 commercial-diligence decision for Carnect. Sabre remains at 0 of 10, Travelport remains at 0 of 10, and Aggregator is at 1 of 10 locally; the accepted Preview remains at 0 of 10 for all three tracks. Runtime remains `provider-unselected` and unbound, 0 of 3 connectors are live, all 29 conditions and all sole-owner conflicts remain unresolved, both kill switches remain engaged, and contact remains unauthorized.
 
 ## Safety boundary
 
@@ -156,6 +158,6 @@ Both application and database traffic kill switches remain engaged for all three
 
 The separate Executive + Product phased-diligence decision is represented, verified, committed, privately published, and accepted in isolated Preview in a distinct fail-closed source record. Its evidence record and five current-state documentation reconciliations were committed and privately published at `c9ba7c964878af5a7120b8fc41d70f9ad6348b43` without redeployment or repeat browser acceptance.
 
-The aggregator-only documentation-layer Stage 1 decision is now recorded with Carnect selected for commercial diligence only. The next substantive gate, if separately authorized, is a distinct local source-model and test reconciliation of that exact aggregator-scoped decision; accepted Preview remains unchanged until its own later release approval. Stage 2 contact authorization remains a separate later decision. No gate here authorizes supplier contact, messages, forms, calls, contracts, accounts, credentials, sandbox or external provider traffic, reservations, refunds, payments, migrations, deployment, Production promotion, or Production changes.
+The aggregator-only decision package is privately published at `931c342dd5fc6d2d753073c3d6e2e6a69111680c`, and the exact Stage 1 decision is represented and repository-verified in the current local source/UI with Aggregator at 1 of 10. That reconciliation remains uncommitted, unpushed, undeployed, and unaccepted. Commit and private publication, isolated Preview deployment, and authenticated Preview acceptance require later approvals and evidence. Stage 2 contact authorization remains a separate later decision. No gate here authorizes supplier contact, messages, forms, calls, contracts, accounts, credentials, sandbox or external provider traffic, reservations, refunds, payments, migrations, deployment, Production promotion, or Production changes.
 
 No provider contact is authorized until a later, separately scoped contact-authorization decision.

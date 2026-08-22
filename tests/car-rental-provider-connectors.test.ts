@@ -25,7 +25,7 @@ describe("car-rental named connector preparation", () => {
     expect(CAR_RENTAL_NAMED_CONNECTOR_MODE).toBe("named_connectors_offline_only");
     expect(carRentalNamedConnectorDefinitions.map((connector) => connector.id)).toEqual(["sabre", "travelport", "aggregator"]);
     expect(carRentalNamedConnectorDefinitions.map((connector) => connector.category)).toEqual(["gds", "gds", "aggregator"]);
-    expect(carRentalNamedConnectorDefinitions[2]).toMatchObject({ providerBinding: "provider_unselected", label: "Aggregator (provider unselected)" });
+    expect(carRentalNamedConnectorDefinitions[2]).toMatchObject({ providerBinding: "provider_unselected", label: "Aggregator (runtime provider unselected)" });
   });
 
   it("keeps every connector offline, unprovisioned, unverified, and disconnected", () => {
@@ -150,7 +150,7 @@ describe("car-rental named connector preparation", () => {
     expect(page).toContain("{namedConnectors.provisionedConnectorCount} of {namedConnectors.connectors.length} provisioned");
     expect(page).toContain("disabled local software contracts");
     expect(page).not.toMatch(/fetch\(|createClient\(|<form|<button|use server|use client/);
-    expect(connectorDocument).toContain("No aggregator company is selected");
+    expect(connectorDocument).toContain("No aggregator company is contracted or runtime-bound");
     expect(connectorDocument).toContain("no endpoints or credentials");
     expect(roadmap).toContain("Current live commercial-activation completion: **0 of 4 external activation gate groups**");
     expect(roadmap).toContain("Disabled local connector shells now exist for Sabre, Travelport, and one generic unselected aggregator path");

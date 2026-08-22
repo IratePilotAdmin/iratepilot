@@ -106,7 +106,7 @@ export const carRentalNamedConnectorDefinitions: readonly CarRentalNamedConnecto
   },
   {
     id: "aggregator",
-    label: "Aggregator (provider unselected)",
+    label: "Aggregator (runtime provider unselected)",
     category: "aggregator",
     providerBinding: "provider_unselected",
     intendedOperationKinds: intendedOfflineOperations,
@@ -114,8 +114,8 @@ export const carRentalNamedConnectorDefinitions: readonly CarRentalNamedConnecto
     provisioningState: "not_started",
     capabilityVerificationState: "not_verified",
     connectionState: "disabled",
-    summary: "Generic connector shell that preserves a future aggregator path without selecting a company.",
-    safetyBoundary: "No aggregator is selected, named, contacted, provisioned, certified, connected, or authorized for traffic or transactions.",
+    summary: "Generic connector shell that remains runtime-unbound while Carnect is the selected commercial-diligence path.",
+    safetyBoundary: "No aggregator is contracted or runtime-bound, and no provider is contacted, provisioned, certified, connected, or authorized for traffic or transactions.",
   },
 ] as const;
 

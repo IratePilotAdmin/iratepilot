@@ -98,7 +98,7 @@ import {
   carRentalConnectorRecordedFields,
 } from "@/lib/cars/provider-connectors";
 import {
-  buildCarRentalConnectorActivationPlan,
+  buildCarRentalAggregatorStageOneDecisionPlan,
   buildCarRentalProviderDecisionReadinessPlan,
   buildCarRentalProviderPathSequencingPlan,
   carRentalCompletedProviderDecisionReadinessEvidence,
@@ -140,15 +140,15 @@ import {
 
 export const metadata: Metadata = {
   title: "Car Rentals provider-decision readiness | iRatePilot Admin",
-  description: "Read-only car-rental provider-path workspace with a recorded diligence sequence, no commercial or runtime provider selection, and fail-closed activation tracks.",
+  description: "Read-only car-rental provider-path workspace with Carnect selected for aggregator commercial diligence only, no runtime provider binding, and fail-closed activation tracks.",
 };
 
 export default function AdminCarsPage() {
   const providerDecisionReadiness = buildCarRentalProviderDecisionReadinessPlan(carRentalCompletedProviderDecisionReadinessEvidence);
   const providerPathSequencing = buildCarRentalProviderPathSequencingPlan();
+  const aggregatorStageOne = buildCarRentalAggregatorStageOneDecisionPlan();
   const principalProviderPaths = providerPathSequencing.decisionPaths.filter((path) => path.disposition !== "unselected_decision_alternative");
   const unselectedProviderAlternatives = providerPathSequencing.decisionPaths.filter((path) => path.disposition === "unselected_decision_alternative");
-  const connectorActivation = buildCarRentalConnectorActivationPlan();
   const namedConnectors = buildCarRentalNamedConnectorPlan();
   const controlledLaunch = buildCarRentalControlledLaunchPlan();
   const commercialCompliance = buildCarRentalCommercialCompliancePlan();
@@ -172,7 +172,7 @@ export default function AdminCarsPage() {
             <p className="mt-3 max-w-3xl leading-7 text-slate-600">Track the exact provider, commercial, account, capability, security, credential, sandbox, certification, operations, and Production decisions required to activate Sabre, Travelport, and one future aggregator. This workspace starts the activation program without contacting a supplier or enabling external traffic.</p>
           </div>
           <div className="rounded-2xl border border-amber-300 bg-amber-50 p-5">
-            <div className="flex items-center gap-3 text-amber-950"><ShieldAlert className="h-5 w-5" /><strong>{connectorActivation.activeConnectorCount} of {connectorActivation.tracks.length} live</strong></div>
+            <div className="flex items-center gap-3 text-amber-950"><ShieldAlert className="h-5 w-5" /><strong>{aggregatorStageOne.liveConnectorCount} of {aggregatorStageOne.activationTracks.length} live</strong></div>
             <p className="mt-2 text-sm leading-6 text-amber-900">All three activation tracks are fail-closed. Accounts, credentials, sandbox traffic, reservations, payments, migrations, and Production remain disabled.</p>
           </div>
         </div>
@@ -181,13 +181,13 @@ export default function AdminCarsPage() {
           <div className="flex items-center gap-3"><ClipboardCheck className="h-5 w-5 text-indigo-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-indigo-800">Provider-decision readiness</p></div>
           <div className="mt-2 grid gap-5 lg:grid-cols-[1fr_300px] lg:items-start">
             <div>
-              <h2 className="text-2xl font-bold text-slate-950">Internal review complete; diligence sequence recorded locally</h2>
-              <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">The 3-of-3 public-research artifact and all seven internal review gates support a phased diligence sequence: Carnect first, Sabre second, and Travelport on conditional hold. This local record does not issue a formal recommendation, select or bind a provider for runtime use, complete activation stage 1, or authorize contact.</p>
+              <h2 className="text-2xl font-bold text-slate-950">Aggregator Stage 1 recorded locally; runtime remains disabled</h2>
+              <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">The published decision selects Carnect only for aggregator commercial diligence. Sabre remains an unselected secondary candidate and Travelport remains on conditional hold. This local source record completes only the Aggregator provider-decision stage; it does not issue a formal recommendation, bind a runtime provider, authorize contact, or change the accepted Preview.</p>
             </div>
             <div className="rounded-2xl border border-amber-300 bg-amber-50 p-5">
               <p className="text-xs font-semibold uppercase tracking-[.14em] text-amber-800">Decision state</p>
-              <p className="mt-2 font-bold text-amber-950">No commercial or runtime provider selected</p>
-              <p className="mt-2 text-sm leading-6 text-amber-900">Local diligence sequence recorded · formal recommendation not issued · activation provider decision not recorded.</p>
+              <p className="mt-2 font-bold text-amber-950">Carnect · commercial diligence only</p>
+              <p className="mt-2 text-sm leading-6 text-amber-900">Local source: Sabre {aggregatorStageOne.localSourceTrackStageCounts.sabre} of 10 · Travelport {aggregatorStageOne.localSourceTrackStageCounts.travelport} of 10 · Aggregator {aggregatorStageOne.localSourceTrackStageCounts.aggregator} of 10. Accepted Preview: Sabre {aggregatorStageOne.acceptedPreviewTrackStageCounts.sabre} of 10 · Travelport {aggregatorStageOne.acceptedPreviewTrackStageCounts.travelport} of 10 · Aggregator {aggregatorStageOne.acceptedPreviewTrackStageCounts.aggregator} of 10. Runtime binding: unbound.</p>
             </div>
           </div>
 
@@ -200,11 +200,11 @@ export default function AdminCarsPage() {
           <div className="mt-5 rounded-2xl border border-violet-200 bg-white p-5 lg:p-6">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[.14em] text-violet-700">Provider-path sequence · local documentation only</p>
-                <h3 className="mt-1 text-xl font-bold text-slate-950">Phased diligence paths</h3>
-                <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">All {providerPathSequencing.classifiedConditionCount} recorded conditions remain unresolved: {providerPathSequencing.unresolvedBlockingConditionCount} blocking and {providerPathSequencing.providerVerificationRequiredCount} requiring later provider verification. The sole-owner conflicts also remain unresolved.</p>
+                <p className="text-xs font-semibold uppercase tracking-[.14em] text-violet-700">Aggregator Stage 1 · local source only</p>
+                <h3 className="mt-1 text-xl font-bold text-slate-950">Carnect commercial-diligence decision</h3>
+                <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-600">All {aggregatorStageOne.classifiedConditionCount} recorded conditions remain unresolved: {aggregatorStageOne.unresolvedBlockingConditionCount} blocking and {aggregatorStageOne.providerVerificationRequiredCount} requiring later provider verification. The sole-owner conflicts also remain unresolved.</p>
               </div>
-              <div className="rounded-xl bg-slate-950 px-4 py-3 text-sm text-white">Stage 1 incomplete · {providerPathSequencing.liveConnectorCount} of {providerPathSequencing.activationTracks.length} live</div>
+              <div className="rounded-xl bg-slate-950 px-4 py-3 text-sm text-white">Local 0 / 0 / 1 · accepted Preview 0 / 0 / 0 · {aggregatorStageOne.liveConnectorCount} of {aggregatorStageOne.activationTracks.length} live</div>
             </div>
 
             <div className="mt-5 grid gap-4 lg:grid-cols-3">
@@ -224,7 +224,7 @@ export default function AdminCarsPage() {
             </div>
 
             <div className="mt-4 grid gap-3 md:grid-cols-3">
-              {providerPathSequencing.activationTracks.map((track) => (
+              {aggregatorStageOne.activationTracks.map((track) => (
                 <div key={track.connectorId} className="rounded-xl border border-slate-200 bg-white p-4 text-sm">
                   <p className="font-semibold capitalize text-slate-950">{track.connectorId}</p>
                   <p className="mt-1 text-slate-600">{track.completedStageCount} of {track.totalStageCount} activation stages · {track.connectionState}</p>
@@ -265,16 +265,16 @@ export default function AdminCarsPage() {
 
           <div className="mt-5 rounded-2xl bg-slate-950 p-5 text-white">
             <p className="font-semibold">Packet readiness is not provider approval.</p>
-            <p className="mt-2 text-sm leading-6 text-slate-300">All seven internal checks make only the local review packet ready. The recorded diligence order is not a formal recommendation, commercial selection, runtime binding, supplier approval, or activation decision. Contact, contracts, accounts, credentials, sandbox traffic, transactions, deployment, and Production remain separately prohibited.</p>
+            <p className="mt-2 text-sm leading-6 text-slate-300">All seven internal checks made only the review packet ready. A later, separately approved record now completes Aggregator Stage 1 for Carnect commercial diligence only. It is not a formal recommendation, contracted supplier approval, runtime binding, contact authorization, Preview release, or live activation. Contact, contracts, accounts, credentials, sandbox traffic, transactions, deployment, and Production remain separately prohibited.</p>
           </div>
         </section>
 
         <section className="mt-10 rounded-3xl border border-violet-200 bg-violet-50 p-6 lg:p-8">
           <div className="flex items-center gap-3"><Workflow className="h-5 w-5 text-violet-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-violet-800">Live activation program</p></div>
           <h2 className="mt-2 text-2xl font-bold text-slate-950">Three activation tracks, all fail-closed</h2>
-          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">Each connector must pass ten separately owned stages. Sabre and Travelport remain candidates only; the aggregator track is blocked until a provider is selected. A completed local planning review cannot create provider authority or activate a connector.</p>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">Each connector must pass ten separately owned stages. The local source records Carnect for Aggregator Stage 1 only; Sabre remains an unselected secondary candidate and Travelport remains on conditional hold. Aggregator Stage 2 contact authorization is still required, and no local decision can create runtime authority or activate a connector.</p>
           <div className="mt-5 grid gap-4 lg:grid-cols-3">
-            {connectorActivation.tracks.map((track) => (
+            {aggregatorStageOne.activationTracks.map((track) => (
               <article key={track.connectorId} className="rounded-2xl border border-violet-200 bg-white p-6 shadow-sm">
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="font-semibold text-slate-950">{track.label}</h3>
@@ -290,19 +290,22 @@ export default function AdminCarsPage() {
             ))}
           </div>
           <div className="mt-5 grid gap-4 md:grid-cols-3">
-            <article className="rounded-2xl bg-slate-950 p-5 text-white"><h3 className="font-semibold">Activation state</h3><p className="mt-2 text-sm leading-6 text-slate-300">{connectorActivation.activeConnectorCount} of {connectorActivation.tracks.length} live · {connectorActivation.provisionedAccountCount} accounts · {connectorActivation.sandboxCertifiedConnectorCount} sandbox certified · {connectorActivation.externalRequestCount} external requests.</p></article>
+            <article className="rounded-2xl bg-slate-950 p-5 text-white"><h3 className="font-semibold">Activation state</h3><p className="mt-2 text-sm leading-6 text-slate-300">{aggregatorStageOne.liveConnectorCount} of {aggregatorStageOne.activationTracks.length} live · 0 accounts · 0 sandbox certified · 0 external requests.</p></article>
             <article className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5"><h3 className="font-semibold text-emerald-950">Minimized allowlist</h3><p className="mt-2 text-sm leading-6 text-emerald-900">{carRentalConnectorActivationRecordedFields.join(" · ").replaceAll("_", " ")}</p></article>
             <article className="rounded-2xl border border-red-200 bg-red-50 p-5"><h3 className="font-semibold text-red-950">Prohibited activation data</h3><p className="mt-2 text-sm leading-6 text-red-900">{carRentalConnectorActivationProhibitedFields.join(" · ").replaceAll("_", " ")}</p></article>
           </div>
           <div className="mt-5 grid gap-3 lg:grid-cols-2">
-            {connectorActivation.stages.map((stage, index) => (
+            {aggregatorStageOne.stages.map((stage, index) => (
               <article key={stage.id} className="rounded-2xl border border-violet-200 bg-white p-5">
                 <div className="flex items-start gap-3">
-                  <Circle className="mt-0.5 h-5 w-5 shrink-0 text-violet-500" />
+                  {stage.completedConnectorIds.length > 0
+                    ? <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                    : <Circle className="mt-0.5 h-5 w-5 shrink-0 text-violet-500" />}
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[.14em] text-slate-400">Activation stage {index + 1} · {stage.owner}</p>
                     <h3 className="mt-1 font-semibold text-slate-950">{stage.label}</h3>
                     <p className="mt-2 text-sm leading-6 text-slate-600">{stage.detail}</p>
+                    {stage.completedConnectorIds.length > 0 ? <p className="mt-2 text-xs font-semibold uppercase tracking-[.12em] text-emerald-700">Local source complete for Aggregator only · accepted Preview remains 0 of 10 for all three pending a separate release</p> : null}
                   </div>
                 </div>
               </article>
@@ -1054,7 +1057,7 @@ export default function AdminCarsPage() {
 
         <section className="mt-12 rounded-2xl border border-red-300 bg-red-50 p-6">
           <div className="flex items-center gap-3 text-red-950"><KeyRound className="h-5 w-5" /><h2 className="text-lg font-bold">Runtime hard stop</h2></div>
-          <p className="mt-3 max-w-4xl text-sm leading-6 text-red-900">Sabre, Travelport, and one generic aggregator connector now exist only as disabled local software contracts. No car-rental supplier has been commercially selected, contacted, provisioned, certified, or connected. No provider mapping, account, live endpoint, credential request, credential receipt, credential material, socket, job, queue, webhook receiver, external request, sandbox connection, sandbox certification, controlled pilot, monitoring activation, rollback execution, live connector runtime deployment, or Production traffic exists. Both application and database traffic kill switches remain engaged. No processor, counter, roadside provider, insurer, claims service, police service, emergency service, medical service, or traveler is contacted or connected. No live support case is opened. No roadside or emergency assistance is dispatched. No vehicle is sourced, replaced, assigned, or upgraded. No damage claim is filed, accepted, denied, priced, or settled. No live reservation is created, confirmed, modified, cancelled, marked no-show, picked up, extended, returned, or refunded. No payment card, bank account, payment token, billing identity, raw reference, traveler identity, license, vehicle identifier, precise location, medical information, accident narrative, police report, insurance policy, raw request, raw response, raw webhook payload, raw observability log, pilot-participant identity, reviewer identity, Production approval, or credential data is collected. No personal driver data is collected or verified. No collection, capture, deposit, authorization hold, refund, chargeback, receipt, tax, fraud, claim, or money-movement action occurs. No supplier inventory, quote, or policy is ingested or repriced. Supplier or service contact, contracts, accounts, credentials, provider capability verification, external traffic, actual sandbox certification, live pilot, live inventory, rates, policies, eligibility decisions, support operations, reservations, payment activity, refunds, migrations, deployment, and Production changes remain outside this local connector preparation and require separate approval.</p>
+          <p className="mt-3 max-w-4xl text-sm leading-6 text-red-900">Sabre, Travelport, and one generic aggregator connector now exist only as disabled local software contracts. Carnect is selected only for aggregator commercial diligence; no car-rental supplier is contracted or runtime-bound, contacted, provisioned, certified, or connected. No provider mapping, account, live endpoint, credential request, credential receipt, credential material, socket, job, queue, webhook receiver, external request, sandbox connection, sandbox certification, controlled pilot, monitoring activation, rollback execution, live connector runtime deployment, or Production traffic exists. Both application and database traffic kill switches remain engaged. No processor, counter, roadside provider, insurer, claims service, police service, emergency service, medical service, or traveler is contacted or connected. No live support case is opened. No roadside or emergency assistance is dispatched. No vehicle is sourced, replaced, assigned, or upgraded. No damage claim is filed, accepted, denied, priced, or settled. No live reservation is created, confirmed, modified, cancelled, marked no-show, picked up, extended, returned, or refunded. No payment card, bank account, payment token, billing identity, raw reference, traveler identity, license, vehicle identifier, precise location, medical information, accident narrative, police report, insurance policy, raw request, raw response, raw webhook payload, raw observability log, pilot-participant identity, reviewer identity, Production approval, or credential data is collected. No personal driver data is collected or verified. No collection, capture, deposit, authorization hold, refund, chargeback, receipt, tax, fraud, claim, or money-movement action occurs. No supplier inventory, quote, or policy is ingested or repriced. Supplier or service contact, contracts, accounts, credentials, provider capability verification, external traffic, actual sandbox certification, live pilot, live inventory, rates, policies, eligibility decisions, support operations, reservations, payment activity, refunds, migrations, deployment, and Production changes remain outside this local connector preparation and require separate approval.</p>
         </section>
       </div>
     </DashboardShell>
