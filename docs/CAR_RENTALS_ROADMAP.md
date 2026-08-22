@@ -2,7 +2,7 @@
 
 Prepared: August 19, 2026
 
-Status: **All 12 software phases are released, accepted, and documented in isolated Preview; supplier contact, contracts, accounts, credentials, traffic, live pilot, reservations, support action, payment activity, and Production remain pending**
+Status: **All 12 software phases and the post-roadmap provider-decision readiness workspace are released, accepted, and documented in isolated Preview; supplier contact, contracts, accounts, credentials, traffic, live pilot, reservations, support action, payment activity, and Production remain pending**
 
 ## Package objective
 
@@ -48,6 +48,7 @@ Build a commercially credible car-rental vertical while separating completed sof
 - The design and its public-reference boundary are recorded in `docs/CAR_RENTALS_PROVIDER_CONNECTORS.md`.
 - Public capability and onboarding research is recorded for Sabre and Travelport, and a provider-neutral public shortlist is recorded for the generic aggregator path at published research commit `afed647`. The controlled aggregator inventory contains Carnect, CarTrawler, and Booking.com Demand as priority candidates, with EconomyBookings and DiscoverCars retained as alternates. No research disposition is a formal score, recommendation, selection, or contracted-capability claim.
 - A local provider-decision readiness model now reconciles those 3 of 3 research paths into seven internal review gates. The default state remains 0 of 7 gates, formal recommendation not issued, provider decision not recorded, selected provider none, and activation stage 1 incomplete. Even a complete seven-gate packet cannot select or contact a provider, advance the ten-stage activation tracks, or grant external authority. Its explicitly synthetic offline fixture, runtime-key allowlist, ordered aggregator inventory, and fail-closed authority checks pass 18 focused tests, ESLint, TypeScript, 1,260 tests across 262 files, and the optimized 115-page Next.js build.
+- Provider-decision readiness source commit `99da51796f10a2c55ba77b18cd3f709d67a3fbf7`, private publication without force-push, isolated Preview deployment `dpl_AQ65e5tCcPTtBZVnuhwhJKSMRQPy`, and authenticated `/admin/cars` acceptance are complete. The accepted page kept public research at 3 of 3, internal review at 0 of 7, every activation track at 0 of 10, and live connectors at 0 of 3. The same acceptance covers the inherited live-activation control center, and evidence is recorded in `docs/CAR_RENTALS_PROVIDER_DECISION_READINESS_PREVIEW_EVIDENCE_2026-08-22.md`.
 
 ## Live connector activation program
 

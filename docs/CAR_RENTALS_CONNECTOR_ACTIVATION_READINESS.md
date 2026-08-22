@@ -4,11 +4,11 @@ Prepared: August 21, 2026
 
 Reconciled: August 22, 2026
 
-Status: **public research recorded for 3 of 3 paths; internal provider-decision review remains 0 of 7; no provider selected; 0 of 3 connectors live**
+Status: **source published and accepted in isolated Preview; public research recorded for 3 of 3 paths; internal provider-decision review remains 0 of 7; no provider selected; 0 of 3 connectors live**
 
 ## Objective
 
-Start the live-connector activation program for Sabre, Travelport, and one future aggregator by making every real activation dependency visible and independently owned. This milestone adds a read-only control layer. It does not contact a provider, create an account, accept credentials, connect to a sandbox, enable traffic, create or service a reservation, move money, migrate data, deploy, or change Production.
+Start the live-connector activation program for Sabre, Travelport, and one future aggregator by making every real activation dependency visible and independently owned. This milestone adds a read-only control layer. The software cannot contact a provider, create an account, accept credentials, connect to a sandbox, enable traffic, create or service a reservation, move money, migrate data, deploy itself, or change Production. Its separately authorized isolated Preview deployment is recorded below and does not grant any external or Production authority.
 
 ## Current connector position
 
@@ -41,6 +41,20 @@ The validator includes one explicitly marked `offline_fixture` with all seven ga
 - TypeScript passes with no emitted files.
 - The full repository suite passes: 1,260 tests across 262 files.
 - The optimized Next.js build passes with 115 generated pages, including static `/admin/cars`.
+
+## Isolated Preview release evidence
+
+- Accepted source commit: `99da51796f10a2c55ba77b18cd3f709d67a3fbf7`.
+- Private publication completed with a standard fast-forward push and no force-push.
+- Isolated Preview project: `iratepilotadmin-private-preview`.
+- Accepted deployment: `dpl_AQ65e5tCcPTtBZVnuhwhJKSMRQPy`, target `Preview`, status `READY`.
+- Authenticated acceptance route: `https://iratepilotadmin-private-preview-alflp91on-irate-pilot.vercel.app/admin/cars`.
+- Accepted page title: `Car Rentals provider-decision readiness | iRatePilot Admin | iRatePilot`.
+- Browser acceptance confirmed the provider-decision section at 3 of 3 public research paths and 0 of 7 internal review gates, plus the inherited activation control center at 0 of 3 live connectors and 0 of 10 stages for each track.
+- The accepted workspace contained no forms or input controls and produced no error-level browser-console entries.
+- Full evidence is recorded in `docs/CAR_RENTALS_PROVIDER_DECISION_READINESS_PREVIEW_EVIDENCE_2026-08-22.md`.
+
+This evidence reconciliation does not perform another deployment. It records the isolated Preview release and authenticated acceptance already completed under separate approval.
 
 ## Ten activation stages
 
