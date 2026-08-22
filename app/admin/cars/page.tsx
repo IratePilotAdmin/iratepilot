@@ -99,6 +99,7 @@ import {
 } from "@/lib/cars/provider-connectors";
 import {
   buildCarRentalConnectorActivationPlan,
+  buildCarRentalProviderDecisionReadinessPlan,
   carRentalConnectorActivationProhibitedFields,
   carRentalConnectorActivationRecordedFields,
 } from "@/lib/cars/connector-activation-readiness";
@@ -136,11 +137,12 @@ import {
 } from "@/lib/cars/supplier-readiness";
 
 export const metadata: Metadata = {
-  title: "Car Rentals connector activation readiness | iRatePilot Admin",
-  description: "Read-only car-rental live-connector activation control center with fail-closed Sabre, Travelport, and unselected aggregator tracks plus the completed provider-neutral software roadmap.",
+  title: "Car Rentals provider-decision readiness | iRatePilot Admin",
+  description: "Read-only car-rental provider-decision workspace with completed public research, no provider selection, fail-closed activation tracks, and the completed provider-neutral software roadmap.",
 };
 
 export default function AdminCarsPage() {
+  const providerDecisionReadiness = buildCarRentalProviderDecisionReadinessPlan();
   const connectorActivation = buildCarRentalConnectorActivationPlan();
   const namedConnectors = buildCarRentalNamedConnectorPlan();
   const controlledLaunch = buildCarRentalControlledLaunchPlan();
@@ -169,6 +171,62 @@ export default function AdminCarsPage() {
             <p className="mt-2 text-sm leading-6 text-amber-900">All three activation tracks are fail-closed. Accounts, credentials, sandbox traffic, reservations, payments, migrations, and Production remain disabled.</p>
           </div>
         </div>
+
+        <section className="mt-10 rounded-3xl border border-indigo-200 bg-indigo-50 p-6 lg:p-8">
+          <div className="flex items-center gap-3"><ClipboardCheck className="h-5 w-5 text-indigo-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-indigo-800">Provider-decision readiness</p></div>
+          <div className="mt-2 grid gap-5 lg:grid-cols-[1fr_300px] lg:items-start">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-950">Public research complete; internal decision still separate</h2>
+              <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-700">3 of 3 public research tracks recorded for Sabre, Travelport, and a provider-unselected aggregator path. This is evidence for an internal review only. It does not create a formal recommendation, select a provider, complete activation stage 1, or authorize contact.</p>
+            </div>
+            <div className="rounded-2xl border border-amber-300 bg-amber-50 p-5">
+              <p className="text-xs font-semibold uppercase tracking-[.14em] text-amber-800">Decision state</p>
+              <p className="mt-2 font-bold text-amber-950">No provider selected</p>
+              <p className="mt-2 text-sm leading-6 text-amber-900">Formal recommendation not issued · provider decision not recorded.</p>
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-3">
+            <article className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5"><h3 className="font-semibold text-emerald-950">Public research</h3><p className="mt-2 text-sm leading-6 text-emerald-900">{providerDecisionReadiness.researchCompletedCount} of {providerDecisionReadiness.researchTotalCount} tracks recorded from public evidence.</p></article>
+            <article className="rounded-2xl border border-indigo-200 bg-white p-5"><h3 className="font-semibold text-slate-950">Internal readiness</h3><p className="mt-2 text-sm leading-6 text-slate-600">{providerDecisionReadiness.completedReadinessGateCount} of {providerDecisionReadiness.totalReadinessGateCount} review gates complete. A separate internal decision remains required.</p></article>
+            <article className="rounded-2xl border border-red-200 bg-red-50 p-5"><h3 className="font-semibold text-red-950">External authority</h3><p className="mt-2 text-sm leading-6 text-red-900">0 provider contacts · 0 accounts · 0 credentials · 0 sandbox connections · 0 live connectors.</p></article>
+          </div>
+
+          <div className="mt-5 grid gap-4 lg:grid-cols-3">
+            {providerDecisionReadiness.researchProfiles.map((profile) => (
+              <article key={profile.connectorId} className="rounded-2xl border border-indigo-200 bg-white p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="font-semibold text-slate-950">{profile.label}</h3>
+                  <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
+                </div>
+                <p className="mt-3 text-sm leading-6 text-slate-600">{profile.publicEvidenceSummary}</p>
+                <p className="mt-3 text-xs font-semibold uppercase tracking-[.12em] text-indigo-700">Research disposition</p>
+                <p className="mt-1 text-sm text-slate-700">{profile.disposition.replaceAll("_", " ")}</p>
+                <p className="mt-3 text-xs leading-5 text-slate-500">Hard stops: {profile.hardStops.join(" · ")}</p>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            {providerDecisionReadiness.gates.map((gate) => (
+              <article key={gate.id} className="rounded-2xl border border-indigo-200 bg-white p-5">
+                <div className="flex items-start gap-3">
+                  <Circle className="mt-0.5 h-5 w-5 shrink-0 text-indigo-500" />
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[.14em] text-slate-400">Internal review · {gate.owner}</p>
+                    <h3 className="mt-1 font-semibold text-slate-950">{gate.label}</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{gate.detail}</p>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-5 rounded-2xl bg-slate-950 p-5 text-white">
+            <p className="font-semibold">Packet readiness is not provider approval.</p>
+            <p className="mt-2 text-sm leading-6 text-slate-300">Completing all seven internal checks would only make a review packet ready. Provider selection, contact, contracts, accounts, credentials, sandbox traffic, transactions, deployment, and Production each remain separately prohibited.</p>
+          </div>
+        </section>
 
         <section className="mt-10 rounded-3xl border border-violet-200 bg-violet-50 p-6 lg:p-8">
           <div className="flex items-center gap-3"><Workflow className="h-5 w-5 text-violet-700" /><p className="text-xs font-semibold uppercase tracking-[.16em] text-violet-800">Live activation program</p></div>
@@ -955,7 +1013,7 @@ export default function AdminCarsPage() {
 
         <section className="mt-12 rounded-2xl border border-red-300 bg-red-50 p-6">
           <div className="flex items-center gap-3 text-red-950"><KeyRound className="h-5 w-5" /><h2 className="text-lg font-bold">Runtime hard stop</h2></div>
-          <p className="mt-3 max-w-4xl text-sm leading-6 text-red-900">Sabre, Travelport, and one generic aggregator connector now exist only as disabled local software contracts. No car-rental supplier has been commercially selected, contacted, provisioned, certified, or connected. No provider mapping, account, live endpoint, credential request, credential receipt, credential material, socket, job, queue, webhook receiver, external request, sandbox connection, sandbox certification, controlled pilot, monitoring activation, rollback execution, Preview deployment, or Production traffic exists. Both application and database traffic kill switches remain engaged. No processor, counter, roadside provider, insurer, claims service, police service, emergency service, medical service, or traveler is contacted or connected. No live support case is opened. No roadside or emergency assistance is dispatched. No vehicle is sourced, replaced, assigned, or upgraded. No damage claim is filed, accepted, denied, priced, or settled. No live reservation is created, confirmed, modified, cancelled, marked no-show, picked up, extended, returned, or refunded. No payment card, bank account, payment token, billing identity, raw reference, traveler identity, license, vehicle identifier, precise location, medical information, accident narrative, police report, insurance policy, raw request, raw response, raw webhook payload, raw observability log, pilot-participant identity, reviewer identity, Production approval, or credential data is collected. No personal driver data is collected or verified. No collection, capture, deposit, authorization hold, refund, chargeback, receipt, tax, fraud, claim, or money-movement action occurs. No supplier inventory, quote, or policy is ingested or repriced. Supplier or service contact, contracts, accounts, credentials, provider capability verification, external traffic, actual sandbox certification, live pilot, live inventory, rates, policies, eligibility decisions, support operations, reservations, payment activity, refunds, migrations, deployment, and Production changes remain outside this local connector preparation and require separate approval.</p>
+          <p className="mt-3 max-w-4xl text-sm leading-6 text-red-900">Sabre, Travelport, and one generic aggregator connector now exist only as disabled local software contracts. No car-rental supplier has been commercially selected, contacted, provisioned, certified, or connected. No provider mapping, account, live endpoint, credential request, credential receipt, credential material, socket, job, queue, webhook receiver, external request, sandbox connection, sandbox certification, controlled pilot, monitoring activation, rollback execution, live connector runtime deployment, or Production traffic exists. Both application and database traffic kill switches remain engaged. No processor, counter, roadside provider, insurer, claims service, police service, emergency service, medical service, or traveler is contacted or connected. No live support case is opened. No roadside or emergency assistance is dispatched. No vehicle is sourced, replaced, assigned, or upgraded. No damage claim is filed, accepted, denied, priced, or settled. No live reservation is created, confirmed, modified, cancelled, marked no-show, picked up, extended, returned, or refunded. No payment card, bank account, payment token, billing identity, raw reference, traveler identity, license, vehicle identifier, precise location, medical information, accident narrative, police report, insurance policy, raw request, raw response, raw webhook payload, raw observability log, pilot-participant identity, reviewer identity, Production approval, or credential data is collected. No personal driver data is collected or verified. No collection, capture, deposit, authorization hold, refund, chargeback, receipt, tax, fraud, claim, or money-movement action occurs. No supplier inventory, quote, or policy is ingested or repriced. Supplier or service contact, contracts, accounts, credentials, provider capability verification, external traffic, actual sandbox certification, live pilot, live inventory, rates, policies, eligibility decisions, support operations, reservations, payment activity, refunds, migrations, deployment, and Production changes remain outside this local connector preparation and require separate approval.</p>
         </section>
       </div>
     </DashboardShell>

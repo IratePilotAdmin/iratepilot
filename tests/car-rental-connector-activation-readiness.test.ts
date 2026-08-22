@@ -2,19 +2,36 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   buildCarRentalConnectorActivationPlan,
+  buildCarRentalProviderDecisionReadinessPlan,
   CAR_RENTAL_CONNECTOR_ACTIVATION_MODE,
+  CAR_RENTAL_PROVIDER_DECISION_READINESS_EVIDENCE_MODE,
+  CAR_RENTAL_PROVIDER_DECISION_READINESS_MODE,
+  carRentalAggregatorAlternateCandidateIds,
+  carRentalAggregatorShortlistCandidateIds,
   carRentalConnectorActivationFixtures,
   carRentalConnectorActivationProhibitedFields,
   carRentalConnectorActivationRecordedFields,
   carRentalConnectorActivationStageIds,
   carRentalConnectorActivationStages,
+  carRentalProviderDecisionReadinessGateIds,
+  carRentalProviderDecisionReadinessGates,
+  carRentalProviderDecisionReadinessProhibitedFields,
+  carRentalProviderDecisionReadinessRecordedFields,
+  carRentalPublicResearchProfiles,
+  carRentalSyntheticProviderDecisionReadinessFixture,
   validateCarRentalConnectorActivationRecord,
+  validateCarRentalProviderDecisionReadinessRecord,
   type CarRentalConnectorActivationRecord,
+  type CarRentalProviderDecisionReadinessRecord,
 } from "../lib/cars/connector-activation-readiness";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
 function cloneRecord(record: CarRentalConnectorActivationRecord): CarRentalConnectorActivationRecord {
+  return structuredClone(record);
+}
+
+function cloneDecisionRecord(record: CarRentalProviderDecisionReadinessRecord): CarRentalProviderDecisionReadinessRecord {
   return structuredClone(record);
 }
 
@@ -160,17 +177,212 @@ describe("car-rental connector activation readiness", () => {
     expect(validateCarRentalConnectorActivationRecord(invalid).errors).toContain("Provider-decision state must match the connector binding.");
   });
 
-  it("adds a read-only activation control center and documents the next external gates", () => {
+  it("records exactly three public-research profiles without issuing a recommendation", () => {
+    expect(carRentalPublicResearchProfiles.map((profile) => [profile.connectorId, profile.researchState, profile.disposition])).toEqual([
+      ["sabre", "public_research_recorded", "technical_secondary_candidate"],
+      ["travelport", "public_research_recorded", "conditional_enterprise_candidate"],
+      ["aggregator", "public_research_recorded", "shortlist_selection_required"],
+    ]);
+    expect(carRentalAggregatorShortlistCandidateIds).toEqual(["carnect", "cartrawler", "booking_com_demand"]);
+    expect(carRentalAggregatorAlternateCandidateIds).toEqual(["economybookings", "discovercars"]);
+    expect(new Set(carRentalPublicResearchProfiles.map((profile) => profile.connectorId)).size).toBe(3);
+    expect(carRentalPublicResearchProfiles[2].aggregatorShortlistCandidateIds).toEqual(carRentalAggregatorShortlistCandidateIds);
+    expect(carRentalPublicResearchProfiles[0].aggregatorShortlistCandidateIds).toEqual([]);
+    expect(JSON.stringify(carRentalPublicResearchProfiles)).not.toMatch(/formalScore|weightedScore|scorePercent|recommendationId/);
+  });
+
+  it("defines seven unique, owned internal decision-readiness gates", () => {
+    expect(carRentalProviderDecisionReadinessGateIds).toEqual([
+      "research_artifact_reconciled",
+      "decision_question_defined",
+      "candidate_scope_frozen",
+      "public_evidence_limits_acknowledged",
+      "unknowns_and_hard_stops_reviewed",
+      "owners_and_conflicts_reviewed",
+      "separate_decision_boundary_acknowledged",
+    ]);
+    expect(carRentalProviderDecisionReadinessGates).toHaveLength(7);
+    expect(new Set(carRentalProviderDecisionReadinessGates.map((gate) => gate.id)).size).toBe(7);
+    expect(carRentalProviderDecisionReadinessGates.every((gate) => gate.owner.length > 0)).toBe(true);
+  });
+
+  it("starts with research 3 of 3 and decision readiness 0 of 7", () => {
+    expect(buildCarRentalProviderDecisionReadinessPlan()).toMatchObject({
+      mode: CAR_RENTAL_PROVIDER_DECISION_READINESS_MODE,
+      researchCompletedCount: 3,
+      researchTotalCount: 3,
+      researchComplete: true,
+      completedReadinessGateCount: 0,
+      totalReadinessGateCount: 7,
+      readinessState: "review_required",
+      decisionPacketReady: false,
+      providerDecisionState: "separate_decision_required",
+      providerDecisionRecorded: false,
+      selectedProviderId: null,
+      formalRecommendationState: "not_issued",
+      activationStageOneComplete: false,
+      activeConnectorCount: 0,
+      providerContactAuthorized: false,
+      deploymentAuthorized: false,
+      productionAuthorized: false,
+      applicationKillSwitchState: "engaged",
+      databaseKillSwitchState: "engaged",
+    });
+  });
+
+  it("makes a packet ready without selecting, contacting, connecting, or activating a provider", () => {
+    const allEvidence = Object.fromEntries(carRentalProviderDecisionReadinessGates.map((gate) => [gate.id, true]));
+    const decisionPlan = buildCarRentalProviderDecisionReadinessPlan(allEvidence);
+    const activationPlan = buildCarRentalConnectorActivationPlan();
+
+    expect(decisionPlan).toMatchObject({
+      completedReadinessGateCount: 7,
+      totalReadinessGateCount: 7,
+      readinessState: "ready_for_internal_decision",
+      decisionPacketReady: true,
+      providerDecisionRecorded: false,
+      selectedProviderId: null,
+      formalRecommendationState: "not_issued",
+      activationStageOneComplete: false,
+      activeConnectorCount: 0,
+      providerContactAuthorized: false,
+      providerAccountCreationAuthorized: false,
+      credentialHandlingAuthorized: false,
+      sandboxTrafficAuthorized: false,
+      externalTrafficAuthorized: false,
+      reservationMutationAuthorized: false,
+      refundExecutionAuthorized: false,
+      paymentAuthorized: false,
+      migrationAuthorized: false,
+      deploymentAuthorized: false,
+      productionAuthorized: false,
+    });
+    expect(activationPlan.tracks.every((track) => track.completedStageCount === 0)).toBe(true);
+    expect(activationPlan.activeConnectorCount).toBe(0);
+  });
+
+  it("accepts a sanitized synthetic packet-ready fixture without completing provider decision stage 1", () => {
+    expect(carRentalSyntheticProviderDecisionReadinessFixture.evidenceMode).toBe(CAR_RENTAL_PROVIDER_DECISION_READINESS_EVIDENCE_MODE);
+    expect(validateCarRentalProviderDecisionReadinessRecord(carRentalSyntheticProviderDecisionReadinessFixture)).toMatchObject({
+      valid: true,
+      decisionPacketReady: true,
+      providerDecisionRecorded: false,
+      providerSelected: false,
+      activationStageOneComplete: false,
+      providerContactAuthorized: false,
+      providerAccountCreationAuthorized: false,
+      credentialHandlingAuthorized: false,
+      sandboxTrafficAuthorized: false,
+      externalTrafficAuthorized: false,
+      reservationMutationAuthorized: false,
+      refundExecutionAuthorized: false,
+      paymentAuthorized: false,
+      migrationAuthorized: false,
+      deploymentAuthorized: false,
+      productionAuthorized: false,
+      errors: [],
+    });
+  });
+
+  it("rejects provider selection, recommendation, accounts, credentials, traffic, transactions, deployment, and Production", () => {
+    const invalid = cloneDecisionRecord(carRentalSyntheticProviderDecisionReadinessFixture);
+    invalid.providerDecisionRecorded = true as never;
+    invalid.selectedProviderId = "sabre" as never;
+    invalid.formalRecommendationState = "issued" as never;
+    invalid.providerContactMade = true as never;
+    invalid.providerAccountPresent = true as never;
+    invalid.credentialMaterialPresent = true as never;
+    invalid.sandboxConnectionPresent = true as never;
+    invalid.externalRequestAttempted = true as never;
+    invalid.reservationActionAttempted = true as never;
+    invalid.refundActionAttempted = true as never;
+    invalid.paymentActionAttempted = true as never;
+    invalid.migrationAttempted = true as never;
+    invalid.deploymentAttempted = true as never;
+    invalid.productionAuthorized = true as never;
+
+    expect(validateCarRentalProviderDecisionReadinessRecord(invalid).errors).toEqual(expect.arrayContaining([
+      "A separate provider decision remains required and unrecorded.",
+      "Provider selection is not permitted in a decision-readiness record.",
+      "A formal provider recommendation has not been authorized.",
+      "Provider contact is not authorized by decision readiness.",
+      "Provider accounts are not authorized by decision readiness.",
+      "Credential material is not authorized by decision readiness.",
+      "Sandbox connectivity is not authorized by decision readiness.",
+      "External provider traffic is not authorized by decision readiness.",
+      "Reservation, refund, or payment actions are not authorized by decision readiness.",
+      "Migration or deployment is not authorized by decision readiness.",
+      "Production is not authorized by decision readiness.",
+    ]));
+  });
+
+  it("rejects malformed, tampered, duplicated, excess, prohibited, or kill-switch-releasing decision evidence", () => {
+    const invalid = cloneDecisionRecord(carRentalSyntheticProviderDecisionReadinessFixture);
+    invalid.decisionReadinessCaseId = "bad";
+    invalid.evidenceMode = "live" as never;
+    invalid.researchArtifactId = "different-artifact" as never;
+    invalid.researchRecordedDate = "2026-08-22" as never;
+    invalid.evidenceDigest = "UPPERCASE";
+    invalid.researchedConnectorIds = ["sabre", "sabre", "aggregator"];
+    invalid.aggregatorShortlistCandidateIds = ["cartrawler", "carnect", "booking_com_demand"];
+    invalid.aggregatorAlternateCandidateIds = ["discovercars", "economybookings"];
+    invalid.completedGateIds = [...carRentalProviderDecisionReadinessGateIds, "research_artifact_reconciled"];
+    invalid.readinessState = "ready_for_internal_decision";
+    invalid.applicationKillSwitchState = "released";
+    invalid.databaseKillSwitchState = "released";
+    invalid.recordedFields = [...carRentalProviderDecisionReadinessRecordedFields, "formal_score", "formal_score"];
+    invalid.prohibitedDataDetected = true;
+
+    expect(validateCarRentalProviderDecisionReadinessRecord(invalid).errors).toEqual(expect.arrayContaining([
+      "Decision-readiness case ID must be a stable opaque token.",
+      "Decision-readiness records must remain explicitly synthetic offline fixtures.",
+      "Decision readiness must bind the recorded public-research artifact.",
+      "Public-research recorded date does not match the controlled artifact.",
+      "Researched connector inventory cannot contain duplicates.",
+      "Researched connector inventory must exactly match Sabre, Travelport, and the unselected aggregator path.",
+      "Aggregator shortlist must exactly match the ordered controlled public-research candidates.",
+      "Aggregator alternates must exactly match the ordered controlled public-research candidates.",
+      "Completed readiness-gate inventory cannot contain duplicates.",
+      "Readiness state must match the completed local gate inventory.",
+      "Decision-readiness evidence must be a lowercase 64-character digest.",
+      "Application traffic kill switch must remain engaged.",
+      "Database traffic kill switch must remain engaged.",
+      "Recorded-field inventory cannot contain duplicates.",
+      "Recorded-field inventory contains unsupported or prohibited fields.",
+      "Recorded-field inventory must exactly match the minimized decision-readiness allowlist.",
+      "Contact, submission, contract, score, recommendation, account, credential, endpoint, payload, identity, payment, live-reference, or Production-approval data blocks decision readiness.",
+    ]));
+    expect(carRentalProviderDecisionReadinessProhibitedFields).toContain("formal_score");
+    expect(carRentalProviderDecisionReadinessRecordedFields).not.toContain("formal_score");
+  });
+
+  it("rejects actual extra runtime fields even when the declared allowlist stays clean", () => {
+    const invalid = {
+      ...cloneDecisionRecord(carRentalSyntheticProviderDecisionReadinessFixture),
+      api_key: "must-not-be-retained",
+    } as unknown as CarRentalProviderDecisionReadinessRecord;
+
+    expect(validateCarRentalProviderDecisionReadinessRecord(invalid).errors).toContain("Decision-readiness record contains unsupported or prohibited runtime fields.");
+  });
+
+  it("adds a read-only decision workspace and documents the separate provider-decision boundary", () => {
     const page = read("app/admin/cars/page.tsx");
     const activationDocument = read("docs/CAR_RENTALS_CONNECTOR_ACTIVATION_READINESS.md");
     const packageRoadmap = read("docs/CAR_RENTALS_ROADMAP.md");
+    const roadmap = read("docs/ROADMAP.md");
 
+    expect(page).toContain("Provider-decision readiness");
+    expect(page).toContain("3 of 3 public research tracks recorded");
+    expect(page).toContain("No provider selected");
     expect(page).toContain("Live connector activation control center");
     expect(page).toContain("Three activation tracks, all fail-closed");
     expect(page).toContain("{connectorActivation.activeConnectorCount} of {connectorActivation.tracks.length} live");
     expect(page).not.toMatch(/fetch\(|createClient\(|<form|<button|use server|use client/);
     expect(activationDocument).toContain("No provider contact is authorized");
-    expect(activationDocument).toContain("Aggregator selection required");
+    expect(activationDocument).toContain("Public research recorded: 3 of 3 paths");
+    expect(activationDocument).toContain("Provider decision recorded: no");
     expect(packageRoadmap).toContain("Current live connector activation: **0 of 3 connectors**");
+    expect(packageRoadmap).toContain("Public connector research: **3 of 3 paths recorded**");
+    expect(roadmap).toContain("Public connector research is recorded for all three paths at `afed647`");
   });
 });

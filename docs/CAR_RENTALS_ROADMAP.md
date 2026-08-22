@@ -27,7 +27,7 @@ Build a commercially credible car-rental vertical while separating completed sof
 
 - Phase 1 software, private publication, isolated Preview deployment, and browser acceptance are complete. Its boundary is recorded in `docs/CAR_RENTALS_PHASE_1.md`, and its Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_1_PREVIEW_EVIDENCE_2026-08-19.md`.
 - Phase 2 introduces the protected, read-only supplier-readiness workspace. Its software and release boundaries are recorded in `docs/CAR_RENTALS_PHASE_2.md`, and its Preview evidence is recorded in `docs/CAR_RENTALS_PHASE_2_PREVIEW_EVIDENCE_2026-08-20.md`.
-- Phase 2 commit, private publication, isolated Preview deployment, and authenticated browser acceptance are complete. Named-provider research, supplier contact, accounts, contracts, credentials, traffic, reservations, payments, and Production remain pending.
+- Phase 2 commit, private publication, isolated Preview deployment, and authenticated browser acceptance are complete. Public connector research was later recorded for all three paths; provider selection, supplier contact, accounts, contracts, credentials, traffic, reservations, payments, and Production remain pending.
 - Phase 3 defines provider-neutral contracts for locations, opening hours, vehicle-class equivalency, capacity, transmission, powertrain, accessibility, and features. Its software and fail-closed boundary are recorded in `docs/CAR_RENTALS_PHASE_3.md`.
 - Phase 3 passes focused tests, ESLint, TypeScript, 1,120 tests across 251 files, and the optimized 115-page Next.js build. Commit `bd186223`, private publication, isolated Preview deployment, and authenticated browser acceptance are complete. Evidence is recorded in `docs/CAR_RENTALS_PHASE_3_PREVIEW_EVIDENCE_2026-08-20.md`.
 - Phase 4 defines provider-neutral contracts for base rates, taxes, mandatory fees, one-way fees, airport surcharges, mileage, fuel or charging, deposits, protection products, and exclusions. It uses integer minor-unit arithmetic, exact total reconciliation, explicit unknown states, and pure local validation. It passes focused tests, ESLint, TypeScript, 1,128 tests across 252 files, and the optimized 115-page Next.js build. Commit `989b27935a0fd3923a20a7f975159b7aa910cc62`, private publication, isolated Preview deployment `dpl_8YwNVxQtgbZcCksVw2uGAM8jjJBP`, authenticated acceptance, and evidence publication at `c24380d7769ae8d146688593f1fe8ebeb98e9573` are complete. Its boundaries and evidence are recorded in `docs/CAR_RENTALS_PHASE_4.md` and `docs/CAR_RENTALS_PHASE_4_PREVIEW_EVIDENCE_2026-08-20.md`.
@@ -46,11 +46,13 @@ Build a commercially credible car-rental vertical while separating completed sof
 - All three remain unprovisioned, capability-unverified, disconnected, and protected by engaged application and database traffic kill switches. The operation runner cannot send an external request or change a reservation or payment state.
 - Named connector preparation does not change the 12-phase completion count and does not satisfy any external commercial-activation gate. Provider contact, contracts, accounts, credentials, capability verification, sandbox connectivity, certification, external traffic, deployment, migration, and Production still require separate approval.
 - The design and its public-reference boundary are recorded in `docs/CAR_RENTALS_PROVIDER_CONNECTORS.md`.
+- Public capability and onboarding research is recorded for Sabre and Travelport, and a provider-neutral public shortlist is recorded for the generic aggregator path at published research commit `afed647`. The controlled aggregator inventory contains Carnect, CarTrawler, and Booking.com Demand as priority candidates, with EconomyBookings and DiscoverCars retained as alternates. No research disposition is a formal score, recommendation, selection, or contracted-capability claim.
+- A local provider-decision readiness model now reconciles those 3 of 3 research paths into seven internal review gates. The default state remains 0 of 7 gates, formal recommendation not issued, provider decision not recorded, selected provider none, and activation stage 1 incomplete. Even a complete seven-gate packet cannot select or contact a provider, advance the ten-stage activation tracks, or grant external authority. Its explicitly synthetic offline fixture, runtime-key allowlist, ordered aggregator inventory, and fail-closed authority checks pass 18 focused tests, ESLint, TypeScript, 1,260 tests across 262 files, and the optimized 115-page Next.js build.
 
 ## Live connector activation program
 
 - A local activation-readiness control center now defines separate tracks for Sabre, Travelport, and one future aggregator, with ten required stages per connector.
-- Sabre and Travelport remain technical candidates only. The aggregator track is explicitly blocked by a provider-selection requirement.
+- Sabre and Travelport remain researched candidates only. The aggregator track has a researched shortlist but remains explicitly blocked by a provider-selection requirement.
 - All three tracks remain at 0 of 10 stages, with no account, verified capability, credential, sandbox connection, certification, operational acceptance, external request, or Production decision.
 - Completing the local activation-planning checklist cannot contact a supplier or enable an account, credential, sandbox, traffic, transaction, migration, deployment, or Production action.
 - The activation controls, blockers, and next approval boundary are recorded in `docs/CAR_RENTALS_CONNECTOR_ACTIVATION_READINESS.md`.
@@ -63,5 +65,7 @@ Build a commercially credible car-rental vertical while separating completed sof
 - The package is commercially complete only after all 12 phases, supplier sandbox certification, operational acceptance, legal and payment approvals, controlled-pilot evidence, and a separate Production launch decision are complete.
 - Current local software-roadmap completion: **12 of 12 phases (100%)**.
 - Current released-and-accepted software completion: **12 of 12 phases (100%)**.
+- Public connector research: **3 of 3 paths recorded**.
+- Internal provider-decision readiness: **0 of 7 review gates completed; no provider selected**.
 - Current live connector activation: **0 of 3 connectors**.
 - Current live commercial-activation completion: **0 of 4 external activation gate groups**.
