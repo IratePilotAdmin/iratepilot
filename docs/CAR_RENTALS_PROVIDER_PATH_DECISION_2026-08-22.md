@@ -6,7 +6,7 @@ Mode: **local documentation only**
 
 Decision ID: `cars-provider-path-decision-2026-08-22-01`
 
-Status: **owner decision recorded for phased provider diligence and represented in a separate fail-closed source record; the hardened source is committed and privately published at `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e` and accepted in isolated Preview deployment `dpl_AeXKzroVXPYC7p6dPCofz2vmjRhJ`; Carnect is the named primary aggregator diligence path, Sabre is the secondary enterprise diligence path, and Travelport is on conditional hold pending written Core Category eligibility or an approved exception; formal recommendation remains `not_issued`, all 29 conditions and all sole-owner conflicts remain unresolved, no provider contact or external authority is created, the activation record remains provider-unselected with stage 1 incomplete, and the new evidence record remains local and unpublished**
+Status: **owner decision recorded for phased provider diligence and represented in a separate fail-closed source record; the hardened source is committed and privately published at `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e`, accepted in isolated Preview deployment `dpl_AeXKzroVXPYC7p6dPCofz2vmjRhJ`, and documented in the evidence package privately published at `c9ba7c964878af5a7120b8fc41d70f9ad6348b43`; a subsequent local documentation decision selects Carnect as the aggregator track's commercial-diligence provider for Stage 1 only while Sabre remains an unselected secondary enterprise candidate and Travelport remains on conditional hold; formal recommendation remains `not_issued`, all 29 conditions and all sole-owner conflicts remain unresolved, no provider contact or external authority is created, and canonical source and the accepted Preview remain provider-unselected with stage 1 incomplete and every track at 0 of 10 pending later reconciliation**
 
 ## Decision authority and provenance
 
@@ -63,6 +63,8 @@ The separate local sequencing record preserves the existing activation and accep
 
 The source record represents only the approved diligence sequence. It cannot be treated as a formal recommendation, commercial provider selection, runtime selection, connector binding, resolved condition or conflict, or completed activation stage. Its separately authorized isolated Preview deployment and acceptance make the read-only state visible without granting provider, transaction, Production-promotion, or other external authority.
 
+After that source and Preview milestone, the owner made a distinct aggregator-only Stage 1 decision in `docs/CAR_RENTALS_ACTIVATION_STAGE_1_AGGREGATOR_PROVIDER_DECISION_2026-08-22.md`: Carnect is selected for commercial diligence only. That later local documentation fact does not alter the source fields or accepted-Preview counters listed above. Sabre remains an unselected secondary enterprise candidate, Travelport remains on conditional hold, and the generic connector remains unbound.
+
 ## Unresolved conditions preserved
 
 - All 29 conditions in the review packet remain unresolved: 12 are `unresolved_blocking` and 17 are `later_provider_verification_required`.
@@ -75,11 +77,12 @@ The source record represents only the approved diligence sequence. It cannot be 
 ## Authority snapshot
 
 - Local phased diligence decision: recorded
+- Subsequent aggregator Stage 1 business-documentation decision: Carnect selected for commercial diligence only; local, uncommitted, and unpublished in `docs/CAR_RENTALS_ACTIVATION_STAGE_1_AGGREGATOR_PROVIDER_DECISION_2026-08-22.md`
 - Separate source representation and validator hardening: implemented, verified, committed, and privately published at `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e`; accepted in isolated Preview deployment `dpl_AeXKzroVXPYC7p6dPCofz2vmjRhJ`
-- Preview evidence record: prepared locally in `docs/CAR_RENTALS_PROVIDER_PATH_SEQUENCING_PREVIEW_EVIDENCE_2026-08-22.md`; not committed or published
+- Preview evidence record: `docs/CAR_RENTALS_PROVIDER_PATH_SEQUENCING_PREVIEW_EVIDENCE_2026-08-22.md`, committed and privately published with the five current-state documentation reconciliations at `c9ba7c964878af5a7120b8fc41d70f9ad6348b43`
 - Formal recommendation: `not_issued`
-- Commercial provider selection: `not_recorded`
-- Selected provider: none
+- Canonical commercial provider selection: `not_recorded`
+- Canonical selected provider: none
 - Runtime provider binding: unbound
 - Activation provider decision recorded: false
 - Activation stage 1 complete: false
@@ -101,6 +104,8 @@ The source record represents only the approved diligence sequence. It cannot be 
 
 ## Next approval boundary
 
-The hardened source is verified with 33 focused safety tests, ESLint, TypeScript, the full 1,275-test suite across 262 files, and the optimized 115-page Next.js build. Commit `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e` is privately published and accepted at `/admin/cars` in isolated Preview deployment `dpl_AeXKzroVXPYC7p6dPCofz2vmjRhJ`. All 29 conditions, all sole-owner conflicts, every false provider-authority flag, the zero activation counters, and both engaged traffic kill switches remain unchanged. The next safe gate is a separately approved documentation-only commit and normal private-branch push of the new evidence record and five current-state reconciliations. No redeployment is required, and provider contact remains a later, separately scoped authorization.
+The hardened source is verified with 33 focused safety tests, ESLint, TypeScript, the full 1,275-test suite across 262 files, and the optimized 115-page Next.js build. Commit `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e` is privately published and accepted at `/admin/cars` in isolated Preview deployment `dpl_AeXKzroVXPYC7p6dPCofz2vmjRhJ`. The evidence record and five current-state documentation reconciliations were then committed and privately published at `c9ba7c964878af5a7120b8fc41d70f9ad6348b43` without redeployment or repeat browser acceptance. All 29 conditions, all sole-owner conflicts, every false provider-authority flag, the zero activation counters, and both engaged traffic kill switches remain unchanged.
 
-The source implementation and validator hardening are committed and privately published at `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e`; their isolated Preview deployment and authenticated acceptance are complete. Only the new evidence record and these current-state documentation changes remain local and unpublished.
+The subsequent aggregator-only Stage 1 decision artifact and these current-state documentation reconciliations remain local, uncommitted, and unpublished. Any documentation publication requires separate approval and creates no source, Preview, provider, transaction, deployment, or Production authority.
+
+The next substantive activation gate is a separately approved local source-model and test reconciliation of the exact Carnect commercial-diligence decision for the aggregator track only. Until that occurs, canonical commercial selection remains `not_recorded`, `selectedProviderId` remains null, runtime binding remains unbound, activation Stage 1 remains incomplete, and every track remains at 0 of 10. Stage 2 provider-contact authorization remains a separate later decision, and no contact, account, credential, sandbox or external traffic, transaction, deployment, or Production action is authorized.

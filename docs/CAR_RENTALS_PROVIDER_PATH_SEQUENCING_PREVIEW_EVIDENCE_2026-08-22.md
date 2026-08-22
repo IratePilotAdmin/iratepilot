@@ -2,7 +2,7 @@
 
 Recorded: August 22, 2026
 
-Status: **accepted source publication, isolated Preview deployment, and authenticated browser acceptance are complete; this evidence record is prepared locally and remains uncommitted and unpublished**
+Status: **accepted source publication, isolated Preview deployment, authenticated browser acceptance, and private publication of this evidence record and the five current-state documentation reconciliations are complete; the evidence package is published at `c9ba7c964878af5a7120b8fc41d70f9ad6348b43`; all 29 conditions and all sole-owner conflicts remain unresolved, activation stage 1 remains incomplete, every track remains at 0 of 10, 0 of 3 connectors are live, and both traffic kill switches remain engaged**
 
 ## Approved release scope
 
@@ -14,7 +14,9 @@ This record documents the separately authorized isolated Preview release and aut
 - Commit subject: `fix(cars): harden provider path validation`
 - Accepted source tree: `5843f841df74dc89ab049b6d16048a9b0d9c048b`
 - Private branch: `agent/align-homepage-pilot-claims`
-- Local branch and tracked private origin: synchronized at the accepted source commit before this evidence-only reconciliation
+- Evidence publication commit: `c9ba7c964878af5a7120b8fc41d70f9ad6348b43`
+- Evidence publication commit subject: `docs(cars): record provider path preview acceptance`
+- Local branch and tracked private origin: synchronized at the evidence publication commit before this publication-state closeout
 - Isolated Vercel project: `iratepilotadmin-private-preview`
 - Vercel project identifier: `prj_pasFoRHteHE1W0YZzQwjZrONDrNc`
 - Vercel deployment identifier: `dpl_AeXKzroVXPYC7p6dPCofz2vmjRhJ`
@@ -23,7 +25,7 @@ This record documents the separately authorized isolated Preview release and aut
 - Accepted route: `https://iratepilotadmin-private-preview-5jp4ethgg-irate-pilot.vercel.app/admin/cars`
 - Accepted page title: `Car Rentals provider-decision readiness | iRatePilot Admin | iRatePilot`
 - Pre-release verification: 33 focused safety tests, ESLint, TypeScript, 1,275 tests across 262 files, and the optimized 115-page Next.js build passed
-- Evidence publication state: local and unpublished; no commit or push is claimed for this record
+- Evidence publication state: this record and the five current-state documentation reconciliations were committed and privately published at `c9ba7c964878af5a7120b8fc41d70f9ad6348b43`; no redeployment or repeat browser acceptance occurred or was required for that documentation-only publication
 
 ## Authenticated browser acceptance
 
@@ -51,6 +53,10 @@ This evidence proves only private source publication and authenticated acceptanc
 
 It does not issue a formal recommendation, record a commercial provider selection, select or bind a runtime provider, resolve any classified condition or sole-owner conflict, complete activation stage 1, release either traffic kill switch, or authorize provider contact, messages, forms, calls, applications, contracts, accounts, credentials, endpoints, sandbox or external provider traffic, live inventory, reservations, changes, cancellations, refunds, payments, migrations, Production promotion, or any Production change.
 
-## Next evidence boundary
+## Publication closeout and subsequent decision boundary
 
-This evidence record and the five current-state documentation reconciliations remain local and unpublished. Their next safe gate is a separately approved documentation-only commit and normal private-branch push. No redeployment or repeat browser acceptance is required by that evidence-publication gate, and no provider or Production authority is created.
+This evidence record and the five current-state documentation reconciliations were committed and privately published at `c9ba7c964878af5a7120b8fc41d70f9ad6348b43`. That documentation-only publication did not redeploy or repeat browser acceptance and created no provider or Production authority.
+
+After this historical acceptance and its evidence publication, the owner separately recorded Carnect as the aggregator track's selected provider for commercial diligence only under the Stage 1 Executive + Product boundary. That later local documentation decision is recorded in `docs/CAR_RENTALS_ACTIVATION_STAGE_1_AGGREGATOR_PROVIDER_DECISION_2026-08-22.md`; it does not rewrite this accepted snapshot and is not represented in its canonical source or deployed Preview. The accepted source therefore remains false, null, unbound, and at 0 of 10 for every track with 0 of 3 live connectors.
+
+The later decision artifact and its current-state reconciliations remain local, uncommitted, and unpublished. The next substantive activation gate is a separately approved local source-model and test reconciliation of the exact aggregator-only decision. Stage 2 provider-contact authorization remains a separate later decision, and no contact, account, credential, sandbox or external traffic, transaction, deployment, or Production action is authorized.

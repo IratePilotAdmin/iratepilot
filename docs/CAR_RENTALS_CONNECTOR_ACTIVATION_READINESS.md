@@ -4,7 +4,7 @@ Prepared: August 21, 2026
 
 Reconciled: August 22, 2026
 
-Status: **the earlier readiness source and the current hardened provider-path sequencing source are published and accepted in isolated Preview; public research is recorded for 3 of 3 paths; the local 7-of-7 review packet is complete; the owner recorded a separate phased-diligence decision naming Carnect as the primary aggregator path, Sabre as the secondary enterprise path, and Travelport as conditional hold; the hardened fail-closed source is committed and privately published at `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e` and accepted in isolated Preview deployment `dpl_AeXKzroVXPYC7p6dPCofz2vmjRhJ`; formal recommendation remains unissued, all 29 conditions and all sole-owner conflicts remain unresolved, the activation record remains provider-unselected with activation stage 1 incomplete, 0 of 3 connectors are live, and the new evidence record remains local and unpublished**
+Status: **the earlier readiness source and the current hardened provider-path sequencing source are published and accepted in isolated Preview; public research is recorded for 3 of 3 paths; the local 7-of-7 review packet is complete; the owner recorded a separate phased-diligence decision naming Carnect as the primary aggregator path, Sabre as the secondary enterprise path, and Travelport as conditional hold, and has now recorded a documentation-layer aggregator Stage 1 decision selecting Carnect for commercial diligence only; the hardened fail-closed source is committed and privately published at `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e`, accepted in isolated Preview deployment `dpl_AeXKzroVXPYC7p6dPCofz2vmjRhJ`, and documented in the evidence package privately published at `c9ba7c964878af5a7120b8fc41d70f9ad6348b43`; formal recommendation remains unissued, all 29 conditions and all sole-owner conflicts remain unresolved, canonical source and accepted Preview remain provider-unselected with activation stage 1 incomplete and every track at 0 of 10, and 0 of 3 connectors are live**
 
 ## Objective
 
@@ -16,11 +16,13 @@ Start the live-connector activation program for Sabre, Travelport, and one futur
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Sabre | Recorded | Not recorded | Not verified | Not created | Not connected | Disabled | No |
 | Travelport | Recorded | Not recorded | Not verified | Not created | Not connected | Disabled | No |
-| Aggregator (provider unselected) | Shortlist recorded | Provider selection required | Not verified | Not created | Not connected | Disabled | No |
+| Aggregator (provider unselected) | Shortlist recorded | Documentation decision recorded; canonical reconciliation required | Not verified | Not created | Not connected | Disabled | No |
 
 Public research is complete for the three controlled paths. Sabre has a technical-secondary disposition based on official public evidence. Travelport remains a conditional enterprise candidate because written Core Category eligibility or an exception is still required. The aggregator research inventory records Carnect, CarTrawler, and Booking.com Demand as priority candidates, with EconomyBookings and DiscoverCars retained as alternates. These are research dispositions only—not formal scores, recommendations, selections, contracted capabilities, or provider authority.
 
 The table above reports the activation-readiness record, not a commercial provider selection. The phased-diligence decision names Carnect as the primary aggregator diligence path, Sabre as the secondary enterprise diligence path, and Travelport as conditional hold; it retains CarTrawler, Booking.com Demand API, EconomyBookings, and DiscoverCars as unselected alternatives while preserving their frozen Gate 3 research classifications. A separately approved source-model reconciliation represents this exact sequence in a distinct `provider_path_sequencing_local_only` record. It does not record a commercial provider selection, change `providerDecisionRecorded`, select or bind the aggregator, complete activation stage 1, or change the table. The hardened representation is committed and privately published at `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e` and accepted in isolated Preview deployment `dpl_AeXKzroVXPYC7p6dPCofz2vmjRhJ`.
+
+A later, separately authorized documentation-layer Stage 1 decision selects Carnect as the aggregator track's commercial-diligence provider only. That local decision is recorded in `docs/CAR_RENTALS_ACTIVATION_STAGE_1_AGGREGATOR_PROVIDER_DECISION_2026-08-22.md`; it does not change the canonical table, source fields, accepted Preview, runtime binding, counters, conditions, conflicts, or external authority shown here.
 
 ## Internal provider-decision readiness
 
@@ -31,8 +33,9 @@ The table above reports the activation-readiness record, not a commercial provid
 - Formal recommendation issued: no.
 - Local phased-diligence decision recorded: yes, in `docs/CAR_RENTALS_PROVIDER_PATH_DECISION_2026-08-22.md`.
 - Separate provider-path sequencing source record and validator hardening: implemented and verified in `lib/cars/connector-activation-readiness.ts`, committed and privately published at `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e`, and accepted in isolated Preview deployment `dpl_AeXKzroVXPYC7p6dPCofz2vmjRhJ`.
-- Preview evidence record: prepared locally in `docs/CAR_RENTALS_PROVIDER_PATH_SEQUENCING_PREVIEW_EVIDENCE_2026-08-22.md`; not committed or published.
+- Preview evidence record: `docs/CAR_RENTALS_PROVIDER_PATH_SEQUENCING_PREVIEW_EVIDENCE_2026-08-22.md`, committed and privately published with the five current-state documentation reconciliations at `c9ba7c964878af5a7120b8fc41d70f9ad6348b43`.
 - Commercial provider selection state: `not_recorded`; provider selected: false; `selectedProviderId`: null.
+- Documentation-layer aggregator Stage 1 decision: Carnect selected for commercial diligence only; canonical source and accepted Preview reconciliation pending.
 - Runtime provider binding state: `unbound`; binding value: null; generic aggregator remains `provider-unselected`.
 - Activation-readiness `providerDecisionRecorded`: false.
 - Activation stage 1 complete: no.
@@ -51,7 +54,7 @@ The validator includes one explicitly marked `offline_fixture` with all seven ga
 - The optimized Next.js build passes with 115 generated pages, including static `/admin/cars`.
 - Adversarial coverage rejects serialization masking, sparse arrays, symbols, hidden fields and counters, accessor-backed state, mutable canonical evidence, provider selection or binding, activation-stage advancement, released kill switches, and every external-authority mutation.
 
-These results verify the accepted source at `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e`. Its private publication, isolated Preview deployment, and authenticated `/admin/cars` acceptance are complete. Only the new evidence record and these current-state documentation reconciliations remain local and unpublished.
+These results verify the accepted source at `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e`. Its private publication, isolated Preview deployment, and authenticated `/admin/cars` acceptance are complete. The evidence record and five current-state documentation reconciliations were subsequently committed and privately published at `c9ba7c964878af5a7120b8fc41d70f9ad6348b43`.
 
 ## Isolated Preview release evidence
 
@@ -78,7 +81,7 @@ This historical evidence records the earlier isolated Preview release and authen
 - Accepted page title: `Car Rentals provider-decision readiness | iRatePilot Admin | iRatePilot`.
 - Browser acceptance confirmed 3 of 3 research paths, 7 of 7 review gates, the exact phased diligence sequence and four unselected alternatives, all 29 conditions unresolved, activation stage 1 incomplete, every track at 0 of 10, 0 of 3 live connectors, zero provider contact/account/credential/sandbox/live activity, and both traffic kill switches engaged.
 - The accepted `main` region contained no forms, inputs, selects, textareas, or buttons; the browser console contained no error-level entries.
-- Full evidence is prepared locally in `docs/CAR_RENTALS_PROVIDER_PATH_SEQUENCING_PREVIEW_EVIDENCE_2026-08-22.md` and is not yet committed or published.
+- Full evidence is recorded in `docs/CAR_RENTALS_PROVIDER_PATH_SEQUENCING_PREVIEW_EVIDENCE_2026-08-22.md` and was committed and privately published at `c9ba7c964878af5a7120b8fc41d70f9ad6348b43`.
 
 This documentation reconciliation performs no deployment. It records the newer isolated Preview release and authenticated acceptance already completed under separate approval.
 
@@ -96,11 +99,12 @@ This documentation reconciliation performs no deployment. It records the newer i
 - Reconciliation result: Sabre, Travelport, and the provider-unselected aggregator path are present with their public-evidence limits; no discrepancy or private/provider-supplied claim was added.
 - All seven local documentation gates: complete; their completion alone did not complete the separate provider-decision gate.
 - Gate 2 answer at Gate 7 completion: none; the option set was unranked and unscored. The Gate 3 scope freeze did not answer the question, select a provider, define a primary or secondary path, or bind the aggregator connector.
-- Current local documentation state: `ready_for_internal_decision` with `decision_packet_ready` true; the later provider-path sequencing decision is recorded separately and is now represented in a distinct local fail-closed source record; formal recommendation is not issued, commercial provider selection is `not_recorded`, selected provider is none, runtime binding is unbound, and activation stage 1 remains incomplete.
+- Current canonical source and accepted Preview state: `ready_for_internal_decision` with `decision_packet_ready` true; the provider-path sequencing decision is represented in a distinct fail-closed source record; formal recommendation is not issued, commercial provider selection is `not_recorded`, selected provider is none, runtime binding is unbound, activation stage 1 remains incomplete, and every track remains at 0 of 10.
 - Review packet: `docs/CAR_RENTALS_PROVIDER_DECISION_REVIEW_PACKET_2026-08-22.md`.
 - Separate local decision record: `docs/CAR_RENTALS_PROVIDER_PATH_DECISION_2026-08-22.md`; Carnect primary aggregator diligence, Sabre secondary enterprise diligence, Travelport conditional hold, and four unselected decision alternatives with their frozen research classifications preserved.
+- Subsequent documentation-layer aggregator Stage 1 record: `docs/CAR_RENTALS_ACTIVATION_STAGE_1_AGGREGATOR_PROVIDER_DECISION_2026-08-22.md`; Carnect selected for commercial diligence only, pending canonical source and accepted Preview reconciliation.
 
-The Gates 1–7 evidence remains documentation-only and did not itself change the earlier accepted Preview. The provider-path source representation and validator hardening are committed and privately published at `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e` and reflected in the separately authorized accepted Preview deployment. The new evidence record and current-state documentation reconciliation remain local and unpublished.
+The Gates 1–7 evidence remains documentation-only and did not itself change the earlier accepted Preview. The provider-path source representation and validator hardening are committed and privately published at `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e` and reflected in the separately authorized accepted Preview deployment. The newer evidence record and five current-state documentation reconciliations are committed and privately published at `c9ba7c964878af5a7120b8fc41d70f9ad6348b43`.
 
 ## Ten activation stages
 
@@ -125,7 +129,7 @@ Completing a local review of these stages cannot satisfy them. Provider-dependen
 - Official public capability and onboarding research is recorded, but iRatePilot entitlement, economics, contracted geography and brands, certification scope, and support terms remain unverified.
 - No commercial selection, executed terms, account, entitlement, credential, sandbox access, certification, or operational acceptance.
 
-Current boundary: the separate local source record represents Sabre only as the secondary enterprise diligence path. It does not complete activation stage 1 or authorize contact. Verification and any later release of that local representation require their own approval before any separately scoped contact decision.
+Current boundary: the separate local source record represents Sabre only as the secondary enterprise diligence path. Its verification, private publication, and isolated Preview acceptance are complete, but it does not complete activation stage 1 or authorize contact. Any contact still requires its own separately scoped authorization after the applicable provider decision.
 
 ### Travelport
 
@@ -137,10 +141,10 @@ Current boundary: the separate local source record preserves Travelport's condit
 
 ### Aggregator
 
-- Public shortlist research is recorded, but no aggregator provider has been selected or bound to the generic connector.
-- The activation record still has no provider decision or aggregator binding; the separate local sequencing record is not a commercial selection or runtime binding, and no contact authorization, commercial review, account, credential, sandbox, certification, or operational acceptance exists.
+- Public shortlist research is recorded, and Carnect is now selected only at the documentation layer as the aggregator track's commercial-diligence provider. No canonical or runtime provider is selected or bound to the generic connector.
+- The canonical activation record still has no provider decision or aggregator binding; the separate local sequencing record is not a commercial selection or runtime binding, and no contact authorization, commercial review, account, credential, sandbox, certification, or operational acceptance exists.
 
-Current boundary: the separate local source record represents Carnect only as the named primary aggregator diligence path. The runtime connector remains provider-unselected, activation stage 1 remains incomplete, and contact remains unauthorized.
+Current boundary: the new documentation artifact records the direct aggregator-only Stage 1 commercial-diligence decision for Carnect, while the separate local source record still represents Carnect only as the named primary aggregator diligence path. Canonical source and accepted Preview remain unreconciled, the runtime connector remains provider-unselected, every track remains at 0 of 10, activation stage 1 remains incomplete there, and contact remains unauthorized.
 
 ## Safety boundary
 
@@ -150,6 +154,8 @@ Both application and database traffic kill switches remain engaged for all three
 
 ## Next approval boundary
 
-The separate Executive + Product phased-diligence decision is represented, verified, committed, privately published, and accepted in isolated Preview in a distinct fail-closed source record. The next safe gate is a separately approved documentation-only commit and normal private-branch push of `docs/CAR_RENTALS_PROVIDER_PATH_SEQUENCING_PREVIEW_EVIDENCE_2026-08-22.md` and the five current-state reconciliations. No redeployment or repeat browser acceptance is required. No gate here authorizes supplier contact, messages, forms, calls, contracts, accounts, credentials, sandbox or external provider traffic, reservations, refunds, payments, migrations, Production promotion, or Production changes.
+The separate Executive + Product phased-diligence decision is represented, verified, committed, privately published, and accepted in isolated Preview in a distinct fail-closed source record. Its evidence record and five current-state documentation reconciliations were committed and privately published at `c9ba7c964878af5a7120b8fc41d70f9ad6348b43` without redeployment or repeat browser acceptance.
+
+The aggregator-only documentation-layer Stage 1 decision is now recorded with Carnect selected for commercial diligence only. The next substantive gate, if separately authorized, is a distinct local source-model and test reconciliation of that exact aggregator-scoped decision; accepted Preview remains unchanged until its own later release approval. Stage 2 contact authorization remains a separate later decision. No gate here authorizes supplier contact, messages, forms, calls, contracts, accounts, credentials, sandbox or external provider traffic, reservations, refunds, payments, migrations, deployment, Production promotion, or Production changes.
 
 No provider contact is authorized until a later, separately scoped contact-authorization decision.
