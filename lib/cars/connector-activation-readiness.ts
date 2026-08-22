@@ -1199,6 +1199,7 @@ function sameExactDataValue(left: unknown, right: unknown, visited = new WeakMap
       const leftDescriptor = Object.getOwnPropertyDescriptor(left, key);
       const rightDescriptor = Object.getOwnPropertyDescriptor(right, key);
       if (!leftDescriptor || !rightDescriptor || !("value" in leftDescriptor) || !("value" in rightDescriptor)) return false;
+      if (leftDescriptor.enumerable !== rightDescriptor.enumerable) return false;
       return sameExactDataValue(leftDescriptor.value, rightDescriptor.value, visited);
     });
   } catch {
@@ -1226,6 +1227,26 @@ function isPlainProviderPathRecord(value: unknown): value is Record<string, unkn
       && value !== null
       && !Array.isArray(value)
       && Object.getPrototypeOf(value) === Object.prototype;
+  } catch {
+    return false;
+  }
+}
+
+function hasOnlyPlainOwnDataGraph(value: unknown, visited = new WeakSet<object>()): boolean {
+  if (typeof value !== "object" || value === null) return typeof value !== "function" && typeof value !== "symbol";
+
+  try {
+    if (visited.has(value)) return true;
+    visited.add(value);
+
+    const expectedPrototype = Array.isArray(value) ? Array.prototype : Object.prototype;
+    if (Object.getPrototypeOf(value) !== expectedPrototype) return false;
+
+    return Reflect.ownKeys(value).every((key) => {
+      if (typeof key !== "string") return false;
+      const descriptor = Object.getOwnPropertyDescriptor(value, key);
+      return Boolean(descriptor && "value" in descriptor && hasOnlyPlainOwnDataGraph(descriptor.value, visited));
+    });
   } catch {
     return false;
   }
@@ -1280,6 +1301,7 @@ function validateCarRentalProviderPathSequencingRecordKnown(record: CarRentalPro
     || record.activationStageOneComplete !== false
     || !Array.isArray(record.completedActivationStageIds)
     || record.completedActivationStageIds.length !== 0
+    || !sameExactDataValue(record.completedActivationStageIds, carRentalProviderPathCompletedActivationStageIds)
     || record.parallelLaunchAuthorized !== false) errors.push("Activation provider decision, stage 1, completed-stage inventory, and parallel launch must remain false or empty.");
   if (typeof record.activationTrackStageCounts !== "object"
     || record.activationTrackStageCounts === null
@@ -1315,7 +1337,12 @@ export function validateCarRentalProviderPathSequencingRecord(input: unknown) {
     return buildCarRentalProviderPathSequencingValidationResult(["Provider-path sequencing record must be a plain object."]);
   }
 
+  if (!hasExactOwnEnumerableDataKeys(input, carRentalProviderPathSequencingRuntimeKeys) || !hasOnlyPlainOwnDataGraph(input)) {
+    return buildCarRentalProviderPathSequencingValidationResult(["Provider-path sequencing record contains unsupported, hidden, accessor-backed, or prohibited runtime fields."]);
+  }
+
   try {
+    structuredClone(input);
     return validateCarRentalProviderPathSequencingRecordKnown(input as CarRentalProviderPathSequencingRecord);
   } catch {
     return buildCarRentalProviderPathSequencingValidationResult(["Provider-path sequencing record could not be read safely."]);

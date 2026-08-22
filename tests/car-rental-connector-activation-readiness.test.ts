@@ -834,7 +834,7 @@ describe("car-rental connector activation readiness", () => {
       providerSelected: false,
       runtimeProviderBound: false,
       activationStageOneComplete: false,
-      errors: ["Provider-path sequencing record could not be read safely."],
+      errors: ["Provider-path sequencing record contains unsupported, hidden, accessor-backed, or prohibited runtime fields."],
     });
   });
 
@@ -866,7 +866,7 @@ describe("car-rental connector activation readiness", () => {
       enumerable: false,
       value: () => carRentalProviderPathSequencingEntries,
     });
-    expect(validateCarRentalProviderPathSequencingRecord(disguisedPaths).errors).toContain("Provider-path entries must exactly match the approved sequencing decision and frozen research classifications.");
+    expect(validateCarRentalProviderPathSequencingRecord(disguisedPaths).errors).toContain("Provider-path sequencing record contains unsupported, hidden, accessor-backed, or prohibited runtime fields.");
 
     const sparseAlternatives = cloneProviderPathRecord(carRentalProviderPathSequencingRecord);
     delete (sparseAlternatives.unselectedDecisionAlternativeIds as unknown as string[])[1];
@@ -888,6 +888,18 @@ describe("car-rental connector activation readiness", () => {
     hiddenStageCounts.activationTrackStageCounts = nonEnumerableCounts as never;
     expect(validateCarRentalProviderPathSequencingRecord(hiddenStageCounts).errors).toContain("Every connector must remain at 0 of 10 activation stages and 0 of 3 live.");
 
+    const hiddenCompletedStageMetadata = cloneProviderPathRecord(carRentalProviderPathSequencingRecord);
+    Object.defineProperty(hiddenCompletedStageMetadata.completedActivationStageIds, "api_key", { enumerable: false, value: "must-not-be-retained" });
+    expect(validateCarRentalProviderPathSequencingRecord(hiddenCompletedStageMetadata).errors).toContain("Activation provider decision, stage 1, completed-stage inventory, and parallel launch must remain false or empty.");
+
+    const symbolCompletedStageMetadata = cloneProviderPathRecord(carRentalProviderPathSequencingRecord);
+    (symbolCompletedStageMetadata.completedActivationStageIds as unknown as Record<symbol, string>)[Symbol("api_key")] = "must-not-be-retained";
+    expect(validateCarRentalProviderPathSequencingRecord(symbolCompletedStageMetadata).errors).toContain("Provider-path sequencing record contains unsupported, hidden, accessor-backed, or prohibited runtime fields.");
+
+    const hiddenNestedSafetyLock = cloneProviderPathRecord(carRentalProviderPathSequencingRecord);
+    Object.defineProperty(hiddenNestedSafetyLock.decisionPaths[0], "selectedForRuntime", { enumerable: false, value: false });
+    expect(validateCarRentalProviderPathSequencingRecord(hiddenNestedSafetyLock).errors).toContain("Provider-path entries must exactly match the approved sequencing decision and frozen research classifications.");
+
     const accessorState = cloneProviderPathRecord(carRentalProviderPathSequencingRecord);
     let providerSelectedReadCount = 0;
     Object.defineProperty(accessorState, "providerSelected", {
@@ -900,7 +912,37 @@ describe("car-rental connector activation readiness", () => {
     const accessorValidation = validateCarRentalProviderPathSequencingRecord(accessorState);
     expect(accessorValidation.valid).toBe(false);
     expect(accessorValidation.errors).toContain("Provider-path sequencing record contains unsupported, hidden, accessor-backed, or prohibited runtime fields.");
-    expect(accessorState.providerSelected).toBe(true);
+    expect(providerSelectedReadCount).toBe(0);
+  });
+
+  it("rejects proxy-backed provider-path records before semantic reads", () => {
+    let topLevelReadCount = 0;
+    const topLevelProxy = new Proxy(cloneProviderPathRecord(carRentalProviderPathSequencingRecord), {
+      get(target, property, receiver) {
+        topLevelReadCount += 1;
+        if (property === "providerSelected") return topLevelReadCount === 1 ? false : true;
+        return Reflect.get(target, property, receiver);
+      },
+    });
+    expect(validateCarRentalProviderPathSequencingRecord(topLevelProxy)).toMatchObject({
+      valid: false,
+      errors: ["Provider-path sequencing record could not be read safely."],
+    });
+    expect(topLevelReadCount).toBe(0);
+
+    let nestedReadCount = 0;
+    const nestedProxyRecord = cloneProviderPathRecord(carRentalProviderPathSequencingRecord);
+    nestedProxyRecord.conditions = new Proxy(nestedProxyRecord.conditions, {
+      get(target, property, receiver) {
+        nestedReadCount += 1;
+        return Reflect.get(target, property, receiver);
+      },
+    });
+    expect(validateCarRentalProviderPathSequencingRecord(nestedProxyRecord)).toMatchObject({
+      valid: false,
+      errors: ["Provider-path sequencing record could not be read safely."],
+    });
+    expect(nestedReadCount).toBe(0);
   });
 
   it("adds a read-only decision workspace and documents the separate provider-decision boundary", () => {

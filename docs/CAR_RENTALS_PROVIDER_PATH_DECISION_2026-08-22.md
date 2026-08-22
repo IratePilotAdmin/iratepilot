@@ -6,7 +6,7 @@ Mode: **local documentation only**
 
 Decision ID: `cars-provider-path-decision-2026-08-22-01`
 
-Status: **owner decision recorded for phased provider diligence and now represented in a separate fail-closed source record locally; Carnect is the named primary aggregator diligence path, Sabre is the secondary enterprise diligence path, and Travelport is on conditional hold pending written Core Category eligibility or an approved exception; formal recommendation remains `not_issued`, all 29 conditions and all sole-owner conflicts remain unresolved, no provider contact or external authority is created, the activation record remains provider-unselected with stage 1 incomplete, and the new local representation has not been committed, published, deployed, or accepted in Preview**
+Status: **owner decision recorded for phased provider diligence and now represented in a separate fail-closed source record committed and privately published at `e03b1a1438a8d5ee2cf7a1769c43227e73068af4`; post-publication validator hardening is implemented and verified locally but remains uncommitted and unpublished; Carnect is the named primary aggregator diligence path, Sabre is the secondary enterprise diligence path, and Travelport is on conditional hold pending written Core Category eligibility or an approved exception; formal recommendation remains `not_issued`, all 29 conditions and all sole-owner conflicts remain unresolved, no provider contact or external authority is created, the activation record remains provider-unselected with stage 1 incomplete, and neither source state has been deployed or accepted in Preview**
 
 ## Decision authority and provenance
 
@@ -60,7 +60,7 @@ The separate local sequencing record preserves the existing activation and accep
 - Application traffic kill switch: engaged
 - Database traffic kill switch: engaged
 
-The local source record represents only the approved diligence sequence. It cannot be treated as a formal recommendation, commercial provider selection, runtime selection, connector binding, resolved condition or conflict, or completed activation stage. Its local implementation does not change the accepted Preview and grants no publication, deployment, or external authority.
+The source record represents only the approved diligence sequence. It cannot be treated as a formal recommendation, commercial provider selection, runtime selection, connector binding, resolved condition or conflict, or completed activation stage. Its implementation and private publication do not change the accepted Preview and grant no deployment or external authority.
 
 ## Unresolved conditions preserved
 
@@ -74,7 +74,8 @@ The local source record represents only the approved diligence sequence. It cann
 ## Authority snapshot
 
 - Local phased diligence decision: recorded
-- Separate local source representation: implemented; not committed, published, deployed, or accepted in Preview
+- Separate source representation: implemented, committed, and privately published at `e03b1a1438a8d5ee2cf7a1769c43227e73068af4`; not deployed or accepted in Preview
+- Post-publication validator hardening: implemented and verified locally; not committed, published, deployed, or accepted in Preview
 - Formal recommendation: `not_issued`
 - Commercial provider selection: `not_recorded`
 - Selected provider: none
@@ -98,6 +99,6 @@ The local source record represents only the approved diligence sequence. It cann
 
 ## Next approval boundary
 
-The source-model reconciliation is implemented and verified locally with 32 focused safety tests, ESLint, TypeScript, the full 1,274-test suite across 262 files, and the optimized 115-page Next.js build. All 29 conditions, all sole-owner conflicts, every false authority flag, the zero activation counters, and both engaged traffic kill switches remain unchanged. The next safe gate is a separately approved commit and normal private-branch push only. Deployment and authenticated Preview acceptance remain separate later approvals, and provider contact remains a later, separately scoped authorization.
+The current source model and post-publication hardening are verified with 33 focused safety tests, ESLint, TypeScript, the full 1,275-test suite across 262 files, and the optimized 115-page Next.js build. All 29 conditions, all sole-owner conflicts, every false authority flag, the zero activation counters, and both engaged traffic kill switches remain unchanged. Commit `e03b1a1438a8d5ee2cf7a1769c43227e73068af4` is privately published; the hardening remains local and uncommitted. The next safe gate is a separately approved commit and normal private-branch push of the two hardening files and five reconciled documents; isolated Preview deployment and authenticated `/admin/cars` acceptance remain later release gates, and provider contact remains a later, separately scoped authorization.
 
-The new source-model implementation and these five documentation updates remain local and uncommitted under the current authorization; no publication, deployment, or Preview acceptance is claimed.
+The baseline source-model implementation and five earlier reconciled documents are committed and privately published at `e03b1a1438a8d5ee2cf7a1769c43227e73068af4`. The current validator hardening and release-state reconciliation remain local and uncommitted. No deployment or Preview acceptance is claimed.
