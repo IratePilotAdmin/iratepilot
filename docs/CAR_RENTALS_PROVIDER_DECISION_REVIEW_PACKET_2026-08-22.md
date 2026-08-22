@@ -4,7 +4,7 @@ Prepared: August 22, 2026
 
 Mode: **local documentation only**
 
-Status: **all 7 internal review gates complete locally; readiness is `ready_for_internal_decision` and `decision_packet_ready` is true only for this documentation packet; the owner later answered the neutral question through the separate phased-diligence decision recorded in `docs/CAR_RENTALS_PROVIDER_PATH_DECISION_2026-08-22.md`, and a still later approved implementation now represents that sequence in a separate fail-closed source record committed and privately published at `e03b1a1438a8d5ee2cf7a1769c43227e73068af4`; post-publication validator hardening is implemented and verified locally but remains uncommitted and unpublished; formal recommendation remains `not_issued`, all 29 classified conditions and all sole-owner conflicts remain unresolved, the activation record and accepted Preview remain provider-unselected with activation stage 1 incomplete, and neither source state has been deployed or accepted in Preview**
+Status: **all 7 internal review gates complete locally; readiness is `ready_for_internal_decision` and `decision_packet_ready` is true only for this documentation packet; the owner later answered the neutral question through the separate phased-diligence decision recorded in `docs/CAR_RENTALS_PROVIDER_PATH_DECISION_2026-08-22.md`, and a still later approved implementation represents that sequence in a separate fail-closed source record; the hardened source is committed and privately published at `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e` and accepted in isolated Preview deployment `dpl_AeXKzroVXPYC7p6dPCofz2vmjRhJ`; formal recommendation remains `not_issued`, all 29 classified conditions and all sole-owner conflicts remain unresolved, the activation record remains provider-unselected with activation stage 1 incomplete, and the new evidence record remains local and unpublished**
 
 ## Approved internal scope
 
@@ -25,7 +25,7 @@ Completion of this review-packet documentation did not change application code, 
 - Preview-evidence publication commit: `efaaf2bb00016e29a9f0c620a2c1a69aca81b67a`
 - Local verification: the artifact's Git blob at the research commit and at the current review base is identical; no artifact drift was found
 
-The accepted isolated Preview remains a historical 0-of-7 display from the earlier source release. These documentation-only Gates 1 through 7 reviews do not alter or redeploy that UI.
+At completion of these documentation-only Gates 1 through 7 reviews, the then-accepted isolated Preview remained the historical 0-of-7 display from the earlier source release. Those reviews did not alter or redeploy that UI. The later, separately authorized `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e` release is now accepted in isolated Preview with the 7-of-7 review state visible; it does not change the historical Gate 7 attestation below.
 
 ## Three-path reconciliation
 
@@ -364,7 +364,8 @@ Freeze controls:
 - Local business decision: recorded separately as phased diligence in `docs/CAR_RENTALS_PROVIDER_PATH_DECISION_2026-08-22.md`
 - Local decision paths: Carnect primary aggregator diligence; Sabre secondary enterprise diligence; Travelport conditional hold
 - Unselected decision alternatives: CarTrawler, Booking.com Demand API, EconomyBookings, DiscoverCars; Gate 3 research classifications remain unchanged
-- Separate source representation: implemented as `provider_path_sequencing_local_only`, committed, and privately published at `e03b1a1438a8d5ee2cf7a1769c43227e73068af4`; not deployed or accepted in Preview
+- Separate source representation and validator hardening: implemented as `provider_path_sequencing_local_only`, committed, and privately published at `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e`; accepted in isolated Preview deployment `dpl_AeXKzroVXPYC7p6dPCofz2vmjRhJ`
+- Current accepted Preview review display: 7 of 7; evidence prepared locally in `docs/CAR_RENTALS_PROVIDER_PATH_SEQUENCING_PREVIEW_EVIDENCE_2026-08-22.md` and not yet committed or published
 - Commercial provider selection state: `not_recorded`; provider selected: false; `selectedProviderId`: null
 - Activation-readiness `providerDecisionRecorded`: false
 - Runtime provider binding: `unbound`; binding value: null
@@ -385,4 +386,4 @@ Freeze controls:
 
 The separate Executive + Product provider-decision gate was completed only as a phased-diligence decision in `docs/CAR_RENTALS_PROVIDER_PATH_DECISION_2026-08-22.md`. It was not inferred from packet readiness and does not authorize provider contact. A later, separately approved local source-model reconciliation now represents that exact sequence without recording a commercial provider selection, runtime binding, activation provider decision, completed stage, resolved condition, or resolved conflict.
 
-The current source representation, validator hardening, and five reconciled documents pass 33 focused safety tests, ESLint, TypeScript, the full 1,275-test suite across 262 files, and the optimized 115-page Next.js build. The baseline is committed and privately published at `e03b1a1438a8d5ee2cf7a1769c43227e73068af4`; the two hardening files and five current documentation changes remain local and uncommitted. Their next safe gate is a separately approved normal private-branch commit and push, followed later by separately approved isolated Preview deployment and authenticated `/admin/cars` acceptance. Contact, account, credential, sandbox, provider traffic, transaction, migration, Production promotion, and Production authority remain outside scope.
+The current source representation and validator hardening pass 33 focused safety tests, ESLint, TypeScript, the full 1,275-test suite across 262 files, and the optimized 115-page Next.js build. Commit `1fb968085f50aa7b30abf6a5ec55d9062f3d1a8e` is privately published and accepted at `/admin/cars` in isolated Preview deployment `dpl_AeXKzroVXPYC7p6dPCofz2vmjRhJ`. The next safe gate is a separately approved documentation-only commit and normal private-branch push of the new evidence record and five current-state reconciliations; no redeployment is required. Contact, account, credential, sandbox, provider traffic, transaction, migration, Production promotion, and Production authority remain outside scope.
