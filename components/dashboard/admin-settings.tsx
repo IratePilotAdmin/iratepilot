@@ -1,13 +1,14 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import type { ReadinessItem } from "@/lib/admin/platform-readiness";
-import {
-  buildSupplierPhaseReadiness,
-  type PmsProviderReadiness,
-  type PriorityPmsLaunchStatus,
-  type PriorityPmsProviderId,
-} from "@/services/hotel-suppliers";
+import { buildSupplierPhaseReadiness } from "@/services/hotel-suppliers/phase-readiness";
+import type { PmsProviderReadiness } from "@/services/hotel-suppliers/types";
+import type {
+  PriorityPmsLaunchStatus,
+  PriorityPmsProviderId,
+} from "@/services/hotel-suppliers/priority-readiness";
 import { SynxisCrsReadiness } from "@/components/dashboard/synxis-crs-readiness";
 import { PaymentReadiness } from "@/components/dashboard/payment-readiness";
 

@@ -34,7 +34,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Sear
               </div>
             </div>
 
-            <form action="/flights" method="get" className="border border-black bg-white p-5 sm:p-7">
+            <form action="/flights/results" method="get" className="border border-black bg-white p-5 sm:p-7">
               <div className="grid gap-5 sm:grid-cols-2">
                 <label className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600">
                   Trip type
@@ -63,7 +63,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Sear
                 </label>
                 <label className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600">
                   Return {values.tripType === "oneway" && <span className="normal-case tracking-normal text-neutral-400">(ignored for one way)</span>}
-                  <input name="returnDate" defaultValue={values.returnDate} className="input mt-2" type="date" min={values.departureDate || today} required={values.tripType === "roundtrip"} />
+                  <input name="returnDate" defaultValue={values.returnDate} className="input mt-2" type="date" min={values.departureDate || today} />
                 </label>
                 <label className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600 sm:col-span-2">
                   Cabin
@@ -72,8 +72,8 @@ export default async function FlightsPage({ searchParams }: { searchParams: Sear
                   </select>
                 </label>
               </div>
-              <button type="submit" className="btn-primary mt-6 w-full gap-2">Prepare flight request <ArrowRight className="h-4 w-4" /></button>
-              <p className="mt-3 text-xs leading-5 text-neutral-500">This validates planning details only. It does not reserve a seat, quote a fare, contact an airline, or create a charge.</p>
+              <button type="submit" className="btn-primary mt-6 w-full gap-2">Preview synthetic options <ArrowRight className="h-4 w-4" /></button>
+              <p className="mt-3 text-xs leading-5 text-neutral-500">This validates planning details and displays deterministic product fixtures only. It does not reserve a seat, quote a live fare, contact an airline, or create a charge.</p>
             </form>
           </div>
         </section>

@@ -25,18 +25,33 @@ const migrationVersions = readdirSync(
   .map((name) => name.split("_")[0]);
 
 describe("SynXis production rollout manifest", () => {
-  it("records every repository migration exactly once in production order", () => {
-    expect(manifest.historyRepairCandidates).toEqual(migrationVersions.slice(0, 49));
+  it("records every in-scope SynXis migration exactly once and excludes later flight migrations", () => {
+    const rolloutCutoff = "202608170067";
+    const rolloutMigrationVersions = migrationVersions.filter((version) => version <= rolloutCutoff);
+    const laterMigrationVersions = migrationVersions.filter((version) => version > rolloutCutoff);
+
+    expect(manifest.historyRepairCandidates).toEqual(rolloutMigrationVersions.slice(0, 49));
     const deploymentVersions = [
       ...manifest.appliedDeploymentVersions,
       ...manifest.pendingDeploymentVersions,
     ];
-    expect([...deploymentVersions].sort()).toEqual(migrationVersions.slice(49));
+    expect([...deploymentVersions].sort()).toEqual(rolloutMigrationVersions.slice(49));
     expect(new Set(deploymentVersions).size).toBe(deploymentVersions.length);
     expect(manifest.historyRepairCandidates.at(-1)).toBe("202608130038");
     expect(manifest.appliedDeploymentVersions[0]).toBe("202608130039");
-    expect(manifest.appliedDeploymentVersions).toEqual(migrationVersions.slice(49, -6));
-    expect(manifest.pendingDeploymentVersions).toEqual(migrationVersions.slice(-6));
+    expect(manifest.appliedDeploymentVersions).toEqual(rolloutMigrationVersions.slice(49, -6));
+    expect(manifest.pendingDeploymentVersions).toEqual(rolloutMigrationVersions.slice(-6));
+    expect(manifest.pendingDeploymentVersions.at(-1)).toBe(rolloutCutoff);
+    expect(laterMigrationVersions).toContain("202608230068");
+    expect(laterMigrationVersions).toContain("202608240069");
+    expect([
+      ...manifest.historyRepairCandidates,
+      ...deploymentVersions,
+    ]).not.toContain("202608230068");
+    expect([
+      ...manifest.historyRepairCandidates,
+      ...deploymentVersions,
+    ]).not.toContain("202608240069");
   });
 
   it("records completed database rollout while preserving later launch gates", () => {

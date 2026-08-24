@@ -69,6 +69,8 @@ describe("flight planning phase 1", () => {
     expect(FLIGHT_SUPPLIER_MODE).toBe("offline_planning");
     expect(page).toContain("No airline API request or payment is made");
     expect(page).toContain("Live fares are unavailable");
+    expect(page).toMatch(/<input name="returnDate"[^>]*\/>/);
+    expect(page).not.toMatch(/<input name="returnDate"[^>]*\brequired\b/);
     expect(page).not.toContain("fetch(");
     expect(navigation).toContain('{ href: "/flights", label: "Flights" }');
     expect(footer).toContain('["Flights", "/flights"]');
