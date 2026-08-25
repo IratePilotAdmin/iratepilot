@@ -133,7 +133,7 @@ ALTER TABLE ONLY public.flight_provider_request_attempts FORCE ROW LEVEL SECURIT
 }
 
 describe("flight Preview migration gate", () => {
-  it("pins the exact 068 through 071 filenames and SHA-256 digests", () => {
+  it("pins the exact 068 through 072 filenames and SHA-256 digests", () => {
     expect(PINNED_FLIGHT_MIGRATIONS).toEqual([
       {
         version: "202608230068",
@@ -155,6 +155,11 @@ describe("flight Preview migration gate", () => {
         filename: "202608250071_flight_duffel_preview_rpc_bridge.sql",
         sha256: "bb4f8d4287060d5301e1704073e2d2c15b6dcfa1309cb1a190da9efddefa375d",
       },
+      {
+        version: "202608250072",
+        filename: "202608250072_flight_duffel_preview_runtime_assertions.sql",
+        sha256: "b8e073508ebe45be717f6d07fe463eae33eaf7d5d168076a903ffc552f08ca0b",
+      },
     ]);
     expect(pinnedPlan.baselineVersions.at(-1)).toBe(REQUIRED_BASELINE_TIP);
     expect(pinnedPlan.flightVersions).toEqual([
@@ -162,8 +167,9 @@ describe("flight Preview migration gate", () => {
       "202608240069",
       "202608250070",
       "202608250071",
+      "202608250072",
     ]);
-    expect(repositoryVersions.slice(-4)).toEqual(pinnedPlan.flightVersions);
+    expect(repositoryVersions.slice(-5)).toEqual(pinnedPlan.flightVersions);
   });
 
   it("accepts only the exact Preview ref on a matching official direct or pooler URL", () => {
@@ -292,12 +298,13 @@ describe("flight Preview migration gate", () => {
       "202608240069",
       "202608250070",
       "202608250071",
+      "202608250072",
     ]);
     expect(rendered).not.toContain(previewUrl);
     expect(rendered).not.toContain(previewPassword);
   });
 
-  it("accepts only a complete remote baseline with all four flight migrations pending or none", () => {
+  it("accepts only a complete remote baseline with all five flight migrations pending or none", () => {
     expect(assertPreviewLedger(
       migrationList(pinnedPlan.baselineVersions),
       pinnedPlan,
@@ -311,7 +318,7 @@ describe("flight Preview migration gate", () => {
   it("rejects partial flight state, missing history, unexpected history, and local drift", () => {
     const through068 = [...pinnedPlan.baselineVersions, pinnedPlan.flightVersions[0]];
     expect(() => assertPreviewLedger(migrationList(through068), pinnedPlan)).toThrow(
-      "either all four flight migrations or none",
+      "either all five flight migrations or none",
     );
 
     const missingBaseline = pinnedPlan.baselineVersions.filter(
@@ -344,18 +351,20 @@ describe("flight Preview migration gate", () => {
     );
   });
 
-  it("requires a dry run to mention exactly 068 through 071 once each", () => {
+  it("requires a dry run to mention exactly 068 through 072 once each", () => {
     const exact = [
       "Would push migration 202608230068_flight_commerce_foundation.sql",
       "Would push migration 202608240069_flight_provider_request_attempts.sql",
       "Would push migration 202608250070_flight_duffel_test_order_attempts.sql",
       "Would push migration 202608250071_flight_duffel_preview_rpc_bridge.sql",
+      "Would push migration 202608250072_flight_duffel_preview_runtime_assertions.sql",
     ].join("\n");
     expect(assertExactFlightDryRun(exact)).toEqual([
       "202608230068",
       "202608240069",
       "202608250070",
       "202608250071",
+      "202608250072",
     ]);
     expect(() => assertExactFlightDryRun(exact.split("\n").reverse().join("\n"))).toThrow();
     expect(() => assertExactFlightDryRun(`${exact}\n202608240070_extra.sql`)).toThrow();
@@ -398,6 +407,7 @@ describe("flight Preview migration gate", () => {
         "Would push migration 202608240069_flight_provider_request_attempts.sql",
         "Would push migration 202608250070_flight_duffel_test_order_attempts.sql",
         "Would push migration 202608250071_flight_duffel_preview_rpc_bridge.sql",
+        "Would push migration 202608250072_flight_duffel_preview_runtime_assertions.sql",
       ].join("\n"),
       migrationList(pinnedPlan.baselineVersions),
       "applied",
@@ -437,7 +447,7 @@ describe("flight Preview migration gate", () => {
     expect(JSON.stringify(calls)).not.toContain(previewPassword);
   });
 
-  it("does not push when all four migrations are already installed, but still verifies the schema", () => {
+  it("does not push when all five migrations are already installed, but still verifies the schema", () => {
     const calls: string[][] = [];
     const summary = applyFlightPreviewMigrations({
       env: previewEnv,
@@ -464,6 +474,7 @@ describe("flight Preview migration gate", () => {
         "Would push migration 202608240069_flight_provider_request_attempts.sql",
         "Would push migration 202608250070_flight_duffel_test_order_attempts.sql",
         "Would push migration 202608250071_flight_duffel_preview_rpc_bridge.sql",
+        "Would push migration 202608250072_flight_duffel_preview_runtime_assertions.sql",
       ].join("\n"),
       migrationList(repositoryVersions),
       physicalSchemaDump(),

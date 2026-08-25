@@ -3,12 +3,12 @@
 ## Status
 
 Implemented, locally verified, and applied to the exact approved Preview database. The
-Preview ledger now contains migrations 068 through 071; Production was not contacted or
+Preview ledger now contains migrations 068 through 072; Production was not contacted or
 changed.
 Repository publication is approved only to the private backup branch
 `agent/flight-live-foundation-20260823`; public repository publication is not authorized.
 
-The gate is dedicated to flight migrations 068 through 071. It does not modify or extend the
+The gate is dedicated to flight migrations 068 through 072. It does not modify or extend the
 legacy general Preview migration allowlist.
 
 ## Fixed scope
@@ -20,10 +20,10 @@ legacy general Preview migration allowlist.
 - Required remote history: the repository migration ledger through
   `202608170067_automation_sandbox_executor.sql`
 - Only accepted pending states:
-  1. exactly 068, 069, 070, and 071 in order; or
-  2. none pending because all four are already installed.
+  1. exactly 068, 069, 070, 071, and 072 in order; or
+  2. none pending because all five are already installed.
 
-The four permitted files are byte-pinned:
+The five permitted files are byte-pinned:
 
 | Order | Migration | SHA-256 |
 |---:|---|---|
@@ -31,9 +31,10 @@ The four permitted files are byte-pinned:
 | 2 | `202608240069_flight_provider_request_attempts.sql` | `7e966c4fa6f08a92692787dd82fadd4c0205af02826342a3902037438b1bd611` |
 | 3 | `202608250070_flight_duffel_test_order_attempts.sql` | `882c20f4643ca5ed02cb5e5423e7dc140b54b7524a46f53e9c66e9af574e37fe` |
 | 4 | `202608250071_flight_duffel_preview_rpc_bridge.sql` | `bb4f8d4287060d5301e1704073e2d2c15b6dcfa1309cb1a190da9efddefa375d` |
+| 5 | `202608250072_flight_duffel_preview_runtime_assertions.sql` | `b8e073508ebe45be717f6d07fe463eae33eaf7d5d168076a903ffc552f08ca0b` |
 
 Any changed digest, missing history, local/remote ledger mismatch, unexpected migration,
-partially installed 068–071 set, unknown argument, target mismatch, or verification failure
+partially installed 068–072 set, unknown argument, target mismatch, or verification failure
 stops the gate.
 
 ## Target and secret handling
@@ -79,7 +80,7 @@ required confirmation flag.
 Only after reviewing the plan and receiving the separate shared-Preview approval, run:
 
 ```text
-node scripts/apply-flight-preview-migrations.mjs --apply-confirmation=PREVIEW_eiqmdldjnedqgbtoozqa_FLIGHT_068_071
+node scripts/apply-flight-preview-migrations.mjs --apply-confirmation=PREVIEW_eiqmdldjnedqgbtoozqa_FLIGHT_068_072
 ```
 
 No shorter `--apply` or `--yes` mode exists.
@@ -90,19 +91,19 @@ The apply mode executes this bounded sequence with the validated URL:
 
 1. Read the remote migration ledger.
 2. Require local history to match the repository exactly.
-3. Require remote history through 067 and pending migrations to be exactly `[068, 069, 070, 071]` or
+3. Require remote history through 067 and pending migrations to be exactly `[068, 069, 070, 071, 072]` or
    `[]`.
 4. If pending, run a Supabase dry-run and require its migration references to be exactly 068
-   through 071, once each and in order.
+   through 072, once each and in order.
 5. Recheck both pinned file hashes and the remote ledger immediately before mutation. If a
-   concurrent operator has already installed all four migrations, skip the redundant push.
-6. If they remain pending, use the Supabase CLI to push the four migrations in that order.
-7. Recheck the pinned file hashes and remote ledger, requiring all four migrations to be
+   concurrent operator has already installed all five migrations, skip the redundant push.
+6. If they remain pending, use the Supabase CLI to push the five migrations in that order.
+7. Recheck the pinned file hashes and remote ledger, requiring all five migrations to be
    installed.
 8. Take a read-only `public` schema dump and verify the required flight key column contracts,
    exact RPC signatures, enabled RLS, and forced RLS.
 
-If all four migrations are already installed, the gate does not push again; it still performs
+If all five migrations are already installed, the gate does not push again; it still performs
 the physical schema and RLS verification.
 
 The final schema-dump result is deliberately reported as a **physical schema boundary**

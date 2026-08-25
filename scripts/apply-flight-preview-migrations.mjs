@@ -7,7 +7,7 @@ export const PREVIEW_PROJECT_REF = "eiqmdldjnedqgbtoozqa";
 export const PRODUCTION_PROJECT_REF = "allliumarkejinplrggl";
 export const REQUIRED_BASELINE_TIP = "202608170067";
 export const APPLY_CONFIRMATION_FLAG =
-  "--apply-confirmation=PREVIEW_eiqmdldjnedqgbtoozqa_FLIGHT_068_071";
+  "--apply-confirmation=PREVIEW_eiqmdldjnedqgbtoozqa_FLIGHT_068_072";
 
 export const PINNED_FLIGHT_MIGRATIONS = Object.freeze([
   Object.freeze({
@@ -29,6 +29,11 @@ export const PINNED_FLIGHT_MIGRATIONS = Object.freeze([
     version: "202608250071",
     filename: "202608250071_flight_duffel_preview_rpc_bridge.sql",
     sha256: "bb4f8d4287060d5301e1704073e2d2c15b6dcfa1309cb1a190da9efddefa375d",
+  }),
+  Object.freeze({
+    version: "202608250072",
+    filename: "202608250072_flight_duffel_preview_runtime_assertions.sql",
+    sha256: "b8e073508ebe45be717f6d07fe463eae33eaf7d5d168076a903ffc552f08ca0b",
   }),
 ]);
 
@@ -96,7 +101,7 @@ export function assertPinnedFlightMigrations() {
     filename,
   }));
   if (JSON.stringify(postBaseline) !== JSON.stringify(expectedPostBaseline)) {
-    throw new Error("Only the pinned flight migrations 068 through 071 may follow migration 067.");
+    throw new Error("Only the pinned flight migrations 068 through 072 may follow migration 067.");
   }
 
   for (const migration of PINNED_FLIGHT_MIGRATIONS) {
@@ -272,7 +277,7 @@ export function assertPreviewLedger(output, pinnedPlan) {
   const hasCompleteLedger = sameValues(actualRemote, expectedComplete);
   if (!hasBaselineOnly && !hasCompleteLedger) {
     throw new Error(
-      "The Preview remote ledger must contain the complete repository through 067 and either all four flight migrations or none.",
+      "The Preview remote ledger must contain the complete repository through 067 and either all five flight migrations or none.",
     );
   }
 
@@ -293,7 +298,7 @@ export function assertExactFlightDryRun(output) {
     !sameValues(mentionedVersions, expected)
     || !sameValues(mentionedFiles, expectedFiles)
   ) {
-    throw new Error("The dry run must mention exactly migrations 068 through 071 in order.");
+    throw new Error("The dry run must mention exactly migrations 068 through 072 in order.");
   }
   return mentionedVersions;
 }
@@ -488,7 +493,7 @@ export function runSupabaseCli(args, databasePassword, sourceEnv = process.env) 
 
 function safeSummary(mode, pinnedPlan, extra = {}) {
   return {
-    gate: "flight-preview-migrations-068-071",
+    gate: "flight-preview-migrations-068-072",
     mode,
     approvedPreviewProjectRef: PREVIEW_PROJECT_REF,
     requiredRemoteBaselineTip: REQUIRED_BASELINE_TIP,
