@@ -112,6 +112,7 @@ export class DuffelHttpTransportError extends Error {
   readonly requestDigest: string | null;
   readonly httpStatus: number | null;
   readonly retryDisposition: "do_not_retry" | "manual_reconciliation_required";
+  readonly causeFingerprint: string | null;
 
   constructor(input: Readonly<{
     code: DuffelHttpTransportErrorCode;
@@ -120,6 +121,7 @@ export class DuffelHttpTransportError extends Error {
     requestDigest?: string;
     httpStatus?: number;
     afterDispatchClaim?: boolean;
+    causeFingerprint?: string;
   }>) {
     super(input.message);
     this.name = "DuffelHttpTransportError";
@@ -130,6 +132,7 @@ export class DuffelHttpTransportError extends Error {
     this.retryDisposition = input.afterDispatchClaim === true
       ? "manual_reconciliation_required"
       : "do_not_retry";
+    this.causeFingerprint = input.causeFingerprint ?? null;
   }
 
   toJSON() {
@@ -141,6 +144,7 @@ export class DuffelHttpTransportError extends Error {
       requestDigest: this.requestDigest,
       httpStatus: this.httpStatus,
       retryDisposition: this.retryDisposition,
+      causeFingerprint: this.causeFingerprint,
     };
   }
 }
@@ -700,6 +704,7 @@ function safeError(input: Readonly<{
   reviewed: ReviewedPlan;
   httpStatus?: number;
   afterDispatchClaim?: boolean;
+  causeFingerprint?: string;
 }>) {
   return new DuffelHttpTransportError({
     code: input.code,
@@ -708,6 +713,7 @@ function safeError(input: Readonly<{
     requestDigest: input.reviewed.plan.requestDigest,
     httpStatus: input.httpStatus,
     afterDispatchClaim: input.afterDispatchClaim,
+    causeFingerprint: input.causeFingerprint,
   });
 }
 
@@ -867,11 +873,15 @@ class PrivateDuffelSandboxHttpTransport implements DuffelSandboxHttpTransport {
         metadata,
         authorizationReceiptDigest,
       })));
-    } catch {
+    } catch (error) {
       throw safeError({
         code: "journal_unavailable",
         message: "Duffel request journal is unavailable.",
         reviewed,
+        causeFingerprint: createHash("sha256")
+          .update(error instanceof Error ? error.message : "unknown-journal-failure", "utf8")
+          .digest("hex")
+          .slice(0, 16),
       });
     }
 

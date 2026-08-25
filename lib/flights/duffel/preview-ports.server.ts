@@ -170,7 +170,15 @@ class PreviewRequestJournal implements DuffelAuthenticatedRequestJournal {
       p_operation_authority_receipt_sha256: input.authorizationReceiptDigest,
       p_dispatch_not_after: dispatchNotAfter,
     });
-    if (error || !Array.isArray(data) || data.length !== 1) throw new Error("Duffel Preview journal preparation failed.");
+    if (error) {
+      const safeCode = typeof error.code === "string" && /^[A-Z0-9]{3,16}$/.test(error.code)
+        ? error.code
+        : "UNKNOWN";
+      throw new Error(`Duffel Preview journal preparation failed:${safeCode}`);
+    }
+    if (!Array.isArray(data) || data.length !== 1) {
+      throw new Error("Duffel Preview journal preparation failed:SHAPE");
+    }
     const row = data[0] as Record<string, unknown>;
     if (!uuidPattern.test(String(row.attempt_id)) || row.attempt_revision !== 0 || row.attempt_state !== "prepared") {
       throw new Error("Duffel Preview journal preparation receipt is malformed.");

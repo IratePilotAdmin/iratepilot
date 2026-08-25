@@ -55,8 +55,14 @@ export async function POST(request: Request) {
       headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {
+    const nestedFingerprint = error !== null && typeof error === "object"
+      && "causeFingerprint" in error
+      && typeof error.causeFingerprint === "string"
+      && /^[0-9a-f]{16}$/.test(error.causeFingerprint)
+      ? error.causeFingerprint
+      : null;
     const failureFingerprint = createHash("sha256")
-      .update(error instanceof Error ? error.message : "unknown-preview-booking-failure", "utf8")
+      .update(nestedFingerprint ?? (error instanceof Error ? error.message : "unknown-preview-booking-failure"), "utf8")
       .digest("hex")
       .slice(0, 16);
     return NextResponse.json({
