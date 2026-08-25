@@ -6,8 +6,11 @@ import { types as nodeTypes } from "node:util";
 import {
   DUFFEL_API_BASE_URL,
   DUFFEL_API_VERSION,
+  DUFFEL_ORDER_MINIMUM_TIMEOUT_MS,
   DUFFEL_SANDBOX_PROVIDER_ID,
+  isDuffelSandboxOrderCreatePlan,
   isDuffelSandboxRequestPlan,
+  type DuffelSandboxOrderCreatePlan,
   type DuffelSandboxRequestPlan,
 } from "../duffel-sandbox-contract";
 import { canonicalFlightJson } from "../runtime-safety";
@@ -225,6 +228,7 @@ function exactObjectKeys(value: unknown, expected: readonly string[]) {
 
 type ReviewedPlan = Readonly<{
   plan: DuffelSandboxRequestPlan;
+  orderPlan: DuffelSandboxOrderCreatePlan | null;
   operation: DuffelDispatchableSandboxOperation;
   endpointClass: DuffelSafeEndpointClass;
   url: string;
@@ -235,8 +239,9 @@ type ReviewedPlan = Readonly<{
 }>;
 
 function reviewPlan(value: unknown): ReviewedPlan {
-  if (!isDuffelSandboxRequestPlan(value)) invalidPlan();
-  const plan = value;
+  const orderPlan = isDuffelSandboxOrderCreatePlan(value) ? value : null;
+  if (orderPlan === null && !isDuffelSandboxRequestPlan(value)) invalidPlan();
+  const plan: DuffelSandboxRequestPlan = orderPlan?.plan ?? (value as DuffelSandboxRequestPlan);
   if (
     plan.providerId !== DUFFEL_SANDBOX_PROVIDER_ID
     || plan.baseUrl !== DUFFEL_API_BASE_URL
@@ -305,6 +310,29 @@ function reviewPlan(value: unknown): ReviewedPlan {
     url = new URL("/air/orders", DUFFEL_API_BASE_URL);
     url.searchParams.set("offer_id", (plan.query as Record<string, string>).offer_id);
     url.searchParams.set("limit", "50");
+  } else if (plan.operation === "create_order") {
+    if (
+      orderPlan === null
+      || plan.method !== "POST"
+      || plan.path !== "/air/orders"
+      || plan.body === null
+      || plan.minimumTimeoutMs !== DUFFEL_ORDER_MINIMUM_TIMEOUT_MS
+      || !exactObjectKeys(plan.query, [])
+      || orderPlan.providerTrafficAuthorized !== false
+      || orderPlan.bookingAuthorized !== false
+      || orderPlan.paymentAuthorized !== false
+      || orderPlan.externalRequestMade !== false
+      || !sha256Pattern.test(orderPlan.bridgeReceiptDigest)
+      || !sha256Pattern.test(orderPlan.authorityReceiptDigest)
+      || !sha256Pattern.test(orderPlan.acceptedTermsDigest)
+      || !sha256Pattern.test(orderPlan.travelerBindingsDigest)
+      || !sha256Pattern.test(orderPlan.settlementBindingDigest)
+      || Date.parse(orderPlan.dispatchNotAfter) <= Date.parse(orderPlan.verifiedAt)
+    ) invalidPlan();
+    endpointClass = "orders_collection";
+    expectedHeaders = ["Accept", "Content-Type", "Duffel-Version", "Authorization"];
+    timeoutMs = DUFFEL_ORDER_MINIMUM_TIMEOUT_MS;
+    url = new URL("/air/orders", DUFFEL_API_BASE_URL);
   } else {
     invalidPlan();
   }
@@ -327,6 +355,7 @@ function reviewPlan(value: unknown): ReviewedPlan {
 
   return Object.freeze({
     plan,
+    orderPlan,
     operation: plan.operation,
     endpointClass,
     url: url.toString(),

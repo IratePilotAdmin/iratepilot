@@ -7,7 +7,7 @@ export const PREVIEW_PROJECT_REF = "eiqmdldjnedqgbtoozqa";
 export const PRODUCTION_PROJECT_REF = "allliumarkejinplrggl";
 export const REQUIRED_BASELINE_TIP = "202608170067";
 export const APPLY_CONFIRMATION_FLAG =
-  "--apply-confirmation=PREVIEW_eiqmdldjnedqgbtoozqa_FLIGHT_068_069";
+  "--apply-confirmation=PREVIEW_eiqmdldjnedqgbtoozqa_FLIGHT_068_071";
 
 export const PINNED_FLIGHT_MIGRATIONS = Object.freeze([
   Object.freeze({
@@ -19,6 +19,16 @@ export const PINNED_FLIGHT_MIGRATIONS = Object.freeze([
     version: "202608240069",
     filename: "202608240069_flight_provider_request_attempts.sql",
     sha256: "7e966c4fa6f08a92692787dd82fadd4c0205af02826342a3902037438b1bd611",
+  }),
+  Object.freeze({
+    version: "202608250070",
+    filename: "202608250070_flight_duffel_test_order_attempts.sql",
+    sha256: "882c20f4643ca5ed02cb5e5423e7dc140b54b7524a46f53e9c66e9af574e37fe",
+  }),
+  Object.freeze({
+    version: "202608250071",
+    filename: "202608250071_flight_duffel_preview_rpc_bridge.sql",
+    sha256: "bb4f8d4287060d5301e1704073e2d2c15b6dcfa1309cb1a190da9efddefa375d",
   }),
 ]);
 
@@ -86,7 +96,7 @@ export function assertPinnedFlightMigrations() {
     filename,
   }));
   if (JSON.stringify(postBaseline) !== JSON.stringify(expectedPostBaseline)) {
-    throw new Error("Only the pinned flight migrations 068 and 069 may follow migration 067.");
+    throw new Error("Only the pinned flight migrations 068 through 071 may follow migration 067.");
   }
 
   for (const migration of PINNED_FLIGHT_MIGRATIONS) {
@@ -262,7 +272,7 @@ export function assertPreviewLedger(output, pinnedPlan) {
   const hasCompleteLedger = sameValues(actualRemote, expectedComplete);
   if (!hasBaselineOnly && !hasCompleteLedger) {
     throw new Error(
-      "The Preview remote ledger must contain the complete repository through 067 and either both flight migrations or neither.",
+      "The Preview remote ledger must contain the complete repository through 067 and either all four flight migrations or none.",
     );
   }
 
@@ -283,7 +293,7 @@ export function assertExactFlightDryRun(output) {
     !sameValues(mentionedVersions, expected)
     || !sameValues(mentionedFiles, expectedFiles)
   ) {
-    throw new Error("The dry run must mention exactly migration 068 followed by migration 069.");
+    throw new Error("The dry run must mention exactly migrations 068 through 071 in order.");
   }
   return mentionedVersions;
 }
@@ -405,6 +415,30 @@ export function assertFlightSchemaDump(output) {
     ["uuid", "integer", "text", "smallint", "text", "bigint", "text"],
     "table(attempt_id uuid,attempt_revision integer,attempt_state text)",
   );
+  assertFunctionSignature(
+    output,
+    "prepare_flight_provider_order_attempt",
+    [...Array(15).fill("text"), "timestamptz"],
+    "table(attempt_id uuid,attempt_revision integer,attempt_state text)",
+  );
+  assertFunctionSignature(
+    output,
+    "claim_flight_provider_order_attempt_for_dispatch",
+    ["uuid", "integer"],
+    "table(attempt_id uuid,attempt_revision integer,attempt_state text)",
+  );
+  assertFunctionSignature(
+    output,
+    "prepare_flight_provider_attempt_rpc",
+    [...Array(17).fill("text"), "timestamptz"],
+    "table(attempt_id uuid,attempt_revision integer,attempt_state text)",
+  );
+  assertFunctionSignature(
+    output,
+    "claim_flight_provider_attempt_rpc",
+    ["uuid", "integer", "text", "text", "text", "text"],
+    "table(attempt_id uuid,attempt_revision integer,attempt_state text)",
+  );
   for (const table of requiredTables) {
     for (const mode of ["ENABLE", "FORCE"]) {
       const pattern = new RegExp(
@@ -454,7 +488,7 @@ export function runSupabaseCli(args, databasePassword, sourceEnv = process.env) 
 
 function safeSummary(mode, pinnedPlan, extra = {}) {
   return {
-    gate: "flight-preview-migrations-068-069",
+    gate: "flight-preview-migrations-068-071",
     mode,
     approvedPreviewProjectRef: PREVIEW_PROJECT_REF,
     requiredRemoteBaselineTip: REQUIRED_BASELINE_TIP,

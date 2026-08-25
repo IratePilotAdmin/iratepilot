@@ -4,7 +4,7 @@ import type { DuffelSandboxContractOperation } from "../duffel-sandbox-contract"
 
 export const DUFFEL_SERVER_TRANSPORT_ENVIRONMENT = "sandbox" as const;
 
-export type DuffelDispatchableSandboxOperation = Exclude<DuffelSandboxContractOperation, "create_order">;
+export type DuffelDispatchableSandboxOperation = DuffelSandboxContractOperation;
 
 export type DuffelSafeEndpointClass =
   | "offer_requests_collection"

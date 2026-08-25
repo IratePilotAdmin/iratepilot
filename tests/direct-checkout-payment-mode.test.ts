@@ -57,7 +57,7 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
   it("recognizes later flight migrations without adding them to the legacy Preview apply allowlist", () => {
     const versions = listMigrationVersions();
     expect(versions).toEqual(expect.arrayContaining(REQUIRED_PREVIEW_BASELINE));
-    expect(versions.at(-1)).toBe("202608240069");
+    expect(versions.at(-1)).toBe("202608250071");
     expect(APPROVED_PREVIEW_PENDING).toEqual([
       "202608170064",
       "202608170065",
@@ -66,6 +66,8 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
     ]);
     expect(APPROVED_PREVIEW_PENDING).not.toContain("202608230068");
     expect(APPROVED_PREVIEW_PENDING).not.toContain("202608240069");
+    expect(APPROVED_PREVIEW_PENDING).not.toContain("202608250070");
+    expect(APPROVED_PREVIEW_PENDING).not.toContain("202608250071");
     expect(assertPreviewMigrationTarget({
       PREVIEW_SUPABASE_DB_URL: previewUrl,
       PREVIEW_SUPABASE_PROJECT_REF: previewRef,
@@ -124,7 +126,7 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
     )).toThrow("does not match");
   });
 
-  it("refuses migration 069 before push because it is outside the legacy Preview allowlist", () => {
+  it("refuses migration 071 before push because it is outside the legacy Preview allowlist", () => {
     const repoMigrationVersions = listMigrationVersions();
     const calls: Array<{ args: string[]; capture?: boolean }> = [];
     const runner = (_command: string, args: string[], _env: Record<string, string | undefined>, options?: { capture?: boolean }) => {
@@ -136,7 +138,7 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
       PREVIEW_SUPABASE_DB_URL: previewUrl,
       PREVIEW_SUPABASE_PROJECT_REF: previewRef,
     }, [], runner)).toThrow(
-      "Preview migration ledger has an unapproved pending set: 202608240069.",
+      "Preview migration ledger has an unapproved pending set: 202608250071.",
     );
     expect(calls.map(({ args }) => args.slice(0, 2))).toEqual([
       ["migration", "list"],
