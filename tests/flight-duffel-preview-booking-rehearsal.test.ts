@@ -19,6 +19,8 @@ describe("Duffel Preview booking rehearsal", () => {
     expect(route).toContain("FLIGHT_DUFFEL_TEST_EXECUTION_NONCE");
     expect(route).toContain('request.headers.get("x-iratepilot-flight-test-nonce")');
     expect(route).toContain("timingSafeEqual");
+    expect(route).toContain("failureFingerprint");
+    expect(route).toContain('.slice(0, 16)');
     expect(route).toContain('return NextResponse.json({ error: "Not found." }, { status: 404 })');
   });
 

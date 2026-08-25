@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import {
   DUFFEL_PREVIEW_BOOKING_CONFIRMATION,
@@ -54,8 +54,15 @@ export async function POST(request: Request) {
       status: 201,
       headers: { "Cache-Control": "no-store" },
     });
-  } catch {
-    return NextResponse.json({ error: "Duffel Preview test booking failed safely." }, {
+  } catch (error) {
+    const failureFingerprint = createHash("sha256")
+      .update(error instanceof Error ? error.message : "unknown-preview-booking-failure", "utf8")
+      .digest("hex")
+      .slice(0, 16);
+    return NextResponse.json({
+      error: "Duffel Preview test booking failed safely.",
+      failureFingerprint,
+    }, {
       status: 503,
       headers: { "Cache-Control": "no-store" },
     });
