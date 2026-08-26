@@ -20,7 +20,7 @@ import {
 } from "../lib/flights/consumer-production/stripe-runtime.server";
 
 const duffelToken = `duffel_live_${"D".repeat(32)}`;
-const stripeCredential = `sk_live_${"S".repeat(32)}`;
+const stripeCredential = `rk_live_${"R".repeat(32)}`;
 const stripePublishableKey = `pk_live_${"P".repeat(32)}`;
 const accountId = "acct_1234567890abcdef";
 const request = Object.freeze({

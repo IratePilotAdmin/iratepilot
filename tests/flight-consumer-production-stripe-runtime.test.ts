@@ -18,7 +18,7 @@ import {
 } from "../lib/flights/consumer-production/stripe-runtime.server";
 
 const duffelToken = `duffel_live_${"D".repeat(32)}`;
-const stripeCredential = `sk_live_${"S".repeat(32)}`;
+const stripeCredential = `rk_live_${"R".repeat(32)}`;
 const stripePublishableKey = `pk_live_${"P".repeat(32)}`;
 const accountId = "acct_1234567890abcdef";
 const baseEnv = Object.freeze({
@@ -108,7 +108,7 @@ describe("Flight Consumer Production Stripe read-only runtime", () => {
   it("ignores generic Stripe variables when dedicated keys are absent", () => {
     const isolatedEnv: Record<string, string | undefined> = {
       ...baseEnv,
-      STRIPE_SECRET_KEY: stripeCredential,
+      STRIPE_SECRET_KEY: `sk_live_${"S".repeat(32)}`,
       NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: stripePublishableKey,
     };
     delete isolatedEnv.FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_KEY;
@@ -119,8 +119,8 @@ describe("Flight Consumer Production Stripe read-only runtime", () => {
     )).toMatchObject({ authorized: false, mode: "disabled", binding: null });
   });
 
-  it("accepts a bounded restricted live key and binds key rotations to a new scope", () => {
-    const restricted = `rk_live_${"R".repeat(32)}`;
+  it("accepts only bounded restricted live keys and binds rotations to a new scope", () => {
+    const restricted = `rk_live_${"Q".repeat(32)}`;
     const initial =
       resolveFlightConsumerProductionStripeAccountPreflightRuntime(baseEnv);
     const rotated = resolveFlightConsumerProductionStripeAccountPreflightRuntime({
@@ -205,9 +205,13 @@ describe("Flight Consumer Production Stripe read-only runtime", () => {
     ["FLIGHT_TRANSACTION_KILL_SWITCH", "disengaged"],
     [
       "FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_KEY",
-      `sk_test_${"T".repeat(32)}`,
+      `rk_test_${"T".repeat(32)}`,
     ],
-    ["FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_KEY", "sk_live_short"],
+    [
+      "FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_KEY",
+      `sk_live_${"S".repeat(32)}`,
+    ],
+    ["FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_KEY", "rk_live_short"],
     ["FLIGHT_CONSUMER_PRODUCTION_STRIPE_PUBLISHABLE_KEY", ""],
     [
       "FLIGHT_CONSUMER_PRODUCTION_STRIPE_PUBLISHABLE_KEY",
@@ -241,7 +245,7 @@ describe("Flight Consumer Production Stripe read-only runtime", () => {
   });
 
   it("throws a generic unavailable error without echoing credential material", () => {
-    const privateValue = "sk_live_private!invalid!secret";
+    const privateValue = "rk_live_private!invalid!secret";
     let thrown: unknown;
     try {
       requireFlightConsumerProductionStripeAccountPreflightRuntime({
@@ -258,12 +262,14 @@ describe("Flight Consumer Production Stripe read-only runtime", () => {
 
   it.each([
     "",
+    `sk_live_${"S".repeat(32)}`,
     `sk_test_${"T".repeat(32)}`,
-    "sk_live_short",
+    `rk_test_${"T".repeat(32)}`,
+    "rk_live_short",
     `pk_live_${"P".repeat(32)}`,
-    `sk_live_${"!".repeat(32)}`,
-    `sk_live_${"S".repeat(257)}`,
-  ])("rejects malformed or non-secret live credential %j", (value) => {
+    `rk_live_${"!".repeat(32)}`,
+    `rk_live_${"R".repeat(257)}`,
+  ])("rejects malformed or non-restricted live credential %j", (value) => {
     expect(() => validateFlightConsumerProductionStripeLiveCredential(value))
       .toThrow(/credential is invalid/i);
   });

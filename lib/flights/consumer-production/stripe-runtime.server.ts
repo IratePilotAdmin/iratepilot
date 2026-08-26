@@ -11,7 +11,7 @@ export const FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_CONFIRMATION =
   "VERIFY_STRIPE_LIVE_ACCOUNT_WITHOUT_PAYMENT_OR_CHARGE" as const;
 
 const sha256Pattern = /^[0-9a-f]{64}$/;
-const liveCredentialPattern = /^(?:sk|rk)_live_[A-Za-z0-9_]{8,256}$/;
+const liveRestrictedCredentialPattern = /^rk_live_[A-Za-z0-9_]{8,256}$/;
 const livePublishableKeyPattern = /^pk_live_[A-Za-z0-9_]{8,256}$/;
 const accountIdPattern = /^acct_[A-Za-z0-9]{8,127}$/;
 const credentialFingerprintDomain =
@@ -86,8 +86,13 @@ function equalSha256(left: string, right: string) {
 export function validateFlightConsumerProductionStripeLiveCredential(
   value: string | undefined,
 ) {
-  if (typeof value !== "string" || !liveCredentialPattern.test(value)) {
-    throw new TypeError("The dedicated Stripe live credential is invalid.");
+  if (
+    typeof value !== "string"
+    || !liveRestrictedCredentialPattern.test(value)
+  ) {
+    throw new TypeError(
+      "The dedicated Stripe live restricted credential is invalid.",
+    );
   }
   return value;
 }
