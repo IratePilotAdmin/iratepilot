@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import {
+  deriveFlightConsumerProductionDuffelAccountSha256,
   deriveFlightConsumerProductionDuffelCredentialSha256,
   deriveFlightConsumerProductionDuffelOrderPlanRehearsalIdempotencySha256,
   deriveFlightConsumerProductionDuffelShoppingOneShotIdempotencySha256,
@@ -14,6 +15,7 @@ import {
 } from "../lib/flights/consumer-production/shopping-runtime.server";
 
 const token = `duffel_live_${"R".repeat(32)}`;
+const accountId = "acc_0000B9iZ8kto4H8uYhKSzO";
 const baseEnv = Object.freeze({
   VERCEL_ENV: "production",
   NEXT_PUBLIC_APP_URL: "https://www.iratepilot.com",
@@ -37,7 +39,9 @@ const baseEnv = Object.freeze({
   FLIGHT_PRODUCTION_TRAFFIC_ENABLED: "false",
   FLIGHT_TRANSACTION_KILL_SWITCH: "engaged",
   DUFFEL_LIVE_ACCESS_TOKEN: token,
-  FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ACCOUNT_SHA256: "a".repeat(64),
+  FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ACCOUNT_ID: accountId,
+  FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ACCOUNT_SHA256:
+    deriveFlightConsumerProductionDuffelAccountSha256(accountId),
   FLIGHT_CONSUMER_PRODUCTION_DUFFEL_CREDENTIAL_SHA256:
     deriveFlightConsumerProductionDuffelCredentialSha256(token),
   FLIGHT_CONSUMER_PRODUCTION_DUFFEL_WEBHOOK_SECRET:
@@ -80,6 +84,7 @@ describe("Flight Consumer Production Duffel order-plan rehearsal runtime", () =>
         "PLAN_ONE_DUFFEL_LIVE_OFFER_WITH_FICTIONAL_TRAVELER_WITHOUT_ORDER_OR_PAYMENT",
       );
     expect(JSON.stringify(decision)).not.toContain(token);
+    expect(JSON.stringify(decision)).not.toContain(accountId);
   });
 
   it("uses a distinct scope and server-owned idempotency domain from the shopping canary", () => {
@@ -134,7 +139,12 @@ describe("Flight Consumer Production Duffel order-plan rehearsal runtime", () =>
     const otherAccount =
       resolveFlightConsumerProductionDuffelOrderPlanRehearsalRuntime({
         ...baseEnv,
-        FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ACCOUNT_SHA256: "b".repeat(64),
+        FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ACCOUNT_ID:
+          "acc_0000B9iZ8kto4H8uYhKSzP",
+        FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ACCOUNT_SHA256:
+          deriveFlightConsumerProductionDuffelAccountSha256(
+            "acc_0000B9iZ8kto4H8uYhKSzP",
+          ),
       });
     expect(approved.authorized).toBe(true);
     expect(rotated.authorized).toBe(true);
@@ -171,6 +181,7 @@ describe("Flight Consumer Production Duffel order-plan rehearsal runtime", () =>
     ["FLIGHT_PRODUCTION_TRAFFIC_ENABLED", "true"],
     ["FLIGHT_TRANSACTION_KILL_SWITCH", "disengaged"],
     ["DUFFEL_LIVE_ACCESS_TOKEN", "duffel_test_not_allowed_123456"],
+    ["FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ACCOUNT_ID", ""],
     ["FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ACCOUNT_SHA256", ""],
     ["FLIGHT_CONSUMER_PRODUCTION_DUFFEL_CREDENTIAL_SHA256", "0".repeat(64)],
     ["FLIGHT_CONSUMER_PRODUCTION_DUFFEL_WEBHOOK_SECRET", "short"],
@@ -198,6 +209,22 @@ describe("Flight Consumer Production Duffel order-plan rehearsal runtime", () =>
     expect(thrown).toBeInstanceOf(Error);
     expect(String(thrown)).toMatch(/unavailable/i);
     expect(String(thrown)).not.toContain(privateValue);
+  });
+
+  it("rejects a mismatched approved account without exposing either identifier", () => {
+    const unapprovedAccountId = "acc_0000B9iZ8kto4H8uYhKSzP";
+    const decision =
+      resolveFlightConsumerProductionDuffelOrderPlanRehearsalRuntime({
+        ...baseEnv,
+        FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ACCOUNT_ID: unapprovedAccountId,
+      });
+    expect(decision).toMatchObject({
+      authorized: false,
+      mode: "disabled",
+      binding: null,
+    });
+    expect(JSON.stringify(decision)).not.toContain(unapprovedAccountId);
+    expect(JSON.stringify(decision)).not.toContain(accountId);
   });
 
   it.each(["", "a", "g".repeat(64), "a".repeat(63)])(

@@ -12,11 +12,13 @@ import {
   type FlightConsumerProductionDuffelShoppingJournalPort,
 } from "../lib/flights/consumer-production/duffel-shopping.server";
 import {
+  deriveFlightConsumerProductionDuffelAccountSha256,
   deriveFlightConsumerProductionDuffelCredentialSha256,
   FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ORDER_PLAN_REHEARSAL_CONFIRMATION,
 } from "../lib/flights/consumer-production/shopping-runtime.server";
 
 const token = `duffel_live_${"R".repeat(32)}`;
+const accountId = "acc_0000B9iZ8kto4H8uYhKSzO";
 const env = Object.freeze({
   VERCEL_ENV: "production",
   NEXT_PUBLIC_APP_URL: "https://www.iratepilot.com",
@@ -40,7 +42,9 @@ const env = Object.freeze({
   FLIGHT_PRODUCTION_TRAFFIC_ENABLED: "false",
   FLIGHT_TRANSACTION_KILL_SWITCH: "engaged",
   DUFFEL_LIVE_ACCESS_TOKEN: token,
-  FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ACCOUNT_SHA256: "b".repeat(64),
+  FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ACCOUNT_ID: accountId,
+  FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ACCOUNT_SHA256:
+    deriveFlightConsumerProductionDuffelAccountSha256(accountId),
   FLIGHT_CONSUMER_PRODUCTION_DUFFEL_CREDENTIAL_SHA256:
     deriveFlightConsumerProductionDuffelCredentialSha256(token),
   FLIGHT_CONSUMER_PRODUCTION_DUFFEL_WEBHOOK_SECRET:

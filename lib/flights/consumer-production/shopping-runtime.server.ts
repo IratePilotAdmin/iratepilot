@@ -30,6 +30,9 @@ const FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ORDER_PLAN_REHEARSAL_ONE_SHOT_GRANT_SHA2
     .digest("hex");
 
 const sha256Pattern = /^[0-9a-f]{64}$/;
+const accountIdPattern = /^acc_[A-Za-z0-9]{8,127}$/;
+const accountFingerprintDomain =
+  "iratepilot:production:duffel:live:account-fingerprint:v1" as const;
 const credentialFingerprintDomain =
   "iratepilot:production:duffel:live:credential-fingerprint:v1" as const;
 
@@ -125,6 +128,19 @@ export function deriveFlightConsumerProductionDuffelCredentialSha256(
     .digest("hex");
 }
 
+export function deriveFlightConsumerProductionDuffelAccountSha256(
+  accountId: string,
+) {
+  if (!accountIdPattern.test(accountId)) {
+    throw new TypeError("The Duffel live account identifier is invalid.");
+  }
+  return createHash("sha256")
+    .update(accountFingerprintDomain, "utf8")
+    .update("\0", "utf8")
+    .update(accountId, "utf8")
+    .digest("hex");
+}
+
 function equalSha256(left: string, right: string) {
   if (!sha256Pattern.test(left) || !sha256Pattern.test(right)) return false;
   return timingSafeEqual(Buffer.from(left, "hex"), Buffer.from(right, "hex"));
@@ -134,6 +150,8 @@ function resolveCredentialBoundExecutionScope(
   env: ProductionEnvironment,
   reasons: string[],
 ) {
+  const providerAccountId =
+    env.FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ACCOUNT_ID ?? "";
   const providerAccountSha256 =
     env.FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ACCOUNT_SHA256 ?? "";
   const approvedCredentialSha256 =
@@ -143,6 +161,20 @@ function resolveCredentialBoundExecutionScope(
   }
   if (!sha256Pattern.test(approvedCredentialSha256)) {
     reasons.push("The approved Duffel live credential binding is unavailable.");
+  }
+
+  let observedAccountSha256: string | null = null;
+  try {
+    observedAccountSha256 =
+      deriveFlightConsumerProductionDuffelAccountSha256(providerAccountId);
+    if (
+      sha256Pattern.test(providerAccountSha256)
+      && !equalSha256(observedAccountSha256, providerAccountSha256)
+    ) {
+      reasons.push("The Duffel live account does not match its approved binding.");
+    }
+  } catch {
+    reasons.push("The approved Duffel live account identifier is unavailable.");
   }
 
   let observedCredentialSha256: string | null = null;
@@ -162,6 +194,8 @@ function resolveCredentialBoundExecutionScope(
 
   if (
     !sha256Pattern.test(providerAccountSha256)
+    || observedAccountSha256 === null
+    || !equalSha256(observedAccountSha256, providerAccountSha256)
     || !sha256Pattern.test(approvedCredentialSha256)
     || observedCredentialSha256 === null
     || !equalSha256(observedCredentialSha256, approvedCredentialSha256)
@@ -186,6 +220,8 @@ function resolveCredentialBoundOrderPlanRehearsalExecutionScope(
   env: ProductionEnvironment,
   reasons: string[],
 ) {
+  const providerAccountId =
+    env.FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ACCOUNT_ID ?? "";
   const providerAccountSha256 =
     env.FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ACCOUNT_SHA256 ?? "";
   const approvedCredentialSha256 =
@@ -195,6 +231,20 @@ function resolveCredentialBoundOrderPlanRehearsalExecutionScope(
   }
   if (!sha256Pattern.test(approvedCredentialSha256)) {
     reasons.push("The approved Duffel live credential binding is unavailable.");
+  }
+
+  let observedAccountSha256: string | null = null;
+  try {
+    observedAccountSha256 =
+      deriveFlightConsumerProductionDuffelAccountSha256(providerAccountId);
+    if (
+      sha256Pattern.test(providerAccountSha256)
+      && !equalSha256(observedAccountSha256, providerAccountSha256)
+    ) {
+      reasons.push("The Duffel live account does not match its approved binding.");
+    }
+  } catch {
+    reasons.push("The approved Duffel live account identifier is unavailable.");
   }
 
   let observedCredentialSha256: string | null = null;
@@ -214,6 +264,8 @@ function resolveCredentialBoundOrderPlanRehearsalExecutionScope(
 
   if (
     !sha256Pattern.test(providerAccountSha256)
+    || observedAccountSha256 === null
+    || !equalSha256(observedAccountSha256, providerAccountSha256)
     || !sha256Pattern.test(approvedCredentialSha256)
     || observedCredentialSha256 === null
     || !equalSha256(observedCredentialSha256, approvedCredentialSha256)
