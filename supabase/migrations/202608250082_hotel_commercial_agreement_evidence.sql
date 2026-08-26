@@ -124,7 +124,7 @@ create table public.hotel_commercial_agreement_evidence (
   constraint hotel_commercial_agreement_execution_checks check (
     representative_authority_verified
     and executed_agreement_verified
-    and effective_at >= pg_catalog.greatest(hotel_signed_at, iratepilot_signed_at)
+    and effective_at >= greatest(hotel_signed_at, iratepilot_signed_at)
     and (expires_at is null or expires_at > effective_at)
   ),
   constraint hotel_commercial_agreement_evidence_summary_check check (
@@ -739,7 +739,7 @@ begin
     or p_effective_at is null
     or p_effective_at > v_now
     or p_effective_at < v_version.effective_at
-    or p_effective_at < pg_catalog.greatest(p_hotel_signed_at, p_iratepilot_signed_at)
+    or p_effective_at < greatest(p_hotel_signed_at, p_iratepilot_signed_at)
     or (p_expires_at is not null and (
       p_expires_at <= p_effective_at or p_expires_at <= v_now
     ))

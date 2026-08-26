@@ -19423,6 +19423,4943 @@ comment on function public.activate_flight_consumer_preview_v1(
 
 commit;
 
+
+-- Canonical bootstrap parity: 202608220062_hotel_partner_fee_schema.sql
+-- Prepare additive, mixed-history-safe accounting fields before the 13% + 3%
+-- schedule is activated. Existing rows keep their recorded money. Pre-033 rows
+-- can contain an earlier commission rate, so no historical rate is inferred.
+alter table public.booking_financials
+  add column if not exists reward_program_fee numeric(12,2) not null default 0,
+  add column if not exists partner_commission_rate_bps smallint,
+  add column if not exists reward_program_fee_rate_bps smallint not null default 0,
+  add column if not exists fee_schedule_version text not null default 'legacy_recorded_split_v0';
+
+alter table public.booking_financials
+  drop constraint if exists booking_financials_reward_program_fee_check,
+  drop constraint if exists booking_financials_partner_commission_rate_bps_check,
+  drop constraint if exists booking_financials_reward_program_fee_rate_bps_check,
+  drop constraint if exists booking_financials_combined_fee_rate_bps_check,
+  drop constraint if exists booking_financials_fee_schedule_version_check,
+  drop constraint if exists booking_financials_amount_reconciliation_check;
+
+alter table public.booking_financials
+  add constraint booking_financials_reward_program_fee_check
+    check (reward_program_fee >= 0),
+  add constraint booking_financials_partner_commission_rate_bps_check
+    check (
+      partner_commission_rate_bps is null
+      or partner_commission_rate_bps between 0 and 10000
+    ),
+  add constraint booking_financials_reward_program_fee_rate_bps_check
+    check (reward_program_fee_rate_bps between 0 and 10000),
+  add constraint booking_financials_combined_fee_rate_bps_check
+    check (
+      coalesce(partner_commission_rate_bps, 0)
+        + reward_program_fee_rate_bps <= 10000
+    ),
+  add constraint booking_financials_fee_schedule_version_check
+    check (
+      (fee_schedule_version = 'legacy_recorded_split_v0'
+        and partner_commission_rate_bps is null
+        and reward_program_fee_rate_bps = 0)
+      or
+      (fee_schedule_version = 'hotel_partner_commission_13_reward_fee_3_v1'
+        and partner_commission_rate_bps = 1300
+        and reward_program_fee_rate_bps = 300)
+      or
+      (fee_schedule_version = 'partner_commission_14_reward_fee_0_v1'
+        and partner_commission_rate_bps = 1400
+        and reward_program_fee_rate_bps = 0)
+    ),
+  add constraint booking_financials_amount_reconciliation_check
+    check (
+      gross_room_revenue
+        = partner_commission + reward_program_fee + partner_net
+    );
+
+-- Preparation deliberately keeps the preceding 14%/0% schedule active. This
+-- makes the schema safe for the old application while the compatible build is
+-- deployed. Migration 063 is the separate monetary activation boundary.
+create or replace function public.apply_marketplace_commission()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  if tg_op = 'UPDATE' then
+    if new.gross_room_revenue is distinct from old.gross_room_revenue
+      or new.partner_commission is distinct from old.partner_commission
+      or new.reward_program_fee is distinct from old.reward_program_fee
+      or new.partner_net is distinct from old.partner_net
+      or new.partner_commission_rate_bps is distinct from old.partner_commission_rate_bps
+      or new.reward_program_fee_rate_bps is distinct from old.reward_program_fee_rate_bps
+      or new.fee_schedule_version is distinct from old.fee_schedule_version then
+      raise exception 'Booking financial fee schedule fields are immutable after insert'
+        using errcode = '23514';
+    end if;
+    return new;
+  end if;
+
+  new.partner_commission_rate_bps := 1400;
+  new.reward_program_fee_rate_bps := 0;
+  new.fee_schedule_version := 'partner_commission_14_reward_fee_0_v1';
+  new.partner_commission := round(
+    new.gross_room_revenue * new.partner_commission_rate_bps / 10000,
+    2
+  );
+  new.reward_program_fee := 0;
+  new.partner_net := new.gross_room_revenue - new.partner_commission;
+  return new;
+end;
+$$;
+
+drop trigger if exists apply_marketplace_commission_before_insert
+  on public.booking_financials;
+create trigger apply_marketplace_commission_before_insert
+before insert or update of
+  gross_room_revenue,
+  partner_commission,
+  reward_program_fee,
+  partner_net,
+  partner_commission_rate_bps,
+  reward_program_fee_rate_bps,
+  fee_schedule_version
+on public.booking_financials
+for each row execute function public.apply_marketplace_commission();
+
+alter table public.booking_financials
+  alter column reward_program_fee drop default,
+  alter column reward_program_fee_rate_bps drop default,
+  alter column fee_schedule_version drop default;
+
+comment on function public.apply_marketplace_commission() is
+  'Preparation stage: records the preceding 14%/0% schedule for new rows while additive hotel fee fields are deployed; preserves every recorded split.';
+
+-- Canonical bootstrap parity: 202608220063_activate_hotel_partner_fee_schedule.sql
+-- Activate the new schedule only after migration 062 and the compatible
+-- application build are verified with booking writes disabled.
+create or replace function public.apply_marketplace_commission()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  if tg_op = 'UPDATE' then
+    if new.gross_room_revenue is distinct from old.gross_room_revenue
+      or new.partner_commission is distinct from old.partner_commission
+      or new.reward_program_fee is distinct from old.reward_program_fee
+      or new.partner_net is distinct from old.partner_net
+      or new.partner_commission_rate_bps is distinct from old.partner_commission_rate_bps
+      or new.reward_program_fee_rate_bps is distinct from old.reward_program_fee_rate_bps
+      or new.fee_schedule_version is distinct from old.fee_schedule_version then
+      raise exception 'Booking financial fee schedule fields are immutable after insert'
+        using errcode = '23514';
+    end if;
+    return new;
+  end if;
+
+  new.partner_commission_rate_bps := 1300;
+  new.reward_program_fee_rate_bps := 300;
+  new.fee_schedule_version := 'hotel_partner_commission_13_reward_fee_3_v1';
+  new.partner_commission := round(
+    new.gross_room_revenue * new.partner_commission_rate_bps / 10000,
+    2
+  );
+  new.reward_program_fee := round(
+    new.gross_room_revenue * new.reward_program_fee_rate_bps / 10000,
+    2
+  );
+  new.partner_net := new.gross_room_revenue
+    - new.partner_commission
+    - new.reward_program_fee;
+  return new;
+end;
+$$;
+
+comment on function public.apply_marketplace_commission() is
+  'Activation stage: for new booking financial rows, records a 13% partner commission and separate 3% hotel-side iRate Reward Program fee on post-discount gross room revenue; preserves every recorded split.';
+
+-- Canonical bootstrap parity: 202608220070_hotel_commercial_intake_readiness.sql
+-- Additive intake fields. Legacy applications remain readable but cannot pass
+-- the new approval function until their official data and attestations exist.
+alter table public.partner_applications
+  add column if not exists legal_business_name text,
+  add column if not exists star_rating smallint,
+  add column if not exists contact_role text,
+  add column if not exists phone text,
+  add column if not exists support_contact_email text,
+  add column if not exists website_url text,
+  add column if not exists address_line1 text,
+  add column if not exists city text,
+  add column if not exists region text,
+  add column if not exists postal_code text,
+  add column if not exists country_code text,
+  add column if not exists description text,
+  add column if not exists amenities text[],
+  add column if not exists primary_image_url text,
+  add column if not exists representative_authority_confirmed boolean not null default false,
+  add column if not exists content_rights_confirmed boolean not null default false,
+  add column if not exists information_accurate boolean not null default false,
+  add column if not exists commercial_terms_version_acknowledged text,
+  add column if not exists commercial_terms_acknowledged boolean not null default false,
+  add column if not exists commercial_terms_acknowledged_at timestamptz,
+  add column if not exists property_id uuid references public.properties(id) on delete set null;
+
+-- The isolated Preview lineage already contains a subset of these intake
+-- fields from 202608170062. Normalize the two differing definitions before
+-- installing the canonical commercial contract. This remains safe on the
+-- 72-version baseline because both operations become no-ops in substance.
+do $$
+declare
+  v_star_rating_type text;
+  v_amenities_type text;
+begin
+  select pg_catalog.format_type(attribute.atttypid, attribute.atttypmod)
+  into v_star_rating_type
+  from pg_catalog.pg_attribute as attribute
+  where attribute.attrelid = 'public.partner_applications'::regclass
+    and attribute.attname = 'star_rating'
+    and attribute.attnum > 0
+    and not attribute.attisdropped;
+
+  select pg_catalog.format_type(attribute.atttypid, attribute.atttypmod)
+  into v_amenities_type
+  from pg_catalog.pg_attribute as attribute
+  where attribute.attrelid = 'public.partner_applications'::regclass
+    and attribute.attname = 'amenities'
+    and attribute.attnum > 0
+    and not attribute.attisdropped;
+
+  if v_star_rating_type not in ('smallint', 'integer') then
+    raise exception 'Migration 202608220070 requires partner_applications.star_rating to be smallint or integer';
+  end if;
+
+  if v_amenities_type is distinct from 'text[]' then
+    raise exception 'Migration 202608220070 requires partner_applications.amenities to be text[]';
+  end if;
+
+  if exists (
+    select 1
+    from public.partner_applications
+    where star_rating is not null
+      and star_rating not in (4, 5)
+  ) then
+    raise exception 'Migration 202608220070 cannot normalize unsupported existing star ratings'
+      using hint = 'Reconcile the aggregate blocker under a separately approved data-change gate.';
+  end if;
+
+  if exists (
+    select 1
+    from public.partner_applications
+    where contact_role is not null
+      and contact_role not in (
+        'owner',
+        'authorized_representative',
+        'general_manager',
+        'revenue_manager',
+        'sales_manager'
+      )
+  ) then
+    raise exception 'Migration 202608220070 cannot normalize unsupported existing contact roles'
+      using hint = 'Reconcile the aggregate blocker under a separately approved data-change gate.';
+  end if;
+end;
+$$;
+
+alter table public.partner_applications
+  drop constraint if exists partner_applications_star_rating_check,
+  drop constraint if exists partner_applications_phone_length_check,
+  drop constraint if exists partner_applications_description_length_check,
+  drop constraint if exists partner_applications_amenities_count_check,
+  drop constraint if exists partner_applications_property_id_fkey,
+  drop constraint if exists partner_applications_commercial_intake_lengths_check,
+  drop constraint if exists partner_applications_contact_role_check,
+  drop constraint if exists partner_applications_country_code_check,
+  drop constraint if exists partner_applications_secure_urls_check,
+  drop constraint if exists partner_applications_commercial_acknowledgement_check;
+
+alter table public.partner_applications
+  alter column star_rating type smallint using star_rating::smallint,
+  alter column star_rating drop default,
+  alter column star_rating drop not null,
+  alter column amenities drop default,
+  alter column amenities drop not null;
+
+alter table public.partner_applications
+  add constraint partner_applications_property_id_fkey foreign key (property_id)
+    references public.properties(id) on delete set null,
+  add constraint partner_applications_commercial_intake_lengths_check check (
+    (legal_business_name is null or length(trim(legal_business_name)) between 2 and 200)
+    and (phone is null or length(trim(phone)) between 7 and 30)
+    and (support_contact_email is null or length(trim(support_contact_email)) between 3 and 254)
+    and (address_line1 is null or length(trim(address_line1)) between 3 and 200)
+    and (city is null or length(trim(city)) between 2 and 100)
+    and (region is null or length(trim(region)) <= 100)
+    and (postal_code is null or length(trim(postal_code)) between 2 and 20)
+    and (description is null or length(trim(description)) between 120 and 4000)
+    and (amenities is null or cardinality(amenities) between 1 and 20)
+    and (star_rating is null or star_rating in (4, 5))
+  ) not valid,
+  add constraint partner_applications_contact_role_check check (
+    contact_role is null or contact_role in (
+      'owner',
+      'authorized_representative',
+      'general_manager',
+      'revenue_manager',
+      'sales_manager'
+    )
+  ) not valid,
+  add constraint partner_applications_country_code_check check (
+    country_code is null or country_code ~ '^[A-Z]{2}$'
+  ) not valid,
+  add constraint partner_applications_secure_urls_check check (
+    (website_url is null or website_url ~* '^https://')
+    and (primary_image_url is null or primary_image_url ~* '^https://')
+  ) not valid,
+  add constraint partner_applications_commercial_acknowledgement_check check (
+    (
+      not commercial_terms_acknowledged
+      and commercial_terms_version_acknowledged is null
+      and commercial_terms_acknowledged_at is null
+    )
+    or (
+      commercial_terms_acknowledged
+      and commercial_terms_version_acknowledged is not distinct from
+        'hotel_partner_fee_disclosure_13_3_2026-08-22_v1'
+      and commercial_terms_acknowledged_at is not null
+    )
+  ) not valid;
+
+-- Allow one pending application per property for an authorized business email,
+-- while preserving deduplication of repeated submissions for that property.
+drop index if exists public.one_pending_partner_application_per_email;
+drop index if exists public.one_pending_partner_application_per_email_and_property;
+drop index if exists public.partner_applications_property_id_key;
+create unique index one_pending_partner_application_per_email_and_property
+  on public.partner_applications (lower(trim(email)), lower(trim(property_name)))
+  where status = 'pending';
+create unique index partner_applications_property_id_key
+  on public.partner_applications (property_id)
+  where property_id is not null;
+
+-- The public route uses the service role, so the database function owns both
+-- deduplication, a global storage-abuse ceiling, and the per-email rolling
+-- quota. These are storage controls, not proof of a submitter's identity.
+create or replace function public.submit_partner_application(
+  p_legal_business_name text,
+  p_property_name text,
+  p_star_rating smallint,
+  p_contact_name text,
+  p_contact_role text,
+  p_email text,
+  p_phone text,
+  p_support_contact_email text,
+  p_property_type public.property_type,
+  p_website_url text,
+  p_address_line1 text,
+  p_city text,
+  p_region text,
+  p_postal_code text,
+  p_country_code text,
+  p_description text,
+  p_amenities text[],
+  p_primary_image_url text,
+  p_representative_authority_confirmed boolean,
+  p_content_rights_confirmed boolean,
+  p_information_accurate boolean,
+  p_commercial_terms_version text,
+  p_commercial_terms_acknowledged boolean,
+  p_commercial_terms_acknowledged_at timestamptz
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_normalized_email text := lower(trim(p_email));
+  v_normalized_property text := lower(trim(p_property_name));
+begin
+  if p_commercial_terms_acknowledged is distinct from true
+    or p_commercial_terms_version is distinct from
+      'hotel_partner_fee_disclosure_13_3_2026-08-22_v1'
+    or p_commercial_terms_acknowledged_at is null
+  then
+    raise exception 'The current hotel commercial disclosure must be acknowledged'
+      using errcode = '22023';
+  end if;
+
+  perform pg_advisory_xact_lock(
+    hashtextextended('partner-application:global', 0)
+  );
+  perform pg_advisory_xact_lock(
+    hashtextextended('partner-application:' || v_normalized_email, 0)
+  );
+
+  if exists (
+    select 1
+    from public.partner_applications
+    where lower(trim(email)) = v_normalized_email
+      and lower(trim(property_name)) = v_normalized_property
+      and status = 'pending'
+  ) then
+    return jsonb_build_object('status', 'received', 'duplicate', true);
+  end if;
+
+  if (
+    select count(*)
+    from public.partner_applications
+    where created_at >= now() - interval '24 hours'
+  ) >= 200 then
+    raise exception 'Global partner application intake capacity exceeded'
+      using errcode = 'P0001';
+  end if;
+
+  if (
+    select count(*)
+    from public.partner_applications
+    where lower(trim(email)) = v_normalized_email
+      and created_at >= now() - interval '24 hours'
+  ) >= 3 then
+    raise exception 'Partner application intake quota exceeded'
+      using errcode = 'P0001';
+  end if;
+
+  insert into public.partner_applications (
+    legal_business_name,
+    property_name,
+    star_rating,
+    contact_name,
+    contact_role,
+    email,
+    phone,
+    support_contact_email,
+    property_type,
+    website_url,
+    address_line1,
+    city,
+    region,
+    postal_code,
+    country_code,
+    description,
+    amenities,
+    primary_image_url,
+    representative_authority_confirmed,
+    content_rights_confirmed,
+    information_accurate,
+    commercial_terms_version_acknowledged,
+    commercial_terms_acknowledged,
+    commercial_terms_acknowledged_at,
+    status
+  ) values (
+    p_legal_business_name,
+    p_property_name,
+    p_star_rating,
+    p_contact_name,
+    p_contact_role,
+    v_normalized_email,
+    p_phone,
+    lower(trim(p_support_contact_email)),
+    p_property_type,
+    p_website_url,
+    p_address_line1,
+    p_city,
+    nullif(trim(p_region), ''),
+    p_postal_code,
+    upper(trim(p_country_code)),
+    p_description,
+    p_amenities,
+    p_primary_image_url,
+    p_representative_authority_confirmed,
+    p_content_rights_confirmed,
+    p_information_accurate,
+    p_commercial_terms_version,
+    p_commercial_terms_acknowledged,
+    p_commercial_terms_acknowledged_at,
+    'pending'
+  );
+
+  return jsonb_build_object('status', 'received', 'duplicate', false);
+exception
+  when unique_violation then
+    return jsonb_build_object('status', 'received', 'duplicate', true);
+end;
+$$;
+
+revoke all on function public.submit_partner_application(
+  text, text, smallint, text, text, text, text, text,
+  public.property_type, text, text, text, text, text, text, text,
+  text[], text, boolean, boolean, boolean, text, boolean, timestamptz
+) from public, anon, authenticated;
+grant execute on function public.submit_partner_application(
+  text, text, smallint, text, text, text, text, text,
+  public.property_type, text, text, text, text, text, text, text,
+  text[], text, boolean, boolean, boolean, text, boolean, timestamptz
+) to service_role;
+
+-- These exact fields are the forward contract for direct-hotel activation.
+-- Defaults quarantine every legacy and newly created property.
+alter table public.properties
+  add column if not exists listing_scope text not null default 'legacy_quarantined',
+  add column if not exists direct_request_mode text not null default 'disabled',
+  add column if not exists commercial_terms_version text,
+  add column if not exists commercial_verified_at timestamptz,
+  add column if not exists commercial_verified_by uuid references public.profiles(id),
+  add column if not exists support_contact_email text;
+
+-- Every property that predates this commercial control plane is moved out of
+-- public circulation. A later accountable commercial review and a
+-- separate publication decision are both required to return it to public view.
+update public.properties
+set active = false,
+    listing_scope = 'legacy_quarantined',
+    direct_request_mode = 'disabled',
+    commercial_terms_version = null,
+    commercial_verified_at = null,
+    commercial_verified_by = null
+where active = true;
+
+alter table public.properties
+  drop constraint if exists properties_listing_scope_check,
+  drop constraint if exists properties_direct_request_mode_check,
+  drop constraint if exists properties_commercial_verification_check,
+  drop constraint if exists properties_commercial_publication_guard;
+
+alter table public.properties
+  add constraint properties_listing_scope_check check (
+    listing_scope in ('legacy_quarantined', 'synthetic', 'pilot', 'commercial')
+  ),
+  add constraint properties_direct_request_mode_check check (
+    direct_request_mode in ('disabled', 'request_only')
+  ),
+  add constraint properties_commercial_verification_check check (
+    commercial_verified_at is null
+    or (
+      commercial_verified_by is not null
+      and commercial_terms_version is not null
+      and commercial_terms_version = 'hotel_partner_fee_disclosure_13_3_2026-08-22_v1'
+    )
+  ) not valid,
+  add constraint properties_commercial_publication_guard check (
+    not active
+    or (
+      listing_scope = 'commercial'
+      and direct_request_mode = 'request_only'
+      and commercial_verified_at is not null
+      and commercial_verified_by is not null
+      and commercial_terms_version is not null
+      and commercial_terms_version = 'hotel_partner_fee_disclosure_13_3_2026-08-22_v1'
+      and nullif(trim(support_contact_email), '') is not null
+    )
+  ) not valid;
+
+comment on column public.properties.listing_scope is
+  'Fail-closed listing classification. Only a separately verified commercial property can become publication-ready.';
+comment on column public.properties.direct_request_mode is
+  'Direct-hotel request authority. Disabled by default; request_only never authorizes instant booking, payment, payout, or provider traffic.';
+
+-- Tighten the public RLS predicate used by properties, rooms, and inventory.
+-- Partner approval and active=true are insufficient without recorded
+-- commercial-review evidence and the request-only boundary.
+create or replace function public.is_approved_marketplace_property(p_property_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.properties
+    join public.partners on partners.id = properties.partner_id
+    where properties.id = p_property_id
+      and properties.active = true
+      and properties.listing_scope = 'commercial'
+      and properties.direct_request_mode = 'request_only'
+      and properties.commercial_verified_at is not null
+      and properties.commercial_verified_by is not null
+      and properties.commercial_terms_version = 'hotel_partner_fee_disclosure_13_3_2026-08-22_v1'
+      and nullif(trim(properties.support_contact_email), '') is not null
+      and partners.status = 'approved'
+  );
+$$;
+
+create or replace function public.is_approved_marketplace_room(p_room_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.rooms
+    where rooms.id = p_room_id
+      and rooms.active = true
+      and public.is_approved_marketplace_property(rooms.property_id)
+  );
+$$;
+
+revoke all on function public.is_approved_marketplace_property(uuid) from public;
+revoke all on function public.is_approved_marketplace_room(uuid) from public;
+grant execute on function public.is_approved_marketplace_property(uuid) to anon, authenticated;
+grant execute on function public.is_approved_marketplace_room(uuid) to anon, authenticated;
+
+drop policy if exists "Public can view active properties" on public.properties;
+create policy "Public can view active properties"
+  on public.properties for select to anon, authenticated
+  using (public.is_approved_marketplace_property(id));
+
+drop policy if exists "Public can view active rooms" on public.rooms;
+create policy "Public can view active rooms"
+  on public.rooms for select to anon, authenticated
+  using (public.is_approved_marketplace_room(id));
+
+drop policy if exists "Public can view inventory" on public.inventory;
+create policy "Public can view inventory"
+  on public.inventory for select to anon, authenticated
+  using (public.is_approved_marketplace_room(room_id));
+
+-- A one-use transaction receipt ensures that even an administrator cannot
+-- activate a property with a direct table update. Only the publication RPC,
+-- which validates the complete hotel graph, can create this receipt.
+create table public.property_publication_authorizations (
+  transaction_id bigint not null,
+  property_id uuid not null,
+  authorized_by uuid not null,
+  created_at timestamptz not null default now(),
+  primary key (transaction_id, property_id)
+);
+alter table public.property_publication_authorizations enable row level security;
+revoke all on public.property_publication_authorizations
+  from public, anon, authenticated, service_role;
+
+-- Owners and delegated managers must not self-certify commercial readiness even
+-- when another property policy permits ordinary draft-content updates.
+create or replace function public.enforce_property_commercial_control_fields()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_is_admin boolean := exists (
+    select 1
+    from public.profiles
+    where profiles.id = auth.uid()
+      and profiles.role = 'admin'
+  );
+  v_publication_authorized boolean := false;
+begin
+  if tg_op = 'INSERT' then
+    if new.active then
+      raise exception 'Use the controlled publication action to activate a property'
+        using errcode = '42501';
+    end if;
+    if auth.uid() is not null and not v_is_admin and (
+      new.listing_scope <> 'legacy_quarantined'
+      or new.direct_request_mode <> 'disabled'
+      or new.commercial_terms_version is not null
+      or new.commercial_verified_at is not null
+      or new.commercial_verified_by is not null
+    ) then
+      raise exception 'Commercial property controls require administrator review'
+        using errcode = '42501';
+    end if;
+    return new;
+  end if;
+
+  if new.active and old.active is distinct from true then
+    delete from public.property_publication_authorizations
+    where transaction_id = txid_current()
+      and property_id = new.id
+      and authorized_by = auth.uid()
+    returning true into v_publication_authorized;
+    if not coalesce(v_publication_authorized, false) then
+      raise exception 'Use the controlled publication action to activate a property'
+        using errcode = '42501';
+    end if;
+  end if;
+
+  if old.active and new.active and (
+    new.id is distinct from old.id
+    or new.partner_id is distinct from old.partner_id
+    or new.star_rating is distinct from old.star_rating
+    or new.image_url is distinct from old.image_url
+    or new.amenities is distinct from old.amenities
+    or new.listing_scope is distinct from old.listing_scope
+    or new.direct_request_mode is distinct from old.direct_request_mode
+    or new.commercial_terms_version is distinct from old.commercial_terms_version
+    or new.commercial_verified_at is distinct from old.commercial_verified_at
+    or new.commercial_verified_by is distinct from old.commercial_verified_by
+    or new.support_contact_email is distinct from old.support_contact_email
+  ) then
+    raise exception 'Unpublish the property before changing commercial property terms'
+      using errcode = 'P0001';
+  end if;
+
+  if auth.uid() is not null and not v_is_admin and (
+    new.active is distinct from old.active
+    or new.listing_scope is distinct from old.listing_scope
+    or new.direct_request_mode is distinct from old.direct_request_mode
+    or new.commercial_terms_version is distinct from old.commercial_terms_version
+    or new.commercial_verified_at is distinct from old.commercial_verified_at
+    or new.commercial_verified_by is distinct from old.commercial_verified_by
+    or new.support_contact_email is distinct from old.support_contact_email
+  ) then
+    raise exception 'Commercial property controls require administrator review'
+      using errcode = '42501';
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke all on function public.enforce_property_commercial_control_fields()
+  from public, anon, authenticated;
+drop trigger if exists enforce_property_commercial_control_fields
+  on public.properties;
+create trigger enforce_property_commercial_control_fields
+before insert or update on public.properties
+for each row execute function public.enforce_property_commercial_control_fields();
+
+-- Append-only internal evidence. It contains no credentials, bank data,
+-- provider identifiers, or claimed independent/legal approval.
+create table if not exists public.partner_application_review_evidence (
+  id uuid primary key default pg_catalog.gen_random_uuid(),
+  application_id uuid not null references public.partner_applications(id) on delete restrict,
+  reviewer_id uuid not null references public.profiles(id) on delete restrict,
+  decision text not null check (decision in ('pending', 'approved', 'declined')),
+  legal_business_verified boolean not null default false,
+  representative_authority_verified boolean not null default false,
+  content_rights_verified boolean not null default false,
+  commercial_terms_acknowledgement_verified boolean not null default false,
+  evidence_summary text not null check (length(trim(evidence_summary)) between 3 and 2000),
+  created_at timestamptz not null default now(),
+  constraint partner_application_approval_evidence_check check (
+    decision <> 'approved'
+    or (
+      legal_business_verified
+      and representative_authority_verified
+      and content_rights_verified
+      and commercial_terms_acknowledgement_verified
+      and length(trim(evidence_summary)) >= 20
+    )
+  )
+);
+
+create index if not exists partner_application_review_evidence_application_idx
+  on public.partner_application_review_evidence (application_id, created_at desc);
+
+alter table public.partner_application_review_evidence enable row level security;
+revoke all on public.partner_application_review_evidence from public, anon, authenticated, service_role;
+grant select on public.partner_application_review_evidence to authenticated;
+grant select, insert on public.partner_application_review_evidence to service_role;
+
+drop policy if exists "Admins view partner application review evidence"
+  on public.partner_application_review_evidence;
+create policy "Admins view partner application review evidence"
+  on public.partner_application_review_evidence
+  for select to authenticated
+  using (exists (
+    select 1
+    from public.profiles
+    where profiles.id = auth.uid()
+      and profiles.role = 'admin'
+  ));
+
+create table if not exists public.property_commercial_review_evidence (
+  id uuid primary key default pg_catalog.gen_random_uuid(),
+  property_id uuid not null references public.properties(id) on delete restrict,
+  reviewer_id uuid not null references public.profiles(id) on delete restrict,
+  commercial_terms_version text not null
+    check (commercial_terms_version = 'hotel_partner_fee_disclosure_13_3_2026-08-22_v1'),
+  support_contact_email text not null
+    check (length(trim(support_contact_email)) between 3 and 254),
+  legal_business_verified boolean not null default false,
+  sole_owner_conflict_acknowledged boolean not null default false,
+  reviewer_is_partner_owner boolean not null,
+  commercial_terms_evidence_verified boolean not null default false,
+  support_contact_verified boolean not null default false,
+  evidence_summary text not null
+    check (length(trim(evidence_summary)) between 20 and 2000),
+  created_at timestamptz not null default now(),
+  constraint property_commercial_review_complete_check check (
+    legal_business_verified
+    and sole_owner_conflict_acknowledged
+    and commercial_terms_evidence_verified
+    and support_contact_verified
+  )
+);
+
+create index if not exists property_commercial_review_evidence_property_idx
+  on public.property_commercial_review_evidence (property_id, created_at desc);
+
+alter table public.property_commercial_review_evidence enable row level security;
+revoke all on public.property_commercial_review_evidence from public, anon, authenticated, service_role;
+grant select on public.property_commercial_review_evidence to authenticated;
+grant select, insert on public.property_commercial_review_evidence to service_role;
+
+drop policy if exists "Admins view property commercial review evidence"
+  on public.property_commercial_review_evidence;
+create policy "Admins view property commercial review evidence"
+  on public.property_commercial_review_evidence
+  for select to authenticated
+  using (exists (
+    select 1
+    from public.profiles
+    where profiles.id = auth.uid()
+      and profiles.role = 'admin'
+  ));
+
+-- Review records are append-only for every database role, including the
+-- service role. Corrections require a new evidence record rather than mutation.
+create or replace function public.prevent_commercial_review_evidence_mutation()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  raise exception 'Commercial review evidence is append-only'
+    using errcode = '55000';
+end;
+$$;
+
+revoke all on function public.prevent_commercial_review_evidence_mutation()
+  from public, anon, authenticated;
+
+drop trigger if exists partner_application_review_evidence_append_only
+  on public.partner_application_review_evidence;
+create trigger partner_application_review_evidence_append_only
+before update or delete on public.partner_application_review_evidence
+for each row execute function public.prevent_commercial_review_evidence_mutation();
+
+drop trigger if exists property_commercial_review_evidence_append_only
+  on public.property_commercial_review_evidence;
+create trigger property_commercial_review_evidence_append_only
+before update or delete on public.property_commercial_review_evidence
+for each row execute function public.prevent_commercial_review_evidence_mutation();
+
+-- Accountable internal owner review is deliberately separate from publication.
+-- The evidence explicitly records the sole-owner conflict and never claims an
+-- independent approval. The action always leaves the property inactive.
+create or replace function public.record_property_commercial_review(
+  p_property_id uuid,
+  p_commercial_terms_version text,
+  p_support_contact_email text,
+  p_legal_business_verified boolean,
+  p_sole_owner_conflict_acknowledged boolean,
+  p_commercial_terms_evidence_verified boolean,
+  p_support_contact_verified boolean,
+  p_review_notes text
+)
+returns public.properties
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_property public.properties;
+  v_partner_owner_id uuid;
+  v_partner_status text;
+  v_review record;
+begin
+  if not exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'admin'
+  ) then
+    raise exception 'Not authorized' using errcode = '42501';
+  end if;
+
+  select
+    properties as property_record,
+    partners.owner_id as partner_owner_id,
+    partners.status as partner_status
+  into v_review
+  from public.properties
+  join public.partners on partners.id = properties.partner_id
+  where properties.id = p_property_id
+  for update of properties;
+
+  if not found then
+    raise exception 'Property not found' using errcode = 'P0002';
+  end if;
+  v_property := v_review.property_record;
+  v_partner_owner_id := v_review.partner_owner_id;
+  v_partner_status := v_review.partner_status;
+  if v_partner_status <> 'approved' then
+    raise exception 'The partner must be approved before commercial verification'
+      using errcode = 'P0001';
+  end if;
+  if v_property.active then
+    raise exception 'Pause the property before commercial verification'
+      using errcode = 'P0001';
+  end if;
+  if not exists (
+    select 1
+    from public.partner_applications
+    where partner_applications.property_id = p_property_id
+      and partner_applications.status = 'approved'
+  ) then
+    raise exception 'An approved linked hotel application is required'
+      using errcode = 'P0001';
+  end if;
+  if not exists (
+    select 1
+    from public.partner_application_review_evidence
+    join public.partner_applications
+      on partner_applications.id = partner_application_review_evidence.application_id
+    where partner_applications.property_id = p_property_id
+      and partner_application_review_evidence.decision = 'approved'
+  ) then
+    raise exception 'Approved application review evidence is required'
+      using errcode = 'P0001';
+  end if;
+  if not p_legal_business_verified
+    or not p_sole_owner_conflict_acknowledged
+    or not p_commercial_terms_evidence_verified
+    or not p_support_contact_verified
+  then
+    raise exception 'Complete every accountable internal owner-review check'
+      using errcode = 'P0001';
+  end if;
+  if p_commercial_terms_version is distinct from 'hotel_partner_fee_disclosure_13_3_2026-08-22_v1'
+    or length(trim(coalesce(p_support_contact_email, ''))) not between 3 and 254
+    or p_support_contact_email !~* '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$'
+    or length(trim(coalesce(p_review_notes, ''))) not between 20 and 2000
+  then
+    raise exception 'Commercial review evidence is incomplete or invalid'
+      using errcode = '22023';
+  end if;
+
+  insert into public.property_commercial_review_evidence (
+    property_id,
+    reviewer_id,
+    commercial_terms_version,
+    support_contact_email,
+    legal_business_verified,
+    sole_owner_conflict_acknowledged,
+    reviewer_is_partner_owner,
+    commercial_terms_evidence_verified,
+    support_contact_verified,
+    evidence_summary
+  ) values (
+    p_property_id,
+    auth.uid(),
+    trim(p_commercial_terms_version),
+    lower(trim(p_support_contact_email)),
+    p_legal_business_verified,
+    p_sole_owner_conflict_acknowledged,
+    v_partner_owner_id = auth.uid(),
+    p_commercial_terms_evidence_verified,
+    p_support_contact_verified,
+    trim(p_review_notes)
+  );
+
+  update public.properties
+  set active = false,
+      listing_scope = 'commercial',
+      direct_request_mode = 'request_only',
+      commercial_terms_version = trim(p_commercial_terms_version),
+      commercial_verified_at = now(),
+      commercial_verified_by = auth.uid(),
+      support_contact_email = lower(trim(p_support_contact_email))
+  where id = p_property_id
+  returning * into v_property;
+
+  return v_property;
+end;
+$$;
+
+revoke all on function public.record_property_commercial_review(
+  uuid, text, text, boolean, boolean, boolean, boolean, text
+) from public, anon, service_role;
+grant execute on function public.record_property_commercial_review(
+  uuid, text, text, boolean, boolean, boolean, boolean, text
+) to authenticated;
+
+-- Publication is a separate administrator decision. The function locks and
+-- validates the complete property/room/inventory graph in one transaction.
+-- It does not create a reservation, payment, payout, credential, or provider
+-- request and it cannot advance the direct-request runtime switches.
+create or replace function public.set_property_publication_state(
+  p_property_id uuid,
+  p_active boolean
+)
+returns public.properties
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_property public.properties;
+begin
+  if not exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'admin'
+  ) then
+    raise exception 'Not authorized' using errcode = '42501';
+  end if;
+  if p_active is null then
+    raise exception 'A publication state is required' using errcode = '22023';
+  end if;
+
+  -- These table locks are intentionally coarse and short-lived. Publication is
+  -- rare; blocking concurrent room/inventory writes closes the insert race that
+  -- row locks over only the existing graph cannot prevent.
+  lock table public.rooms, public.inventory in share row exclusive mode;
+
+  select properties.*
+  into v_property
+  from public.properties
+  where properties.id = p_property_id
+  for update;
+
+  if not found then
+    raise exception 'Property not found' using errcode = 'P0002';
+  end if;
+
+  if not p_active then
+    update public.properties
+    set active = false
+    where id = p_property_id
+    returning * into v_property;
+    return v_property;
+  end if;
+
+  perform rooms.id
+  from public.rooms
+  where rooms.property_id = p_property_id
+  for update;
+  perform inventory.id
+  from public.inventory
+  join public.rooms on rooms.id = inventory.room_id
+  where rooms.property_id = p_property_id
+  for update of inventory;
+
+  if v_property.listing_scope is distinct from 'commercial'
+    or v_property.direct_request_mode is distinct from 'request_only'
+    or v_property.commercial_terms_version is distinct from
+      'hotel_partner_fee_disclosure_13_3_2026-08-22_v1'
+    or v_property.commercial_verified_at is null
+    or v_property.commercial_verified_by is null
+    or nullif(trim(v_property.support_contact_email), '') is null
+    or v_property.support_contact_email !~* '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$'
+    or v_property.star_rating is null
+    or v_property.star_rating not in (4, 5)
+    or nullif(trim(v_property.image_url), '') is null
+    or v_property.image_url !~* '^https://'
+    or coalesce(cardinality(v_property.amenities), 0) = 0
+    or not exists (
+      select 1 from public.partners
+      where partners.id = v_property.partner_id
+        and partners.status = 'approved'
+    )
+  then
+    raise exception 'The property does not satisfy the commercial publication guard'
+      using errcode = 'P0001';
+  end if;
+
+  if not exists (
+    select 1 from public.rooms
+    where rooms.property_id = p_property_id and rooms.active = true
+  ) or exists (
+    select 1
+    from public.rooms
+    where rooms.property_id = p_property_id
+      and rooms.active = true
+      and (
+        rooms.base_rate is null
+        or rooms.base_rate < 25 or rooms.base_rate > 25000
+        or rooms.max_guests is null
+        or rooms.max_guests < 1 or rooms.max_guests > 30
+        or nullif(trim(rooms.direct_rate_plan_code), '') is null
+        or nullif(trim(rooms.direct_rate_plan_name), '') is null
+        or rooms.direct_currency_code is distinct from 'USD'
+        or length(trim(coalesce(rooms.direct_cancellation_policy, ''))) < 10
+        or nullif(trim(rooms.direct_cancellation_policy_version), '') is null
+      )
+  ) then
+    raise exception 'Every active room requires valid direct rate and cancellation terms'
+      using errcode = 'P0001';
+  end if;
+
+  if exists (
+    select 1
+    from public.rooms
+    where rooms.property_id = p_property_id
+      and rooms.active = true
+      and not exists (
+        select 1
+        from public.inventory
+        where inventory.room_id = rooms.id
+          and inventory.stay_date >= current_date
+          and inventory.available_units between 1 and 500
+          and inventory.rate between 25 and 25000
+          and inventory.direct_tax_amount between 0 and 25000
+          and inventory.direct_mandatory_fee_amount between 0 and 25000
+      )
+  ) then
+    raise exception 'Every active room requires valid future sellable inventory with taxes and mandatory fees'
+      using errcode = 'P0001';
+  end if;
+
+  if not v_property.active then
+    insert into public.property_publication_authorizations (
+      transaction_id,
+      property_id,
+      authorized_by
+    ) values (
+      txid_current(),
+      p_property_id,
+      auth.uid()
+    )
+    on conflict (transaction_id, property_id) do update
+      set authorized_by = excluded.authorized_by,
+          created_at = now();
+  end if;
+
+  update public.properties
+  set active = true
+  where id = p_property_id
+  returning * into v_property;
+  return v_property;
+end;
+$$;
+
+revoke all on function public.set_property_publication_state(uuid, boolean)
+  from public, anon, service_role;
+grant execute on function public.set_property_publication_state(uuid, boolean)
+  to authenticated;
+
+-- A published property cannot have commercial room/rate/tax/policy evidence
+-- rewritten underneath the atomic review. Availability-only decrements and
+-- releases remain allowed for direct-request holds. Material edits require a
+-- separate administrator unpublish decision first.
+create or replace function public.enforce_published_hotel_commercial_stability()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_old_property_id uuid;
+  v_new_property_id uuid;
+  v_published boolean;
+begin
+  if tg_table_name = 'rooms' then
+    if tg_op <> 'INSERT' then v_old_property_id := old.property_id; end if;
+    if tg_op <> 'DELETE' then v_new_property_id := new.property_id; end if;
+    select exists (
+      select 1 from public.properties
+      where properties.id in (v_old_property_id, v_new_property_id)
+        and properties.active = true
+    ) into v_published;
+    if v_published and (
+      tg_op <> 'UPDATE'
+      or new.id is distinct from old.id
+      or new.property_id is distinct from old.property_id
+      or new.active is distinct from old.active
+      or new.base_rate is distinct from old.base_rate
+      or new.max_guests is distinct from old.max_guests
+      or new.direct_rate_plan_code is distinct from old.direct_rate_plan_code
+      or new.direct_rate_plan_name is distinct from old.direct_rate_plan_name
+      or new.direct_currency_code is distinct from old.direct_currency_code
+      or new.direct_cancellation_policy is distinct from old.direct_cancellation_policy
+      or new.direct_cancellation_policy_version is distinct from old.direct_cancellation_policy_version
+    ) then
+      raise exception 'Unpublish the property before changing commercial room terms'
+        using errcode = 'P0001';
+    end if;
+  else
+    if tg_op <> 'INSERT' then
+      select rooms.property_id into v_old_property_id
+      from public.rooms where rooms.id = old.room_id;
+    end if;
+    if tg_op <> 'DELETE' then
+      select rooms.property_id into v_new_property_id
+      from public.rooms where rooms.id = new.room_id;
+    end if;
+    select exists (
+      select 1 from public.properties
+      where properties.id in (v_old_property_id, v_new_property_id)
+        and properties.active = true
+    ) into v_published;
+    if v_published and (
+      tg_op <> 'UPDATE'
+      or new.id is distinct from old.id
+      or new.room_id is distinct from old.room_id
+      or new.stay_date is distinct from old.stay_date
+      or new.rate is distinct from old.rate
+      or new.direct_tax_amount is distinct from old.direct_tax_amount
+      or new.direct_mandatory_fee_amount is distinct from old.direct_mandatory_fee_amount
+    ) then
+      raise exception 'Unpublish the property before changing commercial inventory terms'
+        using errcode = 'P0001';
+    end if;
+  end if;
+
+  if tg_op = 'DELETE' then return old; end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.enforce_published_hotel_commercial_stability()
+  from public, anon, authenticated;
+drop trigger if exists enforce_published_hotel_room_stability on public.rooms;
+create trigger enforce_published_hotel_room_stability
+before insert or update or delete on public.rooms
+for each row execute function public.enforce_published_hotel_commercial_stability();
+drop trigger if exists enforce_published_hotel_inventory_stability on public.inventory;
+create trigger enforce_published_hotel_inventory_stability
+before insert or update or delete on public.inventory
+for each row execute function public.enforce_published_hotel_commercial_stability();
+
+-- Remove the legacy two-argument approval path so internal evidence cannot be
+-- bypassed. Approval creates only an inactive, quarantined property draft.
+drop function if exists public.review_partner_application(uuid, text);
+create or replace function public.review_partner_application(
+  p_application_id uuid,
+  p_status text,
+  p_legal_business_verified boolean,
+  p_representative_authority_verified boolean,
+  p_content_rights_verified boolean,
+  p_commercial_terms_acknowledgement_verified boolean,
+  p_review_notes text
+)
+returns public.partner_applications
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_application public.partner_applications;
+  v_user_id uuid;
+  v_partner_id uuid;
+  v_property_id uuid;
+  v_slug_base text;
+  v_slug text;
+begin
+  if not exists (
+    select 1
+    from public.profiles
+    where id = auth.uid() and role = 'admin'
+  ) then
+    raise exception 'Not authorized' using errcode = '42501';
+  end if;
+
+  if p_status not in ('pending', 'approved', 'declined') then
+    raise exception 'Invalid review decision' using errcode = '22023';
+  end if;
+  if length(trim(coalesce(p_review_notes, ''))) not between 3 and 2000 then
+    raise exception 'Record a review note between 3 and 2,000 characters'
+      using errcode = '22023';
+  end if;
+
+  select *
+  into v_application
+  from public.partner_applications
+  where id = p_application_id
+  for update;
+
+  if not found then
+    raise exception 'Partner application not found' using errcode = 'P0002';
+  end if;
+  if v_application.status = 'approved' and p_status <> 'approved' then
+    raise exception 'Approved partner access must be managed separately'
+      using errcode = 'P0001';
+  end if;
+
+  if p_status = 'approved' then
+    if v_application.legal_business_name is null
+      or v_application.star_rating not in (4, 5)
+      or v_application.contact_role is null
+      or v_application.phone is null
+      or v_application.support_contact_email is null
+      or v_application.website_url is null
+      or v_application.address_line1 is null
+      or v_application.city is null
+      or v_application.postal_code is null
+      or v_application.country_code is null
+      or v_application.description is null
+      or coalesce(cardinality(v_application.amenities), 0) = 0
+      or v_application.primary_image_url is null
+      or not v_application.representative_authority_confirmed
+      or not v_application.content_rights_confirmed
+      or not v_application.information_accurate
+      or not v_application.commercial_terms_acknowledged
+      or v_application.commercial_terms_version_acknowledged is distinct from
+        'hotel_partner_fee_disclosure_13_3_2026-08-22_v1'
+      or v_application.commercial_terms_acknowledged_at is null
+    then
+      raise exception 'Complete and verify the commercial hotel intake before approval'
+        using errcode = 'P0001';
+    end if;
+
+    if not p_legal_business_verified
+      or not p_representative_authority_verified
+      or not p_content_rights_verified
+      or not p_commercial_terms_acknowledgement_verified
+      or length(trim(p_review_notes)) < 20
+    then
+      raise exception 'Record all internal review evidence before approval'
+        using errcode = 'P0001';
+    end if;
+
+    select id
+    into v_user_id
+    from auth.users
+    where lower(email) = lower(v_application.email)
+    order by created_at
+    limit 1;
+
+    if v_user_id is null then
+      raise exception 'Applicant must register with the application email before approval'
+        using errcode = 'P0002';
+    end if;
+    update public.profiles
+    set role = case when role = 'admin' then role else 'partner'::public.user_role end
+    where id = v_user_id;
+
+    if not found then
+      raise exception 'The registered applicant profile could not be found'
+        using errcode = 'P0002';
+    end if;
+
+    insert into public.partners (owner_id, business_name, status)
+    values (v_user_id, v_application.legal_business_name, 'approved')
+    on conflict (owner_id) do update
+      set business_name = excluded.business_name,
+          status = 'approved'
+    returning id into v_partner_id;
+
+    if v_application.property_id is null then
+      v_slug_base := trim(both '-' from regexp_replace(
+        lower(trim(v_application.property_name)),
+        '[^a-z0-9]+',
+        '-',
+        'g'
+      ));
+      if v_slug_base = '' then
+        v_slug_base := 'hotel';
+      end if;
+      v_slug := v_slug_base;
+      if exists (select 1 from public.properties where slug = v_slug) then
+        v_slug := v_slug_base || '-' || substring(v_application.id::text, 1, 8);
+      end if;
+
+      insert into public.properties (
+        partner_id,
+        name,
+        slug,
+        type,
+        star_rating,
+        description,
+        image_url,
+        amenities,
+        city,
+        region,
+        country,
+        active,
+        listing_scope,
+        direct_request_mode,
+        support_contact_email
+      ) values (
+        v_partner_id,
+        v_application.property_name,
+        v_slug,
+        v_application.property_type,
+        v_application.star_rating,
+        v_application.description,
+        v_application.primary_image_url,
+        v_application.amenities,
+        v_application.city,
+        v_application.region,
+        v_application.country_code,
+        false,
+        'legacy_quarantined',
+        'disabled',
+        v_application.support_contact_email
+      ) returning id into v_property_id;
+
+      update public.partner_applications
+      set property_id = v_property_id
+      where id = p_application_id;
+    end if;
+  end if;
+
+  insert into public.partner_application_review_evidence (
+    application_id,
+    reviewer_id,
+    decision,
+    legal_business_verified,
+    representative_authority_verified,
+    content_rights_verified,
+    commercial_terms_acknowledgement_verified,
+    evidence_summary
+  ) values (
+    p_application_id,
+    auth.uid(),
+    p_status,
+    p_legal_business_verified,
+    p_representative_authority_verified,
+    p_content_rights_verified,
+    p_commercial_terms_acknowledgement_verified,
+    trim(p_review_notes)
+  );
+
+  update public.partner_applications
+  set status = p_status
+  where id = p_application_id
+  returning * into v_application;
+
+  return v_application;
+end;
+$$;
+
+revoke all on function public.review_partner_application(
+  uuid, text, boolean, boolean, boolean, boolean, text
+) from public, anon, service_role;
+grant execute on function public.review_partner_application(
+  uuid, text, boolean, boolean, boolean, boolean, text
+) to authenticated;
+
+comment on function public.review_partner_application(
+  uuid, text, boolean, boolean, boolean, boolean, text
+) is 'Records internal commercial-intake review evidence and creates only an inactive, legacy-quarantined draft; does not authorize publication, provider traffic, reservations, payments, payouts, or Production.';
+
+-- Canonical bootstrap parity: 202608220071_direct_hotel_request_foundation.sql
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'properties'
+      and column_name = 'listing_scope'
+  ) or not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'properties'
+      and column_name = 'direct_request_mode'
+  ) or not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'properties'
+      and column_name = 'commercial_terms_version'
+  ) or not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'properties'
+      and column_name = 'commercial_verified_at'
+  ) or not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'properties'
+      and column_name = 'commercial_verified_by'
+  ) or not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'properties'
+      and column_name = 'support_contact_email'
+  ) then
+    raise exception 'Migration 202608220070 property-classification fields are required before 202608220071';
+  end if;
+end;
+$$;
+
+alter table public.rooms
+  add column if not exists direct_rate_plan_code text,
+  add column if not exists direct_rate_plan_name text,
+  add column if not exists direct_currency_code text,
+  add column if not exists direct_cancellation_policy text,
+  add column if not exists direct_cancellation_policy_version text;
+
+alter table public.rooms
+  drop constraint if exists rooms_direct_currency_code_check,
+  add constraint rooms_direct_currency_code_check
+    check (direct_currency_code is null or direct_currency_code ~ '^[A-Z]{3}$'),
+  drop constraint if exists rooms_direct_rate_plan_code_length_check,
+  add constraint rooms_direct_rate_plan_code_length_check
+    check (direct_rate_plan_code is null or char_length(trim(direct_rate_plan_code)) between 1 and 80),
+  drop constraint if exists rooms_direct_rate_plan_name_length_check,
+  add constraint rooms_direct_rate_plan_name_length_check
+    check (direct_rate_plan_name is null or char_length(trim(direct_rate_plan_name)) between 1 and 160),
+  drop constraint if exists rooms_direct_cancellation_policy_length_check,
+  add constraint rooms_direct_cancellation_policy_length_check
+    check (direct_cancellation_policy is null or char_length(trim(direct_cancellation_policy)) between 10 and 2000),
+  drop constraint if exists rooms_direct_cancellation_version_length_check,
+  add constraint rooms_direct_cancellation_version_length_check
+    check (direct_cancellation_policy_version is null or char_length(trim(direct_cancellation_policy_version)) between 1 and 80);
+
+alter table public.inventory
+  add column if not exists direct_tax_amount numeric(12,2),
+  add column if not exists direct_mandatory_fee_amount numeric(12,2);
+
+alter table public.inventory
+  drop constraint if exists inventory_direct_tax_amount_bounds,
+  add constraint inventory_direct_tax_amount_bounds
+    check (direct_tax_amount is null or direct_tax_amount between 0 and 25000),
+  drop constraint if exists inventory_direct_mandatory_fee_bounds,
+  add constraint inventory_direct_mandatory_fee_bounds
+    check (direct_mandatory_fee_amount is null or direct_mandatory_fee_amount between 0 and 25000);
+
+create table public.direct_hotel_runtime_controls (
+  singleton boolean primary key default true check (singleton),
+  request_submission_enabled boolean not null default false,
+  partner_offers_enabled boolean not null default false,
+  expiry_worker_verified boolean not null default false,
+  transaction_kill_switch_engaged boolean not null default true,
+  booking_authority_enabled boolean not null default false,
+  payment_authority_enabled boolean not null default false,
+  reward_authority_enabled boolean not null default false,
+  payout_authority_enabled boolean not null default false,
+  supplier_traffic_enabled boolean not null default false,
+  updated_by uuid references public.profiles(id) on delete set null,
+  updated_at timestamptz not null default now(),
+  constraint direct_hotel_runtime_no_transactional_authority check (
+    not booking_authority_enabled
+    and not payment_authority_enabled
+    and not reward_authority_enabled
+    and not payout_authority_enabled
+    and not supplier_traffic_enabled
+  ),
+  constraint direct_hotel_lifecycle_expiry_dependency check (
+    not (request_submission_enabled or partner_offers_enabled)
+    or expiry_worker_verified
+  )
+);
+
+insert into public.direct_hotel_runtime_controls (singleton)
+values (true)
+on conflict (singleton) do nothing;
+
+alter table public.direct_hotel_runtime_controls enable row level security;
+revoke all on public.direct_hotel_runtime_controls from public, anon, authenticated;
+grant select on public.direct_hotel_runtime_controls to anon, authenticated;
+grant all on public.direct_hotel_runtime_controls to service_role;
+create policy "Read direct hotel runtime safety state"
+  on public.direct_hotel_runtime_controls for select to anon, authenticated
+  using (singleton);
+
+create table public.hotel_stay_requests (
+  id uuid primary key default gen_random_uuid(),
+  request_code text not null unique,
+  client_request_key uuid not null,
+  customer_id uuid not null references public.profiles(id) on delete restrict,
+  partner_id uuid not null references public.partners(id) on delete restrict,
+  property_id uuid not null references public.properties(id) on delete restrict,
+  room_id uuid not null references public.rooms(id) on delete restrict,
+  check_in date not null,
+  check_out date not null,
+  guests integer not null check (guests between 1 and 30),
+  lead_guest_full_name text not null check (char_length(trim(lead_guest_full_name)) between 2 and 120),
+  lead_guest_email text not null check (char_length(trim(lead_guest_email)) between 3 and 320),
+  lead_guest_phone text check (lead_guest_phone is null or char_length(trim(lead_guest_phone)) between 7 and 40),
+  special_requests text check (special_requests is null or char_length(special_requests) <= 1000),
+  currency_code text not null check (currency_code = 'USD'),
+  rate_plan_code text not null,
+  rate_plan_name text not null,
+  cancellation_policy text not null,
+  cancellation_policy_version text not null,
+  commercial_terms_version text not null,
+  room_subtotal numeric(12,2) not null check (room_subtotal >= 0),
+  tax_total numeric(12,2) not null check (tax_total >= 0),
+  mandatory_fee_total numeric(12,2) not null check (mandatory_fee_total >= 0),
+  all_in_total numeric(12,2) not null check (all_in_total >= 0),
+  status text not null default 'submitted'
+    check (status in ('submitted', 'offered', 'declined', 'withdrawn', 'expired')),
+  request_expires_at timestamptz not null,
+  offered_at timestamptz,
+  offer_expires_at timestamptz,
+  reviewed_by uuid references public.profiles(id) on delete set null,
+  decline_reason text check (decline_reason is null or char_length(trim(decline_reason)) between 3 and 500),
+  withdrawal_reason text check (withdrawal_reason is null or char_length(trim(withdrawal_reason)) between 3 and 500),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint hotel_stay_requests_dates_check check (check_out > check_in),
+  constraint hotel_stay_requests_total_check check (
+    all_in_total = room_subtotal + tax_total + mandatory_fee_total
+  ),
+  constraint hotel_stay_requests_offer_fields_check check (
+    (status = 'offered' and offered_at is not null and offer_expires_at is not null and reviewed_by is not null)
+    or status <> 'offered'
+  ),
+  unique (customer_id, client_request_key)
+);
+
+create unique index hotel_stay_requests_one_open_stay_idx
+  on public.hotel_stay_requests (customer_id, room_id, check_in, check_out)
+  where status in ('submitted', 'offered');
+create index hotel_stay_requests_customer_created_idx
+  on public.hotel_stay_requests (customer_id, created_at desc);
+create index hotel_stay_requests_partner_status_idx
+  on public.hotel_stay_requests (partner_id, status, check_in, created_at);
+create index hotel_stay_requests_expiry_idx
+  on public.hotel_stay_requests (status, request_expires_at, offer_expires_at)
+  where status in ('submitted', 'offered');
+
+create table public.hotel_stay_request_events (
+  id uuid primary key default gen_random_uuid(),
+  request_id uuid not null references public.hotel_stay_requests(id) on delete restrict,
+  event_type text not null
+    check (event_type in ('submitted', 'offered', 'declined', 'withdrawn', 'expired')),
+  from_status text check (from_status is null or from_status in ('submitted', 'offered', 'declined', 'withdrawn', 'expired')),
+  to_status text not null
+    check (to_status in ('submitted', 'offered', 'declined', 'withdrawn', 'expired')),
+  actor_id uuid references public.profiles(id) on delete set null,
+  note text check (note is null or char_length(note) <= 500),
+  created_at timestamptz not null default now()
+);
+
+create index hotel_stay_request_events_request_created_idx
+  on public.hotel_stay_request_events (request_id, created_at, id);
+
+create table public.hotel_inventory_holds (
+  id uuid primary key default gen_random_uuid(),
+  request_id uuid not null references public.hotel_stay_requests(id) on delete restrict,
+  inventory_id uuid not null references public.inventory(id) on delete restrict,
+  room_id uuid not null references public.rooms(id) on delete restrict,
+  stay_date date not null,
+  units integer not null default 1 check (units = 1),
+  available_units_before integer not null check (available_units_before between 1 and 500),
+  status text not null default 'active' check (status in ('active', 'released', 'expired')),
+  released_at timestamptz,
+  created_at timestamptz not null default now(),
+  unique (request_id, inventory_id),
+  unique (request_id, stay_date)
+);
+
+create index hotel_inventory_holds_active_request_idx
+  on public.hotel_inventory_holds (request_id, status, stay_date)
+  where status = 'active';
+
+create function public.enforce_direct_hotel_active_hold_inventory_immutability()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if (
+    new.available_units is distinct from old.available_units
+    or new.rate is distinct from old.rate
+    or new.direct_tax_amount is distinct from old.direct_tax_amount
+    or new.direct_mandatory_fee_amount is distinct from old.direct_mandatory_fee_amount
+  )
+  and coalesce(
+    current_setting('app.direct_hotel_inventory_mutation', true),
+    ''
+  ) <> 'authorized'
+  and exists (
+    select 1
+    from public.hotel_inventory_holds as hold_record
+    where hold_record.inventory_id = old.id
+      and hold_record.status = 'active'
+  ) then
+    raise exception 'Active direct hotel offer inventory is immutable until release or expiry'
+      using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.enforce_direct_hotel_active_hold_inventory_immutability()
+  from public, anon, authenticated;
+create trigger enforce_direct_hotel_active_hold_inventory_immutability
+before update of available_units, rate, direct_tax_amount, direct_mandatory_fee_amount
+on public.inventory
+for each row execute function public.enforce_direct_hotel_active_hold_inventory_immutability();
+
+alter table public.hotel_stay_requests enable row level security;
+alter table public.hotel_stay_request_events enable row level security;
+alter table public.hotel_inventory_holds enable row level security;
+
+revoke all on public.hotel_stay_requests from public, anon, authenticated;
+revoke all on public.hotel_stay_request_events from public, anon, authenticated;
+revoke all on public.hotel_inventory_holds from public, anon, authenticated;
+grant select on public.hotel_stay_requests to authenticated;
+grant select on public.hotel_stay_request_events to authenticated;
+grant select on public.hotel_inventory_holds to authenticated;
+grant all on public.hotel_stay_requests to service_role;
+grant all on public.hotel_stay_request_events to service_role;
+grant all on public.hotel_inventory_holds to service_role;
+
+create policy "Participants view direct hotel requests"
+  on public.hotel_stay_requests for select to authenticated
+  using (
+    customer_id = auth.uid()
+    or public.can_manage_partner_hotels(partner_id)
+    or exists (
+      select 1 from public.profiles
+      where profiles.id = auth.uid() and profiles.role = 'admin'
+    )
+  );
+
+create policy "Participants view direct hotel request events"
+  on public.hotel_stay_request_events for select to authenticated
+  using (exists (
+    select 1 from public.hotel_stay_requests
+    where hotel_stay_requests.id = hotel_stay_request_events.request_id
+  ));
+
+create policy "Participants view direct hotel holds"
+  on public.hotel_inventory_holds for select to authenticated
+  using (exists (
+    select 1 from public.hotel_stay_requests
+    where hotel_stay_requests.id = hotel_inventory_holds.request_id
+  ));
+
+create function public.prevent_direct_hotel_event_mutation()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  raise exception 'Direct hotel request events are immutable'
+    using errcode = '42501';
+end;
+$$;
+
+revoke all on function public.prevent_direct_hotel_event_mutation()
+  from public, anon, authenticated;
+
+create trigger prevent_direct_hotel_event_mutation
+before update or delete on public.hotel_stay_request_events
+for each row execute function public.prevent_direct_hotel_event_mutation();
+
+create function public.submit_direct_hotel_stay_request(
+  p_property_id uuid,
+  p_room_id uuid,
+  p_check_in date,
+  p_check_out date,
+  p_guests integer,
+  p_lead_guest_full_name text,
+  p_lead_guest_email text,
+  p_lead_guest_phone text,
+  p_special_requests text,
+  p_client_request_key uuid
+)
+returns public.hotel_stay_requests
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_request public.hotel_stay_requests;
+  v_partner_id uuid;
+  v_room_max_guests integer;
+  v_rate_plan_code text;
+  v_rate_plan_name text;
+  v_currency_code text;
+  v_cancellation_policy text;
+  v_cancellation_policy_version text;
+  v_commercial_terms_version text;
+  v_expected_nights integer;
+  v_inventory_count integer;
+  v_eligible_count integer;
+  v_room_subtotal numeric(12,2);
+  v_tax_total numeric(12,2);
+  v_mandatory_fee_total numeric(12,2);
+  v_authenticated_email text;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required' using errcode = '42501';
+  end if;
+  if not exists (
+    select 1 from public.direct_hotel_runtime_controls as runtime_control
+    where runtime_control.singleton
+      and runtime_control.request_submission_enabled
+      and runtime_control.expiry_worker_verified
+      and runtime_control.transaction_kill_switch_engaged
+      and not runtime_control.booking_authority_enabled
+      and not runtime_control.payment_authority_enabled
+      and not runtime_control.reward_authority_enabled
+      and not runtime_control.payout_authority_enabled
+      and not runtime_control.supplier_traffic_enabled
+  ) then
+    raise exception 'The database direct hotel request gate is closed'
+      using errcode = 'P0001';
+  end if;
+
+  select request_record.*
+  into v_request
+  from public.hotel_stay_requests as request_record
+  where request_record.customer_id = auth.uid()
+    and request_record.client_request_key = p_client_request_key;
+  if found then
+    return v_request;
+  end if;
+
+  v_authenticated_email := lower(trim(coalesce(auth.jwt() ->> 'email', '')));
+  if v_authenticated_email = ''
+    or lower(trim(coalesce(p_lead_guest_email, ''))) <> v_authenticated_email then
+    raise exception 'The lead guest email must match the authenticated account'
+      using errcode = '42501';
+  end if;
+  if char_length(trim(coalesce(p_lead_guest_full_name, ''))) not between 2 and 120 then
+    raise exception 'A valid lead guest name is required' using errcode = '22023';
+  end if;
+  if p_lead_guest_phone is not null
+    and char_length(trim(p_lead_guest_phone)) not between 7 and 40 then
+    raise exception 'Lead guest phone is invalid' using errcode = '22023';
+  end if;
+  if p_special_requests is not null and char_length(p_special_requests) > 1000 then
+    raise exception 'Special requests exceed the allowed length' using errcode = '22023';
+  end if;
+
+  v_expected_nights := p_check_out - p_check_in;
+  if p_check_in <= current_date
+    or v_expected_nights < 1
+    or v_expected_nights > 30
+    or p_check_in > current_date + 366 then
+    raise exception 'Choose a stay beginning after today and lasting between 1 and 30 nights'
+      using errcode = '22023';
+  end if;
+
+  select
+    property_record.partner_id,
+    room_record.max_guests,
+    room_record.direct_rate_plan_code,
+    room_record.direct_rate_plan_name,
+    room_record.direct_currency_code,
+    room_record.direct_cancellation_policy,
+    room_record.direct_cancellation_policy_version,
+    property_record.commercial_terms_version
+  into
+    v_partner_id,
+    v_room_max_guests,
+    v_rate_plan_code,
+    v_rate_plan_name,
+    v_currency_code,
+    v_cancellation_policy,
+    v_cancellation_policy_version,
+    v_commercial_terms_version
+  from public.properties as property_record
+  join public.partners as partner_record
+    on partner_record.id = property_record.partner_id
+  join public.rooms as room_record
+    on room_record.property_id = property_record.id
+  where property_record.id = p_property_id
+    and room_record.id = p_room_id
+    and property_record.active = true
+    and partner_record.status = 'approved'
+    and property_record.listing_scope = 'commercial'
+    and property_record.direct_request_mode = 'request_only'
+    and property_record.commercial_terms_version =
+      'hotel_partner_fee_disclosure_13_3_2026-08-22_v1'
+    and property_record.commercial_verified_at is not null
+    and property_record.commercial_verified_by is not null
+    and property_record.support_contact_email is not null
+    and room_record.active = true
+    and room_record.direct_rate_plan_code is not null
+    and room_record.direct_rate_plan_name is not null
+    and room_record.direct_currency_code = 'USD'
+    and room_record.direct_cancellation_policy is not null
+    and room_record.direct_cancellation_policy_version is not null;
+
+  if not found then
+    raise exception 'This property is not enabled for direct stay requests'
+      using errcode = 'P0002';
+  end if;
+  if p_guests < 1 or p_guests > v_room_max_guests then
+    raise exception 'Guest count exceeds this room capacity' using errcode = '22023';
+  end if;
+
+  select
+    count(*)::integer,
+    count(*) filter (
+      where inventory_record.available_units > 0
+        and inventory_record.direct_tax_amount is not null
+        and inventory_record.direct_mandatory_fee_amount is not null
+    )::integer,
+    coalesce(sum(inventory_record.rate), 0)::numeric(12,2),
+    coalesce(sum(inventory_record.direct_tax_amount), 0)::numeric(12,2),
+    coalesce(sum(inventory_record.direct_mandatory_fee_amount), 0)::numeric(12,2)
+  into
+    v_inventory_count,
+    v_eligible_count,
+    v_room_subtotal,
+    v_tax_total,
+    v_mandatory_fee_total
+  from public.inventory as inventory_record
+  where inventory_record.room_id = p_room_id
+    and inventory_record.stay_date >= p_check_in
+    and inventory_record.stay_date < p_check_out;
+
+  if v_inventory_count <> v_expected_nights or v_eligible_count <> v_expected_nights then
+    raise exception 'Complete priced availability is unavailable for this stay'
+      using errcode = 'P0001';
+  end if;
+
+  insert into public.hotel_stay_requests (
+    request_code,
+    client_request_key,
+    customer_id,
+    partner_id,
+    property_id,
+    room_id,
+    check_in,
+    check_out,
+    guests,
+    lead_guest_full_name,
+    lead_guest_email,
+    lead_guest_phone,
+    special_requests,
+    currency_code,
+    rate_plan_code,
+    rate_plan_name,
+    cancellation_policy,
+    cancellation_policy_version,
+    commercial_terms_version,
+    room_subtotal,
+    tax_total,
+    mandatory_fee_total,
+    all_in_total,
+    request_expires_at
+  ) values (
+    'HSR-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 12)),
+    p_client_request_key,
+    auth.uid(),
+    v_partner_id,
+    p_property_id,
+    p_room_id,
+    p_check_in,
+    p_check_out,
+    p_guests,
+    trim(p_lead_guest_full_name),
+    v_authenticated_email,
+    nullif(trim(p_lead_guest_phone), ''),
+    nullif(trim(p_special_requests), ''),
+    v_currency_code,
+    v_rate_plan_code,
+    v_rate_plan_name,
+    v_cancellation_policy,
+    v_cancellation_policy_version,
+    v_commercial_terms_version,
+    v_room_subtotal,
+    v_tax_total,
+    v_mandatory_fee_total,
+    v_room_subtotal + v_tax_total + v_mandatory_fee_total,
+    least(now() + interval '48 hours', p_check_in::timestamptz)
+  )
+  on conflict (customer_id, client_request_key) do nothing
+  returning * into v_request;
+
+  if not found then
+    select request_record.*
+    into v_request
+    from public.hotel_stay_requests as request_record
+    where request_record.customer_id = auth.uid()
+      and request_record.client_request_key = p_client_request_key;
+    return v_request;
+  end if;
+
+  insert into public.hotel_stay_request_events (
+    request_id, event_type, from_status, to_status, actor_id, note
+  ) values (
+    v_request.id, 'submitted', null, 'submitted', auth.uid(),
+    'Stay request submitted. No reservation or payment was created.'
+  );
+
+  return v_request;
+end;
+$$;
+
+create function public.release_direct_hotel_request_holds(
+  p_request_id uuid,
+  p_release_status text
+)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_hold public.hotel_inventory_holds;
+  v_expected_nights integer;
+  v_active_holds integer;
+  v_released integer := 0;
+begin
+  if p_release_status not in ('released', 'expired') then
+    raise exception 'Invalid hold release status' using errcode = '22023';
+  end if;
+
+  select request_record.check_out - request_record.check_in
+  into v_expected_nights
+  from public.hotel_stay_requests as request_record
+  where request_record.id = p_request_id;
+
+  select count(*)::integer
+  into v_active_holds
+  from public.hotel_inventory_holds as hold_record
+  where hold_record.request_id = p_request_id
+    and hold_record.status = 'active';
+
+  if v_expected_nights is null or v_active_holds <> v_expected_nights then
+    raise exception 'The exact active nightly hold set is unavailable'
+      using errcode = 'P0001';
+  end if;
+
+  perform set_config(
+    'app.direct_hotel_inventory_mutation',
+    'authorized',
+    true
+  );
+
+  for v_hold in
+    select hold_record.*
+    from public.hotel_inventory_holds as hold_record
+    where hold_record.request_id = p_request_id
+      and hold_record.status = 'active'
+    order by hold_record.stay_date, hold_record.id
+    for update
+  loop
+    update public.hotel_inventory_holds as hold_record
+    set status = p_release_status,
+        released_at = now()
+    where hold_record.id = v_hold.id
+      and hold_record.status = 'active';
+    if not found then
+      raise exception 'A nightly hold was already released'
+        using errcode = 'P0001';
+    end if;
+
+    update public.inventory as inventory_record
+    set available_units = inventory_record.available_units + v_hold.units
+    where inventory_record.id = v_hold.inventory_id
+      and inventory_record.room_id = v_hold.room_id
+      and inventory_record.stay_date = v_hold.stay_date;
+    if not found then
+      raise exception 'A held inventory night could not be restored'
+        using errcode = 'P0001';
+    end if;
+    v_released := v_released + 1;
+  end loop;
+
+  perform set_config('app.direct_hotel_inventory_mutation', '', true);
+
+  return v_released;
+end;
+$$;
+
+revoke all on function public.release_direct_hotel_request_holds(uuid, text)
+  from public, anon, authenticated, service_role;
+
+create function public.review_direct_hotel_stay_request(
+  p_request_id uuid,
+  p_decision text,
+  p_reason text default null,
+  p_offer_expires_at timestamptz default null
+)
+returns public.hotel_stay_requests
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_request public.hotel_stay_requests;
+  v_expected_nights integer;
+  v_inventory_count integer;
+  v_eligible_count integer;
+  v_updated_count integer;
+  v_room_subtotal numeric(12,2);
+  v_tax_total numeric(12,2);
+  v_mandatory_fee_total numeric(12,2);
+  v_rate_plan_code text;
+  v_rate_plan_name text;
+  v_currency_code text;
+  v_cancellation_policy text;
+  v_cancellation_policy_version text;
+  v_commercial_terms_version text;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required' using errcode = '42501';
+  end if;
+  if not exists (
+    select 1 from public.direct_hotel_runtime_controls as runtime_control
+    where runtime_control.singleton
+      and runtime_control.partner_offers_enabled
+      and runtime_control.expiry_worker_verified
+      and runtime_control.transaction_kill_switch_engaged
+      and not runtime_control.booking_authority_enabled
+      and not runtime_control.payment_authority_enabled
+      and not runtime_control.reward_authority_enabled
+      and not runtime_control.payout_authority_enabled
+      and not runtime_control.supplier_traffic_enabled
+  ) then
+    raise exception 'The database direct hotel offer gate is closed'
+      using errcode = 'P0001';
+  end if;
+  if p_decision not in ('offer', 'decline') then
+    raise exception 'Choose offer or decline' using errcode = '22023';
+  end if;
+
+  select request_record.*
+  into v_request
+  from public.hotel_stay_requests as request_record
+  where request_record.id = p_request_id
+    and (
+      public.can_manage_partner_hotels(request_record.partner_id)
+      or exists (
+        select 1 from public.profiles
+        where profiles.id = auth.uid() and profiles.role = 'admin'
+      )
+    )
+  for update;
+
+  if not found then
+    raise exception 'Stay request not found' using errcode = 'P0002';
+  end if;
+  if v_request.status <> 'submitted' then
+    raise exception 'Only a submitted request can be reviewed' using errcode = '22023';
+  end if;
+  if v_request.request_expires_at <= now() then
+    raise exception 'This stay request expired before review'
+      using errcode = 'P0001';
+  end if;
+
+  if p_decision = 'decline' then
+    if char_length(trim(coalesce(p_reason, ''))) not between 3 and 500 then
+      raise exception 'A decline reason between 3 and 500 characters is required'
+        using errcode = '22023';
+    end if;
+    update public.hotel_stay_requests as request_record
+    set status = 'declined',
+        reviewed_by = auth.uid(),
+        decline_reason = trim(p_reason),
+        updated_at = now()
+    where request_record.id = v_request.id
+    returning * into v_request;
+    insert into public.hotel_stay_request_events (
+      request_id, event_type, from_status, to_status, actor_id, note
+    ) values (
+      v_request.id, 'declined', 'submitted', 'declined', auth.uid(), trim(p_reason)
+    );
+    return v_request;
+  end if;
+
+  if p_offer_expires_at is null
+    or p_offer_expires_at < now() + interval '15 minutes'
+    or p_offer_expires_at > now() + interval '48 hours'
+    or p_offer_expires_at >= v_request.check_in::timestamptz then
+    raise exception 'Offer expiry must be 15 minutes to 48 hours away and before check-in'
+      using errcode = '22023';
+  end if;
+
+  select
+    room_record.direct_rate_plan_code,
+    room_record.direct_rate_plan_name,
+    room_record.direct_currency_code,
+    room_record.direct_cancellation_policy,
+    room_record.direct_cancellation_policy_version,
+    property_record.commercial_terms_version
+  into
+    v_rate_plan_code,
+    v_rate_plan_name,
+    v_currency_code,
+    v_cancellation_policy,
+    v_cancellation_policy_version,
+    v_commercial_terms_version
+  from public.properties as property_record
+  join public.partners as partner_record
+    on partner_record.id = property_record.partner_id
+  join public.rooms as room_record
+    on room_record.property_id = property_record.id
+  where property_record.id = v_request.property_id
+    and room_record.id = v_request.room_id
+    and property_record.partner_id = v_request.partner_id
+    and property_record.active = true
+    and partner_record.status = 'approved'
+    and property_record.listing_scope = 'commercial'
+    and property_record.direct_request_mode = 'request_only'
+    and property_record.commercial_verified_at is not null
+    and property_record.commercial_verified_by is not null
+    and property_record.support_contact_email is not null
+    and room_record.active = true;
+
+  if not found
+    or v_currency_code <> 'USD'
+    or v_rate_plan_code is distinct from v_request.rate_plan_code
+    or v_rate_plan_name is distinct from v_request.rate_plan_name
+    or v_cancellation_policy is distinct from v_request.cancellation_policy
+    or v_cancellation_policy_version is distinct from v_request.cancellation_policy_version
+    or v_commercial_terms_version is distinct from v_request.commercial_terms_version then
+    raise exception 'The property terms changed; ask the traveler to submit a new request'
+      using errcode = 'P0001';
+  end if;
+
+  v_expected_nights := v_request.check_out - v_request.check_in;
+  perform 1
+  from public.inventory as inventory_record
+  where inventory_record.room_id = v_request.room_id
+    and inventory_record.stay_date >= v_request.check_in
+    and inventory_record.stay_date < v_request.check_out
+  order by inventory_record.stay_date, inventory_record.id
+  for update;
+
+  select
+    count(*)::integer,
+    count(*) filter (
+      where inventory_record.available_units > 0
+        and inventory_record.direct_tax_amount is not null
+        and inventory_record.direct_mandatory_fee_amount is not null
+    )::integer,
+    coalesce(sum(inventory_record.rate), 0)::numeric(12,2),
+    coalesce(sum(inventory_record.direct_tax_amount), 0)::numeric(12,2),
+    coalesce(sum(inventory_record.direct_mandatory_fee_amount), 0)::numeric(12,2)
+  into
+    v_inventory_count,
+    v_eligible_count,
+    v_room_subtotal,
+    v_tax_total,
+    v_mandatory_fee_total
+  from public.inventory as inventory_record
+  where inventory_record.room_id = v_request.room_id
+    and inventory_record.stay_date >= v_request.check_in
+    and inventory_record.stay_date < v_request.check_out;
+
+  if v_inventory_count <> v_expected_nights
+    or v_eligible_count <> v_expected_nights
+    or v_room_subtotal <> v_request.room_subtotal
+    or v_tax_total <> v_request.tax_total
+    or v_mandatory_fee_total <> v_request.mandatory_fee_total then
+    raise exception 'Availability or all-in pricing changed; ask the traveler to submit a new request'
+      using errcode = 'P0001';
+  end if;
+
+  perform set_config(
+    'app.direct_hotel_inventory_mutation',
+    'authorized',
+    true
+  );
+  update public.inventory as inventory_record
+  set available_units = inventory_record.available_units - 1
+  where inventory_record.room_id = v_request.room_id
+    and inventory_record.stay_date >= v_request.check_in
+    and inventory_record.stay_date < v_request.check_out
+    and inventory_record.available_units > 0;
+  get diagnostics v_updated_count = row_count;
+  if v_updated_count <> v_expected_nights then
+    raise exception 'Inventory changed while the offer was being prepared'
+      using errcode = 'P0001';
+  end if;
+  perform set_config('app.direct_hotel_inventory_mutation', '', true);
+
+  insert into public.hotel_inventory_holds (
+    request_id,
+    inventory_id,
+    room_id,
+    stay_date,
+    available_units_before
+  )
+  select
+    v_request.id,
+    inventory_record.id,
+    inventory_record.room_id,
+    inventory_record.stay_date,
+    inventory_record.available_units + 1
+  from public.inventory as inventory_record
+  where inventory_record.room_id = v_request.room_id
+    and inventory_record.stay_date >= v_request.check_in
+    and inventory_record.stay_date < v_request.check_out
+  order by inventory_record.stay_date;
+
+  update public.hotel_stay_requests as request_record
+  set status = 'offered',
+      offered_at = now(),
+      offer_expires_at = p_offer_expires_at,
+      reviewed_by = auth.uid(),
+      updated_at = now()
+  where request_record.id = v_request.id
+  returning * into v_request;
+
+  insert into public.hotel_stay_request_events (
+    request_id, event_type, from_status, to_status, actor_id, note
+  ) values (
+    v_request.id, 'offered', 'submitted', 'offered', auth.uid(),
+    'Property offered the quoted stay. This is not a reservation and no payment was collected.'
+  );
+
+  return v_request;
+end;
+$$;
+
+create function public.withdraw_direct_hotel_stay_request(
+  p_request_id uuid,
+  p_reason text default null
+)
+returns public.hotel_stay_requests
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_request public.hotel_stay_requests;
+  v_from_status text;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required' using errcode = '42501';
+  end if;
+  if p_reason is not null and char_length(trim(p_reason)) not between 3 and 500 then
+    raise exception 'Withdrawal reason must be between 3 and 500 characters'
+      using errcode = '22023';
+  end if;
+
+  select request_record.*
+  into v_request
+  from public.hotel_stay_requests as request_record
+  where request_record.id = p_request_id
+    and request_record.customer_id = auth.uid()
+  for update;
+
+  if not found then
+    raise exception 'Stay request not found' using errcode = 'P0002';
+  end if;
+  if v_request.status not in ('submitted', 'offered') then
+    raise exception 'This stay request can no longer be withdrawn' using errcode = '22023';
+  end if;
+
+  v_from_status := v_request.status;
+  if v_request.status = 'offered' then
+    perform public.release_direct_hotel_request_holds(v_request.id, 'released');
+  end if;
+
+  update public.hotel_stay_requests as request_record
+  set status = 'withdrawn',
+      withdrawal_reason = nullif(trim(p_reason), ''),
+      updated_at = now()
+  where request_record.id = v_request.id
+  returning * into v_request;
+
+  insert into public.hotel_stay_request_events (
+    request_id, event_type, from_status, to_status, actor_id, note
+  ) values (
+    v_request.id, 'withdrawn', v_from_status, 'withdrawn', auth.uid(),
+    coalesce(nullif(trim(p_reason), ''), 'Withdrawn by traveler')
+  );
+  return v_request;
+end;
+$$;
+
+create function public.expire_direct_hotel_stay_requests(
+  p_limit integer default 100
+)
+returns integer
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_request public.hotel_stay_requests;
+  v_expired integer := 0;
+begin
+  if p_limit < 1 or p_limit > 500 then
+    raise exception 'Expiry batch limit must be between 1 and 500'
+      using errcode = '22023';
+  end if;
+
+  for v_request in
+    select request_record.*
+    from public.hotel_stay_requests as request_record
+    where (
+      request_record.status = 'submitted'
+      and request_record.request_expires_at <= now()
+    ) or (
+      request_record.status = 'offered'
+      and request_record.offer_expires_at <= now()
+    )
+    order by coalesce(request_record.offer_expires_at, request_record.request_expires_at), request_record.id
+    limit p_limit
+    for update skip locked
+  loop
+    if v_request.status = 'offered' then
+      perform public.release_direct_hotel_request_holds(v_request.id, 'expired');
+    end if;
+    update public.hotel_stay_requests as request_record
+    set status = 'expired',
+        updated_at = now()
+    where request_record.id = v_request.id;
+    insert into public.hotel_stay_request_events (
+      request_id, event_type, from_status, to_status, actor_id, note
+    ) values (
+      v_request.id, 'expired', v_request.status, 'expired', null,
+      'Stay request expired. Any local nightly hold was restored exactly once.'
+    );
+    v_expired := v_expired + 1;
+  end loop;
+  return v_expired;
+end;
+$$;
+
+revoke all on function public.submit_direct_hotel_stay_request(
+  uuid, uuid, date, date, integer, text, text, text, text, uuid
+) from public, anon, service_role;
+grant execute on function public.submit_direct_hotel_stay_request(
+  uuid, uuid, date, date, integer, text, text, text, text, uuid
+) to authenticated;
+
+revoke all on function public.review_direct_hotel_stay_request(
+  uuid, text, text, timestamptz
+) from public, anon, service_role;
+grant execute on function public.review_direct_hotel_stay_request(
+  uuid, text, text, timestamptz
+) to authenticated;
+
+revoke all on function public.withdraw_direct_hotel_stay_request(uuid, text)
+  from public, anon, service_role;
+grant execute on function public.withdraw_direct_hotel_stay_request(uuid, text)
+  to authenticated;
+
+revoke all on function public.expire_direct_hotel_stay_requests(integer)
+  from public, anon, authenticated;
+grant execute on function public.expire_direct_hotel_stay_requests(integer)
+  to service_role;
+
+comment on table public.hotel_stay_requests is
+  'Non-transactional direct-hotel request/offer records. These rows are not bookings, confirmations, reservations, payments, rewards, payouts, or supplier reservations.';
+comment on table public.direct_hotel_runtime_controls is
+  'Database-enforced, fail-closed request and offer gates. Transactional authority is structurally false in this migration.';
+comment on table public.hotel_inventory_holds is
+  'One local nightly unit per offered request. Holds are restored exactly once on withdrawal or expiry and never create an external reservation.';
+comment on function public.review_direct_hotel_stay_request(uuid, text, text, timestamptz) is
+  'Allows an authorized hotel manager to decline or make a time-limited non-binding offer. There is deliberately no accept or booking transition.';
+
+-- Canonical bootstrap parity: 202608220072_ai_hotel_planner_user_quota.sql
+-- A durable, authenticated per-user quota prevents one caller from consuming
+-- the shared OpenAI budget or poisoning a global request queue. This table is
+-- service-role-only and stores no prompts, hotel choices, or provider output.
+create table public.ai_hotel_planner_quota_windows (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  window_started_at timestamptz not null,
+  request_count integer not null check (request_count between 1 and 5),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.ai_hotel_planner_quota_windows enable row level security;
+revoke all on public.ai_hotel_planner_quota_windows
+  from public, anon, authenticated;
+grant all on public.ai_hotel_planner_quota_windows to service_role;
+
+create or replace function public.reserve_ai_hotel_planner_quota(
+  p_user_id uuid
+)
+returns table (
+  allowed boolean,
+  retry_after_seconds integer
+)
+language plpgsql
+security definer
+set search_path = pg_catalog, public
+as $$
+declare
+  v_now timestamptz := clock_timestamp();
+  v_window_started_at timestamptz;
+  v_request_count integer;
+  v_window interval := interval '10 minutes';
+  v_limit integer := 5;
+begin
+  if p_user_id is null
+    or not exists (select 1 from auth.users where id = p_user_id) then
+    raise exception 'A verified authenticated user is required for AI hotel planner quota'
+      using errcode = '22023';
+  end if;
+
+  perform pg_advisory_xact_lock(
+    hashtextextended('ai-hotel-planner:' || p_user_id::text, 0)
+  );
+
+  select quota.window_started_at, quota.request_count
+  into v_window_started_at, v_request_count
+  from public.ai_hotel_planner_quota_windows as quota
+  where quota.user_id = p_user_id
+  for update;
+
+  if not found or v_window_started_at <= v_now - v_window then
+    insert into public.ai_hotel_planner_quota_windows (
+      user_id,
+      window_started_at,
+      request_count,
+      updated_at
+    ) values (
+      p_user_id,
+      v_now,
+      1,
+      v_now
+    )
+    on conflict (user_id) do update
+      set window_started_at = excluded.window_started_at,
+          request_count = excluded.request_count,
+          updated_at = excluded.updated_at;
+    return query select true, 0;
+    return;
+  end if;
+
+  if v_request_count >= v_limit then
+    return query select
+      false,
+      greatest(
+        1,
+        ceil(extract(epoch from (v_window_started_at + v_window - v_now)))::integer
+      );
+    return;
+  end if;
+
+  update public.ai_hotel_planner_quota_windows as quota
+  set request_count = quota.request_count + 1,
+      updated_at = v_now
+  where quota.user_id = p_user_id;
+
+  return query select true, 0;
+end;
+$$;
+
+revoke all on function public.reserve_ai_hotel_planner_quota(uuid)
+  from public, anon, authenticated;
+grant execute on function public.reserve_ai_hotel_planner_quota(uuid)
+  to service_role;
+
+create view public.ai_hotel_planner_runtime_readiness
+with (security_invoker = true)
+as
+select
+  to_regclass('public.ai_hotel_planner_quota_windows') is not null
+    as quota_table_ready,
+  to_regprocedure('public.reserve_ai_hotel_planner_quota(uuid)') is not null
+    as quota_function_ready;
+revoke all on public.ai_hotel_planner_runtime_readiness
+  from public, anon, authenticated;
+grant select on public.ai_hotel_planner_runtime_readiness to service_role;
+
+comment on function public.reserve_ai_hotel_planner_quota(uuid) is
+  'Atomically allows at most five AI hotel planner attempts per authenticated user in ten minutes. It grants no provider, booking, payment, or Production authority.';
+
+-- Canonical bootstrap parity: 202608220073_legacy_hotel_transaction_barrier.sql
+-- A database-enforced hold for the legacy booking/payment workflow. Application
+-- environment flags are defense in depth; this singleton is the authoritative
+-- barrier against direct RPC or service-layer mutation.
+create table if not exists public.hotel_legacy_transaction_controls (
+  singleton boolean primary key default true check (singleton),
+  booking_approval_enabled boolean not null default false,
+  payment_finalization_enabled boolean not null default false,
+  reward_issuance_enabled boolean not null default false,
+  partner_connect_onboarding_enabled boolean not null default false,
+  partner_payout_enabled boolean not null default false,
+  change_reference text,
+  updated_by uuid references public.profiles(id) on delete restrict,
+  updated_at timestamptz not null default now(),
+  constraint hotel_legacy_transaction_control_dependency check (
+    (not booking_approval_enabled or reward_issuance_enabled)
+    and (not payment_finalization_enabled or booking_approval_enabled)
+    and (not partner_payout_enabled or payment_finalization_enabled)
+  )
+);
+
+insert into public.hotel_legacy_transaction_controls (
+  singleton,
+  booking_approval_enabled,
+  payment_finalization_enabled,
+  reward_issuance_enabled,
+  partner_connect_onboarding_enabled,
+  partner_payout_enabled,
+  change_reference
+) values (true, false, false, false, false, false, 'initial_fail_closed_hold')
+on conflict (singleton) do nothing;
+
+alter table public.hotel_legacy_transaction_controls enable row level security;
+revoke all on public.hotel_legacy_transaction_controls from public, anon, authenticated;
+grant select on public.hotel_legacy_transaction_controls to authenticated;
+grant all on public.hotel_legacy_transaction_controls to service_role;
+
+drop policy if exists "Admins view legacy hotel transaction controls"
+  on public.hotel_legacy_transaction_controls;
+create policy "Admins view legacy hotel transaction controls"
+  on public.hotel_legacy_transaction_controls
+  for select to authenticated
+  using (exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  ));
+
+create or replace function public.enforce_legacy_hotel_booking_barrier()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_approval_enabled boolean := false;
+  v_payment_enabled boolean := false;
+begin
+  select booking_approval_enabled, payment_finalization_enabled
+  into v_approval_enabled, v_payment_enabled
+  from public.hotel_legacy_transaction_controls
+  where singleton = true;
+
+  if tg_op = 'INSERT' then
+    if new.status = 'confirmed' and not coalesce(v_approval_enabled, false) then
+      raise exception 'Legacy hotel booking approval is disabled'
+        using errcode = '55000';
+    end if;
+    if new.stripe_payment_intent_id is not null
+      and not coalesce(v_payment_enabled, false)
+    then
+      raise exception 'Legacy hotel payment finalization is disabled'
+        using errcode = '55000';
+    end if;
+    return new;
+  end if;
+
+  if new.status = 'confirmed'
+    and new.status is distinct from old.status
+    and not coalesce(v_approval_enabled, false)
+  then
+    raise exception 'Legacy hotel booking approval is disabled'
+      using errcode = '55000';
+  end if;
+  if new.stripe_payment_intent_id is not null
+    and new.stripe_payment_intent_id is distinct from old.stripe_payment_intent_id
+    and not coalesce(v_payment_enabled, false)
+  then
+    raise exception 'Legacy hotel payment finalization is disabled'
+      using errcode = '55000';
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.enforce_legacy_hotel_booking_barrier()
+  from public, anon, authenticated;
+drop trigger if exists enforce_legacy_hotel_booking_barrier on public.bookings;
+create trigger enforce_legacy_hotel_booking_barrier
+before insert or update of status, stripe_payment_intent_id on public.bookings
+for each row execute function public.enforce_legacy_hotel_booking_barrier();
+
+create or replace function public.enforce_legacy_hotel_financial_barrier()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_approval_enabled boolean := false;
+  v_payment_enabled boolean := false;
+  v_payout_enabled boolean := false;
+begin
+  select booking_approval_enabled, payment_finalization_enabled, partner_payout_enabled
+  into v_approval_enabled, v_payment_enabled, v_payout_enabled
+  from public.hotel_legacy_transaction_controls
+  where singleton = true;
+
+  if tg_op = 'INSERT' and not coalesce(v_approval_enabled, false) then
+    raise exception 'Legacy hotel financial creation is disabled'
+      using errcode = '55000';
+  end if;
+  if new.status in ('eligible', 'paid')
+    and (tg_op = 'INSERT' or new.status is distinct from old.status)
+    and not coalesce(v_payment_enabled, false)
+  then
+    raise exception 'Legacy hotel payment finalization is disabled'
+      using errcode = '55000';
+  end if;
+  if new.status = 'paid'
+    and (tg_op = 'INSERT' or new.status is distinct from old.status)
+    and not coalesce(v_payout_enabled, false)
+  then
+    raise exception 'Legacy hotel partner payout authority is disabled'
+      using errcode = '55000';
+  end if;
+  -- Void/reversal updates remain available so an existing customer payment can
+  -- still be refunded while new transaction authority is held.
+  return new;
+end;
+$$;
+
+revoke all on function public.enforce_legacy_hotel_financial_barrier()
+  from public, anon, authenticated;
+drop trigger if exists enforce_legacy_hotel_financial_barrier
+  on public.booking_financials;
+create trigger enforce_legacy_hotel_financial_barrier
+before insert or update of status on public.booking_financials
+for each row execute function public.enforce_legacy_hotel_financial_barrier();
+
+create or replace function public.enforce_legacy_hotel_reward_barrier()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_reward_enabled boolean := false;
+begin
+  select reward_issuance_enabled
+  into v_reward_enabled
+  from public.hotel_legacy_transaction_controls
+  where singleton = true;
+  if new.booking_id is not null
+    and new.points > (
+      case
+        when tg_op = 'UPDATE' and new.booking_id is not distinct from old.booking_id
+          then old.points
+        else 0
+      end
+    )
+    and not coalesce(v_reward_enabled, false)
+  then
+    raise exception 'Legacy hotel reward issuance authority is disabled'
+      using errcode = '55000';
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.enforce_legacy_hotel_reward_barrier()
+  from public, anon, authenticated;
+drop trigger if exists enforce_legacy_hotel_reward_barrier
+  on public.reward_ledger;
+create trigger enforce_legacy_hotel_reward_barrier
+before insert or update of booking_id, points on public.reward_ledger
+for each row execute function public.enforce_legacy_hotel_reward_barrier();
+
+comment on table public.hotel_legacy_transaction_controls is
+  'Authoritative fail-closed database hold for the legacy booking and payment path. Direct-hotel request/offer records are outside this transaction authority.';
+
+-- Canonical bootstrap parity: 202608220074_email_delivery_integrity_controls.sql
+create or replace function public.derive_email_logical_dedupe_key(
+  p_template_data jsonb
+)
+returns text
+language sql
+immutable
+parallel safe
+set search_path = ''
+as $$
+  select case
+    when jsonb_typeof(p_template_data -> 'dedupe_key') = 'string'
+      and p_template_data ->> 'dedupe_key' = btrim(
+        p_template_data ->> 'dedupe_key'
+      )
+      and char_length(p_template_data ->> 'dedupe_key') between 1 and 200
+    then btrim(p_template_data ->> 'dedupe_key')
+    else null
+  end;
+$$;
+
+revoke all on function public.derive_email_logical_dedupe_key(jsonb)
+  from public, anon, authenticated;
+grant execute on function public.derive_email_logical_dedupe_key(jsonb)
+  to service_role;
+
+-- Serialize the duplicate preflight with outbox writers. Existing rows are
+-- retained. A missing or malformed dedupe key remains unclaimable; a row with
+-- a valid key is still subject to the worker's fail-closed payload validation.
+lock table public.email_outbox, public.email_delivery_events
+  in share row exclusive mode;
+
+do $$
+declare
+  v_duplicate_key_groups bigint;
+begin
+  select count(*)
+  into v_duplicate_key_groups
+  from (
+    select public.derive_email_logical_dedupe_key(
+      template_data
+    ) as logical_dedupe_key
+    from public.email_outbox
+    where public.derive_email_logical_dedupe_key(template_data) is not null
+    group by public.derive_email_logical_dedupe_key(template_data)
+    having count(*) > 1
+  ) as duplicate_groups;
+
+  if v_duplicate_key_groups > 0 then
+    raise exception
+      'Email logical-deduplication preflight failed: % duplicate key group(s)',
+      v_duplicate_key_groups
+      using
+        errcode = '23505',
+        hint = 'Resolve duplicate logical keys under a separate reviewed data-change gate before applying migration 202608220074.';
+  end if;
+end;
+$$;
+
+alter table public.email_outbox
+  add column logical_dedupe_key text generated always as (
+    public.derive_email_logical_dedupe_key(template_data)
+  ) stored;
+
+create unique index email_outbox_logical_dedupe_key_key
+  on public.email_outbox (logical_dedupe_key)
+  where logical_dedupe_key is not null;
+
+-- Keep every safety allowlist and state matrix in an immutable function whose
+-- exact source is pinned by the runtime-safety receipt below. Named CHECK
+-- constraints invoke these functions directly, so weakening either the
+-- function or its table wiring makes the receipt fail closed.
+create or replace function public.is_email_outbox_safety_disposition_valid(
+  p_disposition text
+)
+returns boolean
+language sql
+immutable
+parallel safe
+set search_path = ''
+as $$
+  select p_disposition is null or p_disposition = 'quarantined';
+$$;
+
+create or replace function public.is_email_outbox_safety_reason_valid(
+  p_reason text
+)
+returns boolean
+language sql
+immutable
+parallel safe
+set search_path = ''
+as $$
+  select p_reason is null or p_reason in (
+    'template_not_allowlisted',
+    'payload_schema_invalid',
+    'logical_dedupe_invalid',
+    'source_record_missing',
+    'source_state_stale',
+    'recipient_binding_invalid',
+    'recipient_not_allowlisted',
+    'recipient_suppressed',
+    'action_url_invalid'
+  );
+$$;
+
+create or replace function public.is_email_outbox_provider_send_attempt_valid(
+  p_provider_send_attempt_id uuid,
+  p_provider_send_started_at timestamptz,
+  p_attempts integer,
+  p_status text,
+  p_safety_disposition text
+)
+returns boolean
+language sql
+immutable
+parallel safe
+set search_path = ''
+as $$
+  select
+    (
+      p_provider_send_attempt_id is null
+      and p_provider_send_started_at is null
+    )
+    or (
+      p_provider_send_attempt_id is not null
+      and p_provider_send_started_at is not null
+      and coalesce(p_attempts >= 1, false)
+      and coalesce(
+        p_status in ('processing', 'sent', 'failed', 'dead_letter'),
+        false
+      )
+      and p_safety_disposition is null
+    );
+$$;
+
+create or replace function public.is_email_outbox_safety_quarantine_valid(
+  p_safety_disposition text,
+  p_safety_reason_category text,
+  p_safety_dispositioned_at timestamptz,
+  p_status text,
+  p_processed_at timestamptz,
+  p_last_error text,
+  p_resend_email_id text,
+  p_delivery_status text,
+  p_delivery_event_at timestamptz,
+  p_delivery_detail text,
+  p_provider_send_attempt_id uuid,
+  p_provider_send_started_at timestamptz
+)
+returns boolean
+language sql
+immutable
+parallel safe
+set search_path = ''
+as $$
+  select
+    (
+      p_safety_disposition is null
+      and p_safety_reason_category is null
+      and p_safety_dispositioned_at is null
+    )
+    or (
+      coalesce(p_safety_disposition = 'quarantined', false)
+      and p_safety_reason_category is not null
+      and p_safety_dispositioned_at is not null
+      and coalesce(p_status = 'dead_letter', false)
+      and p_processed_at is not null
+      and p_last_error is null
+      and p_resend_email_id is null
+      and p_delivery_status is null
+      and p_delivery_event_at is null
+      and p_delivery_detail is null
+      and p_provider_send_attempt_id is null
+      and p_provider_send_started_at is null
+    );
+$$;
+
+revoke all on function public.is_email_outbox_safety_disposition_valid(text)
+  from public, anon, authenticated;
+revoke all on function public.is_email_outbox_safety_reason_valid(text)
+  from public, anon, authenticated;
+revoke all on function public.is_email_outbox_provider_send_attempt_valid(uuid,timestamptz,integer,text,text)
+  from public, anon, authenticated;
+revoke all on function public.is_email_outbox_safety_quarantine_valid(text,text,timestamptz,text,timestamptz,text,text,text,timestamptz,text,uuid,timestamptz)
+  from public, anon, authenticated;
+grant execute on function public.is_email_outbox_safety_disposition_valid(text)
+  to service_role;
+grant execute on function public.is_email_outbox_safety_reason_valid(text)
+  to service_role;
+grant execute on function public.is_email_outbox_provider_send_attempt_valid(uuid,timestamptz,integer,text,text)
+  to service_role;
+grant execute on function public.is_email_outbox_safety_quarantine_valid(text,text,timestamptz,text,timestamptz,text,text,text,timestamptz,text,uuid,timestamptz)
+  to service_role;
+
+-- These fields are intentionally nullable so the migration does not classify
+-- or otherwise mutate existing pending rows. The worker may use only this
+-- terminal, sanitized state when action-time validation fails before sending.
+alter table public.email_outbox
+  add column provider_send_attempt_id uuid,
+  add column provider_send_started_at timestamptz,
+  add column safety_disposition text,
+  add column safety_reason_category text,
+  add column safety_dispositioned_at timestamptz,
+  add constraint email_outbox_safety_disposition_check
+    check (public.is_email_outbox_safety_disposition_valid(
+      safety_disposition
+    )),
+  add constraint email_outbox_safety_reason_category_check
+    check (public.is_email_outbox_safety_reason_valid(
+      safety_reason_category
+    )),
+  add constraint email_outbox_provider_send_attempt_check
+    check (public.is_email_outbox_provider_send_attempt_valid(
+      provider_send_attempt_id,
+      provider_send_started_at,
+      attempts,
+      status,
+      safety_disposition
+    )),
+  add constraint email_outbox_safety_quarantine_check
+    check (public.is_email_outbox_safety_quarantine_valid(
+      safety_disposition,
+      safety_reason_category,
+      safety_dispositioned_at,
+      status,
+      processed_at,
+      last_error,
+      resend_email_id,
+      delivery_status,
+      delivery_event_at,
+      delivery_detail,
+      provider_send_attempt_id,
+      provider_send_started_at
+    ));
+
+create index email_outbox_safety_quarantine_idx
+  on public.email_outbox (safety_disposition, safety_reason_category, created_at)
+  where safety_disposition = 'quarantined';
+
+create or replace function public.claim_transactional_email_job()
+returns setof public.email_outbox
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_job_id uuid;
+begin
+  select id into v_job_id
+  from public.email_outbox
+  where logical_dedupe_key is not null
+    and safety_disposition is null
+    and resend_email_id is null
+    and processed_at is null
+    and delivery_status is null
+    and delivery_event_at is null
+    and delivery_detail is null
+    and provider_send_attempt_id is null
+    and provider_send_started_at is null
+    and scheduled_at <= now()
+    and attempts < 5
+    and (
+      status in ('pending', 'failed')
+      or (status = 'processing' and updated_at < now() - interval '15 minutes')
+    )
+  order by scheduled_at, created_at
+  for update skip locked
+  limit 1;
+
+  if v_job_id is null then return; end if;
+
+  return query
+  update public.email_outbox
+  set status = 'processing', attempts = attempts + 1,
+      last_error = null, updated_at = now()
+  where id = v_job_id
+  returning *;
+end;
+$$;
+
+revoke all on function public.claim_transactional_email_job()
+  from public, anon, authenticated;
+grant execute on function public.claim_transactional_email_job() to service_role;
+
+create or replace function public.classify_email_recipient_account(p_email text)
+returns table (
+  account_exists boolean,
+  is_admin boolean
+)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_normalized_email text;
+begin
+  v_normalized_email := lower(btrim(coalesce(p_email, '')));
+  if v_normalized_email = ''
+    or char_length(v_normalized_email) > 254
+    or position('@' in v_normalized_email) <= 1
+  then
+    raise exception 'Email recipient account classification input is invalid'
+      using errcode = '22023';
+  end if;
+
+  return query
+  select
+    exists (
+      select 1
+      from auth.users as candidate
+      where lower(btrim(candidate.email)) = v_normalized_email
+    ),
+    exists (
+      select 1
+      from auth.users as candidate
+      join public.profiles as profile on profile.id = candidate.id
+      where lower(btrim(candidate.email)) = v_normalized_email
+        and profile.role = 'admin'
+    );
+end;
+$$;
+
+revoke all on function public.classify_email_recipient_account(text)
+  from public, anon, authenticated;
+grant execute on function public.classify_email_recipient_account(text)
+  to service_role;
+
+create or replace function public.is_email_delivery_correlation_status_valid(
+  p_status text
+)
+returns boolean
+language sql
+immutable
+parallel safe
+set search_path = ''
+as $$
+  select coalesce(p_status in (
+    'unverified',
+    'matched_outbox',
+    'trusted_untracked',
+    'orphaned',
+    'legacy_unclassified'
+  ), false);
+$$;
+
+create or replace function public.is_email_delivery_disposition_status_valid(
+  p_status text
+)
+returns boolean
+language sql
+immutable
+parallel safe
+set search_path = ''
+as $$
+  select coalesce(p_status in (
+    'pending_review',
+    'not_required',
+    'quarantined',
+    'dismissed',
+    'legacy_unclassified'
+  ), false);
+$$;
+
+create or replace function public.is_email_delivery_disposition_code_valid(
+  p_code text
+)
+returns boolean
+language sql
+immutable
+parallel safe
+set search_path = ''
+as $$
+  select p_code is null or p_code in (
+    'matched_outbox',
+    'trusted_account_event',
+    'invalid_outbox_tag',
+    'tagged_outbox_missing',
+    'correlation_mismatch',
+    'legacy_correlation_ambiguous',
+    'manual_rejected',
+    'legacy_unclassified'
+  );
+$$;
+
+create or replace function public.is_email_delivery_event_state_valid(
+  p_correlated_outbox_id uuid,
+  p_correlation_status text,
+  p_disposition_status text,
+  p_disposition_code text,
+  p_dispositioned_at timestamptz,
+  p_dispositioned_by uuid,
+  p_processing_status text,
+  p_processed_at timestamptz,
+  p_error_message text
+)
+returns boolean
+language sql
+immutable
+parallel safe
+set search_path = ''
+as $$
+  select coalesce(
+    (
+      p_correlation_status = 'unverified'
+      and p_correlated_outbox_id is null
+      and p_disposition_status = 'pending_review'
+      and p_disposition_code is null
+      and p_dispositioned_at is null
+      and p_dispositioned_by is null
+      and (
+        (
+          p_processing_status = 'processing'
+          and p_error_message is null
+        )
+        or (
+          p_processing_status = 'failed'
+          and p_error_message = 'transient_processing_failure'
+        )
+      )
+      and p_processed_at is null
+    )
+    or (
+      p_correlation_status = 'matched_outbox'
+      and p_correlated_outbox_id is not null
+      and p_disposition_status = 'not_required'
+      and p_disposition_code = 'matched_outbox'
+      and p_dispositioned_at is null
+      and p_dispositioned_by is null
+      and p_processing_status = 'processed'
+      and p_processed_at is not null
+      and p_error_message is null
+    )
+    or (
+      p_correlation_status = 'trusted_untracked'
+      and p_correlated_outbox_id is null
+      and p_disposition_status = 'not_required'
+      and p_disposition_code = 'trusted_account_event'
+      and p_dispositioned_at is null
+      and p_dispositioned_by is null
+      and p_processing_status = 'processed'
+      and p_processed_at is not null
+      and p_error_message is null
+    )
+    or (
+      p_correlation_status = 'orphaned'
+      and p_correlated_outbox_id is null
+      and p_processing_status = 'failed'
+      and p_error_message is null
+      and p_processed_at is null
+      and p_dispositioned_at is not null
+      and (
+        (
+          p_disposition_status = 'quarantined'
+          and p_disposition_code in (
+            'invalid_outbox_tag',
+            'tagged_outbox_missing',
+            'correlation_mismatch',
+            'legacy_correlation_ambiguous'
+          )
+          and p_dispositioned_by is null
+        )
+        or (
+          p_disposition_status = 'dismissed'
+          and p_disposition_code = 'manual_rejected'
+          and p_dispositioned_by is not null
+        )
+      )
+    )
+    or (
+      p_correlation_status = 'legacy_unclassified'
+      and p_correlated_outbox_id is null
+      and p_disposition_status = 'legacy_unclassified'
+      and p_disposition_code = 'legacy_unclassified'
+      and p_dispositioned_at is null
+      and p_dispositioned_by is null
+    ),
+    false
+  );
+$$;
+
+revoke all on function public.is_email_delivery_correlation_status_valid(text)
+  from public, anon, authenticated;
+revoke all on function public.is_email_delivery_disposition_status_valid(text)
+  from public, anon, authenticated;
+revoke all on function public.is_email_delivery_disposition_code_valid(text)
+  from public, anon, authenticated;
+revoke all on function public.is_email_delivery_event_state_valid(uuid,text,text,text,timestamptz,uuid,text,timestamptz,text)
+  from public, anon, authenticated;
+grant execute on function public.is_email_delivery_correlation_status_valid(text)
+  to service_role;
+grant execute on function public.is_email_delivery_disposition_status_valid(text)
+  to service_role;
+grant execute on function public.is_email_delivery_disposition_code_valid(text)
+  to service_role;
+grant execute on function public.is_email_delivery_event_state_valid(uuid,text,text,text,timestamptz,uuid,text,timestamptz,text)
+  to service_role;
+
+alter table public.email_delivery_events
+  add column correlated_outbox_id uuid
+    references public.email_outbox(id) on delete restrict,
+  add column correlation_status text,
+  add column disposition_status text,
+  add column disposition_code text,
+  add column dispositioned_at timestamptz,
+  add column dispositioned_by uuid
+    references public.profiles(id) on delete restrict;
+
+-- Existing delivery-event rows cannot be independently re-correlated from the
+-- stored ledger alone. Preserve them under an explicit legacy state instead of
+-- guessing a correlation or disposition.
+update public.email_delivery_events
+set correlation_status = 'legacy_unclassified',
+    disposition_status = 'legacy_unclassified',
+    disposition_code = 'legacy_unclassified'
+where correlation_status is null;
+
+alter table public.email_delivery_events
+  alter column correlation_status set default 'unverified',
+  alter column correlation_status set not null,
+  alter column disposition_status set default 'pending_review',
+  alter column disposition_status set not null,
+  add constraint email_delivery_events_correlation_status_check
+    check (public.is_email_delivery_correlation_status_valid(
+      correlation_status
+    )),
+  add constraint email_delivery_events_disposition_status_check
+    check (public.is_email_delivery_disposition_status_valid(
+      disposition_status
+    )),
+  add constraint email_delivery_events_disposition_code_check
+    check (public.is_email_delivery_disposition_code_valid(
+      disposition_code
+    )),
+  add constraint email_delivery_events_fail_closed_correlation_check
+    check (public.is_email_delivery_event_state_valid(
+      correlated_outbox_id,
+      correlation_status,
+      disposition_status,
+      disposition_code,
+      dispositioned_at,
+      dispositioned_by,
+      processing_status,
+      processed_at,
+      error_message
+    ));
+
+create index email_delivery_events_disposition_review_idx
+  on public.email_delivery_events (
+    disposition_status,
+    correlation_status,
+    created_at
+  )
+  where disposition_status in ('pending_review', 'quarantined');
+
+comment on column public.email_outbox.logical_dedupe_key is
+  'Normalized logical message key generated from template_data.dedupe_key. Missing or malformed keys remain null; other payload validity is enforced before send.';
+comment on column public.email_outbox.safety_disposition is
+  'Terminal pre-send quarantine. It stores no raw validation error and grants no retry or send authority.';
+comment on column public.email_outbox.safety_reason_category is
+  'Allowlisted non-PII reason for a pre-send quarantine.';
+comment on column public.email_delivery_events.correlation_status is
+  'Fail-closed outbox correlation state. Orphaned tagged events cannot be marked processed.';
+comment on column public.email_delivery_events.disposition_status is
+  'Sanitized review state for delivery events; quarantine and dismissal never imply successful webhook processing.';
+
+create or replace function public.get_email_runtime_safety_version()
+returns text
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_dedupe_deriver_oid oid;
+  v_dedupe_deriver_source_digest text;
+  v_dedupe_deriver_contract_ready boolean;
+  v_claim_oid oid;
+  v_claim_definition text;
+  v_claim_source_digest text;
+  v_claim_contract_ready boolean;
+  v_classifier_oid oid;
+  v_classifier_definition text;
+  v_classifier_source_digest text;
+  v_classifier_identity_arguments text;
+  v_classifier_result text;
+  v_classifier_contract_ready boolean;
+  v_generated_expression text;
+  v_index_definition text;
+  v_nonce_columns_ready boolean;
+  v_validator_contracts_ready boolean;
+  v_controls_ready boolean;
+begin
+  select
+    procedure_record.oid,
+    md5(btrim(pg_catalog.regexp_replace(
+      replace(procedure_record.prosrc, chr(13), ''),
+      '[[:space:]]+',
+      ' ',
+      'g'
+    ))),
+    procedure_record.prorettype = 'text'::regtype
+      and not procedure_record.proretset
+      and procedure_record.provolatile = 'i'
+      and procedure_record.proparallel = 's'
+      and not procedure_record.prosecdef
+      and not procedure_record.proisstrict
+      and procedure_record.proconfig = array['search_path=""']
+      and language_record.lanname = 'sql'
+      and coalesce(pg_catalog.has_function_privilege(
+        'service_role',
+        procedure_record.oid,
+        'execute'
+      ), false)
+      and not coalesce(pg_catalog.has_function_privilege(
+        'anon',
+        procedure_record.oid,
+        'execute'
+      ), true)
+      and not coalesce(pg_catalog.has_function_privilege(
+        'authenticated',
+        procedure_record.oid,
+        'execute'
+      ), true)
+  into
+    v_dedupe_deriver_oid,
+    v_dedupe_deriver_source_digest,
+    v_dedupe_deriver_contract_ready
+  from pg_catalog.pg_proc as procedure_record
+  join pg_catalog.pg_language as language_record
+    on language_record.oid = procedure_record.prolang
+  where procedure_record.oid = pg_catalog.to_regprocedure(
+    'public.derive_email_logical_dedupe_key(jsonb)'
+  );
+
+  select
+    procedure_record.oid,
+    lower(pg_catalog.pg_get_functiondef(procedure_record.oid)),
+    md5(btrim(pg_catalog.regexp_replace(
+      replace(procedure_record.prosrc, chr(13), ''),
+      '[[:space:]]+',
+      ' ',
+      'g'
+    ))),
+    procedure_record.prorettype = 'public.email_outbox'::regtype
+      and procedure_record.proretset
+      and procedure_record.provolatile = 'v'
+      and procedure_record.proparallel = 'u'
+      and procedure_record.prosecdef
+      and not procedure_record.proisstrict
+      and procedure_record.proconfig = array['search_path=""']
+      and language_record.lanname = 'plpgsql'
+  into
+    v_claim_oid,
+    v_claim_definition,
+    v_claim_source_digest,
+    v_claim_contract_ready
+  from pg_catalog.pg_proc as procedure_record
+  join pg_catalog.pg_language as language_record
+    on language_record.oid = procedure_record.prolang
+  where procedure_record.oid = pg_catalog.to_regprocedure(
+    'public.claim_transactional_email_job()'
+  );
+
+  select
+    lower(pg_catalog.pg_get_expr(default_record.adbin, default_record.adrelid))
+  into v_generated_expression
+  from pg_catalog.pg_attribute as attribute_record
+  join pg_catalog.pg_attrdef as default_record
+    on default_record.adrelid = attribute_record.attrelid
+    and default_record.adnum = attribute_record.attnum
+  where attribute_record.attrelid = 'public.email_outbox'::regclass
+    and attribute_record.attname = 'logical_dedupe_key'
+    and attribute_record.attgenerated = 's'
+    and attribute_record.atttypid = 'text'::regtype
+    and not attribute_record.attnotnull
+    and not attribute_record.attisdropped;
+
+  select lower(pg_catalog.pg_get_indexdef(index_record.indexrelid))
+  into v_index_definition
+  from pg_catalog.pg_index as index_record
+  join pg_catalog.pg_class as class_record
+    on class_record.oid = index_record.indexrelid
+  join pg_catalog.pg_namespace as namespace_record
+    on namespace_record.oid = class_record.relnamespace
+  where namespace_record.nspname = 'public'
+    and class_record.relname = 'email_outbox_logical_dedupe_key_key'
+    and index_record.indrelid = 'public.email_outbox'::regclass
+    and index_record.indisunique
+    and index_record.indisvalid
+    and index_record.indisready
+    and index_record.indnkeyatts = 1;
+
+  select
+    procedure_record.oid,
+    lower(pg_catalog.pg_get_functiondef(procedure_record.oid)),
+    md5(btrim(pg_catalog.regexp_replace(
+      replace(procedure_record.prosrc, chr(13), ''),
+      '[[:space:]]+',
+      ' ',
+      'g'
+    ))),
+    lower(pg_catalog.pg_get_function_identity_arguments(procedure_record.oid)),
+    lower(pg_catalog.pg_get_function_result(procedure_record.oid)),
+    procedure_record.prorettype = 'record'::regtype
+      and procedure_record.proretset
+      and procedure_record.provolatile = 's'
+      and procedure_record.proparallel = 'u'
+      and procedure_record.prosecdef
+      and not procedure_record.proisstrict
+      and procedure_record.proconfig = array['search_path=""']
+      and language_record.lanname = 'plpgsql'
+  into
+    v_classifier_oid,
+    v_classifier_definition,
+    v_classifier_source_digest,
+    v_classifier_identity_arguments,
+    v_classifier_result,
+    v_classifier_contract_ready
+  from pg_catalog.pg_proc as procedure_record
+  join pg_catalog.pg_language as language_record
+    on language_record.oid = procedure_record.prolang
+  where procedure_record.oid = pg_catalog.to_regprocedure(
+    'public.classify_email_recipient_account(text)'
+  );
+
+  select
+    count(*) = 2
+    and bool_and(
+      not attribute_record.attisdropped
+      and attribute_record.attgenerated = ''
+      and not attribute_record.attnotnull
+      and (
+        (
+          attribute_record.attname = 'provider_send_attempt_id'
+          and attribute_record.atttypid = 'uuid'::regtype
+        )
+        or (
+          attribute_record.attname = 'provider_send_started_at'
+          and attribute_record.atttypid = 'timestamp with time zone'::regtype
+        )
+      )
+    )
+  into v_nonce_columns_ready
+  from pg_catalog.pg_attribute as attribute_record
+  where attribute_record.attrelid = 'public.email_outbox'::regclass
+    and attribute_record.attname in (
+      'provider_send_attempt_id',
+      'provider_send_started_at'
+    );
+
+  select
+    count(*) = 8
+    and bool_and(
+      procedure_record.oid is not null
+      and procedure_record.prorettype = 'boolean'::regtype
+      and not procedure_record.proretset
+      and procedure_record.provolatile = 'i'
+      and procedure_record.proparallel = 's'
+      and not procedure_record.prosecdef
+      and not procedure_record.proisstrict
+      and procedure_record.proconfig = array['search_path=""']
+      and language_record.lanname = 'sql'
+      and md5(btrim(pg_catalog.regexp_replace(
+        replace(procedure_record.prosrc, chr(13), ''),
+        '[[:space:]]+',
+        ' ',
+        'g'
+      ))) = expected.source_digest
+      and coalesce(pg_catalog.has_function_privilege(
+        'service_role',
+        procedure_record.oid,
+        'execute'
+      ), false)
+      and not coalesce(pg_catalog.has_function_privilege(
+        'anon',
+        procedure_record.oid,
+        'execute'
+      ), true)
+      and not coalesce(pg_catalog.has_function_privilege(
+        'authenticated',
+        procedure_record.oid,
+        'execute'
+      ), true)
+      and constraint_record.oid is not null
+      and constraint_record.contype = 'c'
+      and constraint_record.convalidated
+      and pg_catalog.regexp_replace(
+        lower(pg_catalog.pg_get_constraintdef(
+          constraint_record.oid,
+          false
+        )),
+        '[[:space:]]+',
+        '',
+        'g'
+      ) in (
+        'check(' || expected.constraint_call || ')',
+        'check(public.' || expected.constraint_call || ')'
+      )
+    )
+  into v_validator_contracts_ready
+  from (
+    values
+      (
+        'public.is_email_outbox_safety_disposition_valid(text)',
+        '912d6a808e6eb9983873dcdf0e9c8eea',
+        'public.email_outbox',
+        'email_outbox_safety_disposition_check',
+        'is_email_outbox_safety_disposition_valid(safety_disposition)'
+      ),
+      (
+        'public.is_email_outbox_safety_reason_valid(text)',
+        '6e9531a476105c06f0e30f4f5ec49b70',
+        'public.email_outbox',
+        'email_outbox_safety_reason_category_check',
+        'is_email_outbox_safety_reason_valid(safety_reason_category)'
+      ),
+      (
+        'public.is_email_outbox_provider_send_attempt_valid(uuid,timestamp with time zone,integer,text,text)',
+        '5d09605a72db71ecb2bbadd804787ea0',
+        'public.email_outbox',
+        'email_outbox_provider_send_attempt_check',
+        'is_email_outbox_provider_send_attempt_valid(provider_send_attempt_id,provider_send_started_at,attempts,status,safety_disposition)'
+      ),
+      (
+        'public.is_email_outbox_safety_quarantine_valid(text,text,timestamp with time zone,text,timestamp with time zone,text,text,text,timestamp with time zone,text,uuid,timestamp with time zone)',
+        'acc5f25e390e54ec494d07f04c206efe',
+        'public.email_outbox',
+        'email_outbox_safety_quarantine_check',
+        'is_email_outbox_safety_quarantine_valid(safety_disposition,safety_reason_category,safety_dispositioned_at,status,processed_at,last_error,resend_email_id,delivery_status,delivery_event_at,delivery_detail,provider_send_attempt_id,provider_send_started_at)'
+      ),
+      (
+        'public.is_email_delivery_correlation_status_valid(text)',
+        '5b8fcb8bffdbcb75023c9454a03b440c',
+        'public.email_delivery_events',
+        'email_delivery_events_correlation_status_check',
+        'is_email_delivery_correlation_status_valid(correlation_status)'
+      ),
+      (
+        'public.is_email_delivery_disposition_status_valid(text)',
+        'afec88d5d67873ace720c53d047fea18',
+        'public.email_delivery_events',
+        'email_delivery_events_disposition_status_check',
+        'is_email_delivery_disposition_status_valid(disposition_status)'
+      ),
+      (
+        'public.is_email_delivery_disposition_code_valid(text)',
+        '5c858f5d7f75d318bc20d81e13856113',
+        'public.email_delivery_events',
+        'email_delivery_events_disposition_code_check',
+        'is_email_delivery_disposition_code_valid(disposition_code)'
+      ),
+      (
+        'public.is_email_delivery_event_state_valid(uuid,text,text,text,timestamp with time zone,uuid,text,timestamp with time zone,text)',
+        '241fe02b53ce2919de074e152af198ca',
+        'public.email_delivery_events',
+        'email_delivery_events_fail_closed_correlation_check',
+        'is_email_delivery_event_state_valid(correlated_outbox_id,correlation_status,disposition_status,disposition_code,dispositioned_at,dispositioned_by,processing_status,processed_at,error_message)'
+      )
+  ) as expected(
+    function_signature,
+    source_digest,
+    relation_name,
+    constraint_name,
+    constraint_call
+  )
+  left join pg_catalog.pg_proc as procedure_record
+    on procedure_record.oid = pg_catalog.to_regprocedure(
+      expected.function_signature
+    )
+  left join pg_catalog.pg_language as language_record
+    on language_record.oid = procedure_record.prolang
+  left join pg_catalog.pg_constraint as constraint_record
+    on constraint_record.conrelid = pg_catalog.to_regclass(
+      expected.relation_name
+    )
+    and constraint_record.conname = expected.constraint_name;
+
+  select
+    v_dedupe_deriver_oid is not null
+    and v_dedupe_deriver_source_digest = '99e5ab1111e9ffedffb4472f429ef2da'
+    and v_dedupe_deriver_contract_ready
+    and v_claim_oid is not null
+    and v_classifier_oid is not null
+    and v_claim_contract_ready
+    and v_classifier_contract_ready
+    and v_claim_source_digest = '4ebdae2d3064f4e884529e54d000a0be'
+    and v_classifier_source_digest = '96415202253897dbb4ff071b9aa52e5d'
+    and v_classifier_identity_arguments = 'p_email text'
+    and v_classifier_result = 'table(account_exists boolean, is_admin boolean)'
+    and v_nonce_columns_ready
+    and v_validator_contracts_ready
+    and v_generated_expression is not null
+    and pg_catalog.regexp_replace(
+      lower(v_generated_expression),
+      '[[:space:]]+',
+      '',
+      'g'
+    ) in (
+      'derive_email_logical_dedupe_key(template_data)',
+      'public.derive_email_logical_dedupe_key(template_data)',
+      '(derive_email_logical_dedupe_key(template_data))',
+      '(public.derive_email_logical_dedupe_key(template_data))'
+    )
+    and v_index_definition is not null
+    and pg_catalog.regexp_replace(
+      v_index_definition,
+      '[[:space:]]+',
+      '',
+      'g'
+    ) in (
+      'createuniqueindexemail_outbox_logical_dedupe_key_keyonpublic.email_outboxusingbtree(logical_dedupe_key)where(logical_dedupe_keyisnotnull)',
+      'createuniqueindexemail_outbox_logical_dedupe_key_keyonpublic.email_outboxusingbtree(logical_dedupe_key)wherelogical_dedupe_keyisnotnull'
+    )
+    and coalesce(pg_catalog.has_function_privilege('service_role', v_claim_oid, 'execute'), false)
+    and not coalesce(pg_catalog.has_function_privilege('anon', v_claim_oid, 'execute'), true)
+    and not coalesce(pg_catalog.has_function_privilege('authenticated', v_claim_oid, 'execute'), true)
+    and coalesce(pg_catalog.has_function_privilege('service_role', v_classifier_oid, 'execute'), false)
+    and not coalesce(pg_catalog.has_function_privilege('anon', v_classifier_oid, 'execute'), true)
+    and not coalesce(pg_catalog.has_function_privilege('authenticated', v_classifier_oid, 'execute'), true)
+    and position('security definer' in v_claim_definition) > 0
+    and position('set search_path to ''''' in v_claim_definition) > 0
+    and coalesce(position('logical_dedupe_key is not null' in v_claim_definition) > 0, false)
+    and coalesce(position('safety_disposition is null' in v_claim_definition) > 0, false)
+    and coalesce(position('resend_email_id is null' in v_claim_definition) > 0, false)
+    and coalesce(position('processed_at is null' in v_claim_definition) > 0, false)
+    and coalesce(position('delivery_status is null' in v_claim_definition) > 0, false)
+    and coalesce(position('delivery_event_at is null' in v_claim_definition) > 0, false)
+    and coalesce(position('delivery_detail is null' in v_claim_definition) > 0, false)
+    and coalesce(position('provider_send_attempt_id is null' in v_claim_definition) > 0, false)
+    and coalesce(position('provider_send_started_at is null' in v_claim_definition) > 0, false)
+    and coalesce(position('attempts < 5' in v_claim_definition) > 0, false)
+    and coalesce(position('for update skip locked' in v_claim_definition) > 0, false)
+    and position('security definer' in v_classifier_definition) > 0
+    and position('set search_path to ''''' in v_classifier_definition) > 0
+    and position('from auth.users' in v_classifier_definition) > 0
+    and position('join public.profiles' in v_classifier_definition) > 0
+    and position('profile.role = ''admin''' in v_classifier_definition) > 0
+  into v_controls_ready;
+
+  if not coalesce(v_controls_ready, false) then
+    raise exception 'Email runtime database safety controls are unavailable or drifted'
+      using errcode = '55000';
+  end if;
+
+  return 'email_runtime_safety_v1';
+end;
+$$;
+
+revoke all on function public.get_email_runtime_safety_version()
+  from public, anon, authenticated;
+grant execute on function public.get_email_runtime_safety_version()
+  to service_role;
+
+-- Mirrored from migrations/202608250082_hotel_commercial_agreement_evidence.sql.
+-- This migration is a separate post-lineage gate. It must run only after the
+-- pinned hotel 070 package is accepted. A fee disclosure acknowledgement is
+-- not a contract, so no hotel can pass commercial review or publication until
+-- an exact counsel-approved agreement version and an executed receipt exist.
+-- No agreement version is seeded here; the default state is deliberately HOLD.
+do $$
+begin
+  if pg_catalog.to_regclass('public.partner_application_review_evidence') is null
+    or pg_catalog.to_regclass('public.property_commercial_review_evidence') is null
+    or pg_catalog.to_regprocedure(
+      'public.record_property_commercial_review(uuid,text,text,boolean,boolean,boolean,boolean,text)'
+    ) is null
+    or pg_catalog.to_regprocedure(
+      'public.set_property_publication_state(uuid,boolean)'
+    ) is null
+    or pg_catalog.to_regclass('public.direct_hotel_runtime_controls') is null
+    or pg_catalog.to_regprocedure(
+      'public.reserve_ai_hotel_planner_quota(uuid)'
+    ) is null
+    or pg_catalog.to_regclass('public.hotel_legacy_transaction_controls') is null
+    or pg_catalog.to_regprocedure(
+      'public.get_email_runtime_safety_version()'
+    ) is null
+  then
+    raise exception 'Migrations 202608220070 through 202608220074 must be accepted before hotel commercial agreement evidence';
+  end if;
+end;
+$$;
+
+create table public.hotel_commercial_agreement_versions (
+  agreement_version text primary key,
+  template_document_sha256 text not null unique,
+  counsel_approval_reference text not null unique,
+  counsel_approved_at timestamptz not null,
+  effective_at timestamptz not null,
+  recorded_by uuid not null references public.profiles(id) on delete restrict,
+  evidence_summary text not null,
+  created_at timestamptz not null default now(),
+  constraint hotel_commercial_agreement_version_token_check check (
+    agreement_version ~ '^[a-z0-9][a-z0-9._-]{7,119}$'
+  ),
+  constraint hotel_commercial_agreement_template_digest_check check (
+    template_document_sha256 ~ '^[a-f0-9]{64}$'
+  ),
+  constraint hotel_commercial_agreement_counsel_reference_check check (
+    length(trim(counsel_approval_reference)) between 8 and 160
+    and counsel_approval_reference !~ '[[:cntrl:]]'
+  ),
+  constraint hotel_commercial_agreement_version_dates_check check (
+    effective_at >= counsel_approved_at
+  ),
+  constraint hotel_commercial_agreement_version_summary_check check (
+    length(trim(evidence_summary)) between 20 and 2000
+  )
+);
+
+create table public.hotel_commercial_agreement_version_retirements (
+  agreement_version text primary key
+    references public.hotel_commercial_agreement_versions(agreement_version)
+    on delete restrict,
+  retired_at timestamptz not null,
+  retirement_reference text not null unique,
+  recorded_by uuid not null references public.profiles(id) on delete restrict,
+  reason_summary text not null,
+  created_at timestamptz not null default now(),
+  constraint hotel_commercial_agreement_retirement_reference_check check (
+    length(trim(retirement_reference)) between 8 and 160
+    and retirement_reference !~ '[[:cntrl:]]'
+  ),
+  constraint hotel_commercial_agreement_retirement_summary_check check (
+    length(trim(reason_summary)) between 20 and 2000
+  )
+);
+
+create table public.hotel_commercial_agreement_evidence (
+  id uuid primary key default pg_catalog.gen_random_uuid(),
+  application_id uuid not null
+    references public.partner_applications(id) on delete restrict,
+  partner_id uuid not null references public.partners(id) on delete restrict,
+  property_id uuid not null references public.properties(id) on delete restrict,
+  agreement_version text not null
+    references public.hotel_commercial_agreement_versions(agreement_version)
+    on delete restrict,
+  fee_disclosure_version text not null,
+  execution_reference text not null unique,
+  agreement_document_sha256 text not null unique,
+  hotel_legal_business_name text not null,
+  hotel_signatory_name text not null,
+  hotel_signatory_title text not null,
+  hotel_signed_at timestamptz not null,
+  iratepilot_signed_at timestamptz not null,
+  effective_at timestamptz not null,
+  expires_at timestamptz,
+  representative_authority_verified boolean not null,
+  executed_agreement_verified boolean not null,
+  recorded_by uuid not null references public.profiles(id) on delete restrict,
+  evidence_summary text not null,
+  created_at timestamptz not null default now(),
+  constraint hotel_commercial_agreement_property_version_key
+    unique (property_id, agreement_version),
+  constraint hotel_commercial_agreement_application_version_key
+    unique (application_id, agreement_version),
+  constraint hotel_commercial_agreement_fee_version_check check (
+    fee_disclosure_version = 'hotel_partner_fee_disclosure_13_3_2026-08-22_v1'
+  ),
+  constraint hotel_commercial_agreement_execution_reference_check check (
+    length(trim(execution_reference)) between 8 and 160
+    and execution_reference ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{7,159}$'
+    and pg_catalog.strpos(execution_reference, '://') = 0
+    and execution_reference !~ '[[:cntrl:]]'
+  ),
+  constraint hotel_commercial_agreement_document_digest_check check (
+    agreement_document_sha256 ~ '^[a-f0-9]{64}$'
+  ),
+  constraint hotel_commercial_agreement_identity_lengths_check check (
+    length(trim(hotel_legal_business_name)) between 2 and 200
+    and length(trim(hotel_signatory_name)) between 2 and 120
+    and length(trim(hotel_signatory_title)) between 2 and 120
+    and hotel_signatory_name !~ '[[:cntrl:]]'
+    and hotel_signatory_title !~ '[[:cntrl:]]'
+  ),
+  constraint hotel_commercial_agreement_execution_checks check (
+    representative_authority_verified
+    and executed_agreement_verified
+    and effective_at >= greatest(hotel_signed_at, iratepilot_signed_at)
+    and (expires_at is null or expires_at > effective_at)
+  ),
+  constraint hotel_commercial_agreement_evidence_summary_check check (
+    length(trim(evidence_summary)) between 20 and 2000
+  )
+);
+
+create index hotel_commercial_agreement_evidence_property_idx
+  on public.hotel_commercial_agreement_evidence (
+    property_id,
+    effective_at desc,
+    created_at desc
+  );
+
+create table public.hotel_commercial_agreement_terminations (
+  agreement_evidence_id uuid primary key
+    references public.hotel_commercial_agreement_evidence(id)
+    on delete restrict,
+  property_id uuid not null references public.properties(id) on delete restrict,
+  terminated_at timestamptz not null,
+  termination_reference text not null unique,
+  recorded_by uuid not null references public.profiles(id) on delete restrict,
+  reason_summary text not null,
+  created_at timestamptz not null default now(),
+  constraint hotel_commercial_agreement_termination_reference_check check (
+    length(trim(termination_reference)) between 8 and 160
+    and termination_reference !~ '[[:cntrl:]]'
+  ),
+  constraint hotel_commercial_agreement_termination_summary_check check (
+    length(trim(reason_summary)) between 20 and 2000
+  )
+);
+
+alter table public.hotel_commercial_agreement_versions enable row level security;
+alter table public.hotel_commercial_agreement_version_retirements enable row level security;
+alter table public.hotel_commercial_agreement_evidence enable row level security;
+alter table public.hotel_commercial_agreement_terminations enable row level security;
+
+revoke all on public.hotel_commercial_agreement_versions
+  from public, anon, authenticated, service_role;
+revoke all on public.hotel_commercial_agreement_version_retirements
+  from public, anon, authenticated, service_role;
+revoke all on public.hotel_commercial_agreement_evidence
+  from public, anon, authenticated, service_role;
+revoke all on public.hotel_commercial_agreement_terminations
+  from public, anon, authenticated, service_role;
+grant select on public.hotel_commercial_agreement_versions to authenticated;
+grant select on public.hotel_commercial_agreement_version_retirements to authenticated;
+grant select on public.hotel_commercial_agreement_evidence to authenticated;
+grant select on public.hotel_commercial_agreement_terminations to authenticated;
+
+create policy "Admins view hotel commercial agreement versions"
+  on public.hotel_commercial_agreement_versions
+  for select to authenticated
+  using (exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  ));
+create policy "Admins view hotel commercial agreement version retirements"
+  on public.hotel_commercial_agreement_version_retirements
+  for select to authenticated
+  using (exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  ));
+create policy "Admins view hotel commercial agreement evidence"
+  on public.hotel_commercial_agreement_evidence
+  for select to authenticated
+  using (exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  ));
+create policy "Admins view hotel commercial agreement terminations"
+  on public.hotel_commercial_agreement_terminations
+  for select to authenticated
+  using (exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  ));
+
+-- Migration 070 creates the partner/property graph before it inserts the
+-- approved review evidence. This trigger therefore validates the completed
+-- graph inside the same transaction and rolls the whole approval back unless
+-- the linked owner is the one uniquely matching, confirmed applicant account.
+create function public.enforce_confirmed_hotel_applicant_approval_graph()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_application_email text;
+  v_partner_owner_id uuid;
+  v_matching_account_count bigint;
+  v_confirmed_linked_owner_count bigint;
+begin
+  if new.decision <> 'approved' then
+    return new;
+  end if;
+
+  select application.email, partner_record.owner_id
+  into v_application_email, v_partner_owner_id
+  from public.partner_applications as application
+  join public.properties as property_record
+    on property_record.id = application.property_id
+  join public.partners as partner_record
+    on partner_record.id = property_record.partner_id
+  where application.id = new.application_id;
+
+  if v_application_email is null or v_partner_owner_id is null then
+    raise exception 'A uniquely matched confirmed applicant account is required before approval'
+      using errcode = 'P0001';
+  end if;
+
+  select count(*),
+    count(*) filter (
+      where account.id = v_partner_owner_id
+        and account.email_confirmed_at is not null
+    )
+  into v_matching_account_count, v_confirmed_linked_owner_count
+  from auth.users as account
+  where lower(account.email) = lower(v_application_email);
+
+  if v_matching_account_count <> 1
+    or v_confirmed_linked_owner_count <> 1
+  then
+    raise exception 'A uniquely matched confirmed applicant account is required before approval'
+      using errcode = 'P0001';
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke all on function public.enforce_confirmed_hotel_applicant_approval_graph()
+  from public, anon, authenticated, service_role;
+create trigger enforce_confirmed_hotel_applicant_approval_graph
+before insert on public.partner_application_review_evidence
+for each row execute function public.enforce_confirmed_hotel_applicant_approval_graph();
+
+create function public.prevent_hotel_commercial_agreement_evidence_mutation()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  raise exception 'Hotel commercial agreement evidence is append-only'
+    using errcode = '55000';
+end;
+$$;
+
+revoke all on function public.prevent_hotel_commercial_agreement_evidence_mutation()
+  from public, anon, authenticated, service_role;
+
+create trigger hotel_commercial_agreement_versions_append_only
+before update or delete on public.hotel_commercial_agreement_versions
+for each row execute function public.prevent_hotel_commercial_agreement_evidence_mutation();
+create trigger hotel_commercial_agreement_version_retirements_append_only
+before update or delete on public.hotel_commercial_agreement_version_retirements
+for each row execute function public.prevent_hotel_commercial_agreement_evidence_mutation();
+create trigger hotel_commercial_agreement_evidence_append_only
+before update or delete on public.hotel_commercial_agreement_evidence
+for each row execute function public.prevent_hotel_commercial_agreement_evidence_mutation();
+create trigger hotel_commercial_agreement_terminations_append_only
+before update or delete on public.hotel_commercial_agreement_terminations
+for each row execute function public.prevent_hotel_commercial_agreement_evidence_mutation();
+
+-- Returns an ID only when exactly one currently effective, non-retired,
+-- non-terminated executed agreement is bound to the approved property graph.
+create function public.current_hotel_commercial_agreement_evidence_id(
+  p_property_id uuid
+)
+returns uuid
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  with candidates as (
+    select agreement.id, agreement.effective_at, agreement.created_at
+    from public.hotel_commercial_agreement_evidence as agreement
+    join public.hotel_commercial_agreement_versions as agreement_version
+      on agreement_version.agreement_version = agreement.agreement_version
+    join public.partner_applications as application
+      on application.id = agreement.application_id
+    join public.properties as property_record
+      on property_record.id = agreement.property_id
+    join public.partners as partner_record
+      on partner_record.id = agreement.partner_id
+    join auth.users as owner_account
+      on owner_account.id = partner_record.owner_id
+    where agreement.property_id = p_property_id
+      and agreement.partner_id = property_record.partner_id
+      and application.property_id = agreement.property_id
+      and application.status = 'approved'
+      and application.commercial_terms_acknowledged
+      and application.commercial_terms_acknowledged_at is not null
+      and application.commercial_terms_version_acknowledged =
+        'hotel_partner_fee_disclosure_13_3_2026-08-22_v1'
+      and partner_record.status = 'approved'
+      and owner_account.email_confirmed_at is not null
+      and lower(owner_account.email) = lower(application.email)
+      and (
+        select count(*)
+        from auth.users as matching_account
+        where lower(matching_account.email) = lower(application.email)
+      ) = 1
+      and agreement.hotel_legal_business_name =
+        trim(application.legal_business_name)
+      and agreement.fee_disclosure_version =
+        'hotel_partner_fee_disclosure_13_3_2026-08-22_v1'
+      and agreement.representative_authority_verified
+      and agreement.executed_agreement_verified
+      and agreement_version.effective_at <= now()
+      and agreement.hotel_signed_at >= agreement_version.counsel_approved_at
+      and agreement.iratepilot_signed_at >= agreement_version.counsel_approved_at
+      and agreement.effective_at >= agreement_version.effective_at
+      and agreement.effective_at <= now()
+      and (agreement.expires_at is null or agreement.expires_at > now())
+      and exists (
+        select 1
+        from public.partner_application_review_evidence as application_review
+        where application_review.application_id = application.id
+          and application_review.decision = 'approved'
+          and application_review.legal_business_verified
+          and application_review.representative_authority_verified
+          and application_review.content_rights_verified
+          and application_review.commercial_terms_acknowledgement_verified
+      )
+      and not exists (
+        select 1
+        from public.hotel_commercial_agreement_version_retirements as retirement
+        where retirement.agreement_version = agreement.agreement_version
+          and retirement.retired_at <= now()
+      )
+      and not exists (
+        select 1
+        from public.hotel_commercial_agreement_terminations as termination
+        where termination.agreement_evidence_id = agreement.id
+          and termination.terminated_at <= now()
+      )
+  )
+  select case
+    when count(*) = 1
+      then (array_agg(candidates.id order by candidates.effective_at desc, candidates.created_at desc, candidates.id))[1]
+    else null
+  end
+  from candidates;
+$$;
+
+create function public.is_hotel_commercial_agreement_effective(
+  p_property_id uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select public.current_hotel_commercial_agreement_evidence_id(p_property_id)
+    is not null;
+$$;
+
+revoke all on function public.current_hotel_commercial_agreement_evidence_id(uuid)
+  from public, anon, authenticated, service_role;
+revoke all on function public.is_hotel_commercial_agreement_effective(uuid)
+  from public, anon, authenticated, service_role;
+
+-- Authenticated callers never receive access to the low-level effectiveness
+-- helpers. Admin APIs use these bounded wrappers so authorization remains in
+-- the database and legal-state evaluation is not duplicated in application
+-- code.
+create function public.get_hotel_commercial_agreement_admin_state(
+  p_property_ids uuid[]
+)
+returns table (
+  property_id uuid,
+  current_evidence_id uuid,
+  commercial_agreement_effective boolean
+)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  if not exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  ) then
+    raise exception 'Not authorized' using errcode = '42501';
+  end if;
+  if p_property_ids is null
+    or pg_catalog.cardinality(p_property_ids) > 500
+    or pg_catalog.array_position(p_property_ids, null) is not null
+  then
+    raise exception 'Property identifiers are incomplete or invalid'
+      using errcode = '22023';
+  end if;
+
+  return query
+  select requested.property_id,
+    current_agreement.id,
+    current_agreement.id is not null
+  from (
+    select distinct requested_id.property_id
+    from pg_catalog.unnest(p_property_ids) as requested_id(property_id)
+  ) as requested
+  join public.properties as property_record
+    on property_record.id = requested.property_id
+  left join lateral (
+    select public.current_hotel_commercial_agreement_evidence_id(
+      property_record.id
+    ) as id
+  ) as current_agreement on true;
+end;
+$$;
+
+revoke all on function public.get_hotel_commercial_agreement_admin_state(uuid[])
+  from public, anon, service_role;
+grant execute on function public.get_hotel_commercial_agreement_admin_state(uuid[])
+  to authenticated;
+
+create function public.list_available_counsel_approved_hotel_commercial_agreement_versions()
+returns table (
+  agreement_version text,
+  effective_at timestamptz
+)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  if not exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  ) then
+    raise exception 'Not authorized' using errcode = '42501';
+  end if;
+
+  return query
+  select version_record.agreement_version,
+    version_record.effective_at
+  from public.hotel_commercial_agreement_versions as version_record
+  where version_record.effective_at <= now()
+    and not exists (
+      select 1
+      from public.hotel_commercial_agreement_version_retirements as retirement
+      where retirement.agreement_version = version_record.agreement_version
+        and retirement.retired_at <= now()
+    )
+  order by version_record.effective_at desc,
+    version_record.agreement_version;
+end;
+$$;
+
+revoke all on function public.list_available_counsel_approved_hotel_commercial_agreement_versions()
+  from public, anon, service_role;
+grant execute on function public.list_available_counsel_approved_hotel_commercial_agreement_versions()
+  to authenticated;
+
+create function public.record_counsel_approved_hotel_commercial_agreement_version(
+  p_agreement_version text,
+  p_template_document_sha256 text,
+  p_counsel_approval_reference text,
+  p_counsel_approved_at timestamptz,
+  p_effective_at timestamptz,
+  p_review_notes text
+)
+returns public.hotel_commercial_agreement_versions
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_version public.hotel_commercial_agreement_versions;
+  v_now timestamptz := pg_catalog.clock_timestamp();
+begin
+  if not exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  ) then
+    raise exception 'Not authorized' using errcode = '42501';
+  end if;
+
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(
+      'hotel-commercial-agreement-version:' || coalesce(p_agreement_version, ''),
+      0
+    )
+  );
+
+  if p_agreement_version is null
+    or p_agreement_version !~ '^[a-z0-9][a-z0-9._-]{7,119}$'
+    or p_template_document_sha256 is null
+    or p_template_document_sha256 !~ '^[a-f0-9]{64}$'
+    or length(trim(coalesce(p_counsel_approval_reference, ''))) not between 8 and 160
+    or p_counsel_approval_reference ~ '[[:cntrl:]]'
+    or p_counsel_approved_at is null
+    or p_counsel_approved_at > v_now
+    or p_effective_at is null
+    or p_effective_at < p_counsel_approved_at
+    or length(trim(coalesce(p_review_notes, ''))) not between 20 and 2000
+  then
+    raise exception 'Counsel-approved hotel commercial agreement version evidence is incomplete or invalid'
+      using errcode = '22023';
+  end if;
+
+  insert into public.hotel_commercial_agreement_versions (
+    agreement_version,
+    template_document_sha256,
+    counsel_approval_reference,
+    counsel_approved_at,
+    effective_at,
+    recorded_by,
+    evidence_summary
+  ) values (
+    p_agreement_version,
+    p_template_document_sha256,
+    trim(p_counsel_approval_reference),
+    p_counsel_approved_at,
+    p_effective_at,
+    auth.uid(),
+    trim(p_review_notes)
+  ) returning * into v_version;
+
+  return v_version;
+exception
+  when unique_violation then
+    raise exception 'This counsel-approved hotel commercial agreement version is already recorded'
+      using errcode = 'P0001';
+end;
+$$;
+
+revoke all on function public.record_counsel_approved_hotel_commercial_agreement_version(
+  text, text, text, timestamptz, timestamptz, text
+) from public, anon, service_role;
+grant execute on function public.record_counsel_approved_hotel_commercial_agreement_version(
+  text, text, text, timestamptz, timestamptz, text
+) to authenticated;
+
+create function public.record_hotel_commercial_agreement_receipt(
+  p_property_id uuid,
+  p_application_id uuid,
+  p_agreement_version text,
+  p_fee_disclosure_version text,
+  p_execution_reference text,
+  p_agreement_document_sha256 text,
+  p_hotel_signatory_name text,
+  p_hotel_signatory_title text,
+  p_hotel_signed_at timestamptz,
+  p_iratepilot_signed_at timestamptz,
+  p_effective_at timestamptz,
+  p_expires_at timestamptz,
+  p_representative_authority_verified boolean,
+  p_executed_agreement_verified boolean,
+  p_review_notes text
+)
+returns public.hotel_commercial_agreement_evidence
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_application public.partner_applications;
+  v_property public.properties;
+  v_partner_status text;
+  v_version public.hotel_commercial_agreement_versions;
+  v_evidence public.hotel_commercial_agreement_evidence;
+  v_now timestamptz := pg_catalog.clock_timestamp();
+begin
+  if not exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  ) then
+    raise exception 'Not authorized' using errcode = '42501';
+  end if;
+
+  -- Version-before-property is the shared lifecycle lock order. It prevents a
+  -- version retirement from racing a new receipt while the property lock also
+  -- serializes receipt, termination, and publication decisions.
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(
+      'hotel-commercial-agreement-version:' || coalesce(p_agreement_version, ''),
+      0
+    )
+  );
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(
+      'hotel-commercial-agreement:' || coalesce(p_property_id::text, ''),
+      0
+    )
+  );
+
+  select application.*
+  into v_application
+  from public.partner_applications as application
+  where application.id = p_application_id
+  for update;
+
+  select property_record.*
+  into v_property
+  from public.properties as property_record
+  where property_record.id = p_property_id
+  for update;
+
+  if v_application.id is null
+    or v_property.id is null
+    or v_application.status <> 'approved'
+    or v_application.property_id is distinct from p_property_id
+  then
+    raise exception 'The approved hotel application is not linked to this property'
+      using errcode = 'P0001';
+  end if;
+
+  select partner.status
+  into v_partner_status
+  from public.partners as partner
+  where partner.id = v_property.partner_id
+  for update;
+
+  if v_partner_status is distinct from 'approved'
+    or not exists (
+      select 1
+      from public.partners as partner_record
+      join auth.users as owner_account
+        on owner_account.id = partner_record.owner_id
+      where partner_record.id = v_property.partner_id
+        and owner_account.email_confirmed_at is not null
+        and lower(owner_account.email) = lower(v_application.email)
+        and (
+          select count(*)
+          from auth.users as matching_account
+          where lower(matching_account.email) = lower(v_application.email)
+        ) = 1
+    )
+  then
+    raise exception 'The approved hotel application is not linked to this property'
+      using errcode = 'P0001';
+  end if;
+  if v_property.active then
+    raise exception 'The property must remain inactive while agreement evidence is recorded'
+      using errcode = 'P0001';
+  end if;
+  if not exists (
+    select 1
+    from public.partner_application_review_evidence as review
+    where review.application_id = p_application_id
+      and review.decision = 'approved'
+      and review.legal_business_verified
+      and review.representative_authority_verified
+      and review.content_rights_verified
+      and review.commercial_terms_acknowledgement_verified
+  ) then
+    raise exception 'The approved hotel application is not linked to this property'
+      using errcode = 'P0001';
+  end if;
+
+  select agreement_version.*
+  into v_version
+  from public.hotel_commercial_agreement_versions as agreement_version
+  where agreement_version.agreement_version = p_agreement_version
+    and agreement_version.effective_at <= v_now
+    and not exists (
+      select 1
+      from public.hotel_commercial_agreement_version_retirements as retirement
+      where retirement.agreement_version = agreement_version.agreement_version
+        and retirement.retired_at <= v_now
+    )
+  for update;
+
+  if v_version.agreement_version is null then
+    raise exception 'No counsel-approved hotel commercial agreement version is available'
+      using errcode = 'P0001';
+  end if;
+  if public.current_hotel_commercial_agreement_evidence_id(p_property_id) is not null
+    or exists (
+      select 1
+      from public.hotel_commercial_agreement_evidence as existing
+      where existing.property_id = p_property_id
+        and existing.agreement_version = p_agreement_version
+    )
+  then
+    raise exception 'A hotel commercial agreement receipt already exists for this property and version'
+      using errcode = 'P0001';
+  end if;
+
+  if p_fee_disclosure_version is distinct from
+      'hotel_partner_fee_disclosure_13_3_2026-08-22_v1'
+    or v_application.commercial_terms_version_acknowledged is distinct from
+      p_fee_disclosure_version
+    or not v_application.commercial_terms_acknowledged
+    or v_application.commercial_terms_acknowledged_at is null
+    or length(trim(coalesce(p_execution_reference, ''))) not between 8 and 160
+    or p_execution_reference !~ '^[A-Za-z0-9][A-Za-z0-9._:-]{7,159}$'
+    or pg_catalog.strpos(coalesce(p_execution_reference, ''), '://') > 0
+    or p_execution_reference ~ '[[:cntrl:]]'
+    or p_agreement_document_sha256 is null
+    or p_agreement_document_sha256 !~ '^[a-f0-9]{64}$'
+    or length(trim(coalesce(p_hotel_signatory_name, ''))) not between 2 and 120
+    or p_hotel_signatory_name ~ '[[:cntrl:]]'
+    or length(trim(coalesce(p_hotel_signatory_title, ''))) not between 2 and 120
+    or p_hotel_signatory_title ~ '[[:cntrl:]]'
+    or p_hotel_signed_at is null
+    or p_hotel_signed_at > v_now
+    or p_iratepilot_signed_at is null
+    or p_iratepilot_signed_at > v_now
+    or p_hotel_signed_at < v_version.counsel_approved_at
+    or p_iratepilot_signed_at < v_version.counsel_approved_at
+    or p_effective_at is null
+    or p_effective_at > v_now
+    or p_effective_at < v_version.effective_at
+    or p_effective_at < greatest(p_hotel_signed_at, p_iratepilot_signed_at)
+    or (p_expires_at is not null and (
+      p_expires_at <= p_effective_at or p_expires_at <= v_now
+    ))
+    or p_representative_authority_verified is distinct from true
+    or p_executed_agreement_verified is distinct from true
+    or length(trim(coalesce(p_review_notes, ''))) not between 20 and 2000
+  then
+    raise exception 'Hotel commercial agreement evidence is incomplete or invalid'
+      using errcode = '22023';
+  end if;
+
+  insert into public.hotel_commercial_agreement_evidence (
+    application_id,
+    partner_id,
+    property_id,
+    agreement_version,
+    fee_disclosure_version,
+    execution_reference,
+    agreement_document_sha256,
+    hotel_legal_business_name,
+    hotel_signatory_name,
+    hotel_signatory_title,
+    hotel_signed_at,
+    iratepilot_signed_at,
+    effective_at,
+    expires_at,
+    representative_authority_verified,
+    executed_agreement_verified,
+    recorded_by,
+    evidence_summary
+  ) values (
+    p_application_id,
+    v_property.partner_id,
+    p_property_id,
+    p_agreement_version,
+    p_fee_disclosure_version,
+    trim(p_execution_reference),
+    p_agreement_document_sha256,
+    trim(v_application.legal_business_name),
+    trim(p_hotel_signatory_name),
+    trim(p_hotel_signatory_title),
+    p_hotel_signed_at,
+    p_iratepilot_signed_at,
+    p_effective_at,
+    p_expires_at,
+    p_representative_authority_verified,
+    p_executed_agreement_verified,
+    auth.uid(),
+    trim(p_review_notes)
+  ) returning * into v_evidence;
+
+  return v_evidence;
+exception
+  when unique_violation then
+    raise exception 'A hotel commercial agreement receipt already exists for this property and version'
+      using errcode = 'P0001';
+end;
+$$;
+
+revoke all on function public.record_hotel_commercial_agreement_receipt(
+  uuid, uuid, text, text, text, text, text, text,
+  timestamptz, timestamptz, timestamptz, timestamptz,
+  boolean, boolean, text
+) from public, anon, service_role;
+grant execute on function public.record_hotel_commercial_agreement_receipt(
+  uuid, uuid, text, text, text, text, text, text,
+  timestamptz, timestamptz, timestamptz, timestamptz,
+  boolean, boolean, text
+) to authenticated;
+
+alter table public.property_commercial_review_evidence
+  add column commercial_agreement_evidence_id uuid
+    references public.hotel_commercial_agreement_evidence(id)
+    on delete restrict,
+  add constraint property_commercial_review_agreement_required
+    check (commercial_agreement_evidence_id is not null) not valid;
+
+create function public.bind_property_commercial_review_agreement()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_current_agreement_id uuid;
+begin
+  v_current_agreement_id :=
+    public.current_hotel_commercial_agreement_evidence_id(new.property_id);
+  if v_current_agreement_id is null then
+    raise exception 'An effective executed hotel commercial agreement is required before commercial review'
+      using errcode = 'P0001';
+  end if;
+  if new.commercial_agreement_evidence_id is not null
+    and new.commercial_agreement_evidence_id is distinct from v_current_agreement_id
+  then
+    raise exception 'Commercial review must use the current executed hotel agreement'
+      using errcode = 'P0001';
+  end if;
+  new.commercial_agreement_evidence_id := v_current_agreement_id;
+  return new;
+end;
+$$;
+
+revoke all on function public.bind_property_commercial_review_agreement()
+  from public, anon, authenticated, service_role;
+create trigger bind_property_commercial_review_agreement
+before insert on public.property_commercial_review_evidence
+for each row execute function public.bind_property_commercial_review_agreement();
+
+create function public.enforce_hotel_commercial_agreement_property_guard()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_current_agreement_id uuid;
+  v_requires_current_review boolean;
+begin
+  v_requires_current_review := (
+    new.active and old.active is distinct from true
+  ) or (
+    (
+      new.listing_scope is distinct from old.listing_scope
+      or new.direct_request_mode is distinct from old.direct_request_mode
+      or new.commercial_terms_version is distinct from old.commercial_terms_version
+      or new.commercial_verified_at is distinct from old.commercial_verified_at
+      or new.commercial_verified_by is distinct from old.commercial_verified_by
+      or new.support_contact_email is distinct from old.support_contact_email
+    )
+    and (
+      new.listing_scope = 'commercial'
+      or new.direct_request_mode = 'request_only'
+      or new.commercial_terms_version is not null
+      or new.commercial_verified_at is not null
+      or new.commercial_verified_by is not null
+      or new.support_contact_email is not null
+    )
+  );
+
+  if not v_requires_current_review then
+    return new;
+  end if;
+
+  v_current_agreement_id :=
+    public.current_hotel_commercial_agreement_evidence_id(new.id);
+  if v_current_agreement_id is null
+    or not exists (
+      select 1
+      from public.property_commercial_review_evidence as review
+      where review.property_id = new.id
+        and review.commercial_agreement_evidence_id = v_current_agreement_id
+        and review.id = (
+          select latest_review.id
+          from public.property_commercial_review_evidence as latest_review
+          where latest_review.property_id = new.id
+            and latest_review.commercial_agreement_evidence_id =
+              v_current_agreement_id
+          order by latest_review.created_at desc, latest_review.id desc
+          limit 1
+        )
+        and review.commercial_terms_version = new.commercial_terms_version
+        and lower(trim(review.support_contact_email)) =
+          lower(trim(new.support_contact_email))
+        and review.reviewer_id = new.commercial_verified_by
+        and review.created_at = new.commercial_verified_at
+        and review.legal_business_verified
+        and review.sole_owner_conflict_acknowledged
+        and review.commercial_terms_evidence_verified
+        and review.support_contact_verified
+    )
+  then
+    raise exception 'An effective executed hotel commercial agreement and matching commercial review are required'
+      using errcode = 'P0001';
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke all on function public.enforce_hotel_commercial_agreement_property_guard()
+  from public, anon, authenticated, service_role;
+create trigger enforce_hotel_commercial_agreement_property_guard
+before update of active, listing_scope, direct_request_mode,
+  commercial_terms_version, commercial_verified_at, commercial_verified_by,
+  support_contact_email
+on public.properties
+for each row execute function public.enforce_hotel_commercial_agreement_property_guard();
+
+-- Public visibility is dynamic. Expiration, agreement termination, or version
+-- retirement hides the property even if a stale active=true value remains.
+create or replace function public.is_approved_marketplace_property(
+  p_property_id uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.properties
+    join public.partners on partners.id = properties.partner_id
+    where properties.id = p_property_id
+      and properties.active = true
+      and properties.listing_scope = 'commercial'
+      and properties.direct_request_mode = 'request_only'
+      and properties.commercial_verified_at is not null
+      and properties.commercial_verified_by is not null
+      and properties.commercial_terms_version =
+        'hotel_partner_fee_disclosure_13_3_2026-08-22_v1'
+      and nullif(trim(properties.support_contact_email), '') is not null
+      and partners.status = 'approved'
+      and public.is_hotel_commercial_agreement_effective(properties.id)
+      and exists (
+        select 1
+        from public.property_commercial_review_evidence as review
+        where review.property_id = properties.id
+          and review.commercial_agreement_evidence_id =
+            public.current_hotel_commercial_agreement_evidence_id(properties.id)
+          and review.id = (
+            select latest_review.id
+            from public.property_commercial_review_evidence as latest_review
+            where latest_review.property_id = properties.id
+              and latest_review.commercial_agreement_evidence_id =
+                public.current_hotel_commercial_agreement_evidence_id(
+                  properties.id
+                )
+            order by latest_review.created_at desc, latest_review.id desc
+            limit 1
+          )
+          and review.commercial_terms_version = properties.commercial_terms_version
+          and lower(trim(review.support_contact_email)) =
+            lower(trim(properties.support_contact_email))
+          and review.reviewer_id = properties.commercial_verified_by
+          and review.created_at = properties.commercial_verified_at
+          and review.legal_business_verified
+          and review.sole_owner_conflict_acknowledged
+          and review.commercial_terms_evidence_verified
+          and review.support_contact_verified
+      )
+  );
+$$;
+
+-- Preserve the exact, already-reviewed graph-locking implementation as an
+-- uncallable inner function. The public RPC name becomes the agreement-aware
+-- wrapper, so no application caller can bypass the new legal/commercial gate.
+alter function public.set_property_publication_state(uuid, boolean)
+  rename to set_property_publication_state_graph_guarded;
+alter function public.set_property_publication_state_graph_guarded(uuid, boolean)
+  set search_path = '';
+revoke all on function public.set_property_publication_state_graph_guarded(uuid, boolean)
+  from public, anon, authenticated, service_role;
+
+create function public.set_property_publication_state(
+  p_property_id uuid,
+  p_active boolean
+)
+returns public.properties
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_current_agreement_id uuid;
+begin
+  if not exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  ) then
+    raise exception 'Not authorized' using errcode = '42501';
+  end if;
+  if p_active is null then
+    raise exception 'A publication state is required' using errcode = '22023';
+  end if;
+
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(
+      'hotel-commercial-agreement:' || coalesce(p_property_id::text, ''),
+      0
+    )
+  );
+
+  if p_active then
+    v_current_agreement_id :=
+      public.current_hotel_commercial_agreement_evidence_id(p_property_id);
+    if v_current_agreement_id is null
+      or not exists (
+        select 1
+        from public.property_commercial_review_evidence as review
+        join public.properties as property_record
+          on property_record.id = review.property_id
+        where property_record.id = p_property_id
+          and review.commercial_agreement_evidence_id = v_current_agreement_id
+          and review.id = (
+            select latest_review.id
+            from public.property_commercial_review_evidence as latest_review
+            where latest_review.property_id = property_record.id
+              and latest_review.commercial_agreement_evidence_id =
+                v_current_agreement_id
+            order by latest_review.created_at desc, latest_review.id desc
+            limit 1
+          )
+          and review.commercial_terms_version =
+            property_record.commercial_terms_version
+          and lower(trim(review.support_contact_email)) =
+            lower(trim(property_record.support_contact_email))
+          and review.reviewer_id = property_record.commercial_verified_by
+          and review.created_at = property_record.commercial_verified_at
+          and review.legal_business_verified
+          and review.sole_owner_conflict_acknowledged
+          and review.commercial_terms_evidence_verified
+          and review.support_contact_verified
+      )
+    then
+      raise exception 'An effective executed hotel commercial agreement and matching commercial review are required before publication'
+        using errcode = 'P0001';
+    end if;
+  end if;
+
+  return public.set_property_publication_state_graph_guarded(
+    p_property_id,
+    p_active
+  );
+end;
+$$;
+
+revoke all on function public.set_property_publication_state(uuid, boolean)
+  from public, anon, service_role;
+grant execute on function public.set_property_publication_state(uuid, boolean)
+  to authenticated;
+
+create function public.terminate_hotel_commercial_agreement(
+  p_agreement_evidence_id uuid,
+  p_termination_reference text,
+  p_terminated_at timestamptz,
+  p_reason text
+)
+returns public.hotel_commercial_agreement_terminations
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_agreement public.hotel_commercial_agreement_evidence;
+  v_termination public.hotel_commercial_agreement_terminations;
+  v_now timestamptz := pg_catalog.clock_timestamp();
+begin
+  if not exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  ) then
+    raise exception 'Not authorized' using errcode = '42501';
+  end if;
+
+  select agreement.*
+  into v_agreement
+  from public.hotel_commercial_agreement_evidence as agreement
+  where agreement.id = p_agreement_evidence_id
+  for update;
+  if v_agreement.id is null then
+    raise exception 'Hotel commercial agreement evidence not found'
+      using errcode = 'P0002';
+  end if;
+
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(
+      'hotel-commercial-agreement:' || v_agreement.property_id::text,
+      0
+    )
+  );
+
+  if exists (
+    select 1 from public.hotel_commercial_agreement_terminations
+    where agreement_evidence_id = p_agreement_evidence_id
+  ) then
+    raise exception 'The hotel commercial agreement is already terminated'
+      using errcode = 'P0001';
+  end if;
+  if p_terminated_at is null
+    or p_terminated_at < v_agreement.effective_at
+    or p_terminated_at > v_now
+    or length(trim(coalesce(p_termination_reference, ''))) not between 8 and 160
+    or p_termination_reference ~ '[[:cntrl:]]'
+    or length(trim(coalesce(p_reason, ''))) not between 20 and 2000
+  then
+    raise exception 'Hotel commercial agreement termination evidence is incomplete or invalid'
+      using errcode = '22023';
+  end if;
+
+  -- Deactivate before recording the terminal event so the existing publication
+  -- guard sees the still-effective agreement. Both writes commit atomically.
+  update public.properties
+  set active = false
+  where id = v_agreement.property_id;
+
+  insert into public.hotel_commercial_agreement_terminations (
+    agreement_evidence_id,
+    property_id,
+    terminated_at,
+    termination_reference,
+    recorded_by,
+    reason_summary
+  ) values (
+    v_agreement.id,
+    v_agreement.property_id,
+    p_terminated_at,
+    trim(p_termination_reference),
+    auth.uid(),
+    trim(p_reason)
+  ) returning * into v_termination;
+
+  return v_termination;
+end;
+$$;
+
+revoke all on function public.terminate_hotel_commercial_agreement(
+  uuid, text, timestamptz, text
+) from public, anon, service_role;
+grant execute on function public.terminate_hotel_commercial_agreement(
+  uuid, text, timestamptz, text
+) to authenticated;
+
+create function public.retire_counsel_approved_hotel_commercial_agreement_version(
+  p_agreement_version text,
+  p_retirement_reference text,
+  p_retired_at timestamptz,
+  p_reason text
+)
+returns public.hotel_commercial_agreement_version_retirements
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_version public.hotel_commercial_agreement_versions;
+  v_retirement public.hotel_commercial_agreement_version_retirements;
+  v_property_id uuid;
+  v_now timestamptz := pg_catalog.clock_timestamp();
+begin
+  if not exists (
+    select 1 from public.profiles
+    where profiles.id = auth.uid() and profiles.role = 'admin'
+  ) then
+    raise exception 'Not authorized' using errcode = '42501';
+  end if;
+
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(
+      'hotel-commercial-agreement-version:' || coalesce(p_agreement_version, ''),
+      0
+    )
+  );
+
+  -- Lock every affected property in a deterministic order before taking the
+  -- version row lock. Receipt uses the same version-then-property order.
+  for v_property_id in
+    select distinct agreement.property_id
+    from public.hotel_commercial_agreement_evidence as agreement
+    where agreement.agreement_version = p_agreement_version
+    order by agreement.property_id
+  loop
+    perform pg_catalog.pg_advisory_xact_lock(
+      pg_catalog.hashtextextended(
+        'hotel-commercial-agreement:' || v_property_id::text,
+        0
+      )
+    );
+  end loop;
+
+  select agreement_version.*
+  into v_version
+  from public.hotel_commercial_agreement_versions as agreement_version
+  where agreement_version.agreement_version = p_agreement_version
+  for update;
+  if v_version.agreement_version is null then
+    raise exception 'Counsel-approved hotel commercial agreement version not found'
+      using errcode = 'P0002';
+  end if;
+  if exists (
+    select 1 from public.hotel_commercial_agreement_version_retirements
+    where agreement_version = p_agreement_version
+  ) then
+    raise exception 'The counsel-approved hotel commercial agreement version is already retired'
+      using errcode = 'P0001';
+  end if;
+  if p_retired_at is null
+    or p_retired_at < v_version.effective_at
+    or p_retired_at > v_now
+    or length(trim(coalesce(p_retirement_reference, ''))) not between 8 and 160
+    or p_retirement_reference ~ '[[:cntrl:]]'
+    or length(trim(coalesce(p_reason, ''))) not between 20 and 2000
+  then
+    raise exception 'Hotel commercial agreement version retirement evidence is incomplete or invalid'
+      using errcode = '22023';
+  end if;
+
+  update public.properties as property_record
+  set active = false
+  where property_record.active
+    and exists (
+      select 1
+      from public.hotel_commercial_agreement_evidence as agreement
+      where agreement.property_id = property_record.id
+        and agreement.agreement_version = p_agreement_version
+    );
+
+  insert into public.hotel_commercial_agreement_version_retirements (
+    agreement_version,
+    retired_at,
+    retirement_reference,
+    recorded_by,
+    reason_summary
+  ) values (
+    p_agreement_version,
+    p_retired_at,
+    trim(p_retirement_reference),
+    auth.uid(),
+    trim(p_reason)
+  ) returning * into v_retirement;
+
+  return v_retirement;
+end;
+$$;
+
+revoke all on function public.retire_counsel_approved_hotel_commercial_agreement_version(
+  text, text, timestamptz, text
+) from public, anon, service_role;
+grant execute on function public.retire_counsel_approved_hotel_commercial_agreement_version(
+  text, text, timestamptz, text
+) to authenticated;
+
+comment on table public.hotel_commercial_agreement_versions is
+  'Immutable metadata for counsel-approved agreement templates. This migration seeds no version, so counsel drafts grant no execution authority.';
+comment on table public.hotel_commercial_agreement_evidence is
+  'Immutable, minimized metadata for an externally executed property-specific hotel agreement. It stores no contract body, signature image, credential, bank data, or payment data.';
+comment on table public.hotel_commercial_agreement_terminations is
+  'Append-only terminal agreement evidence. Recording termination atomically deactivates the property and immediately fails public visibility closed.';
+comment on function public.record_hotel_commercial_agreement_receipt(
+  uuid, uuid, text, text, text, text, text, text,
+  timestamptz, timestamptz, timestamptz, timestamptz,
+  boolean, boolean, text
+) is 'Records a verified executed-agreement receipt only; it does not review or publish a property, enable bookings, or authorize payments, payouts, email, or supplier traffic.';
 -- Mirrored from migrations/202608260120_flight_consumer_webhook_operational_escalation.sql.
 begin;
 

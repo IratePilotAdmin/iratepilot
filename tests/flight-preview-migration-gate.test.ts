@@ -1442,7 +1442,55 @@ describe("flight Preview migration gate", () => {
   });
 
   it("requires the exact pinned local hotel 082 predecessor for apply readiness", () => {
+    expect(SHARED_HOTEL_MIGRATION).toMatchObject({
+      sha256: "acbbc2ab50a1eada1ae99204a0b85dd7479de0605d636a51393fd7ab759af912",
+      rollbackSha256:
+        "7150387ee5f5d3e7f741ab04169d03de25a40ea479c7811bf614b170478492de",
+    });
     const repositoryMigrations = listRepositoryMigrations();
+    const hotelMigration = readFileSync(
+      `supabase/migrations/${SHARED_HOTEL_MIGRATION.filename}`,
+      "utf8",
+    );
+    expect(hotelMigration).not.toContain("pg_catalog.greatest");
+    expect(hotelMigration).toContain(
+      "effective_at >= greatest(hotel_signed_at, iratepilot_signed_at)",
+    );
+    expect(hotelMigration).toContain(
+      "p_effective_at < greatest(p_hotel_signed_at, p_iratepilot_signed_at)",
+    );
+    const schema = readFileSync("supabase/schema.sql", "utf8");
+    const hotelMirrorMarker =
+      "-- Mirrored from migrations/202608250082_hotel_commercial_agreement_evidence.sql.";
+    const flightMirrorMarker =
+      "-- Mirrored from migrations/202608260120_flight_consumer_webhook_operational_escalation.sql.";
+    const hotelPrerequisiteMarkers = [
+      "-- Canonical bootstrap parity: 202608220062_hotel_partner_fee_schema.sql",
+      "-- Canonical bootstrap parity: 202608220063_activate_hotel_partner_fee_schedule.sql",
+      "-- Canonical bootstrap parity: 202608220070_hotel_commercial_intake_readiness.sql",
+      "-- Canonical bootstrap parity: 202608220071_direct_hotel_request_foundation.sql",
+      "-- Canonical bootstrap parity: 202608220072_ai_hotel_planner_user_quota.sql",
+      "-- Canonical bootstrap parity: 202608220073_legacy_hotel_transaction_barrier.sql",
+      "-- Canonical bootstrap parity: 202608220074_email_delivery_integrity_controls.sql",
+    ];
+    expect(schema).not.toContain("pg_catalog.greatest");
+    expect(schema).toContain(hotelMirrorMarker);
+    expect(schema).toContain(
+      "effective_at >= greatest(hotel_signed_at, iratepilot_signed_at)",
+    );
+    expect(schema).toContain(
+      "p_effective_at < greatest(p_hotel_signed_at, p_iratepilot_signed_at)",
+    );
+    let priorHotelMarkerIndex = -1;
+    for (const marker of hotelPrerequisiteMarkers) {
+      const markerIndex = schema.indexOf(marker);
+      expect(markerIndex).toBeGreaterThan(priorHotelMarkerIndex);
+      priorHotelMarkerIndex = markerIndex;
+    }
+    expect(priorHotelMarkerIndex).toBeLessThan(schema.indexOf(hotelMirrorMarker));
+    expect(schema.indexOf(hotelMirrorMarker)).toBeLessThan(
+      schema.indexOf(flightMirrorMarker),
+    );
     const withoutHotel = repositoryMigrations.filter(
       ({ version }: { version: string }) => version !== SHARED_HOTEL_MIGRATION.version,
     );

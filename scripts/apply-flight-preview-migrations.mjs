@@ -13,7 +13,7 @@ export const APPLY_CONFIRMATION_FLAG =
 export const SHARED_HOTEL_MIGRATION = Object.freeze({
   version: "202608250082",
   filename: "202608250082_hotel_commercial_agreement_evidence.sql",
-  sha256: "1aa9abf4d062504f44fa57794fa73f136a1391a55abb8e2b9b8cbfb9cda17696",
+  sha256: "acbbc2ab50a1eada1ae99204a0b85dd7479de0605d636a51393fd7ab759af912",
   rollbackFilename: "202608250082_hotel_commercial_agreement_evidence.rollback.sql",
   rollbackSha256: "7150387ee5f5d3e7f741ab04169d03de25a40ea479c7811bf614b170478492de",
 });
