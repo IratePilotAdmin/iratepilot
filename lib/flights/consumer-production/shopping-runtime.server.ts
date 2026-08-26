@@ -10,10 +10,21 @@ export const FLIGHT_CONSUMER_PRODUCTION_DUFFEL_SHOPPING_DARK_MODE =
   "flight_consumer_production_duffel_shopping_dark" as const;
 export const FLIGHT_CONSUMER_PRODUCTION_DUFFEL_SHOPPING_CONFIRMATION =
   "SEARCH_DUFFEL_LIVE_INVENTORY_WITHOUT_BOOKING" as const;
+export const FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ORDER_PLAN_REHEARSAL_MODE =
+  "flight_consumer_production_duffel_order_plan_rehearsal" as const;
+export const FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ORDER_PLAN_REHEARSAL_CONFIRMATION =
+  "PLAN_ONE_DUFFEL_LIVE_OFFER_WITH_FICTIONAL_TRAVELER_WITHOUT_ORDER_OR_PAYMENT" as const;
 const FLIGHT_CONSUMER_PRODUCTION_DUFFEL_SHOPPING_ONE_SHOT_GRANT_SHA256 =
   createHash("sha256")
     .update(
       "iratepilot:production:duffel:live:shopping-dark:one-shot-grant:v1:www.iratepilot.com",
+      "utf8",
+    )
+    .digest("hex");
+const FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ORDER_PLAN_REHEARSAL_ONE_SHOT_GRANT_SHA256 =
+  createHash("sha256")
+    .update(
+      "iratepilot:production:duffel:live:order-plan-rehearsal:one-shot-grant:v1:www.iratepilot.com",
       "utf8",
     )
     .digest("hex");
@@ -50,12 +61,56 @@ export type FlightConsumerProductionShoppingDarkRuntimeDecision =
     binding: null;
   }>;
 
+export type FlightConsumerProductionDuffelOrderPlanRehearsalRuntimeDecision =
+  | Readonly<{
+    authorized: true;
+    mode: typeof FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ORDER_PLAN_REHEARSAL_MODE;
+    reasons: readonly [];
+    binding: Readonly<{
+      providerCode: "duffel";
+      providerEnvironment: "live";
+      executionScopeSha256: string;
+      allowedOperations: readonly [
+        "create_offer_request",
+        "build_order_request_plan",
+      ];
+      orderEndpointEnabled: false;
+      stripeEnabled: false;
+      consumerReleaseEnabled: false;
+      bookingEnabled: false;
+      paymentEnabled: false;
+      settlementEnabled: false;
+      ticketingEnabled: false;
+      servicingEnabled: false;
+      transactionKillSwitchEngaged: true;
+    }>;
+  }>
+  | Readonly<{
+    authorized: false;
+    mode: "disabled";
+    reasons: readonly string[];
+    binding: null;
+  }>;
+
 export class FlightConsumerProductionShoppingDarkUnavailableError extends Error {
   readonly reasons: readonly string[];
 
   constructor(reasons: readonly string[]) {
     super("Flight Consumer Production Duffel shopping dark runtime is unavailable.");
     this.name = "FlightConsumerProductionShoppingDarkUnavailableError";
+    this.reasons = Object.freeze([...reasons]);
+  }
+}
+
+export class FlightConsumerProductionDuffelOrderPlanRehearsalUnavailableError extends Error {
+  readonly reasons: readonly string[];
+
+  constructor(reasons: readonly string[]) {
+    super(
+      "Flight Consumer Production Duffel order-plan rehearsal runtime is unavailable.",
+    );
+    this.name =
+      "FlightConsumerProductionDuffelOrderPlanRehearsalUnavailableError";
     this.reasons = Object.freeze([...reasons]);
   }
 }
@@ -127,6 +182,61 @@ function resolveCredentialBoundExecutionScope(
   });
 }
 
+function resolveCredentialBoundOrderPlanRehearsalExecutionScope(
+  env: ProductionEnvironment,
+  reasons: string[],
+) {
+  const providerAccountSha256 =
+    env.FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ACCOUNT_SHA256 ?? "";
+  const approvedCredentialSha256 =
+    env.FLIGHT_CONSUMER_PRODUCTION_DUFFEL_CREDENTIAL_SHA256 ?? "";
+  if (!sha256Pattern.test(providerAccountSha256)) {
+    reasons.push("The approved Duffel live account binding is unavailable.");
+  }
+  if (!sha256Pattern.test(approvedCredentialSha256)) {
+    reasons.push("The approved Duffel live credential binding is unavailable.");
+  }
+
+  let observedCredentialSha256: string | null = null;
+  try {
+    const credential = validateDuffelLiveAccessToken(env.DUFFEL_LIVE_ACCESS_TOKEN);
+    observedCredentialSha256 =
+      deriveFlightConsumerProductionDuffelCredentialSha256(credential);
+    if (
+      sha256Pattern.test(approvedCredentialSha256)
+      && !equalSha256(observedCredentialSha256, approvedCredentialSha256)
+    ) {
+      reasons.push("The Duffel live credential does not match its approved binding.");
+    }
+  } catch {
+    reasons.push("The dedicated Duffel live credential is unavailable.");
+  }
+
+  if (
+    !sha256Pattern.test(providerAccountSha256)
+    || !sha256Pattern.test(approvedCredentialSha256)
+    || observedCredentialSha256 === null
+    || !equalSha256(observedCredentialSha256, approvedCredentialSha256)
+  ) {
+    return null;
+  }
+
+  return sha256FlightEvidence({
+    version:
+      "flight-consumer-production-duffel-order-plan-rehearsal-execution-scope-v1",
+    deploymentOrigin: "https://www.iratepilot.com",
+    providerCode: "duffel",
+    providerEnvironment: "live",
+    operations: ["create_offer_request", "build_order_request_plan"],
+    confirmation:
+      FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ORDER_PLAN_REHEARSAL_CONFIRMATION,
+    providerAccountSha256,
+    providerCredentialSha256: observedCredentialSha256,
+    oneShotGrantSha256:
+      FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ORDER_PLAN_REHEARSAL_ONE_SHOT_GRANT_SHA256,
+  });
+}
+
 export function deriveFlightConsumerProductionDuffelShoppingOneShotIdempotencySha256(
   executionScopeSha256: string,
 ) {
@@ -140,6 +250,28 @@ export function deriveFlightConsumerProductionDuffelShoppingOneShotIdempotencySh
       FLIGHT_CONSUMER_PRODUCTION_DUFFEL_SHOPPING_ONE_SHOT_GRANT_SHA256,
   });
 }
+
+export function deriveFlightConsumerProductionDuffelOrderPlanRehearsalIdempotencySha256(
+  executionScopeSha256: string,
+) {
+  if (!sha256Pattern.test(executionScopeSha256)) {
+    throw new TypeError(
+      "The Duffel live order-plan rehearsal execution scope is invalid.",
+    );
+  }
+  return sha256FlightEvidence({
+    version:
+      "flight-consumer-production-duffel-order-plan-rehearsal-one-shot-idempotency-v1",
+    executionScopeSha256,
+    confirmation:
+      FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ORDER_PLAN_REHEARSAL_CONFIRMATION,
+    oneShotGrantSha256:
+      FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ORDER_PLAN_REHEARSAL_ONE_SHOT_GRANT_SHA256,
+  });
+}
+
+export const deriveFlightConsumerProductionDuffelOrderPlanRehearsalOneShotIdempotencySha256 =
+  deriveFlightConsumerProductionDuffelOrderPlanRehearsalIdempotencySha256;
 
 export function resolveFlightConsumerProductionShoppingDarkRuntime(
   env: ProductionEnvironment = process.env,
@@ -193,6 +325,77 @@ export function requireFlightConsumerProductionShoppingDarkRuntime(
   const decision = resolveFlightConsumerProductionShoppingDarkRuntime(env);
   if (!decision.authorized) {
     throw new FlightConsumerProductionShoppingDarkUnavailableError(decision.reasons);
+  }
+  return decision;
+}
+
+export function resolveFlightConsumerProductionDuffelOrderPlanRehearsalRuntime(
+  env: ProductionEnvironment = process.env,
+): FlightConsumerProductionDuffelOrderPlanRehearsalRuntimeDecision {
+  const reasons: string[] = [];
+  try {
+    requireFlightConsumerProductionDarkRuntime(env);
+  } catch {
+    reasons.push("The Production dark runtime is unavailable.");
+  }
+  if (
+    env.FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ORDER_PLAN_REHEARSAL_ENABLED
+    !== "true"
+  ) {
+    reasons.push("The dedicated Duffel live order-plan rehearsal gate is disabled.");
+  }
+  if (env.FLIGHT_CONSUMER_PRODUCTION_DUFFEL_SHOPPING_DARK_ENABLED !== "false") {
+    reasons.push("The Duffel live-shopping dark gate is not explicitly disabled.");
+  }
+  if (env.FLIGHT_CONSUMER_PRODUCTION_DUFFEL_SHOPPING_ORDER_ENABLED !== "false") {
+    reasons.push("The Duffel live-shopping order capability is not explicitly disabled.");
+  }
+  const executionScopeSha256 =
+    resolveCredentialBoundOrderPlanRehearsalExecutionScope(env, reasons);
+
+  if (reasons.length > 0 || executionScopeSha256 === null) {
+    return Object.freeze({
+      authorized: false as const,
+      mode: "disabled" as const,
+      reasons: Object.freeze([...new Set(reasons)]),
+      binding: null,
+    });
+  }
+
+  return Object.freeze({
+    authorized: true as const,
+    mode: FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ORDER_PLAN_REHEARSAL_MODE,
+    reasons: Object.freeze([]) as readonly [],
+    binding: Object.freeze({
+      providerCode: "duffel" as const,
+      providerEnvironment: "live" as const,
+      executionScopeSha256,
+      allowedOperations: Object.freeze([
+        "create_offer_request",
+        "build_order_request_plan",
+      ] as const),
+      orderEndpointEnabled: false as const,
+      stripeEnabled: false as const,
+      consumerReleaseEnabled: false as const,
+      bookingEnabled: false as const,
+      paymentEnabled: false as const,
+      settlementEnabled: false as const,
+      ticketingEnabled: false as const,
+      servicingEnabled: false as const,
+      transactionKillSwitchEngaged: true as const,
+    }),
+  });
+}
+
+export function requireFlightConsumerProductionDuffelOrderPlanRehearsalRuntime(
+  env: ProductionEnvironment = process.env,
+) {
+  const decision =
+    resolveFlightConsumerProductionDuffelOrderPlanRehearsalRuntime(env);
+  if (!decision.authorized) {
+    throw new FlightConsumerProductionDuffelOrderPlanRehearsalUnavailableError(
+      decision.reasons,
+    );
   }
   return decision;
 }

@@ -188,6 +188,11 @@ implements FlightConsumerProductionDuffelShoppingJournalPort {
   }
 }
 
+export function createFlightConsumerProductionDuffelShoppingJournalPort():
+FlightConsumerProductionDuffelShoppingJournalPort {
+  return Object.freeze(new SupabaseFlightConsumerProductionDuffelShoppingJournalPort());
+}
+
 function oneRow<T>(schema: z.ZodType<T>, value: unknown) {
   const parsed = z.array(schema).length(1).safeParse(value);
   if (!parsed.success) {
@@ -229,7 +234,9 @@ function validateTravelWindow(search: z.infer<typeof searchSchema>, now: Date) {
   }
 }
 
-async function readBoundedResponse(response: Response) {
+export async function readFlightConsumerProductionDuffelShoppingResponse(
+  response: Response,
+) {
   const declared = response.headers.get("content-length");
   const contentEncoding = response.headers.get("content-encoding")?.trim().toLowerCase() ?? null;
   const wireLengthMatchesDecodedLength = contentEncoding === null
@@ -318,7 +325,7 @@ export function createFlightConsumerProductionDarkDuffelShoppingWorkflow(
     throw new FlightConsumerProductionDuffelShoppingError(503, "workflow_unavailable");
   }
   const journal = dependencies.journal
-    ?? Object.freeze(new SupabaseFlightConsumerProductionDuffelShoppingJournalPort());
+    ?? createFlightConsumerProductionDuffelShoppingJournalPort();
   const fetcher = dependencies.fetcher ?? fetch;
   const now = dependencies.now ?? (() => new Date());
 
@@ -417,7 +424,7 @@ export function createFlightConsumerProductionDarkDuffelShoppingWorkflow(
         if (contentType !== "application/json") {
           throw new FlightConsumerProductionDuffelShoppingError(502, "provider_media_type_refused");
         }
-        rawBody = await readBoundedResponse(response);
+        rawBody = await readFlightConsumerProductionDuffelShoppingResponse(response);
         const responseSha256 = createHash("sha256").update(rawBody).digest("hex");
         if (!response.ok) {
           oneRow(completionRowSchema, await journal.complete({
