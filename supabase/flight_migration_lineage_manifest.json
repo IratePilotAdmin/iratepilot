@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "evidenceType": "flight_migration_lineage_freeze",
+  "recordedOn": "2026-08-26",
+  "sanitized": true,
+  "secretsIncluded": false,
+  "databaseWritesPerformed": false,
+  "preview": {
+    "requiredRemoteFlightBaselineTip": "202608250080",
+    "canonicalTip": "202608260137",
+    "canonicalVersions": [
+      "202608260120",
+      "202608260121",
+      "202608260122",
+      "202608260123",
+      "202608260124",
+      "202608260125",
+      "202608260126",
+      "202608260127",
+      "202608260128",
+      "202608260129",
+      "202608260130",
+      "202608260131",
+      "202608260132",
+      "202608260133",
+      "202608260134",
+      "202608260135",
+      "202608260136",
+      "202608260137"
+    ],
+    "retiredVersionMap": [
+      { "retired": "202608250081", "canonical": "202608260120" },
+      { "retired": "202608250082", "canonical": "202608260121" },
+      { "retired": "202608250083", "canonical": "202608260122" },
+      { "retired": "202608250084", "canonical": "202608260123" },
+      { "retired": "202608250085", "canonical": "202608260124" },
+      { "retired": "202608250086", "canonical": "202608260125" },
+      { "retired": "202608250087", "canonical": "202608260126" },
+      { "retired": "202608250088", "canonical": "202608260127" },
+      { "retired": "202608250089", "canonical": "202608260128" },
+      { "retired": "202608250090", "canonical": "202608260129" },
+      { "retired": "202608250091", "canonical": "202608260130" },
+      { "retired": "202608250092", "canonical": "202608260131" },
+      { "retired": "202608250093", "canonical": "202608260132" },
+      { "retired": "202608250094", "canonical": "202608260133" },
+      { "retired": "202608250095", "canonical": "202608260134" },
+      { "retired": "202608250096", "canonical": "202608260135" },
+      { "retired": "202608250097", "canonical": "202608260136" },
+      { "retired": "202608250098", "canonical": "202608260137" }
+    ],
+    "ledgerVerification": {
+      "status": "not_verified_stored_preview_db_credential_stale",
+      "mandatoryBeforeAnyFutureApply": true,
+      "retiredFlightIdentifierResultRequired": "none_of_081_or_083_through_098_present",
+      "sharedHotelPredecessorResultRequired": "202608250082_already_applied"
+    }
+  },
+  "sharedHotelOwnership": {
+    "version": "202608250082",
+    "filename": "202608250082_hotel_commercial_agreement_evidence.sql",
+    "forwardSha256": "1aa9abf4d062504f44fa57794fa73f136a1391a55abb8e2b9b8cbfb9cda17696",
+    "rollbackSha256": "7150387ee5f5d3e7f741ab04169d03de25a40ea479c7811bf614b170478492de",
+    "status": "published_deferred_unapplied",
+    "requiredAsAppliedExternalPredecessorBeforeFlightApply": true,
+    "flightGateApplyAuthority": "never_authorized"
+  },
+  "production": {
+    "ledgerLatestObservedVersion": "202608220063",
+    "versions": [
+      {
+        "version": "202608260099",
+        "filename": "202608260099_flight_consumer_live_duffel_webhook_ingress.sql",
+        "forwardSha256": "83c06cc08c172feb069201e4280b6c910742655983225dc9efbf557ab28eb752",
+        "rollbackSha256": "7cd205dc4932a75cce1cf7b8532f42c847375ce30dea8c354bb7e119fad94e64",
+        "status": "object_applied_via_guarded_dashboard_sql_not_ledgered",
+        "objectVerification": "passed"
+      },
+      {
+        "version": "202608260101",
+        "filename": "202608260101_flight_consumer_live_duffel_shopping_journal.sql",
+        "forwardSha256": "c92c6f0de60b14d3aac0c6a9314319e254cb6c6df59e68b53d5e3030dd96b70f",
+        "rollbackSha256": "2974933adefb8adf20273bea777527d5c593991e32bb8225353ae238c11e5c84",
+        "status": "object_applied_via_guarded_dashboard_sql_not_ledgered",
+        "objectVerification": "passed"
+      },
+      {
+        "version": "202608260102",
+        "filename": "202608260102_flight_consumer_live_duffel_shopping_rpc_qualification_repair.sql",
+        "forwardSha256": "fe71deff26682e5bd9bd8ae87966bb1c5eb4364e907ce9ea37962756aaf035f6",
+        "rollbackSha256": "39e4e8f1d5e118405ee0a1027866fd0224ca43d889f9c21a152dd0a4d99536aa",
+        "status": "object_applied_via_guarded_dashboard_sql_not_ledgered",
+        "objectVerification": "passed"
+      }
+    ],
+    "intentionallyUnused": {
+      "version": "202608260100",
+      "status": "never_created_never_applied_intentionally_unused"
+    },
+    "retroactiveLedgerRepairAuthorized": false
+  },
+  "reservedExternalRanges": [
+    {
+      "owner": "car_rental",
+      "firstVersion": "202608260200",
+      "lastVersion": "202608260207",
+      "flightUseAuthorized": false
+    }
+  ]
+}

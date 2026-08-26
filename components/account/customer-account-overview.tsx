@@ -19,6 +19,7 @@ const money = (value: number | string) => new Intl.NumberFormat("en-US", { style
 const actions = [
   ["Find a stay", "/search", "Search approved hotel and vacation-home inventory."],
   ["Manage trips", "/account/trips", "Review requests, confirmations, cancellations, and calendars."],
+  ["My flights", "/account/flights", "Review durable flight Preview orders, payment states, and test tickets."],
   ["Payment history", "/account/payments", "See test payments, refunds, and unpaid requests."],
   ["Membership", "/account/rewards", "Manage test billing, benefits, and reward activity."],
   ["Booking messages", "/account/support", "Contact the property team about a reservation."],

@@ -148,7 +148,11 @@ export type DuffelPreviewBookingRehearsalResult = Readonly<{
 export async function executeDuffelPreviewBookingRehearsal(
   confirmation: string,
 ): Promise<DuffelPreviewBookingRehearsalResult> {
-  if (confirmation !== CONFIRMATION || process.env.FLIGHT_DUFFEL_TEST_BOOKING_ENABLED !== "true") {
+  if (
+    confirmation !== CONFIRMATION
+    || process.env.FLIGHT_DUFFEL_TEST_BOOKING_ENABLED !== "true"
+    || process.env.FLIGHT_DUFFEL_TEST_CREDENTIAL_PROBE_ENABLED !== "false"
+  ) {
     throw new Error("Duffel Preview test booking is disabled or not exactly confirmed.");
   }
   secret();
@@ -156,7 +160,7 @@ export async function executeDuffelPreviewBookingRehearsal(
   const search: FlightCommerceSearchRequest = Object.freeze({
     origin: "ORD",
     destination: "MIA",
-    departureDate: isoDateAfter(60),
+    departureDate: isoDateAfter(72),
     returnDate: null,
     cabin: "economy",
     passengers: Object.freeze({ adults: 1, children: 0, infantsInSeat: 0, infantsOnLap: 0 }),
@@ -175,7 +179,10 @@ export async function executeDuffelPreviewBookingRehearsal(
   const retrievedAt = new Date().toISOString();
   repository.setTrustedTime(retrievedAt);
   const projected = sanitizeDuffelSandboxOfferResponse(searchBytes, { search, retrievedAt });
-  const selected = projected.result.offers.find((offer) => Date.parse(offer.expiresAt) > Date.now() + 60_000);
+  const selected = projected.result.offers.find((offer, index) => (
+    Date.parse(offer.expiresAt) > Date.now() + 60_000
+    && projected.evidence[index]?.passengerIdentityDocumentsRequired === false
+  ));
   if (!selected) throw new Error("Duffel returned no currently bookable test offer.");
   const retentionExpiresAt = new Date(Date.parse(retrievedAt) + 45 * 60_000).toISOString();
   const initial = await persistDuffelSandboxInitialOfferEvidence(repository, searchBytes, {

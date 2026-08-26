@@ -57,18 +57,16 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
   it("recognizes later flight migrations without adding them to the legacy Preview apply allowlist", () => {
     const versions = listMigrationVersions();
     expect(versions).toEqual(expect.arrayContaining(REQUIRED_PREVIEW_BASELINE));
-    expect(versions.at(-1)).toBe("202608250072");
+    expect(versions.at(-1)).toBe("202608260137");
     expect(APPROVED_PREVIEW_PENDING).toEqual([
       "202608170064",
       "202608170065",
       "202608170066",
       "202608170067",
     ]);
-    expect(APPROVED_PREVIEW_PENDING).not.toContain("202608230068");
-    expect(APPROVED_PREVIEW_PENDING).not.toContain("202608240069");
-    expect(APPROVED_PREVIEW_PENDING).not.toContain("202608250070");
-    expect(APPROVED_PREVIEW_PENDING).not.toContain("202608250071");
-    expect(APPROVED_PREVIEW_PENDING).not.toContain("202608250072");
+    for (const version of versions.filter((version) => version >= "202608230068")) {
+      expect(APPROVED_PREVIEW_PENDING).not.toContain(version);
+    }
     expect(assertPreviewMigrationTarget({
       PREVIEW_SUPABASE_DB_URL: previewUrl,
       PREVIEW_SUPABASE_PROJECT_REF: previewRef,
@@ -127,8 +125,10 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
     )).toThrow("does not match");
   });
 
-  it("refuses migration 072 before push because it is outside the legacy Preview allowlist", () => {
+  it("refuses the latest flight migration before push because it is outside the legacy Preview allowlist", () => {
     const repoMigrationVersions = listMigrationVersions();
+    const latestVersion = repoMigrationVersions.at(-1);
+    expect(latestVersion).toBeDefined();
     const calls: Array<{ args: string[]; capture?: boolean }> = [];
     const runner = (_command: string, args: string[], _env: Record<string, string | undefined>, options?: { capture?: boolean }) => {
       calls.push({ args, capture: options?.capture });
@@ -139,7 +139,7 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
       PREVIEW_SUPABASE_DB_URL: previewUrl,
       PREVIEW_SUPABASE_PROJECT_REF: previewRef,
     }, [], runner)).toThrow(
-      "Preview migration ledger has an unapproved pending set: 202608250072.",
+      `Preview migration ledger has an unapproved pending set: ${latestVersion}.`,
     );
     expect(calls.map(({ args }) => args.slice(0, 2))).toEqual([
       ["migration", "list"],

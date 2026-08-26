@@ -13,6 +13,7 @@ type SessionUser = {
 const customerAccountLinks = [
   { href: "/account", label: "Account overview" },
   { href: "/account/trips", label: "My trips" },
+  { href: "/account/flights", label: "My flights" },
   { href: "/account/payments", label: "Payment history" },
   { href: "/account/rewards", label: "Membership & rewards" },
   { href: "/account/profile", label: "Profile" },

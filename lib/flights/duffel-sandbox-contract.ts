@@ -322,16 +322,20 @@ export type DuffelAuthenticatedOfferEvidenceLoadResult =
  * stored under that receipt. The contract never treats an unkeyed self-hash as
  * repository authority.
  */
-export interface DuffelAuthenticatedOfferEvidenceRepository {
+export interface DuffelAuthenticatedOfferEvidenceLoader {
   readOfferEvidencePolicy(): Promise<DuffelAuthenticatedOfferEvidenceRepositoryPolicy>;
-  storeOfferEvidence(
-    record: DuffelDurableOfferEvidenceRecord,
-    expectedScope: DuffelOfferEvidenceScope,
-  ): Promise<DuffelAuthenticatedOfferEvidenceStoreResult>;
   verifyAndLoadOfferEvidence(
     receiptDigest: string,
     expectedScope: DuffelOfferEvidenceScope,
   ): Promise<DuffelAuthenticatedOfferEvidenceLoadResult>;
+}
+
+export interface DuffelAuthenticatedOfferEvidenceRepository
+extends DuffelAuthenticatedOfferEvidenceLoader {
+  storeOfferEvidence(
+    record: DuffelDurableOfferEvidenceRecord,
+    expectedScope: DuffelOfferEvidenceScope,
+  ): Promise<DuffelAuthenticatedOfferEvidenceStoreResult>;
 }
 
 export type DuffelRehydratedOfferEvidence = Readonly<{
@@ -343,6 +347,48 @@ export type DuffelRehydratedOfferEvidence = Readonly<{
   search: FlightCommerceSearchRequest;
   snapshot: FlightOfferSnapshot;
   evidence: DuffelSanitizedOfferEvidence | DuffelRefreshedOfferEvidence;
+}>;
+
+/**
+ * Minimal binding evidence for validating an already-observed terminal order.
+ * This deliberately omits the provider offer ID and every request-plan field,
+ * and instances are never added to the ordinary offer-evidence WeakSets.
+ */
+export type DuffelTerminalRecoveryRefreshedOfferEvidence = Readonly<{
+  version: "duffel-terminal-recovery-refreshed-offer-evidence-v1";
+  providerOfferIdDigest: string;
+  providerPassengerIdDigests: readonly string[];
+  total: FlightMoney;
+  base: FlightMoney;
+  tax: FlightMoney | null;
+  refreshedAt: string;
+  refreshReceiptDigest: string;
+  termsDigest: string;
+  cabin: FlightCommerceSearchRequest["cabin"];
+  segmentIdentityDigests: readonly string[];
+  segmentOrderSharedTermsDigests: readonly string[];
+  sliceSegmentIdentityDigests: readonly (readonly string[])[];
+  sliceTermsDigests: readonly string[];
+  operatingCarrierFlightNumbers: readonly string[];
+  carrierDisclosureDigests: readonly string[];
+  offerConditionsDigest: string;
+}>;
+
+/**
+ * Historical offer projection for validating an already-observed terminal
+ * response. The intentionally different `terminalStage` shape is never added
+ * to the private order-create WeakSet and is not an order-dispatch capability.
+ */
+export type DuffelTerminalRecoveryOfferEvidence = Readonly<{
+  version: "duffel-terminal-recovery-offer-evidence-v1";
+  terminalStage: "refreshed";
+  receiptDigest: string;
+  recordDigest: string;
+  scope: DuffelOfferEvidenceScope;
+  retentionExpiresAt: string;
+  search: FlightCommerceSearchRequest;
+  snapshot: FlightOfferSnapshot;
+  evidence: DuffelTerminalRecoveryRefreshedOfferEvidence;
 }>;
 
 export type DuffelWebhookSignature = Readonly<{ timestampSeconds: number; signatureHex: string }>;
@@ -431,6 +477,7 @@ const exactDecimalLexemeKey = "$duffelExactDecimalLexeme";
 const sanitizedDuffelOfferEvidence = new WeakSet<object>();
 const refreshedDuffelOfferEvidence = new WeakSet<object>();
 const rehydratedDuffelOfferEvidence = new WeakSet<object>();
+const terminalRecoveryDuffelOfferEvidence = new WeakSet<object>();
 const duffelSandboxRequestPlans = new WeakSet<object>();
 const verifiedDuffelOrderCreateAuthorities = new WeakSet<object>();
 const duffelSandboxOrderCreatePlans = new WeakSet<object>();
@@ -831,13 +878,18 @@ function assertProjectedOfferEvidence(
   ) throw new DuffelContractError(`${label} is not bound to its provider identifier.`);
 }
 
-function normalizeDuffelInstant(value: FlightCanonicalJsonValue | undefined, label: string, nullable = false) {
+function normalizeDuffelInstant(
+  value: FlightCanonicalJsonValue | undefined,
+  label: string,
+  nullable = false,
+  allowSubmillisecondTruncation = false,
+) {
   if (nullable && value === null) return null;
   const string = asString(value, label);
   const match = string.match(duffelInstantPattern);
   if (match === null) throw new DuffelContractError(`${label} must be a supported exact ISO-8601 instant.`);
   const [, yearText, monthText, dayText, hourText, minuteText, secondText, fractionText, zone] = match;
-  if (fractionText !== undefined && fractionText.length > 3) {
+  if (fractionText !== undefined && fractionText.length > 3 && !allowSubmillisecondTruncation) {
     throw new DuffelContractError(`${label} exceeds exact millisecond precision.`);
   }
   const [year, month, day, hour, minute, second] = [yearText, monthText, dayText, hourText, minuteText, secondText].map(Number);
@@ -852,9 +904,20 @@ function normalizeDuffelInstant(value: FlightCanonicalJsonValue | undefined, lab
       throw new DuffelContractError(`${label} has an unsupported UTC offset.`);
     }
   }
-  const parsed = Date.parse(string.replace(" ", "T"));
+  const parseable = fractionText !== undefined && fractionText.length > 3
+    ? string.replace(`.${fractionText}`, `.${fractionText.slice(0, 3)}`)
+    : string;
+  const parsed = Date.parse(parseable.replace(" ", "T"));
   if (!Number.isFinite(parsed)) throw new DuffelContractError(`${label} must be a supported exact ISO-8601 instant.`);
   return new Date(parsed).toISOString();
+}
+
+function duffelInstantsCanOccurInOrderAtReportedPrecision(earlier: string, later: string) {
+  // Duffel can report related order timestamps at mixed precision: created_at
+  // may contain microseconds while synced_at and paid_at are whole-second
+  // values. Compare those provider-to-provider lifecycle boundaries at their
+  // shared whole-second precision; the exact source bytes remain digest-bound.
+  return Math.floor(Date.parse(earlier) / 1_000) <= Math.floor(Date.parse(later) / 1_000);
 }
 
 function providerId(value: FlightCanonicalJsonValue | undefined, prefix: string, label: string) {
@@ -1033,7 +1096,7 @@ export function buildDuffelSandboxOfferRetrievalPlan(
     operation: "retrieve_offer",
     method: "GET",
     path: `/air/offers/${evidence.providerOfferId}`,
-    query: { return_available_services: true },
+    query: { return_available_services: false },
     body: null,
     minimumTimeoutMs: 30_000,
   });
@@ -2009,7 +2072,10 @@ function projectOffer(
     throw new DuffelContractError("Duffel offline certification accepts only the explicit Duffel Airways ZZ test owner.");
   }
   const providerOfferId = providerId(offer.id, "off", "Duffel offer ID");
-  const expiresAt = normalizeDuffelInstant(offer.expires_at, "Duffel offer expiry")!;
+  // Duffel can emit microsecond offer expiries. The exact raw body remains
+  // digest-bound; this provider expiry deadline is conservatively floor-
+  // truncated to the JavaScript runtime's millisecond precision.
+  const expiresAt = normalizeDuffelInstant(offer.expires_at, "Duffel offer expiry", false, true)!;
   const retrievedAtMs = Date.parse(retrievedAt);
   const expiresAtMs = Date.parse(expiresAt);
   if (!Number.isFinite(retrievedAtMs) || !Number.isFinite(expiresAtMs) || expiresAtMs <= retrievedAtMs) {
@@ -2138,16 +2204,24 @@ function projectOffer(
     "Duffel offer conditions",
   );
   const offerConditionsDigest = sha256FlightEvidence({ version: "duffel-top-level-fare-conditions-v1", conditions });
-  if (Object.prototype.hasOwnProperty.call(offer, "intended_services") || Object.prototype.hasOwnProperty.call(offer, "intended_payment_methods")) {
-    throw new DuffelContractError("Duffel priced-offer-only intended fields are outside this base-offer profile.");
+  const intendedServices = Object.prototype.hasOwnProperty.call(offer, "intended_services")
+    ? offer.intended_services === null
+      ? []
+      : asArray(offer.intended_services, "Duffel intended services")
+    : [];
+  const intendedPaymentMethods = Object.prototype.hasOwnProperty.call(offer, "intended_payment_methods")
+    ? offer.intended_payment_methods === null
+      ? []
+      : asArray(offer.intended_payment_methods, "Duffel intended payment methods")
+    : [];
+  if (intendedServices.length !== 0 || intendedPaymentMethods.length !== 0) {
+    throw new DuffelContractError("This Duffel profile accepts only offers with no intended services or payment methods.");
   }
   const availableServicesPresent = Object.prototype.hasOwnProperty.call(offer, "available_services");
-  if ((projectionPhase === "initial_search" && availableServicesPresent) || (projectionPhase === "refresh" && !availableServicesPresent)) {
-    throw new DuffelContractError("Duffel available services presence does not match the exact search-versus-GET operation.");
-  }
-  const availableServices = projectionPhase === "refresh"
-    ? asArray(offer.available_services, "Duffel available services")
-    : [];
+  const availableServices = !availableServicesPresent
+    || (projectionPhase === "initial_search" && offer.available_services === null)
+    ? []
+    : asArray(offer.available_services, "Duffel available services");
   if (availableServices.length !== 0) {
     throw new DuffelContractError("This offline Duffel profile refuses ancillary services until exact order-side service evidence exists.");
   }
@@ -2297,15 +2371,35 @@ export function sanitizeDuffelSandboxOfferResponse(
   const rawBodyDigest = digestBytes(rawBodySnapshot);
   const rawOffers = asArray(data.offers, "Duffel offer-request offers");
   if (rawOffers.length > 100) throw new DuffelContractError("Duffel offer response exceeds the local 100-offer cap.");
-  const rawProviderOfferIds = rawOffers.map((rawOffer, index) => providerId(
-    asRecord(rawOffer, `Duffel offer ${index + 1}`).id,
+  const rawOfferRecords = rawOffers.map((rawOffer, index) => asRecord(rawOffer, `Duffel offer ${index + 1}`));
+  const rawProviderOfferIds = rawOfferRecords.map((rawOffer, index) => providerId(
+    rawOffer.id,
     "off",
     `Duffel offer ${index + 1} ID`,
   ));
   if (new Set(rawProviderOfferIds).size !== rawProviderOfferIds.length) {
     throw new DuffelContractError("Duffel offer-request response contains duplicate provider offer IDs.");
   }
-  const projected = rawOffers.map((offer) => projectOffer(
+  const certifiableOffers = rawOfferRecords.filter((offer, index) => {
+    if (offer.live_mode !== false) {
+      throw new DuffelContractError("Duffel sandbox offer must explicitly report live_mode false.");
+    }
+    const owner = asRecord(offer.owner ?? null, `Duffel offer ${index + 1} owner`);
+    const ownerName = asString(owner.name, `Duffel offer ${index + 1} owner name`);
+    const ownerIataCode = owner.iata_code === null
+      ? null
+      : asString(owner.iata_code, `Duffel offer ${index + 1} owner IATA code`, carrierPattern);
+    const nameMatches = ownerName === DUFFEL_TEST_AIRLINE.ownerName;
+    const codeMatches = ownerIataCode === DUFFEL_TEST_AIRLINE.iataCode;
+    if (nameMatches !== codeMatches) {
+      throw new DuffelContractError("Duffel offer owner identity is inconsistent with the explicit Duffel Airways ZZ test owner.");
+    }
+    return nameMatches && codeMatches;
+  });
+  if (rawOffers.length > 0 && certifiableOffers.length === 0) {
+    throw new DuffelContractError("Duffel offline certification accepts only the explicit Duffel Airways ZZ test owner.");
+  }
+  const projected = certifiableOffers.map((offer) => projectOffer(
     offer,
     exactSearch,
     requestDigest,
@@ -2572,38 +2666,50 @@ function validateDurableOfferRecord(value: DuffelDurableOfferEvidenceRecord) {
   return Object.freeze({ record, rawBody });
 }
 
-type ReviewedDuffelOfferEvidenceRepository = Readonly<{
-  readPolicy: DuffelAuthenticatedOfferEvidenceRepository["readOfferEvidencePolicy"];
-  store: DuffelAuthenticatedOfferEvidenceRepository["storeOfferEvidence"];
-  load: DuffelAuthenticatedOfferEvidenceRepository["verifyAndLoadOfferEvidence"];
+type ReviewedDuffelOfferEvidenceLoader = Readonly<{
+  readPolicy: DuffelAuthenticatedOfferEvidenceLoader["readOfferEvidencePolicy"];
+  load: DuffelAuthenticatedOfferEvidenceLoader["verifyAndLoadOfferEvidence"];
 }>;
+
+type ReviewedDuffelOfferEvidenceRepository = ReviewedDuffelOfferEvidenceLoader & Readonly<{
+  store: DuffelAuthenticatedOfferEvidenceRepository["storeOfferEvidence"];
+}>;
+
+function reviewAuthenticatedOfferEvidenceLoader(
+  loader: DuffelAuthenticatedOfferEvidenceLoader,
+): ReviewedDuffelOfferEvidenceLoader {
+  if (loader === null || typeof loader !== "object" || nodeTypes.isProxy(loader)) {
+    throw new DuffelContractError("Duffel offer evidence requires a non-proxy authenticated loader.");
+  }
+  return Object.freeze({
+    readPolicy: captureTrustedMethod<DuffelAuthenticatedOfferEvidenceLoader["readOfferEvidencePolicy"]>(
+      loader,
+      "readOfferEvidencePolicy",
+      "Duffel authenticated offer evidence loader",
+    ),
+    load: captureTrustedMethod<DuffelAuthenticatedOfferEvidenceLoader["verifyAndLoadOfferEvidence"]>(
+      loader,
+      "verifyAndLoadOfferEvidence",
+      "Duffel authenticated offer evidence loader",
+    ),
+  });
+}
 
 function reviewAuthenticatedOfferEvidenceRepository(
   repository: DuffelAuthenticatedOfferEvidenceRepository,
 ): ReviewedDuffelOfferEvidenceRepository {
-  if (repository === null || typeof repository !== "object" || nodeTypes.isProxy(repository)) {
-    throw new DuffelContractError("Duffel offer evidence requires a non-proxy authenticated repository.");
-  }
+  const loader = reviewAuthenticatedOfferEvidenceLoader(repository);
   return Object.freeze({
-    readPolicy: captureTrustedMethod<DuffelAuthenticatedOfferEvidenceRepository["readOfferEvidencePolicy"]>(
-      repository,
-      "readOfferEvidencePolicy",
-      "Duffel authenticated offer evidence repository",
-    ),
+    ...loader,
     store: captureTrustedMethod<DuffelAuthenticatedOfferEvidenceRepository["storeOfferEvidence"]>(
       repository,
       "storeOfferEvidence",
       "Duffel authenticated offer evidence repository",
     ),
-    load: captureTrustedMethod<DuffelAuthenticatedOfferEvidenceRepository["verifyAndLoadOfferEvidence"]>(
-      repository,
-      "verifyAndLoadOfferEvidence",
-      "Duffel authenticated offer evidence repository",
-    ),
   });
 }
 
-async function readAuthenticatedOfferEvidenceRepositoryPolicy(repository: ReviewedDuffelOfferEvidenceRepository) {
+async function readAuthenticatedOfferEvidenceRepositoryPolicy(repository: ReviewedDuffelOfferEvidenceLoader) {
   const policy = snapshotCanonicalInput(
     await repository.readPolicy(),
     "Duffel authenticated offer evidence repository policy",
@@ -2732,7 +2838,7 @@ export async function persistDuffelSandboxInitialOfferEvidence(
 }
 
 async function rehydrateDuffelSandboxOfferEvidenceInternal(
-  repository: ReviewedDuffelOfferEvidenceRepository,
+  repository: ReviewedDuffelOfferEvidenceLoader,
   policy: DuffelAuthenticatedOfferEvidenceRepositoryPolicy,
   receiptDigest: string,
   expectedScope: DuffelOfferEvidenceScope,
@@ -2816,7 +2922,6 @@ async function rehydrateDuffelSandboxOfferEvidenceInternal(
     snapshot,
     evidence,
   });
-  rehydratedDuffelOfferEvidence.add(rehydrated);
   return rehydrated;
 }
 
@@ -2828,7 +2933,77 @@ export async function rehydrateDuffelSandboxOfferEvidence(
   const reviewedRepository = reviewAuthenticatedOfferEvidenceRepository(repository);
   const scope = snapshotOfferEvidenceScope(expectedScope, "Duffel offer evidence rehydration scope");
   const policy = await readAuthenticatedOfferEvidenceRepositoryPolicy(reviewedRepository);
-  return rehydrateDuffelSandboxOfferEvidenceInternal(reviewedRepository, policy, receiptDigest, scope, new Set(), 0);
+  const rehydrated = await rehydrateDuffelSandboxOfferEvidenceInternal(
+    reviewedRepository,
+    policy,
+    receiptDigest,
+    scope,
+    new Set(),
+    0,
+  );
+  rehydratedDuffelOfferEvidence.add(rehydrated);
+  return rehydrated;
+}
+
+/**
+ * Decrypts, chain-validates, and projects historical offer evidence without
+ * adding the result to the private order-create authority WeakSet. The loader
+ * surface has no persistence method and this result cannot authorize dispatch.
+ */
+export async function projectDuffelSandboxTerminalRecoveryOfferEvidence(
+  loader: DuffelAuthenticatedOfferEvidenceLoader,
+  receiptDigest: string,
+  expectedScope: DuffelOfferEvidenceScope,
+): Promise<DuffelTerminalRecoveryOfferEvidence> {
+  const reviewedLoader = reviewAuthenticatedOfferEvidenceLoader(loader);
+  const scope = snapshotOfferEvidenceScope(
+    expectedScope,
+    "Duffel terminal-recovery offer evidence projection scope",
+  );
+  const policy = await readAuthenticatedOfferEvidenceRepositoryPolicy(reviewedLoader);
+  const projected = await rehydrateDuffelSandboxOfferEvidenceInternal(
+    reviewedLoader,
+    policy,
+    receiptDigest,
+    scope,
+    new Set(),
+    0,
+  );
+  if (projected.stage !== "refreshed" || projected.evidence.version !== "duffel-refreshed-offer-v1") {
+    throw new DuffelContractError("Duffel terminal recovery requires exact post-reprice offer evidence.");
+  }
+  const refreshed = projected.evidence;
+  const terminalEvidence = deepFreeze({
+    version: "duffel-terminal-recovery-refreshed-offer-evidence-v1" as const,
+    providerOfferIdDigest: refreshed.providerOfferIdDigest,
+    providerPassengerIdDigests: [...refreshed.providerPassengerIdDigests],
+    total: { ...refreshed.total },
+    base: { ...refreshed.base },
+    tax: refreshed.tax === null ? null : { ...refreshed.tax },
+    refreshedAt: refreshed.refreshedAt,
+    refreshReceiptDigest: refreshed.refreshReceiptDigest,
+    termsDigest: refreshed.termsDigest,
+    cabin: refreshed.cabin,
+    segmentIdentityDigests: [...refreshed.segmentIdentityDigests],
+    segmentOrderSharedTermsDigests: [...refreshed.segmentOrderSharedTermsDigests],
+    sliceSegmentIdentityDigests: refreshed.sliceSegmentIdentityDigests.map((slice) => [...slice]),
+    sliceTermsDigests: [...refreshed.sliceTermsDigests],
+    operatingCarrierFlightNumbers: [...refreshed.operatingCarrierFlightNumbers],
+    carrierDisclosureDigests: [...refreshed.carrierDisclosureDigests],
+    offerConditionsDigest: refreshed.offerConditionsDigest,
+  });
+  terminalRecoveryDuffelOfferEvidence.add(terminalEvidence);
+  return deepFreeze({
+    version: "duffel-terminal-recovery-offer-evidence-v1" as const,
+    terminalStage: "refreshed" as const,
+    receiptDigest: projected.receiptDigest,
+    recordDigest: projected.recordDigest,
+    scope: projected.scope,
+    retentionExpiresAt: projected.retentionExpiresAt,
+    search: projected.search,
+    snapshot: projected.snapshot,
+    evidence: terminalEvidence,
+  });
 }
 
 export async function persistDuffelSandboxRefreshedOfferEvidence(
@@ -2957,23 +3132,71 @@ export function classifyDuffelOrderCreateOutcome(input: Readonly<{
   });
 }
 
-export function sanitizeDuffelSandboxOrderResponse(
+type DuffelOrderResponseExpectedOffer =
+  | DuffelRefreshedOfferEvidence
+  | DuffelTerminalRecoveryRefreshedOfferEvidence;
+
+type DuffelOrderResponseProjectionInput<TExpectedOffer extends DuffelOrderResponseExpectedOffer> = Readonly<{
+  expectedOffer: TExpectedOffer;
+  acceptedTermsDigest: string;
+  expectedProviderPassengerIds: readonly string[];
+  retrievedAt: string;
+}>;
+
+const terminalRecoveryRefreshedOfferEvidenceKeys = Object.freeze([
+  "base",
+  "cabin",
+  "carrierDisclosureDigests",
+  "offerConditionsDigest",
+  "operatingCarrierFlightNumbers",
+  "providerOfferIdDigest",
+  "providerPassengerIdDigests",
+  "refreshReceiptDigest",
+  "refreshedAt",
+  "segmentIdentityDigests",
+  "segmentOrderSharedTermsDigests",
+  "sliceSegmentIdentityDigests",
+  "sliceTermsDigests",
+  "tax",
+  "termsDigest",
+  "total",
+  "version",
+] as const);
+
+function sanitizeDuffelSandboxOrderResponseInternal(
   rawBody: Uint8Array,
-  input: Readonly<{
-    expectedOffer: DuffelRefreshedOfferEvidence;
-    acceptedTermsDigest: string;
-    expectedProviderPassengerIds: readonly string[];
-    retrievedAt: string;
-  }>,
+  input: DuffelOrderResponseProjectionInput<DuffelOrderResponseExpectedOffer>,
+  expectedOfferAuthority: "ordinary_refreshed" | "terminal_recovery",
 ): DuffelSanitizedOrderEvidence {
   const rawBodySnapshot = snapshotDuffelBytes(rawBody, "Duffel order response body");
-  const expectedOfferReference = dataPropertyReference(input, "expectedOffer", "Duffel order projection input") as DuffelRefreshedOfferEvidence;
+  const expectedOfferReference = dataPropertyReference(
+    input,
+    "expectedOffer",
+    "Duffel order projection input",
+  ) as DuffelOrderResponseExpectedOffer;
   const exactInput = snapshotCanonicalInput(input, "Duffel order projection input") as typeof input;
   assertExactInputKeys(exactInput as unknown as Readonly<Record<string, unknown>>, "Duffel order projection input", [
     "acceptedTermsDigest", "expectedOffer", "expectedProviderPassengerIds", "retrievedAt",
   ]);
-  if (!refreshedDuffelOfferEvidence.has(expectedOfferReference as object)) {
-    throw new DuffelContractError("Duffel order evidence requires an exact post-reprice offer receipt.");
+  if (expectedOfferAuthority === "ordinary_refreshed") {
+    if (
+      expectedOfferReference.version !== "duffel-refreshed-offer-v1"
+      || !refreshedDuffelOfferEvidence.has(expectedOfferReference as object)
+    ) {
+      throw new DuffelContractError("Duffel order evidence requires an exact post-reprice offer receipt.");
+    }
+  } else {
+    assertExactInputKeys(
+      exactInput.expectedOffer as unknown as Readonly<Record<string, unknown>>,
+      "Duffel terminal-recovery refreshed offer evidence",
+      terminalRecoveryRefreshedOfferEvidenceKeys,
+    );
+    if (
+      exactInput.expectedOffer.version !== "duffel-terminal-recovery-refreshed-offer-evidence-v1"
+      || !terminalRecoveryDuffelOfferEvidence.has(expectedOfferReference as object)
+    ) {
+      throw new DuffelContractError("Duffel terminal order evidence requires the exact terminal-recovery offer binding.");
+    }
   }
   const retrievedAt = normalizeDuffelInstant(exactInput.retrievedAt, "Duffel order retrieval time")!;
   if (
@@ -3018,10 +3241,12 @@ export function sanitizeDuffelSandboxOrderResponse(
   const createdAt = normalizeDuffelInstant(
     requiredField(order, "created_at", "Duffel order created-at"),
     "Duffel order created-at",
+    false,
+    true,
   )!;
   if (
     Date.parse(createdAt) < Date.parse(exactInput.expectedOffer.refreshedAt)
-    || Date.parse(createdAt) > Date.parse(syncedAt)
+    || !duffelInstantsCanOccurInOrderAtReportedPrecision(createdAt, syncedAt)
   ) {
     throw new DuffelContractError("Duffel order creation must follow the accepted offer refresh and cannot follow synchronization.");
   }
@@ -3127,7 +3352,10 @@ export function sanitizeDuffelSandboxOrderResponse(
   const paymentStatus = asRecord(order.payment_status ?? null, "Duffel order payment status");
   const paidAt = normalizeDuffelInstant(paymentStatus.paid_at, "Duffel paid-at", true);
   const awaitingPayment = asBoolean(paymentStatus.awaiting_payment, "Duffel awaiting-payment status");
-  if (paidAt !== null && (Date.parse(paidAt) < Date.parse(createdAt) || Date.parse(paidAt) > Date.parse(retrievedAt))) {
+  if (paidAt !== null && (
+    !duffelInstantsCanOccurInOrderAtReportedPrecision(createdAt, paidAt)
+    || Date.parse(paidAt) > Date.parse(retrievedAt)
+  )) {
     throw new DuffelContractError("Duffel payment evidence must follow order creation and cannot follow order retrieval.");
   }
   const orderPassengers = asArray(order.passengers, "Duffel order passengers").map((passenger, index) => {
@@ -3147,7 +3375,7 @@ export function sanitizeDuffelSandboxOrderResponse(
   for (const document of documents) {
     const record = asRecord(document, "Duffel order document");
     if (record.type !== "electronic_ticket") continue;
-    const identifier = asString(record.unique_identifier, "Duffel electronic-ticket identifier", /^[A-Za-z0-9-]{6,64}$/);
+    const identifier = asString(record.unique_identifier, "Duffel electronic-ticket identifier", /^[A-Za-z0-9-]{1,64}$/);
     if (rawTicketIdentifiers.has(identifier)) throw new DuffelContractError("Duffel electronic-ticket identifier is duplicated.");
     rawTicketIdentifiers.add(identifier);
     const passengerIds = asArray(record.passenger_ids, "Duffel electronic-ticket passenger IDs").map((id) => providerId(id, "pas", "Duffel ticket passenger ID"));
@@ -3209,8 +3437,30 @@ export function sanitizeDuffelSandboxOrderResponse(
   });
 }
 
+/**
+ * Validates a current order response against the exact refreshed evidence
+ * minted by the ordinary offer/reprice flow.
+ */
+export function sanitizeDuffelSandboxOrderResponse(
+  rawBody: Uint8Array,
+  input: DuffelOrderResponseProjectionInput<DuffelRefreshedOfferEvidence>,
+): DuffelSanitizedOrderEvidence {
+  return sanitizeDuffelSandboxOrderResponseInternal(rawBody, input, "ordinary_refreshed");
+}
+
+/**
+ * Validates retained order bytes against the minimal historical binding used
+ * only by terminal recovery. This evidence cannot build any provider request.
+ */
+export function sanitizeDuffelSandboxTerminalRecoveryOrderResponse(
+  rawBody: Uint8Array,
+  input: DuffelOrderResponseProjectionInput<DuffelTerminalRecoveryRefreshedOfferEvidence>,
+): DuffelSanitizedOrderEvidence {
+  return sanitizeDuffelSandboxOrderResponseInternal(rawBody, input, "terminal_recovery");
+}
+
 export function parseDuffelWebhookSignatureHeader(value: string): DuffelWebhookSignature {
-  const match = value.match(/^t=(0|[1-9]\d{0,12}),v1=([0-9a-f]{64})$/);
+  const match = value.match(/^t=(0|[1-9]\d{0,12}),v(?:1|2)=([0-9a-f]{64})$/);
   if (match === null) throw new DuffelContractError("Duffel webhook signature header is malformed.");
   const timestampSeconds = Number(match[1]);
   if (!Number.isSafeInteger(timestampSeconds)) throw new DuffelContractError("Duffel webhook timestamp is malformed.");
@@ -3326,7 +3576,12 @@ export function sanitizeVerifiedDuffelSandboxWebhook(
   const idempotencyKey = asString(event.idempotency_key, "Duffel webhook idempotency key");
   if (idempotencyKey.length < 8 || idempotencyKey.length > 256) throw new DuffelContractError("Duffel webhook idempotency key is malformed.");
   const providerEventType = asString(event.type, "Duffel webhook event type");
-  const createdAt = normalizeDuffelInstant(event.created_at, "Duffel webhook creation time")!;
+  const createdAt = normalizeDuffelInstant(
+    event.created_at,
+    "Duffel webhook creation time",
+    false,
+    true,
+  )!;
   const known = (duffelWebhookEventTypes as readonly string[]).includes(providerEventType);
   const eventType: DuffelWebhookEventType | "unknown_quarantined" = known
     ? providerEventType as DuffelWebhookEventType

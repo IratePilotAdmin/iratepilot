@@ -3,6 +3,13 @@
 Date: 2026-08-23
 Status: **locally verified, including disposable PostgreSQL 16.15 acceptance; executable journey synthetic-only; Duffel contract and bridge offline-only; server transport boundary disabled and unused; exact `server-only@0.0.1` installed locally; approved only for publication to the private backup branch `agent/flight-live-foundation-20260823`; no public repository publication; migrations `068` and `069` unapplied to shared, Preview, and Production databases; undeployed; default-off/HOLD; unaccepted; not commercially active**
 
+> Historical baseline: this status line describes the 2026-08-23 foundation before the
+> approved Preview gates. The 2026-08-25 Preview evidence supersedes its claims about the
+> Duffel test account, credential, sandbox traffic, deployment, and Preview migration state.
+> See `FLIGHTS_PREVIEW_MIGRATION_GATE_2026-08-24.md` and
+> `FLIGHTS_DUFFEL_TEST_BOOKING_GATE_2026-08-25.md`. Production remains untouched,
+> default-off, and unapproved.
+
 ## Outcome this package is moving toward
 
 The launch target is a narrowly defined United States flight-selling pilot that can search supported airline content, reprice an offer, collect the required traveler information, take an approved payment, create exactly one airline order, reconcile the provider booking reference and electronic-ticket documents, send a compliant confirmation, service supported changes and cancellations, refund the traveler when required, process schedule changes, and support the traveler through completion.
@@ -36,6 +43,11 @@ Initial launch scope is one-way and round-trip itineraries for one to nine adult
 The previously frozen Duffel contract and offline bridge verification passed at 2 files / 19 tests. The frozen server-transport boundary passed at 2 files / 28 tests, the independent transport/contract/migration compatibility gate passed at 4 files / 50 tests, the final combined flight suite passed at 34 files / 290 tests, and the full repository passed at 275 files / 1,449 tests. Full TypeScript, scoped transport lint, independent transport adversarial review, and whitespace/conflict checks passed. A loopback-only disposable PostgreSQL 16.15 run also proved exact migration order, forced RLS/ACLs, default-off behavior, lifecycle transitions, duplicate and stale-CAS refusal, a real two-session claim race, ambiguous outcomes, and guarded rollback order. It uncovered and drove correction of migration `068`'s `CASE` syntax and parent rollback dependency guard. The complete current hash set and runtime matrix are recorded in the server-transport and PostgreSQL acceptance documents. The preceding foundation verification also passed a webpack Production build that generated all 119 pages and a local browser check of the synthetic one-way planning, results, offer, reprice, fictional checkout, and non-commercial receipt path without browser console errors. These results are local repository and disposable-database evidence only, not provider, shared-database, deployment, payment, ticketing, or launch acceptance.
 
 ## Current hard stops
+
+The first two bullets below are preserved as historical hard stops from this foundation
+receipt. They are no longer current for Preview: migrations 068 through 073 are installed in
+the approved Preview database, and one dedicated-token Duffel test-mode order has passed.
+They remain true for Production and for the consumer application path.
 
 - No Duffel or airline account, contract, KYC approval, access credential, configured or enabled transport, provider connection, registered webhook, sandbox request, or live request exists. The repository contains public endpoint metadata, branded offline request plans, a disabled singleton, and an unused dependency-injected test boundary only.
 - This gate applied migrations `068` and `069` only to temporary loopback-only disposable databases. It did not apply either migration to any shared, Preview, or Production database, and contains no application-environment receipt. Local evidence does not prove external database state.

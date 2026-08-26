@@ -249,7 +249,7 @@ describe("flight Preview 073-080 source provenance", () => {
     }
   });
 
-  it("excludes version 081 and every path outside the approved range", () => {
+  it("excludes the canonical post-080 flight block and every path outside the approved range", () => {
     expect(receipt.entries.map(({ version }) => version)).toEqual([
       "202608250073",
       "202608250074",
@@ -260,6 +260,9 @@ describe("flight Preview 073-080 source provenance", () => {
       "202608250079",
       "202608250080",
     ]);
-    expect(rawReceipt).not.toContain("202608250081");
+    expect(rawReceipt).not.toContain("202608260120");
+    expect(rawReceipt).not.toContain("202608260121");
+    expect(rawReceipt).not.toContain("202608260122");
+    expect(rawReceipt).not.toContain("202608260123");
   });
 });

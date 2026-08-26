@@ -1,0 +1,86 @@
+{
+  "evidence": {
+    "version": "flight-consumer-production-duffel-live-dark-ingress-v1",
+    "checkedAt": "2026-08-26T11:56:43.8811624-05:00",
+    "environment": "vercel_production",
+    "executionMode": "live_ingress_dark_quarantine",
+    "consumerReleaseAuthorized": false,
+    "liveTransactionsAuthorized": false,
+    "liveOrderCreationAttempted": false,
+    "secretsIncluded": false,
+    "deployment": {
+      "id": "dpl_3SnZ6zevVNfm69vfdPvxd3YnCJeg",
+      "readyState": "READY",
+      "target": "production",
+      "canonicalOrigin": "https://www.iratepilot.com",
+      "webhookRoute": "/api/flights/live/webhooks/duffel"
+    },
+    "duffelLiveWebhook": {
+      "active": true,
+      "liveMode": true,
+      "url": "https://www.iratepilot.com/api/flights/live/webhooks/duffel",
+      "subscribedEvents": [
+        "order.created",
+        "order.creation_failed",
+        "order.airline_initiated_change_detected"
+      ],
+      "dashboardUnavailablePlannedEvent": "air.order.changed",
+      "officialEventReference": "https://duffel.com/docs/api/v2/webhook-events",
+      "initialPingHttpStatus": 200,
+      "dashboardResendHttpStatus": 200,
+      "successfulDeliveryCount": 2
+    },
+    "productionDatabase": {
+      "projectRef": "allliumarkejinplrggl",
+      "migration": "202608260099_flight_consumer_live_duffel_webhook_ingress.sql",
+      "migrationSha256": "83c06cc08c172feb069201e4280b6c910742655983225dc9efbf557ab28eb752",
+      "allSafeguardsPassed": true,
+      "forcedRls": true,
+      "directRoleTableAccessDenied": true,
+      "serviceRoleRpcOnly": true,
+      "rawPayloadStored": false,
+      "totalRows": 2,
+      "verifiedPingRows": 2,
+      "quarantinedRows": 0
+    },
+    "runtimePosture": {
+      "duffelLiveTokenScope": "production_only_sensitive",
+      "duffelWebhookSecretScope": "production_only_sensitive",
+      "consumerPreviewEnabled": false,
+      "productionDarkEnabled": true,
+      "productionReleaseEnabled": false,
+      "providerTrafficEnabled": false,
+      "bookingEnabled": false,
+      "paymentEnabled": false,
+      "settlementEnabled": false,
+      "ticketingEnabled": false,
+      "servicingEnabled": false,
+      "sharedWebhooksEnabled": false,
+      "productionTrafficEnabled": false,
+      "transactionKillSwitch": "engaged"
+    },
+    "verification": {
+      "focusedTestFilesPassed": 4,
+      "focusedTestsPassed": 35,
+      "fullTestFilesPassed": 377,
+      "fullTestsPassed": 2125,
+      "typecheck": "passed",
+      "focusedLint": "passed",
+      "localProductionBuild": "passed_with_next_build_webpack",
+      "vercelProductionBuild": "passed_with_next_build_turbopack",
+      "vercelRuntimeErrorLogs": 0,
+      "publicFlightsStatus": 200,
+      "publicFlightsSupplierOffline": true,
+      "publicOrderEndpointStatus": 503,
+      "publicOrderCreationDisabled": true
+    },
+    "outcome": "duffel_live_dark_ingress_gate_passed_consumer_commerce_remains_blocked",
+    "remainingLaunchGates": [
+      "Resolve the missing air.order.changed subscription through Duffel API support or an approved control-plane operation.",
+      "Build and verify the Production live offer, reprice, order, payment, ticketing, and servicing workflows.",
+      "Complete Production Stripe flight-payment binding and reconciliation evidence.",
+      "Complete customer support, disruption, cancellation, refund, notification, monitoring, and incident drills.",
+      "Require a separate explicit approval before any live canary order or public consumer release."
+    ]
+  }
+}

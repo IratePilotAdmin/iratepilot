@@ -22,10 +22,11 @@ function hasExactExecutionNonce(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (process.env.VERCEL_ENV !== "preview") {
-    return NextResponse.json({ error: "Not found." }, { status: 404 });
-  }
-  if (!hasExactExecutionNonce(request)) {
+  if (
+    process.env.VERCEL_ENV !== "preview"
+    || process.env.FLIGHT_DUFFEL_TEST_BOOKING_ENABLED !== "true"
+    || !hasExactExecutionNonce(request)
+  ) {
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   }
   const contentType = request.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase();

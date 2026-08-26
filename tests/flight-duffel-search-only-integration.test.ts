@@ -290,7 +290,7 @@ describe("Duffel sandbox search-only integration", () => {
       },
       {
         method: "GET",
-        url: "https://api.duffel.com/air/offers/off_0000000000000001?return_available_services=true",
+        url: "https://api.duffel.com/air/offers/off_0000000000000001?return_available_services=false",
       },
       {
         method: "GET",

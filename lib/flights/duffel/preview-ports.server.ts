@@ -1,7 +1,7 @@
 import "server-only";
 
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient } from "../../supabase/admin";
 import { canonicalFlightJson } from "../runtime-safety";
 import type {
   DuffelHttpDispatchRequest,
@@ -37,7 +37,7 @@ export const DUFFEL_PREVIEW_RUNTIME_BINDING = Object.freeze({
   adapterVersionSha256: sha256("iratepilot-duffel-preview-adapter-v1"),
   adapterSourceSha256: sha256("iratepilot-flight-foundation-20260825"),
   executionScopeSha256: sha256("preview:eiqmdldjnedqgbtoozqa:duffel:test:zz:usd:adult:v2:authenticator"),
-  activationEvidenceSha256: sha256("flight-preview-activation:2026-08-25:test-order-rehearsal-v2"),
+  activationEvidenceSha256: sha256("flight-preview-activation:2026-08-25:duffel-test-booking-v8"),
   paymentAccountSha256: sha256("duffel-test-balance:acc_0000B9iZ8kto4H8uYhKSzO"),
   paymentSourceSha256: sha256("duffel-provider-balance:test:v1"),
   paymentAdapterVersionSha256: sha256("iratepilot-duffel-balance-adapter-v1"),
@@ -122,11 +122,24 @@ class PreviewFetchDispatcher implements DuffelInjectedHttpDispatcher {
           reader.releaseLock();
         }
       })();
+    const contentType = response.headers.get("content-type");
+    const contentEncoding = response.headers.get("content-encoding")?.trim().toLowerCase() ?? null;
+    const contentLength = contentEncoding === null || contentEncoding === "identity"
+      ? response.headers.get("content-length")
+      : null;
+    const headers = Object.freeze({
+      get(name: string) {
+        const normalized = name.toLowerCase();
+        if (normalized === "content-type") return contentType;
+        if (normalized === "content-length") return contentLength;
+        return null;
+      },
+    });
     return Object.freeze({
       status: response.status,
       url: response.url,
       redirected: response.redirected,
-      headers: response.headers,
+      headers,
       body,
     });
   }
@@ -287,12 +300,14 @@ class PreviewRequestJournal implements DuffelAuthenticatedRequestJournal {
   }
 }
 
-export function createDuffelPreviewTransportDependencies(): DuffelTestHttpTransportDependencies {
+export function createDuffelPreviewTransportDependencies(
+  journal: DuffelAuthenticatedRequestJournal = Object.freeze(new PreviewRequestJournal()),
+): DuffelTestHttpTransportDependencies {
   previewAuthoritySecret();
   return Object.freeze({
     enabled: true as const,
     trafficGate: Object.freeze(new PreviewTrafficGate()),
-    journal: Object.freeze(new PreviewRequestJournal()),
+    journal,
     credentials: Object.freeze(new PreviewCredentialProvider()),
     dispatcher: Object.freeze(new PreviewFetchDispatcher()),
   });

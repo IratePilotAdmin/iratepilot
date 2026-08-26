@@ -4,7 +4,10 @@ import { getSupabasePublicConfig } from "@/lib/supabase/config";
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const protectedRoute = pathname.startsWith("/account") || pathname.startsWith("/partner/") || pathname.startsWith("/admin");
+  const protectedRoute = pathname.startsWith("/account")
+    || pathname.startsWith("/partner/")
+    || pathname.startsWith("/admin")
+    || pathname.startsWith("/flights/preview");
   if (!protectedRoute) return NextResponse.next();
 
   const { url, key } = getSupabasePublicConfig();

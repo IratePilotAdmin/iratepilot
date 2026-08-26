@@ -23,9 +23,11 @@ import {
   parseDuffelWebhookSignatureHeader,
   persistDuffelSandboxInitialOfferEvidence,
   persistDuffelSandboxRefreshedOfferEvidence,
+  projectDuffelSandboxTerminalRecoveryOfferEvidence,
   rehydrateDuffelSandboxOfferEvidence,
   sanitizeDuffelSandboxOfferResponse,
   sanitizeDuffelSandboxOrderResponse,
+  sanitizeDuffelSandboxTerminalRecoveryOrderResponse,
   sanitizeDuffelSandboxOrdersByOfferResponse,
   sanitizeDuffelSandboxRepriceResponse,
   sanitizeVerifiedDuffelSandboxWebhook,
@@ -188,6 +190,8 @@ function offer(overrides: Record<string, unknown> = {}) {
       refund_before_departure: { allowed: true, penalty_currency: "USD", penalty_amount: "50.00" },
       change_before_departure: { allowed: true, penalty_currency: "USD", penalty_amount: "75.00" },
     },
+    intended_services: null,
+    intended_payment_methods: null,
     private_fares: [],
     supported_passenger_identity_document_types: ["passport"],
     supported_loyalty_programmes: [],
@@ -280,6 +284,31 @@ function refreshedOffer() {
     repricedAt: "2027-01-01T00:05:00.000Z",
   });
   return { snapshot: refresh.result.repricedOffer, evidence: refresh.evidence, initial };
+}
+
+async function terminalRecoveryOfferFixture() {
+  const repository = new OfflineAuthenticatedOfferEvidenceRepository();
+  const initial = await persistDuffelSandboxInitialOfferEvidence(repository, searchResponse(), {
+    search: adultSearch,
+    retrievedAt,
+    offerId: projectedOffer().snapshot.offerId,
+    scope: evidenceScope,
+    retentionExpiresAt: evidenceRetentionExpiresAt,
+  });
+  const refreshed = await persistDuffelSandboxRefreshedOfferEvidence(
+    repository,
+    bytes({ data: offerForRefresh() }),
+    {
+      predecessorReceiptDigest: initial.receiptDigest,
+      repricedAt: "2027-01-01T00:05:00.000Z",
+      scope: evidenceScope,
+    },
+  );
+  return projectDuffelSandboxTerminalRecoveryOfferEvidence(
+    repository,
+    refreshed.receiptDigest,
+    evidenceScope,
+  );
 }
 
 function webhookBody(overrides: Record<string, unknown> = {}) {
@@ -414,6 +443,71 @@ describe("offline Duffel sandbox contract", () => {
   it("ignores additive v2 response fields but rejects live, wrong-owner, partial, stale, route, and money drift", () => {
     expect(sanitizeDuffelSandboxOfferResponse(searchResponse({}, { another_future_field: [1, 2, 3] }), { search: adultSearch, retrievedAt }).result.offers).toHaveLength(1);
     expect(sanitizeDuffelSandboxOfferResponse(searchResponse({}, { airline_credit_ids: [], private_fares: [] }), { search: adultSearch, retrievedAt }).result.offers).toHaveLength(1);
+    const microsecondExpiryProjection = sanitizeDuffelSandboxOfferResponse(
+      searchResponse({ expires_at: "2027-01-01T00:30:00.123456Z" }),
+      { search: adultSearch, retrievedAt },
+    );
+    const distinctMicrosecondExpiryProjection = sanitizeDuffelSandboxOfferResponse(
+      searchResponse({ expires_at: "2027-01-01T00:30:00.123999Z" }),
+      { search: adultSearch, retrievedAt },
+    );
+    expect(microsecondExpiryProjection.evidence[0]!.expiresAt).toBe("2027-01-01T00:30:00.123Z");
+    expect(distinctMicrosecondExpiryProjection.evidence[0]!.expiresAt).toBe("2027-01-01T00:30:00.123Z");
+    expect(distinctMicrosecondExpiryProjection.evidence[0]!.rawBodyDigest)
+      .not.toBe(microsecondExpiryProjection.evidence[0]!.rawBodyDigest);
+    const mixedAirlineResponse = searchResponse({}, {
+      offers: [
+        offer({
+          id: "off_0000000000000002",
+          owner: { name: "Another Test Airline", iata_code: "AA" },
+        }),
+        offer(),
+      ],
+    });
+    const mixedAirlineProjection = sanitizeDuffelSandboxOfferResponse(mixedAirlineResponse, { search: adultSearch, retrievedAt });
+    expect(mixedAirlineProjection.result.offers).toHaveLength(1);
+    expect(mixedAirlineProjection.evidence[0]).toMatchObject({
+      ownerName: "Duffel Airways",
+      ownerIataCode: "ZZ",
+    });
+    const nullableIataMixedProjection = sanitizeDuffelSandboxOfferResponse(searchResponse({}, {
+      offers: [
+        offer({
+          id: "off_0000000000000002",
+          owner: { name: "Non-IATA Test Airline", iata_code: null },
+        }),
+        offer(),
+      ],
+    }), { search: adultSearch, retrievedAt });
+    expect(nullableIataMixedProjection.result.offers).toHaveLength(1);
+    expect(nullableIataMixedProjection.evidence[0]).toMatchObject({ ownerIataCode: "ZZ" });
+    expect(() => sanitizeDuffelSandboxOfferResponse(searchResponse({}, {
+      offers: [
+        offer({
+          id: "off_0000000000000002",
+          live_mode: true,
+          owner: { name: "Another Test Airline", iata_code: "AA" },
+        }),
+        offer(),
+      ],
+    }), { search: adultSearch, retrievedAt })).toThrow(/live_mode false/i);
+    expect(() => sanitizeDuffelSandboxOfferResponse(searchResponse({}, {
+      offers: [offer({ id: "off_0000000000000002", owner: null }), offer()],
+    }), { search: adultSearch, retrievedAt })).toThrow(/owner/i);
+    for (const inconsistentOwner of [
+      { name: "Duffel Airways", iata_code: "AA" },
+      { name: "Another Test Airline", iata_code: "ZZ" },
+    ]) {
+      expect(() => sanitizeDuffelSandboxOfferResponse(searchResponse({}, {
+        offers: [offer({ id: "off_0000000000000002", owner: inconsistentOwner }), offer()],
+      }), { search: adultSearch, retrievedAt })).toThrow(/owner identity is inconsistent/i);
+    }
+    expect(() => sanitizeDuffelSandboxOfferResponse(searchResponse({}, {
+      offers: [
+        offer({ owner: { name: "Another Test Airline", iata_code: "AA" } }),
+        offer(),
+      ],
+    }), { search: adultSearch, retrievedAt })).toThrow(/duplicate provider offer IDs/i);
     const noSliceRefund = offer();
     delete (noSliceRefund.slices[0]!.conditions as Record<string, unknown>).refund_before_departure;
     const noSliceRefundProjection = sanitizeDuffelSandboxOfferResponse(searchResponse({ slices: noSliceRefund.slices }), { search: adultSearch, retrievedAt });
@@ -430,9 +524,24 @@ describe("offline Duffel sandbox contract", () => {
     expect(() => sanitizeDuffelSandboxOfferResponse(searchResponse({ total_amount: "12.345" }), { search: adultSearch, retrievedAt })).toThrow(/two decimal/i);
     expect(() => sanitizeDuffelSandboxOfferResponse(searchResponse({ conditions: "malformed" }), { search: adultSearch, retrievedAt })).toThrow(/conditions/i);
     expect(() => sanitizeDuffelSandboxOfferResponse(searchResponse({ conditions: 1.5 }), { search: adultSearch, retrievedAt })).toThrow(/conditions/i);
-    expect(() => sanitizeDuffelSandboxOfferResponse(searchResponse({ intended_services: [] }), { search: adultSearch, retrievedAt })).toThrow(/priced-offer-only intended/i);
-    expect(() => sanitizeDuffelSandboxOfferResponse(searchResponse({ intended_payment_methods: [] }), { search: adultSearch, retrievedAt })).toThrow(/priced-offer-only intended/i);
+    expect(sanitizeDuffelSandboxOfferResponse(searchResponse({ intended_services: [], intended_payment_methods: [] }), { search: adultSearch, retrievedAt }).result.offers).toHaveLength(1);
+    expect(sanitizeDuffelSandboxOfferResponse(searchResponse({ intended_services: null, intended_payment_methods: null }), { search: adultSearch, retrievedAt }).result.offers).toHaveLength(1);
+    expect(sanitizeDuffelSandboxOfferResponse(searchResponse({ intended_services: undefined, intended_payment_methods: undefined }), { search: adultSearch, retrievedAt }).result.offers).toHaveLength(1);
+    expect(() => sanitizeDuffelSandboxOfferResponse(searchResponse({ intended_services: "malformed" }), { search: adultSearch, retrievedAt })).toThrow(/intended services/i);
+    expect(() => sanitizeDuffelSandboxOfferResponse(searchResponse({ intended_payment_methods: "malformed" }), { search: adultSearch, retrievedAt })).toThrow(/intended payment methods/i);
+    expect(() => sanitizeDuffelSandboxOfferResponse(searchResponse({ intended_services: [{ id: "ase_0000000000000001", quantity: 1 }] }), { search: adultSearch, retrievedAt })).toThrow(/no intended services or payment methods/i);
+    expect(() => sanitizeDuffelSandboxOfferResponse(searchResponse({ intended_payment_methods: [{
+      type: "card",
+      card_id: "tcd_0000000000000001",
+      charge_amount: "249.50",
+      charge_currency: "USD",
+      surcharge_amount: null,
+      surcharge_currency: null,
+    }] }), { search: adultSearch, retrievedAt })).toThrow(/no intended services or payment methods/i);
+    expect(sanitizeDuffelSandboxOfferResponse(searchResponse({ available_services: null }), { search: adultSearch, retrievedAt }).result.offers).toHaveLength(1);
+    expect(sanitizeDuffelSandboxOfferResponse(searchResponse({ available_services: [] }), { search: adultSearch, retrievedAt }).result.offers).toHaveLength(1);
     expect(() => sanitizeDuffelSandboxOfferResponse(searchResponse({ available_services: "malformed" }), { search: adultSearch, retrievedAt })).toThrow(/available services/i);
+    expect(() => sanitizeDuffelSandboxOfferResponse(searchResponse({ available_services: [{ id: "ase_0000000000000001" }] }), { search: adultSearch, retrievedAt })).toThrow(/refuses ancillary services/i);
     expect(() => sanitizeDuffelSandboxOfferResponse(searchResponse({ private_fares: "malformed" }), { search: adultSearch, retrievedAt })).toThrow(/private fares/i);
     expect(() => sanitizeDuffelSandboxOfferResponse(searchResponse({ supported_passenger_identity_document_types: ["future_unknown"] }), { search: adultSearch, retrievedAt })).toThrow(/identity-document types/i);
     expect(() => sanitizeDuffelSandboxOfferResponse(searchResponse({ supported_loyalty_programmes: [1.5] }), { search: adultSearch, retrievedAt })).toThrow(/loyalty programmes/i);
@@ -601,10 +710,10 @@ describe("offline Duffel sandbox contract", () => {
     expect(JSON.stringify(parseDuffelJsonBody(encoder.encode('{"data":1.5000}')))).toContain("1.5000");
     expect(() => parseDuffelJsonBody(encoder.encode('{"data":1\u00a0}'))).toThrow(/delimiter|trailing/i);
     expect(() => parseDuffelJsonBody(new Uint8Array(DUFFEL_MAX_RAW_BODY_BYTES + 1))).toThrow(/1 MiB/i);
-    expect(() => sanitizeDuffelSandboxOfferResponse(
+    expect(sanitizeDuffelSandboxOfferResponse(
       searchResponse({ expires_at: "2027-01-01T00:30:00.000001Z" }),
       { search: adultSearch, retrievedAt },
-    )).toThrow(/millisecond precision/i);
+    ).evidence[0]!.expiresAt).toBe("2027-01-01T00:30:00.000Z");
     expect(() => sanitizeDuffelSandboxOfferResponse(
       searchResponse(),
       { search: adultSearch, retrievedAt: "2027-01-01T00:00:00.000999+00:00" },
@@ -670,6 +779,7 @@ describe("offline Duffel sandbox contract", () => {
     const retrieve = buildDuffelSandboxOfferRetrievalPlan(initial.evidence);
     const reconcile = buildDuffelSandboxOrderListByOfferPlan(refreshed.evidence);
     expect(retrieve).toMatchObject({ method: "GET", path: `/air/offers/${initial.evidence.providerOfferId}`, body: null });
+    expect(retrieve.query).toEqual({ return_available_services: false });
     expect(reconcile).toMatchObject({ method: "GET", path: "/air/orders", body: null });
     expect(reconcile.query).toEqual({ offer_id: refreshed.evidence.providerOfferId, limit: 50 });
     expect(retrieve.bearerTokenIncluded).toBe(false);
@@ -720,6 +830,18 @@ describe("offline Duffel sandbox contract", () => {
     });
     expect(repriced.evidence.refreshReceiptDigest).toMatch(/^[0-9a-f]{64}$/);
     expect(repriced.evidence.retrievalPlanDigest).toBe(buildDuffelSandboxOfferRetrievalPlan(evidence).requestDigest);
+    const refreshInput = (data: Record<string, unknown>) => sanitizeDuffelSandboxRepriceResponse(bytes({ data }), {
+      search: adultSearch,
+      original: snapshot,
+      originalEvidence: evidence,
+      repricedAt: "2027-01-01T00:05:00.000Z",
+    });
+    const missingAvailableServices = offerForRefresh();
+    delete (missingAvailableServices as Record<string, unknown>).available_services;
+    expect(() => refreshInput(missingAvailableServices)).not.toThrow();
+    expect(() => refreshInput(offerForRefresh({ available_services: null }))).toThrow(/available services/i);
+    expect(() => refreshInput(offerForRefresh({ available_services: "malformed" }))).toThrow(/available services/i);
+    expect(() => refreshInput(offerForRefresh({ available_services: [{ id: "ase_0000000000000001" }] }))).toThrow(/refuses ancillary services/i);
     expect(() => sanitizeDuffelSandboxRepriceResponse(bytes({ data: offerForRefresh() }), {
       search: adultSearch,
       original: snapshot,
@@ -921,6 +1043,11 @@ describe("offline Duffel sandbox contract", () => {
       evidenceScope,
     );
     expect(rehydratedInitial).toEqual(persistedInitial);
+    await expect(projectDuffelSandboxTerminalRecoveryOfferEvidence(
+      restoredInitialRepository,
+      persistedInitial.receiptDigest,
+      evidenceScope,
+    )).rejects.toThrow(/post-reprice offer evidence/i);
     await expect(rehydrateDuffelSandboxOfferEvidence(
       restoredInitialRepository,
       persistedInitial.receiptDigest,
@@ -959,6 +1086,52 @@ describe("offline Duffel sandbox contract", () => {
     );
     expect(rehydratedRefresh).toEqual(persistedRefresh);
     expect(Object.isFrozen(rehydratedRefresh)).toBe(true);
+    const terminalRecoveryOffer = await projectDuffelSandboxTerminalRecoveryOfferEvidence(
+      restoredRefreshRepository,
+      persistedRefresh.receiptDigest,
+      evidenceScope,
+    );
+    expect(terminalRecoveryOffer).toMatchObject({
+      version: "duffel-terminal-recovery-offer-evidence-v1",
+      terminalStage: "refreshed",
+      receiptDigest: persistedRefresh.receiptDigest,
+      recordDigest: persistedRefresh.recordDigest,
+      evidence: {
+        version: "duffel-terminal-recovery-refreshed-offer-evidence-v1",
+        providerOfferIdDigest: persistedRefresh.evidence.providerOfferIdDigest,
+      },
+    });
+    expect(terminalRecoveryOffer).not.toHaveProperty("stage");
+    expect(Object.isFrozen(terminalRecoveryOffer)).toBe(true);
+    expect(Object.isFrozen(terminalRecoveryOffer.evidence)).toBe(true);
+    expect(Object.keys(terminalRecoveryOffer.evidence).sort()).toEqual([
+      "base",
+      "cabin",
+      "carrierDisclosureDigests",
+      "offerConditionsDigest",
+      "operatingCarrierFlightNumbers",
+      "providerOfferIdDigest",
+      "providerPassengerIdDigests",
+      "refreshReceiptDigest",
+      "refreshedAt",
+      "segmentIdentityDigests",
+      "segmentOrderSharedTermsDigests",
+      "sliceSegmentIdentityDigests",
+      "sliceTermsDigests",
+      "tax",
+      "termsDigest",
+      "total",
+      "version",
+    ]);
+    expect(Object.isFrozen(terminalRecoveryOffer.evidence.total)).toBe(true);
+    expect(Object.isFrozen(terminalRecoveryOffer.evidence.providerPassengerIdDigests)).toBe(true);
+    expect(Object.isFrozen(terminalRecoveryOffer.evidence.sliceSegmentIdentityDigests)).toBe(true);
+    expect(Object.isFrozen(terminalRecoveryOffer.evidence.sliceSegmentIdentityDigests[0])).toBe(true);
+    expect(terminalRecoveryOffer.evidence).not.toHaveProperty("providerOfferId");
+    expect(terminalRecoveryOffer.evidence).not.toHaveProperty("requestPlanDigest");
+    expect(terminalRecoveryOffer.evidence).not.toHaveProperty("retrievalPlanDigest");
+    expect(terminalRecoveryOffer.evidence).not.toHaveProperty("expiresAt");
+    expect(terminalRecoveryOffer.evidence).not.toHaveProperty("segments");
 
     const refreshedEvidence = rehydratedRefresh.evidence;
     if (refreshedEvidence.version !== "duffel-refreshed-offer-v1") {
@@ -1060,6 +1233,18 @@ describe("offline Duffel sandbox contract", () => {
     expect(isDuffelSandboxOrderCreatePlan(orderCreatePlan)).toBe(true);
     expect(isDuffelSandboxOrderCreatePlan({ ...orderCreatePlan })).toBe(false);
     expect(isDuffelSandboxOrderCreatePlan(JSON.parse(JSON.stringify(orderCreatePlan)))).toBe(false);
+    for (const terminalCandidate of [terminalRecoveryOffer, terminalRecoveryOffer.evidence]) {
+      expect(() => buildDuffelSandboxOrderCreatePlan({
+        // Neither the terminal outer projection nor its minimal nested binding
+        // can be reused as provider request authority.
+        offer: terminalCandidate as never,
+        authority: verifiedAuthority,
+        total: rehydratedRefresh.snapshot.total,
+        travelers: [syntheticTraveler],
+      })).toThrow();
+      expect(() => buildDuffelSandboxOfferRetrievalPlan(terminalCandidate as never)).toThrow();
+      expect(() => buildDuffelSandboxOrderListByOfferPlan(terminalCandidate as never)).toThrow();
+    }
     expect(orderCreatePlan.bridgeReceiptDigest).toMatch(/^[0-9a-f]{64}$/);
     await expect(verifyDuffelSandboxOrderCreateAuthority(
       authorityClaims,
@@ -1239,7 +1424,7 @@ describe("offline Duffel sandbox contract", () => {
     expect(DUFFEL_ORDER_MINIMUM_TIMEOUT_MS).toBe(130_000);
   });
 
-  it("requires paid electronic-ticket documents covering every exact passenger before claiming ticketing", () => {
+  it("requires paid electronic-ticket documents covering every exact passenger before claiming ticketing", async () => {
     const { evidence, initial } = refreshedOffer();
     const orderRetrievedAt = "2027-01-01T00:12:00.000Z";
     const orderProjectionInput = {
@@ -1255,8 +1440,8 @@ describe("offline Duffel sandbox contract", () => {
         live_mode: false,
         cancelled_at: null,
         cancellation: null,
-        created_at: "2027-01-01T00:06:00.000Z",
-        synced_at: "2027-01-01T00:11:59.123+00:00",
+        created_at: "2027-01-01T00:11:59.842854Z",
+        synced_at: "2027-01-01T00:11:59Z",
         total_amount: "249.50",
         total_currency: "USD",
         base_amount: "200.00",
@@ -1270,16 +1455,45 @@ describe("offline Duffel sandbox contract", () => {
         },
         slices: orderSlices(),
         booking_reference: "ABCDEFGHIJKLM",
-        payment_status: { paid_at: "2027-01-01T00:10:00.000Z", awaiting_payment: false },
+        payment_status: { paid_at: "2027-01-01T00:11:59Z", awaiting_payment: false },
         services: [],
         passengers: [{ id: "pas_0000000000000001" }],
-        documents: [{ type: "electronic_ticket", unique_identifier: "1252106312810", passenger_ids: ["pas_0000000000000001"] }],
+        documents: [{ type: "electronic_ticket", unique_identifier: "1", passenger_ids: ["pas_0000000000000001"] }],
       },
     };
     const certified = sanitizeDuffelSandboxOrderResponse(bytes(order), orderProjectionInput);
     expect(certified).toMatchObject({ liveMode: false, awaitingPayment: false, everyPassengerCoveredByElectronicTicket: true, ticketingEstablished: true, uncancelled: true });
-    expect(certified.createdAt).toBe("2027-01-01T00:06:00.000Z");
-    expect(certified.syncedAt).toBe("2027-01-01T00:11:59.123Z");
+    const terminalEvidence = (await terminalRecoveryOfferFixture()).evidence;
+    const terminalProjectionInput = {
+      ...orderProjectionInput,
+      expectedOffer: terminalEvidence,
+    };
+    expect(() => sanitizeDuffelSandboxOrderResponse(
+      bytes(order),
+      terminalProjectionInput as never,
+    )).toThrow(/exact post-reprice offer receipt/i);
+    expect(() => sanitizeDuffelSandboxTerminalRecoveryOrderResponse(
+      bytes(order),
+      orderProjectionInput as never,
+    )).toThrow(/terminal-recovery refreshed offer evidence|terminal-recovery offer binding/i);
+    const terminalCertified = sanitizeDuffelSandboxTerminalRecoveryOrderResponse(
+      bytes(order),
+      terminalProjectionInput,
+    );
+    expect(terminalCertified).toEqual(certified);
+    for (const detachedTerminalEvidence of [
+      { ...terminalEvidence },
+      structuredClone(terminalEvidence),
+      JSON.parse(JSON.stringify(terminalEvidence)),
+    ]) {
+      expect(() => sanitizeDuffelSandboxTerminalRecoveryOrderResponse(bytes(order), {
+        ...terminalProjectionInput,
+        expectedOffer: detachedTerminalEvidence,
+      })).toThrow(/exact terminal-recovery offer binding/i);
+    }
+    expect(certified.createdAt).toBe("2027-01-01T00:11:59.842Z");
+    expect(certified.syncedAt).toBe("2027-01-01T00:11:59.000Z");
+    expect(certified.paidAt).toBe("2027-01-01T00:11:59.000Z");
     expect(certified.bookingReferencePresent).toBe(true);
     expect(certified.acceptedTermsDigest).toBe(evidence.termsDigest);
     expect(certified.offerRefreshReceiptDigest).toBe(evidence.refreshReceiptDigest);
@@ -1325,11 +1539,12 @@ describe("offline Duffel sandbox contract", () => {
     futureCreation.data.created_at = "2027-01-01T00:12:00.001Z";
     expect(() => sanitizeDuffelSandboxOrderResponse(bytes(futureCreation), orderProjectionInput)).toThrow(/cannot follow synchronization/i);
     const preCreationPayment = structuredClone(order);
-    preCreationPayment.data.created_at = "2027-01-01T00:10:30.000Z";
+    preCreationPayment.data.created_at = "2027-01-01T00:11:30.000Z";
+    preCreationPayment.data.payment_status.paid_at = "2027-01-01T00:10:00.000Z";
     expect(() => sanitizeDuffelSandboxOrderResponse(bytes(preCreationPayment), orderProjectionInput)).toThrow(/payment evidence must follow order creation/i);
     const subMillisecondReversedCreation = structuredClone(order);
     subMillisecondReversedCreation.data.created_at = "2027-01-01T00:04:59.999999Z";
-    expect(() => sanitizeDuffelSandboxOrderResponse(bytes(subMillisecondReversedCreation), orderProjectionInput)).toThrow(/millisecond precision/i);
+    expect(() => sanitizeDuffelSandboxOrderResponse(bytes(subMillisecondReversedCreation), orderProjectionInput)).toThrow(/creation must follow.*refresh/i);
 
     const noDocuments = structuredClone(order);
     noDocuments.data.documents = [];
@@ -1352,6 +1567,11 @@ describe("offline Duffel sandbox contract", () => {
     const unknownPassenger = structuredClone(order);
     unknownPassenger.data.documents[0]!.passenger_ids = ["pas_0000000000009999"];
     expect(() => sanitizeDuffelSandboxOrderResponse(bytes(unknownPassenger), orderProjectionInput)).toThrow(/unknown passenger/i);
+    for (const malformedIdentifier of ["", "a".repeat(65)]) {
+      const malformedTicket = structuredClone(order);
+      malformedTicket.data.documents[0]!.unique_identifier = malformedIdentifier;
+      expect(() => sanitizeDuffelSandboxOrderResponse(bytes(malformedTicket), orderProjectionInput)).toThrow(/electronic-ticket identifier.*malformed/i);
+    }
 
     for (const changed of [
       { cancelled_at: "2027-01-01T00:11:00.000Z" },
@@ -1421,6 +1641,14 @@ describe("offline Duffel sandbox contract", () => {
     const signed = signedWebhook(rawBody);
     const parsed = parseDuffelWebhookSignatureHeader(signed.header);
     expect(parsed).toEqual({ timestampSeconds: signed.timestamp, signatureHex: signed.header.split("v1=")[1] });
+    const v2Header = signed.header.replace(",v1=", ",v2=");
+    expect(parseDuffelWebhookSignatureHeader(v2Header)).toEqual(parsed);
+    expect(verifyDuffelWebhookSignature({
+      rawBody,
+      signatureHeader: v2Header,
+      secret: signed.secret,
+      nowSeconds: signed.timestamp,
+    })).toMatchObject({ verified: true, reason: "verified" });
     expect(buildDuffelWebhookSigningPayload(signed.timestamp, rawBody)).toEqual(
       Buffer.concat([Buffer.from(String(signed.timestamp)), Buffer.from("."), Buffer.from(rawBody)]),
     );
@@ -1457,6 +1685,8 @@ describe("offline Duffel sandbox contract", () => {
     })).toMatchObject({ verified: false, reason: "invalid_timestamp" });
     expect(() => parseDuffelWebhookSignatureHeader(`v1=${"a".repeat(64)},t=${signed.timestamp}`)).toThrow(/malformed/i);
     expect(() => parseDuffelWebhookSignatureHeader(`t=${signed.timestamp},v1=${"A".repeat(64)}`)).toThrow(/malformed/i);
+    expect(() => parseDuffelWebhookSignatureHeader(`t=${signed.timestamp},v0=${"a".repeat(64)}`)).toThrow(/malformed/i);
+    expect(() => parseDuffelWebhookSignatureHeader(`t=${signed.timestamp},v3=${"a".repeat(64)}`)).toThrow(/malformed/i);
   });
 
   it("sanitizes verified test events, quarantines unknown types, and deduplicates by Duffel idempotency semantics", () => {
@@ -1476,6 +1706,36 @@ describe("offline Duffel sandbox contract", () => {
     };
     expect(evaluateDuffelWebhookReplay(event, receipt)).toMatchObject({ decision: "duplicate" });
     expect(evaluateDuffelWebhookReplay(event, { ...receipt, bodyDigest: "f".repeat(64) })).toMatchObject({ decision: "conflict" });
+
+    const microsecondRaw = webhookBody({ created_at: "2027-01-01T00:00:00.123456Z" });
+    const microsecondSigned = signedWebhook(microsecondRaw);
+    const microsecondVerification = verifyDuffelWebhookSignature({
+      rawBody: microsecondRaw,
+      signatureHeader: microsecondSigned.header.replace(",v1=", ",v2="),
+      secret: microsecondSigned.secret,
+      nowSeconds: microsecondSigned.timestamp,
+    });
+    const microsecondEvent = sanitizeVerifiedDuffelSandboxWebhook(
+      microsecondRaw,
+      microsecondVerification,
+    );
+    expect(microsecondEvent.createdAt).toBe("2027-01-01T00:00:00.123Z");
+    expect(microsecondEvent.bodyDigest).not.toBe(event.bodyDigest);
+    expect(microsecondEvent.semanticDigest).not.toBe(event.semanticDigest);
+
+    const microsecondOffsetRaw = webhookBody({ created_at: "2027-01-01 01:00:00.654321+01:00" });
+    const microsecondOffsetSigned = signedWebhook(microsecondOffsetRaw);
+    const microsecondOffsetVerification = verifyDuffelWebhookSignature({
+      rawBody: microsecondOffsetRaw,
+      signatureHeader: microsecondOffsetSigned.header,
+      secret: microsecondOffsetSigned.secret,
+      nowSeconds: microsecondOffsetSigned.timestamp,
+    });
+    expect(sanitizeVerifiedDuffelSandboxWebhook(
+      microsecondOffsetRaw,
+      microsecondOffsetVerification,
+    ).createdAt)
+      .toBe("2027-01-01T00:00:00.654Z");
 
     const unknownRaw = webhookBody({ type: "future.event.type" });
     const unknownSigned = signedWebhook(unknownRaw);

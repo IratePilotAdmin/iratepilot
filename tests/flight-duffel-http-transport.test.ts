@@ -320,7 +320,7 @@ describe("Duffel default-disabled server HTTP transport", () => {
     for (const [plan, expectedUrl] of [
       [
         plans.retrieve,
-        "https://api.duffel.com/air/offers/off_0000000000000001?return_available_services=true",
+        "https://api.duffel.com/air/offers/off_0000000000000001?return_available_services=false",
       ],
       [
         plans.list,

@@ -22,6 +22,7 @@ import {
   prepareDuffelSandboxCreateOrderBridge,
   projectDuffelSandboxCreateOrderResult,
   projectDuffelSandboxTimedOutCreateOrderReconciliation,
+  readDuffelSandboxProjectedOrderEvidence,
   type DuffelSandboxTrustedTravelerResolver,
 } from "../lib/flights/duffel-sandbox-bridge";
 import {
@@ -184,8 +185,8 @@ function orderResponse(
       live_mode: false,
       cancelled_at: null,
       cancellation: null,
-      created_at: "2027-01-01T00:06:00.000Z",
-      synced_at: "2027-01-01T00:11:59.123Z",
+      created_at: "2027-01-01T00:11:59.842854Z",
+      synced_at: "2027-01-01T00:11:59Z",
       total_amount: "249.50",
       total_currency: "USD",
       base_amount: "200.00",
@@ -199,11 +200,11 @@ function orderResponse(
       },
       slices: orderSlices(),
       booking_reference: "ABCDEFGHIJKLM",
-      payment_status: { paid_at: paid ? "2027-01-01T00:10:00.000Z" : null, awaiting_payment: !paid },
+      payment_status: { paid_at: paid ? "2027-01-01T00:11:59Z" : null, awaiting_payment: !paid },
       services: [],
       passengers: [{ id: "pas_0000000000000001" }],
       documents: ticket === "issued"
-        ? [{ type: "electronic_ticket", unique_identifier: "1252106312810", passenger_ids: ["pas_0000000000000001"] }]
+        ? [{ type: "electronic_ticket", unique_identifier: "1", passenger_ids: ["pas_0000000000000001"] }]
         : [],
     },
   });
@@ -550,6 +551,17 @@ describe("offline durable Duffel create-order bridge", () => {
     expect(pending).toMatchObject({ orderState: "order_confirmed", ticketState: "issuance_pending", ticketReferenceDigests: [] });
     expect(issued).toMatchObject({ orderState: "order_confirmed", ticketState: "issued", externalSideEffect: true });
     expect(issued.ticketReferenceDigests).toHaveLength(1);
+    expect(readDuffelSandboxProjectedOrderEvidence({ bridgePackage, result: issued })).toMatchObject({
+      version: "duffel-sanitized-order-v1",
+      providerOrderId: issued.orderId,
+      liveMode: false,
+      ticketingEstablished: true,
+      everyPassengerCoveredByElectronicTicket: true,
+    });
+    expect(() => readDuffelSandboxProjectedOrderEvidence({
+      bridgePackage,
+      result: structuredClone(issued),
+    })).toThrow(/exact bridge package/i);
     expect(bridgePackage.orderCreatePlan.plan.operation).toBe("create_order");
     expect(duffelSandboxBridgeCapabilities.separateTicketIssueAuthorized).toBe(false);
 

@@ -524,6 +524,32 @@ export function projectDuffelSandboxCreateOrderResult(
 }
 
 /**
+ * Returns the already-sanitized order evidence for the exact bridge/result
+ * pair. This does not parse new bytes or establish provider authenticity; it
+ * only exposes the immutable evidence created by the certified projection so
+ * the durable consumer finalizer can bind encrypted references and timestamps.
+ */
+export function readDuffelSandboxProjectedOrderEvidence(input: Readonly<{
+  bridgePackage: DuffelSandboxCreateOrderBridgePackage;
+  result: FlightProviderCreateOrderResult;
+}>): DuffelSanitizedOrderEvidence {
+  const descriptors = assertExactContainer(
+    input,
+    ["bridgePackage", "result"],
+    "Duffel projected-order evidence input",
+  );
+  const bridgePackage = descriptors.bridgePackage!.value as DuffelSandboxCreateOrderBridgePackage;
+  const result = descriptors.result!.value as FlightProviderCreateOrderResult;
+  const projection = projectedCreateOrderResults.get(result as object);
+  if (projection === undefined || projection.bridgePackage !== bridgePackage) {
+    throw new DuffelSandboxBridgeError(
+      "Duffel order evidence was not projected from the exact bridge package.",
+    );
+  }
+  return projection.orderEvidence;
+}
+
+/**
  * Builds canonical evidence only. A trusted issuer must authenticate the exact
  * canonical bytes, and commerce completion still requires its durable finalizer.
  */

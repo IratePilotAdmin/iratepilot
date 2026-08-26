@@ -290,13 +290,13 @@ function reviewPlan(value: unknown): ReviewedPlan {
       || plan.body !== null
       || plan.minimumTimeoutMs !== 30_000
       || !exactObjectKeys(plan.query, ["return_available_services"])
-      || (plan.query as Record<string, unknown>).return_available_services !== true
+      || (plan.query as Record<string, unknown>).return_available_services !== false
     ) invalidPlan();
     endpointClass = "offer_resource";
     expectedHeaders = ["Accept", "Duffel-Version", "Authorization"];
     timeoutMs = 30_000;
     url = new URL(plan.path, DUFFEL_API_BASE_URL);
-    url.searchParams.set("return_available_services", "true");
+    url.searchParams.set("return_available_services", "false");
   } else if (plan.operation === "list_orders_by_offer") {
     if (
       plan.method !== "GET"
