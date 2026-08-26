@@ -195,7 +195,7 @@ export function resolveFlightConsumerProductionStripeAccountPreflightRuntime(
     observedCredentialSha256 =
       deriveFlightConsumerProductionStripeCredentialSha256(
         validateFlightConsumerProductionStripeLiveCredential(
-          env.STRIPE_SECRET_KEY,
+          env.FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_KEY,
         ),
       );
     if (
@@ -213,7 +213,7 @@ export function resolveFlightConsumerProductionStripeAccountPreflightRuntime(
     observedPublishableKeySha256 =
       deriveFlightConsumerProductionStripePublishableKeySha256(
         validateFlightConsumerProductionStripeLivePublishableKey(
-          env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+          env.FLIGHT_CONSUMER_PRODUCTION_STRIPE_PUBLISHABLE_KEY,
         ),
       );
     if (

@@ -181,11 +181,11 @@ export function createFlightConsumerProductionStripeAccountPreflightWorkflow(
   let credential: string;
   try {
     credential = validateFlightConsumerProductionStripeLiveCredential(
-      env.STRIPE_SECRET_KEY,
+      env.FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_KEY,
     );
     runtime = requireFlightConsumerProductionStripeAccountPreflightRuntime({
       ...env,
-      STRIPE_SECRET_KEY: credential,
+      FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_KEY: credential,
     });
   } catch {
     throw new FlightConsumerProductionStripeAccountPreflightError(

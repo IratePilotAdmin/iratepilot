@@ -51,8 +51,8 @@ const baseEnv = Object.freeze({
   FLIGHT_CONSUMER_PRODUCTION_DUFFEL_WEBHOOK_SECRET:
     "dedicated-production-webhook-secret",
   SUPABASE_SERVICE_ROLE_KEY: "service-role-secret-1234567890abcdef",
-  STRIPE_SECRET_KEY: stripeCredential,
-  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: stripePublishableKey,
+  FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_KEY: stripeCredential,
+  FLIGHT_CONSUMER_PRODUCTION_STRIPE_PUBLISHABLE_KEY: stripePublishableKey,
   FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_SHA256:
     deriveFlightConsumerProductionStripeAccountSha256(accountId),
   FLIGHT_CONSUMER_PRODUCTION_STRIPE_CREDENTIAL_SHA256:
@@ -105,13 +105,27 @@ describe("Flight Consumer Production Stripe read-only runtime", () => {
       .toBe("VERIFY_STRIPE_LIVE_ACCOUNT_WITHOUT_PAYMENT_OR_CHARGE");
   });
 
+  it("ignores generic Stripe variables when dedicated keys are absent", () => {
+    const isolatedEnv: Record<string, string | undefined> = {
+      ...baseEnv,
+      STRIPE_SECRET_KEY: stripeCredential,
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: stripePublishableKey,
+    };
+    delete isolatedEnv.FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_KEY;
+    delete isolatedEnv.FLIGHT_CONSUMER_PRODUCTION_STRIPE_PUBLISHABLE_KEY;
+
+    expect(resolveFlightConsumerProductionStripeAccountPreflightRuntime(
+      isolatedEnv,
+    )).toMatchObject({ authorized: false, mode: "disabled", binding: null });
+  });
+
   it("accepts a bounded restricted live key and binds key rotations to a new scope", () => {
     const restricted = `rk_live_${"R".repeat(32)}`;
     const initial =
       resolveFlightConsumerProductionStripeAccountPreflightRuntime(baseEnv);
     const rotated = resolveFlightConsumerProductionStripeAccountPreflightRuntime({
       ...baseEnv,
-      STRIPE_SECRET_KEY: restricted,
+      FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_KEY: restricted,
       FLIGHT_CONSUMER_PRODUCTION_STRIPE_CREDENTIAL_SHA256:
         deriveFlightConsumerProductionStripeCredentialSha256(restricted),
     });
@@ -153,7 +167,7 @@ describe("Flight Consumer Production Stripe read-only runtime", () => {
       resolveFlightConsumerProductionStripeAccountPreflightRuntime(baseEnv);
     const rotated = resolveFlightConsumerProductionStripeAccountPreflightRuntime({
       ...baseEnv,
-      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: rotatedKey,
+      FLIGHT_CONSUMER_PRODUCTION_STRIPE_PUBLISHABLE_KEY: rotatedKey,
       FLIGHT_CONSUMER_PRODUCTION_STRIPE_PUBLISHABLE_KEY_SHA256:
         deriveFlightConsumerProductionStripePublishableKeySha256(rotatedKey),
     });
@@ -189,11 +203,17 @@ describe("Flight Consumer Production Stripe read-only runtime", () => {
     ["FLIGHT_WEBHOOKS_ENABLED", "true"],
     ["FLIGHT_PRODUCTION_TRAFFIC_ENABLED", "true"],
     ["FLIGHT_TRANSACTION_KILL_SWITCH", "disengaged"],
-    ["STRIPE_SECRET_KEY", `sk_test_${"T".repeat(32)}`],
-    ["STRIPE_SECRET_KEY", "sk_live_short"],
-    ["NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", ""],
-    ["NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", `pk_test_${"T".repeat(32)}`],
-    ["NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "pk_live_short"],
+    [
+      "FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_KEY",
+      `sk_test_${"T".repeat(32)}`,
+    ],
+    ["FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_KEY", "sk_live_short"],
+    ["FLIGHT_CONSUMER_PRODUCTION_STRIPE_PUBLISHABLE_KEY", ""],
+    [
+      "FLIGHT_CONSUMER_PRODUCTION_STRIPE_PUBLISHABLE_KEY",
+      `pk_test_${"T".repeat(32)}`,
+    ],
+    ["FLIGHT_CONSUMER_PRODUCTION_STRIPE_PUBLISHABLE_KEY", "pk_live_short"],
     ["FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_SHA256", ""],
     ["FLIGHT_CONSUMER_PRODUCTION_STRIPE_CREDENTIAL_SHA256", "0".repeat(64)],
     ["FLIGHT_CONSUMER_PRODUCTION_STRIPE_PUBLISHABLE_KEY_SHA256", ""],
@@ -226,7 +246,7 @@ describe("Flight Consumer Production Stripe read-only runtime", () => {
     try {
       requireFlightConsumerProductionStripeAccountPreflightRuntime({
         ...baseEnv,
-        STRIPE_SECRET_KEY: privateValue,
+        FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_KEY: privateValue,
       });
     } catch (error) {
       thrown = error;
@@ -276,6 +296,8 @@ describe("Flight Consumer Production Stripe read-only runtime", () => {
     ), "utf8");
 
     expect(source.startsWith('import "server-only";')).toBe(true);
+    expect(source).not.toContain("STRIPE_SECRET_KEY");
+    expect(source).not.toContain("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY");
     expect(source).not.toMatch(/\bfetch\s*\(|from\s+["']stripe["']/);
     expect(source).not.toMatch(/\.paymentIntents\.|\.charges\.|\.refunds\./);
     expect(source).not.toMatch(/supabase\/migrations|createAdminClient/);

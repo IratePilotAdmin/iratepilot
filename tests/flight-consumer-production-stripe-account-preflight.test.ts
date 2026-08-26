@@ -57,8 +57,8 @@ const env = Object.freeze({
   FLIGHT_CONSUMER_PRODUCTION_DUFFEL_WEBHOOK_SECRET:
     "dedicated-production-webhook-secret",
   SUPABASE_SERVICE_ROLE_KEY: "service-role-secret-1234567890abcdef",
-  STRIPE_SECRET_KEY: stripeCredential,
-  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: stripePublishableKey,
+  FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_KEY: stripeCredential,
+  FLIGHT_CONSUMER_PRODUCTION_STRIPE_PUBLISHABLE_KEY: stripePublishableKey,
   FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_SHA256:
     deriveFlightConsumerProductionStripeAccountSha256(accountId),
   FLIGHT_CONSUMER_PRODUCTION_STRIPE_CREDENTIAL_SHA256:
@@ -352,6 +352,8 @@ describe("Flight Consumer Production Stripe account preflight", () => {
     ), "utf8");
 
     expect(source.startsWith('import "server-only";')).toBe(true);
+    expect(source).not.toContain("STRIPE_SECRET_KEY");
+    expect(source).not.toContain("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY");
     expect(source.match(/await fetcher\s*\(/g)).toHaveLength(1);
     expect(source).toContain('method: "GET"');
     expect(source).toContain('redirect: "error"');
