@@ -67,6 +67,7 @@ export type FlightConsumerProductionStripePaymentIntentPlan = Readonly<{
   captureMethod: "manual";
   confirmationMethod: "automatic";
   paymentMethodTypes: readonly ["card"];
+  executionScopeSha256: string;
   paymentBindingSha256: string;
   orderReferenceSha256: string;
   customerReferenceSha256: string;
@@ -211,6 +212,7 @@ export function buildFlightConsumerProductionStripePaymentIntentPlan(
     captureMethod: "manual",
     confirmationMethod: "automatic",
     paymentMethodTypes: ["card"],
+    executionScopeSha256: input.executionScopeSha256,
     paymentBindingSha256,
     orderReferenceSha256,
     customerReferenceSha256,
@@ -230,6 +232,7 @@ export function buildFlightConsumerProductionStripePaymentIntentPlan(
     captureMethod: "manual" as const,
     confirmationMethod: "automatic" as const,
     paymentMethodTypes: ["card"] as const,
+    executionScopeSha256: input.executionScopeSha256,
     paymentBindingSha256,
     orderReferenceSha256,
     customerReferenceSha256,

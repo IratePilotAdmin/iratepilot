@@ -71,6 +71,9 @@ describe("flight migration lineage freeze manifest", () => {
       version: "202608260100",
       status: "never_created_never_applied_intentionally_unused",
     });
+    expect(manifest.production.versions.map(
+      ({ version }: { version: string }) => version,
+    )).toEqual(["202608260099", "202608260101", "202608260102"]);
     expect(existsSync("supabase/production-migrations/202608260100_flight.sql")).toBe(false);
     expect(readdirSync("supabase/production-migrations").some(
       (name) => name.startsWith("202608260100_"),
@@ -89,6 +92,53 @@ describe("flight migration lineage freeze manifest", () => {
     }
   });
 
+  it("hash-pins the isolated Stripe plan journal as authored and unapplied", () => {
+    expect(manifest.production.authoredUnappliedVersions).toEqual([{
+      version: "202608260103",
+      filename: "202608260103_flight_consumer_live_stripe_payment_intent_plan_journal.sql",
+      forwardSha256: "c4d5dec63faa07b37a2f57dc26a57faf94d698e09cf7f7e5be55a145a052d2cd",
+      rollbackSha256: "29f22e4a5d9de9aa767695ede19b0026c03f60e9a2c534ac63768e5026492ed3",
+      status: "authored_unapplied",
+      objectVerification: "not_run",
+      applyAuthority: "not_granted",
+    }]);
+
+    const [entry] = manifest.production.authoredUnappliedVersions;
+    const rollbackFilename = entry.filename.replace(/\.sql$/, ".rollback.sql");
+    expect(sha256(`supabase/production-migrations/${entry.filename}`))
+      .toBe(entry.forwardSha256);
+    expect(sha256(`supabase/production-rollbacks/${rollbackFilename}`))
+      .toBe(entry.rollbackSha256);
+    expect(existsSync(`supabase/migrations/${entry.filename}`)).toBe(false);
+    expect(existsSync(`supabase/rollbacks/${rollbackFilename}`)).toBe(false);
+    expect(readdirSync("supabase/migrations").some(
+      (filename) => filename.startsWith("202608260103_"),
+    )).toBe(false);
+    expect(readdirSync("supabase/rollbacks").some(
+      (filename) => filename.startsWith("202608260103_"),
+    )).toBe(false);
+    expect(entry.version < "202608260200").toBe(true);
+    const appliedVersions = new Set(manifest.production.versions.map(
+      ({ version }: { version: string }) => version,
+    ));
+    const authoredVersions = manifest.production.authoredUnappliedVersions.map(
+      ({ version }: { version: string }) => version,
+    );
+    expect(authoredVersions).toEqual(["202608260103"]);
+    expect(authoredVersions.some((version: string) => appliedVersions.has(version)))
+      .toBe(false);
+
+    const expectedForward = [
+      ...manifest.production.versions.map(({ filename }: { filename: string }) => filename),
+      entry.filename,
+    ].sort();
+    const expectedRollback = expectedForward.map(
+      (filename) => filename.replace(/\.sql$/, ".rollback.sql"),
+    ).sort();
+    expect(readdirSync("supabase/production-migrations").sort()).toEqual(expectedForward);
+    expect(readdirSync("supabase/production-rollbacks").sort()).toEqual(expectedRollback);
+  });
+
   it("reserves car versions without assigning any of them to flight", () => {
     expect(manifest.reservedExternalRanges).toEqual([{
       owner: "car_rental",
@@ -99,6 +149,29 @@ describe("flight migration lineage freeze manifest", () => {
     expect(CANONICAL_FLIGHT_MIGRATION_VERSIONS.every(
       (version: string) => version < "202608260200",
     )).toBe(true);
+    const flightOwnedVersions = [
+      ...CANONICAL_FLIGHT_MIGRATION_VERSIONS,
+      ...manifest.production.versions.map(({ version }: { version: string }) => version),
+      ...manifest.production.authoredUnappliedVersions.map(
+        ({ version }: { version: string }) => version,
+      ),
+    ];
+    expect(flightOwnedVersions.some(
+      (version: string) => version >= "202608260200" && version <= "202608260207",
+    )).toBe(false);
+    for (const directory of [
+      "supabase/migrations",
+      "supabase/rollbacks",
+      "supabase/production-migrations",
+      "supabase/production-rollbacks",
+    ]) {
+      expect(readdirSync(directory).some((filename) => {
+        const version = filename.slice(0, 12);
+        return version >= "202608260200"
+          && version <= "202608260207"
+          && filename.includes("_flight_");
+      })).toBe(false);
+    }
     expect(rawManifest).not.toMatch(/access[_-]?token|password|database[_-]?url|project[_-]?ref/i);
   });
 });

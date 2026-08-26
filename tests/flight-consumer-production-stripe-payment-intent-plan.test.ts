@@ -49,6 +49,7 @@ describe("Flight Consumer Production zero-dispatch Stripe PaymentIntent plan", (
       captureMethod: "manual",
       confirmationMethod: "automatic",
       paymentMethodTypes: ["card"],
+      executionScopeSha256: digest("1"),
       paymentBindingSha256: expect.stringMatching(/^[0-9a-f]{64}$/),
       orderReferenceSha256: expect.stringMatching(/^[0-9a-f]{64}$/),
       customerReferenceSha256: expect.stringMatching(/^[0-9a-f]{64}$/),
@@ -159,6 +160,34 @@ describe("Flight Consumer Production zero-dispatch Stripe PaymentIntent plan", (
     expect(serialized).not.toMatch(/_secret_/);
     expect(serialized).not.toContain("flt_v1_");
     expect(serialized).not.toContain("4242424242424242");
+  });
+
+  it("returns every dynamic value required by the immutable Production journal", () => {
+    const plan = buildFlightConsumerProductionStripePaymentIntentPlan(input());
+    const migration = readFileSync(
+      "supabase/production-migrations/202608260103_flight_consumer_live_stripe_payment_intent_plan_journal.sql",
+      "utf8",
+    );
+    const recorderBindings = [
+      ["executionScopeSha256", "p_execution_scope_sha256"],
+      ["paymentBindingSha256", "p_payment_binding_sha256"],
+      ["orderReferenceSha256", "p_order_reference_sha256"],
+      ["customerReferenceSha256", "p_customer_reference_sha256"],
+      ["paymentAttemptReferenceSha256", "p_payment_attempt_reference_sha256"],
+      ["metadataSha256", "p_metadata_sha256"],
+      ["requestBodySha256", "p_request_body_sha256"],
+      ["requestEnvelopeSha256", "p_request_envelope_sha256"],
+      ["idempotencyRequestSha256", "p_idempotency_request_sha256"],
+      ["idempotencyKeySha256", "p_idempotency_key_sha256"],
+      ["planSha256", "p_plan_sha256"],
+    ] as const;
+
+    for (const [planField, sqlParameter] of recorderBindings) {
+      expect(plan[planField]).toMatch(/^[0-9a-f]{64}$/);
+      expect(migration).toContain(`${sqlParameter} text`);
+    }
+    expect(plan.amountCents).toBe(25_000);
+    expect(migration).toContain("p_amount_cents bigint");
   });
 
   it("keeps the source outside SDK, transport, environment, persistence, and Preview paths", () => {
