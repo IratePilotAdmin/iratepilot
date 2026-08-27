@@ -11,8 +11,11 @@ import {
   deriveFlightConsumerProductionStripePublishableKeySha256,
   FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_CONFIRMATION,
   FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_MODE,
+  FLIGHT_CONSUMER_PRODUCTION_STRIPE_PAYMENT_PLAN_MODE,
   requireFlightConsumerProductionStripeAccountPreflightRuntime,
+  requireFlightConsumerProductionStripePaymentPlanRuntime,
   resolveFlightConsumerProductionStripeAccountPreflightRuntime,
+  resolveFlightConsumerProductionStripePaymentPlanRuntime,
   validateFlightConsumerProductionStripeLiveCredential,
   validateFlightConsumerProductionStripeLivePublishableKey,
 } from "../lib/flights/consumer-production/stripe-runtime.server";
@@ -30,7 +33,10 @@ const baseEnv = Object.freeze({
   FLIGHT_CONSUMER_PRODUCTION_DUFFEL_SHOPPING_DARK_ENABLED: "false",
   FLIGHT_CONSUMER_PRODUCTION_DUFFEL_SHOPPING_ORDER_ENABLED: "false",
   FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ORDER_PLAN_REHEARSAL_ENABLED: "false",
+  FLIGHT_CONSUMER_PRODUCTION_DUFFEL_LIVE_REPRICE_DARK_ENABLED: "false",
+  FLIGHT_CONSUMER_PRODUCTION_PUBLIC_SHOPPING_PREVIEW_ENABLED: "false",
   FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_ENABLED: "true",
+  FLIGHT_CONSUMER_PRODUCTION_STRIPE_PAYMENT_PLAN_DARK_ENABLED: "false",
   FLIGHT_RUNTIME_MODE: "production",
   FLIGHT_RUNTIME_ENVIRONMENT: "production",
   FLIGHT_RUNTIME_ENABLED: "false",
@@ -61,6 +67,18 @@ const baseEnv = Object.freeze({
     deriveFlightConsumerProductionStripePublishableKeySha256(
       stripePublishableKey,
     ),
+  FLIGHT_PAYMENT_PROCESSOR_ID: "stripe_live",
+  FLIGHT_PAYMENT_ADAPTER_VERSION: "22.4.0",
+  FLIGHT_PAYMENT_ADAPTER_SOURCE_SHA256: "b".repeat(64),
+  FLIGHT_PAYMENT_ACCOUNT_SCOPE_SHA256:
+    deriveFlightConsumerProductionStripeAccountSha256(accountId),
+  FLIGHT_PAYMENT_ENVIRONMENT_SCOPE_SHA256: "c".repeat(64),
+}) satisfies Record<string, string>;
+
+const paymentPlanEnv = Object.freeze({
+  ...baseEnv,
+  FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_ENABLED: "false",
+  FLIGHT_CONSUMER_PRODUCTION_STRIPE_PAYMENT_PLAN_DARK_ENABLED: "true",
 }) satisfies Record<string, string>;
 
 describe("Flight Consumer Production Stripe read-only runtime", () => {
@@ -190,6 +208,9 @@ describe("Flight Consumer Production Stripe read-only runtime", () => {
     ["FLIGHT_CONSUMER_PRODUCTION_DUFFEL_SHOPPING_DARK_ENABLED", "true"],
     ["FLIGHT_CONSUMER_PRODUCTION_DUFFEL_SHOPPING_ORDER_ENABLED", "true"],
     ["FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ORDER_PLAN_REHEARSAL_ENABLED", "true"],
+    ["FLIGHT_CONSUMER_PRODUCTION_DUFFEL_LIVE_REPRICE_DARK_ENABLED", "true"],
+    ["FLIGHT_CONSUMER_PRODUCTION_PUBLIC_SHOPPING_PREVIEW_ENABLED", "true"],
+    ["FLIGHT_CONSUMER_PRODUCTION_STRIPE_PAYMENT_PLAN_DARK_ENABLED", "true"],
     ["FLIGHT_RUNTIME_MODE", "sandbox"],
     ["FLIGHT_RUNTIME_ENVIRONMENT", "preview"],
     ["FLIGHT_RUNTIME_ENABLED", "true"],
@@ -307,5 +328,126 @@ describe("Flight Consumer Production Stripe read-only runtime", () => {
     expect(source).not.toMatch(/\bfetch\s*\(|from\s+["']stripe["']/);
     expect(source).not.toMatch(/\.paymentIntents\.|\.charges\.|\.refunds\./);
     expect(source).not.toMatch(/supabase\/migrations|createAdminClient/);
+  });
+});
+
+describe("Flight Consumer Production Stripe payment-plan dark runtime", () => {
+  it("authorizes only deterministic zero-dispatch plan recording", () => {
+    const decision =
+      resolveFlightConsumerProductionStripePaymentPlanRuntime(paymentPlanEnv);
+
+    expect(decision).toEqual({
+      authorized: true,
+      mode: FLIGHT_CONSUMER_PRODUCTION_STRIPE_PAYMENT_PLAN_MODE,
+      reasons: [],
+      binding: {
+        processorCode: "stripe",
+        processorEnvironment: "live",
+        executionScopeSha256: expect.stringMatching(/^[0-9a-f]{64}$/),
+        approvedAccountSha256:
+          deriveFlightConsumerProductionStripeAccountSha256(accountId),
+        paymentBinding: {
+          processorId: "stripe_live",
+          adapterVersion: "22.4.0",
+          adapterSourceDigest: "b".repeat(64),
+          accountScopeReceiptDigest:
+            deriveFlightConsumerProductionStripeAccountSha256(accountId),
+          environmentScopeReceiptDigest: "c".repeat(64),
+        },
+        paymentBindingSha256: expect.stringMatching(/^[0-9a-f]{64}$/),
+        allowedOperations: [
+          "build_and_record_zero_dispatch_payment_intent_plan",
+        ],
+        planRecordingEnabled: true,
+        accountReadEnabled: false,
+        stripeTransportEnabled: false,
+        stripeMutationEnabled: false,
+        paymentIntentEnabled: false,
+        chargeEnabled: false,
+        refundEnabled: false,
+        webhookEnabled: false,
+        providerOrderDispatchEnabled: false,
+        consumerReleaseEnabled: false,
+        bookingEnabled: false,
+        paymentEnabled: false,
+        settlementEnabled: false,
+        ticketingEnabled: false,
+        servicingEnabled: false,
+        transactionKillSwitchEngaged: true,
+      },
+    });
+    expect(Object.isFrozen(decision)).toBe(true);
+    if (!decision.authorized) throw new Error("expected dark plan runtime");
+    expect(Object.isFrozen(decision.binding)).toBe(true);
+    expect(Object.isFrozen(decision.binding.paymentBinding)).toBe(true);
+    expect(JSON.stringify(decision)).not.toContain(stripeCredential);
+    expect(JSON.stringify(decision)).not.toContain(stripePublishableKey);
+  });
+
+  it("binds adapter or environment-scope changes to a distinct execution scope", () => {
+    const initial =
+      requireFlightConsumerProductionStripePaymentPlanRuntime(paymentPlanEnv);
+    const changed =
+      requireFlightConsumerProductionStripePaymentPlanRuntime({
+        ...paymentPlanEnv,
+        FLIGHT_PAYMENT_ADAPTER_VERSION: "22.4.1",
+        FLIGHT_PAYMENT_ENVIRONMENT_SCOPE_SHA256: "d".repeat(64),
+      });
+
+    expect(changed.binding.paymentBindingSha256)
+      .not.toBe(initial.binding.paymentBindingSha256);
+    expect(changed.binding.executionScopeSha256)
+      .not.toBe(initial.binding.executionScopeSha256);
+  });
+
+  it.each([
+    ["FLIGHT_CONSUMER_PRODUCTION_STRIPE_PAYMENT_PLAN_DARK_ENABLED", "false"],
+    ["FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_ENABLED", "true"],
+    ["FLIGHT_CONSUMER_PRODUCTION_DUFFEL_LIVE_REPRICE_DARK_ENABLED", "true"],
+    ["FLIGHT_CONSUMER_PRODUCTION_PUBLIC_SHOPPING_PREVIEW_ENABLED", "true"],
+    ["FLIGHT_CONSUMER_PRODUCTION_DUFFEL_SHOPPING_DARK_ENABLED", "true"],
+    ["FLIGHT_CONSUMER_PRODUCTION_DUFFEL_SHOPPING_ORDER_ENABLED", "true"],
+    ["FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ORDER_PLAN_REHEARSAL_ENABLED", "true"],
+    ["FLIGHT_PAYMENT_PROCESSOR_ID", "adyen_live"],
+    ["FLIGHT_PAYMENT_ADAPTER_VERSION", "latest"],
+    ["FLIGHT_PAYMENT_ADAPTER_SOURCE_SHA256", "bad"],
+    ["FLIGHT_PAYMENT_ACCOUNT_SCOPE_SHA256", "0".repeat(64)],
+    ["FLIGHT_PAYMENT_ENVIRONMENT_SCOPE_SHA256", "bad"],
+    ["FLIGHT_RUNTIME_ENABLED", "true"],
+    ["FLIGHT_PROVIDER_TRAFFIC_ENABLED", "true"],
+    ["FLIGHT_BOOKING_ENABLED", "true"],
+    ["FLIGHT_PAYMENT_ENABLED", "true"],
+    ["FLIGHT_PRODUCTION_TRAFFIC_ENABLED", "true"],
+    ["FLIGHT_TRANSACTION_KILL_SWITCH", "disengaged"],
+  ])("fails closed when %s is %s", (name, value) => {
+    expect(resolveFlightConsumerProductionStripePaymentPlanRuntime({
+      ...paymentPlanEnv,
+      [name]: value,
+    })).toMatchObject({ authorized: false, mode: "disabled", binding: null });
+  });
+
+  it("defaults closed and rejects an incomplete canonical payment binding", () => {
+    const disabled: Record<string, string | undefined> = { ...paymentPlanEnv };
+    delete disabled.FLIGHT_CONSUMER_PRODUCTION_STRIPE_PAYMENT_PLAN_DARK_ENABLED;
+    expect(resolveFlightConsumerProductionStripePaymentPlanRuntime(disabled))
+      .toMatchObject({ authorized: false, mode: "disabled", binding: null });
+
+    const incomplete: Record<string, string | undefined> = {
+      ...paymentPlanEnv,
+    };
+    delete incomplete.FLIGHT_PAYMENT_ADAPTER_SOURCE_SHA256;
+    expect(resolveFlightConsumerProductionStripePaymentPlanRuntime(incomplete))
+      .toMatchObject({ authorized: false, mode: "disabled", binding: null });
+  });
+
+  it("keeps the dark gate free of Stripe transport and persistence code", () => {
+    const source = readFileSync(new URL(
+      "../lib/flights/consumer-production/stripe-runtime.server.ts",
+      import.meta.url,
+    ), "utf8");
+
+    expect(source).not.toMatch(/\bfetch\s*\(|from\s+["']stripe["']/);
+    expect(source).not.toMatch(/\.paymentIntents\.|\.charges\.|\.refunds\./);
+    expect(source).not.toMatch(/\brpc\s*\(|createAdminClient/);
   });
 });

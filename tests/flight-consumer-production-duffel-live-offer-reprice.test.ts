@@ -36,6 +36,9 @@ const env = Object.freeze({
   FLIGHT_CONSUMER_PRODUCTION_DUFFEL_SHOPPING_DARK_ENABLED: "false",
   FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ORDER_PLAN_REHEARSAL_ENABLED: "false",
   FLIGHT_CONSUMER_PRODUCTION_DUFFEL_SHOPPING_ORDER_ENABLED: "false",
+  FLIGHT_CONSUMER_PRODUCTION_PUBLIC_SHOPPING_PREVIEW_ENABLED: "false",
+  FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_ENABLED: "false",
+  FLIGHT_CONSUMER_PRODUCTION_STRIPE_PAYMENT_PLAN_DARK_ENABLED: "false",
   FLIGHT_RUNTIME_MODE: "production",
   FLIGHT_RUNTIME_ENVIRONMENT: "production",
   FLIGHT_RUNTIME_ENABLED: "false",
@@ -240,6 +243,15 @@ describe("Flight Consumer Production Duffel live offer reprice adapter", () => {
     }],
     ["order capability enabled", {
       FLIGHT_CONSUMER_PRODUCTION_DUFFEL_SHOPPING_ORDER_ENABLED: "true",
+    }],
+    ["public-shopping prerequisite lane enabled", {
+      FLIGHT_CONSUMER_PRODUCTION_PUBLIC_SHOPPING_PREVIEW_ENABLED: "true",
+    }],
+    ["Stripe account-preflight lane enabled", {
+      FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_ENABLED: "true",
+    }],
+    ["Stripe payment-plan lane enabled", {
+      FLIGHT_CONSUMER_PRODUCTION_STRIPE_PAYMENT_PLAN_DARK_ENABLED: "true",
     }],
   ])("fails closed before authority issuance for %s", (_label, override) => {
     expect(() => issued({}, { ...env, ...override })).toThrow(expect.objectContaining({

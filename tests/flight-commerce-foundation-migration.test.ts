@@ -574,9 +574,15 @@ describe("flight commerce foundation migration", () => {
     );
   });
 
-  it("mirrors migration 068 exactly in the bootstrap schema", () => {
+  it("mirrors migration 068 with only the canonical ticket-identity repair", () => {
     const marker = `-- Mirrored from migrations/${migrationName}.`;
+    const repairedMigration = migration.replace(
+      "unique (execution_scope_sha256, execution_mode, document_ref_sha256)",
+      "unique (order_id, document_ref_sha256)",
+    );
+    expect(repairedMigration).not.toBe(migration);
+    expect(migration).not.toContain("unique (order_id, document_ref_sha256)");
     expect(bootstrap.match(new RegExp(marker.replaceAll(".", "\\."), "g"))).toHaveLength(1);
-    expect(bootstrap).toContain(`${marker}\n${migration.trimEnd()}`);
+    expect(bootstrap).toContain(`${marker}\n${repairedMigration.trimEnd()}`);
   });
 });

@@ -11,10 +11,18 @@ import {
   type FlightCanonicalJsonValue,
 } from "../runtime-safety";
 import {
+  deriveFlightConsumerProductionDuffelLiveOfferIdSha256,
+} from "./duffel-live-offer-reprice.server";
+import {
   deriveFlightConsumerProductionDuffelShoppingOneShotIdempotencySha256,
   FLIGHT_CONSUMER_PRODUCTION_DUFFEL_SHOPPING_CONFIRMATION,
   requireFlightConsumerProductionShoppingDarkRuntime,
 } from "./shopping-runtime.server";
+import {
+  acceptFlightConsumerProductionDuffelOfferSourceRecord,
+  createFlightConsumerProductionDuffelOfferSourcePort,
+  type FlightConsumerProductionDuffelOfferSourcePort,
+} from "./duffel-offer-source.server";
 
 export const FLIGHT_CONSUMER_PRODUCTION_DUFFEL_SHOPPING_URL =
   "https://api.duffel.com/air/offer_requests?return_offers=true&supplier_timeout=10000&view=offers" as const;
@@ -309,6 +317,7 @@ export function createFlightConsumerProductionDarkDuffelShoppingWorkflow(
   env: Readonly<Record<string, string | undefined>> = process.env,
   dependencies: Readonly<{
     journal?: FlightConsumerProductionDuffelShoppingJournalPort;
+    offerSources?: FlightConsumerProductionDuffelOfferSourcePort;
     fetcher?: typeof fetch;
     now?: () => Date;
   }> = {},
@@ -326,6 +335,8 @@ export function createFlightConsumerProductionDarkDuffelShoppingWorkflow(
   }
   const journal = dependencies.journal
     ?? createFlightConsumerProductionDuffelShoppingJournalPort();
+  const offerSources = dependencies.offerSources
+    ?? createFlightConsumerProductionDuffelOfferSourcePort();
   const fetcher = dependencies.fetcher ?? fetch;
   const now = dependencies.now ?? (() => new Date());
 
@@ -448,6 +459,23 @@ export function createFlightConsumerProductionDarkDuffelShoppingWorkflow(
         if (!accepted.success) {
           throw new FlightConsumerProductionDuffelShoppingError(502, "provider_contract_refused");
         }
+        acceptFlightConsumerProductionDuffelOfferSourceRecord(
+          await offerSources.record({
+            p_source_shopping_attempt_id: begun.attempt_id,
+            p_source_shopping_execution_scope_sha256:
+              runtime.binding.executionScopeSha256,
+            p_source_response_sha256: responseSha256,
+            p_sources: accepted.data.data.offers.map((offer) => ({
+              offerIdSha256:
+                deriveFlightConsumerProductionDuffelLiveOfferIdSha256(offer.id),
+              expiresAt: new Date(offer.expires_at).toISOString(),
+            })),
+          }),
+          {
+            attemptId: begun.attempt_id,
+            count: accepted.data.data.offers.length,
+          },
+        );
         const completed = oneRow(completionRowSchema, await journal.complete({
           p_attempt_id: begun.attempt_id,
           p_expected_revision: 1,

@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "evidenceType": "flight_consumer_live_payment_isolated_uat_catalog_acceptance",
+  "recordedOn": "2026-08-27",
+  "sanitized": true,
+  "secretsIncluded": false,
+  "environment": {
+    "provider": "supabase",
+    "projectRef": "exipwtvyjaihsvdhsbbt",
+    "branchName": "iratepilot-flight-payment-uat-20260827",
+    "database": "postgres",
+    "databaseUser": "postgres",
+    "postgresServerVersionNum": 170006,
+    "production": false,
+    "dataLessAtAcceptance": true
+  },
+  "source": {
+    "workingTreeBaseCommit": "f7b505a8c80f2a73b463f5f948a94594c41b745e",
+    "uncommittedTaskChangesPresent": true,
+    "applyMethod": "authenticated_supabase_uat_sql_editor",
+    "migrationLedgerWritten": false,
+    "productionDatabaseAccessed": false
+  },
+  "uatOnlyPrerequisite": {
+    "object": "public.profiles",
+    "shape": "id uuid primary key",
+    "rows": 0,
+    "forcedRls": true,
+    "grantsRevoked": true,
+    "productionLineageArtifact": false
+  },
+  "migrationState": [
+    {
+      "version": "202608260101",
+      "forwardSha256": "c92c6f0de60b14d3aac0c6a9314319e254cb6c6df59e68b53d5e3030dd96b70f",
+      "state": "exact_bytes_applied_this_uat_run"
+    },
+    {
+      "version": "202608260102",
+      "forwardSha256": "fe71deff26682e5bd9bd8ae87966bb1c5eb4364e907ce9ea37962756aaf035f6",
+      "state": "exact_bytes_applied_this_uat_run"
+    },
+    {
+      "version": "202608260103",
+      "forwardSha256": "c4d5dec63faa07b37a2f57dc26a57faf94d698e09cf7f7e5be55a145a052d2cd",
+      "state": "preexisting_object_verified_before_this_uat_run"
+    },
+    {
+      "version": "202608260105",
+      "forwardSha256": "c10757ec05ab4c1f55b9da881e37c74679cc8a44c6e0afe3298ae1d7da8249b9",
+      "state": "exact_bytes_applied_this_uat_run"
+    },
+    {
+      "version": "202608260106",
+      "forwardSha256": "f2f5a076765cd58236add5ecebc7b2baff448d5c4685c0552766228f137c4da2",
+      "state": "exact_bytes_applied_this_uat_run"
+    },
+    {
+      "version": "202608260107",
+      "forwardSha256": "29dc826842d675d96e0649e87c474d900621085ef09b730f616fb2f230cc6f94",
+      "state": "exact_bytes_applied_this_uat_run"
+    },
+    {
+      "version": "202608260108",
+      "forwardSha256": "51688027dd052781981c12aa9e36c0bf66621e3937ac32e4b749faec12fa2093",
+      "state": "exact_bytes_applied_this_uat_run"
+    },
+    {
+      "version": "202608260109",
+      "forwardSha256": "60acdb04b44e980b778de1f997791d6ab773d656efc54a64231d6c8f635e9d68",
+      "state": "exact_bytes_applied_this_uat_run"
+    },
+    {
+      "version": "202608260110",
+      "forwardSha256": "c2c31d71640b95e5d3be59b266c5ca04ee0467188248345db4c7280935c9c309",
+      "state": "exact_bytes_applied_this_uat_run",
+      "independentAudit": "passed_no_open_p0_p1"
+    },
+    {
+      "version": "202608260111",
+      "forwardSha256": "26a4c123c0a9e4858f085ee7b86adb02f4ebae1699459cb6575e056775e82524",
+      "state": "exact_bytes_applied_this_uat_run",
+      "independentAudit": "passed_no_open_p0_p1"
+    },
+    {
+      "version": "202608260112",
+      "forwardSha256": "60a12f1024d91232b2c2e4c86b5b044e29039f4a6c2f0c6697b6c2b18918c2e7",
+      "state": "exact_bytes_applied_this_uat_run",
+      "independentAudit": "passed_no_open_p0_p1"
+    },
+    {
+      "version": "202608260113",
+      "forwardSha256": "2a9ebcea56c561be61ed50b895a46d7507ca06f6a20e7ff469bec7fc87da81f2",
+      "state": "exact_bytes_applied_this_uat_run",
+      "independentAudit": "passed_no_open_p0_p1"
+    },
+    {
+      "version": "202608260114",
+      "forwardSha256": "6e267b277d2190d5953e3fd91016e651e2ba8e1ef80b602e9bbce946b8ca1158",
+      "state": "exact_bytes_applied_this_uat_run",
+      "independentAudit": "passed_two_independent_audits_no_open_p0_p1"
+    }
+  ],
+  "catalogAcceptance": {
+    "checkoutAuthorizationBridgeTablePresent": true,
+    "checkoutAuthorizationBridgeRows": 0,
+    "checkoutAuthorizationBridgeForcedRls": true,
+    "checkoutAuthorizationBridgeGuardsPresent": true,
+    "checkoutAuthorizationBridgeServiceRpcsPresent": true,
+    "stripeCaptureAttemptTablePresent": true,
+    "stripeCaptureReceiptTablePresent": true,
+    "stripeCaptureAttemptRows": 0,
+    "stripeCaptureReceiptRows": 0,
+    "stripeCaptureTablesForcedRls": true,
+    "stripeCaptureGuardsPresent": true,
+    "stripeCaptureServiceRpcCount": 5,
+    "observedPaymentIntentBindingColumnPresent": true,
+    "duffelSupportIdentityReadRpcPresent": true,
+    "duffelTerminalWriterV2Present": true,
+    "bookingSettlementTablePresent": true,
+    "bookingSettlementReceiptTablePresent": true,
+    "bookingSettlementRows": 0,
+    "bookingSettlementReceiptRows": 0,
+    "bookingSettlementTablesForcedRls": true,
+    "bookingSettlementServiceRpcsPresent": true,
+    "stripeCaptureTerminalWriterV2Present": true,
+    "stripeCaptureSupportIdentityReadRpcPresent": true,
+    "stripeCaptureTransportOutcomeColumnPresent": true,
+    "stripeCaptureV1ServiceExecuteRevoked": true,
+    "stripeCaptureV2ServiceExecuteGranted": true,
+    "stripeCaptureSupportReadServiceExecuteGranted": true,
+    "anonStripeCaptureRpcCount": 0,
+    "authenticatedStripeCaptureRpcCount": 0,
+    "anonTableSelect": false,
+    "authenticatedTableSelect": false,
+    "serviceRoleDirectTableSelect": false
+  },
+  "transactionEvidence": {
+    "checkoutRows": 0,
+    "stripeConfirmationRows": 0,
+    "authorizationBridgeRows": 0,
+    "duffelOrderExecutionRows": 0,
+    "duffelOrderExecutionReceiptRows": 0,
+    "duffelProviderRequests": 0,
+    "stripeCaptureRows": 0,
+    "stripeCaptureReceiptRows": 0,
+    "bookingSettlementRows": 0,
+    "bookingSettlementReceiptRows": 0,
+    "providerRequests": 0,
+    "duffelOrderRequests": 0,
+    "stripePaymentIntentCreates": 0,
+    "stripeCaptureRequests": 0,
+    "stripeMutations": 0,
+    "orders": 0,
+    "charges": 0,
+    "tickets": 0
+  },
+  "authority": {
+    "providerDispatchAuthorized": false,
+    "bookingAuthorized": false,
+    "paymentAuthorized": false,
+    "captureAuthorized": false,
+    "refundAuthorized": false,
+    "settlementAuthorized": false,
+    "ticketingAuthorized": false,
+    "servicingAuthorized": false,
+    "consumerReleaseEnabled": false,
+    "productionApplyAuthorized": false,
+    "productionDeployAuthorized": false,
+    "liveCanaryAuthorized": false
+  }
+}

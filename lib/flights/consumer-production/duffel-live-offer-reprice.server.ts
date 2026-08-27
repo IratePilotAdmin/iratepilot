@@ -328,6 +328,21 @@ export function issueFlightConsumerProductionDuffelLiveOfferRepriceAuthority(
       "FLIGHT_CONSUMER_PRODUCTION_DUFFEL_SHOPPING_ORDER_ENABLED",
       "false",
     );
+    requireExactGate(
+      env,
+      "FLIGHT_CONSUMER_PRODUCTION_PUBLIC_SHOPPING_PREVIEW_ENABLED",
+      "false",
+    );
+    requireExactGate(
+      env,
+      "FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_ENABLED",
+      "false",
+    );
+    requireExactGate(
+      env,
+      "FLIGHT_CONSUMER_PRODUCTION_STRIPE_PAYMENT_PLAN_DARK_ENABLED",
+      "false",
+    );
   } catch {
     throw new FlightConsumerProductionDuffelLiveOfferRepriceError(
       "workflow_unavailable",
@@ -519,6 +534,29 @@ export function createDisabledFlightConsumerProductionDuffelLiveOfferRepriceAdap
   return disabledAdapter;
 }
 
+export function deriveFlightConsumerProductionDuffelLiveOfferRepriceRequestSha256(
+  authority: FlightConsumerProductionDuffelLiveOfferRepriceAuthority,
+) {
+  const privateAuthority = issuedAuthorities.get(authority);
+  if (privateAuthority === undefined) {
+    throw new FlightConsumerProductionDuffelLiveOfferRepriceError(
+      "authority_refused",
+      "not_dispatched",
+    );
+  }
+  const url = `https://api.duffel.com/air/offers/${privateAuthority.offerId}?return_available_services=false`;
+  return sha256FlightEvidence({
+    version: "flight-consumer-production-duffel-live-offer-reprice-request-v1",
+    executionScopeSha256: privateAuthority.executionScopeSha256,
+    authoritySha256: privateAuthority.authoritySha256,
+    offerBindingSha256: privateAuthority.offerBindingSha256,
+    accountSha256: privateAuthority.accountSha256,
+    credentialSha256: privateAuthority.credentialSha256,
+    method: "GET",
+    url,
+  });
+}
+
 export function createFlightConsumerProductionDuffelLiveOfferRepriceAdapter(
   dependencies?: Readonly<{
     authority: FlightConsumerProductionDuffelLiveOfferRepriceAuthority;
@@ -576,16 +614,10 @@ export function createFlightConsumerProductionDuffelLiveOfferRepriceAdapter(
       }
 
       const url = `https://api.duffel.com/air/offers/${privateAuthority.offerId}?return_available_services=false`;
-      const requestSha256 = sha256FlightEvidence({
-        version: "flight-consumer-production-duffel-live-offer-reprice-request-v1",
-        executionScopeSha256: privateAuthority.executionScopeSha256,
-        authoritySha256: privateAuthority.authoritySha256,
-        offerBindingSha256: privateAuthority.offerBindingSha256,
-        accountSha256: privateAuthority.accountSha256,
-        credentialSha256: privateAuthority.credentialSha256,
-        method: "GET",
-        url,
-      });
+      const requestSha256 =
+        deriveFlightConsumerProductionDuffelLiveOfferRepriceRequestSha256(
+          authority,
+        );
       const abortController = new AbortController();
       const request = Object.freeze({
         version:

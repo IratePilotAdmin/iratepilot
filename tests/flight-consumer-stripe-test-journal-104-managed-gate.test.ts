@@ -31,6 +31,14 @@ const preflight = readFileSync(ARTIFACTS.preflight.path, "utf8");
 const verification = readFileSync(ARTIFACTS.verification.path, "utf8");
 const migration = readFileSync(ARTIFACTS.migration.path);
 const rollback = readFileSync(ARTIFACTS.rollback.path);
+const productionObservation = readFileSync(
+  "scripts/flight-consumer-stripe-test-journal-104-production-observation.sql",
+  "utf8",
+);
+const previewManagedEvidence = JSON.parse(readFileSync(
+  "docs/evidence/FLIGHT_CONSUMER_STRIPE_TEST_JOURNAL_104_PREVIEW_MANAGED_QUALIFICATION_2026-08-27.json",
+  "utf8",
+)).evidence;
 
 function sha256(bytes: Buffer | string) {
   return createHash("sha256").update(bytes).digest("hex");
@@ -85,6 +93,109 @@ describe("Flight Consumer managed migration 104 gate", () => {
     expect(sha256(preflight)).toBe(ARTIFACTS.preflight.sha256);
     expect(sha256(verification)).toBe(ARTIFACTS.verification.sha256);
     expect(() => readAndAssertArtifacts()).not.toThrow();
+  });
+
+  it("records the locked Preview verify-only receipt without rewriting Production state", () => {
+    expect(previewManagedEvidence).toMatchObject({
+      environment: "managed_supabase_preview_runtime_locked",
+      result: "PASS",
+      target: {
+        projectRef: "eiqmdldjnedqgbtoozqa",
+        targetKind: "preview_runtime",
+        consumerProduction: false,
+        runtimeLockedAtVerification: true,
+      },
+      preflight: {
+        mode: "read_only",
+        result: "STOPPED_EXPECTED_OBJECT_COLLISION",
+        writesPerformed: false,
+        blindApplyAttempted: false,
+        forwardMigrationAppliedThisRun: false,
+      },
+      observedPreexistingState: {
+        expectedJournalTablesPresent: 3,
+        expectedRecorderAndProtectionFunctionsPresent: 6,
+        migration104LedgerEntryPresent: false,
+        disposition: "object_applied_not_ledgered_in_preview",
+      },
+      productionCatalogObservation: {
+        observedAt: "2026-08-27T03:12:31-05:00",
+        mode: "read_only",
+        result: "PASS",
+        projectRef: "allliumarkejinplrggl",
+        database: "postgres",
+        databaseUser: "postgres",
+        postgresServerVersionNum: 170006,
+        matchingRelationCount: 0,
+        matchingRelationNames: [],
+        matchingFunctionCount: 0,
+        matchingFunctionNames: [],
+        migration104LedgerEntryPresent: false,
+        writesPerformed: false,
+        objectState: "absent",
+      },
+      verificationReceipt: {
+        result: "PASS",
+        syntheticRowsAfterSavepointRollback: 0,
+        verificationHarnessObjects: 0,
+        migration104LedgerEntryPresent: false,
+        providerRequests: 0,
+        stripeRequests: 0,
+        charges: 0,
+        orders: 0,
+        tickets: 0,
+      },
+      disposition: {
+        previewDatabasePermanentWritesPerformed: false,
+        migrationLedgerMutationPerformed: false,
+        stripeTraffic: false,
+        duffelTraffic: false,
+        productionDatabaseReadPerformed: true,
+        productionDatabaseWritesPerformed: false,
+        productionRuntimeChanged: false,
+        publicReleaseChanged: false,
+      },
+      lineageState: {
+        productionMigration104RepositoryClassification: "authored_unapplied",
+        productionMigration104ObjectState: "read_only_verified_absent",
+        productionMigration104LedgerEntryPresent: false,
+        productionApplyAuthority: "not_granted",
+        previewMigration104ObjectState: "object_applied_not_ledgered",
+        carReservedRangeUntouched: "202608260200-202608260207",
+      },
+    });
+    expect(previewManagedEvidence.reviewedArtifacts).toEqual({
+      forwardMigration: {
+        path: ARTIFACTS.migration.path,
+        sha256: FORWARD_SHA256,
+      },
+      rollbackMigration: {
+        path: ARTIFACTS.rollback.path,
+        sha256: ROLLBACK_SHA256,
+      },
+      managedPreflightSql: {
+        path: ARTIFACTS.preflight.path,
+        sha256: ARTIFACTS.preflight.sha256,
+      },
+      managedVerificationSql: {
+        path: ARTIFACTS.verification.path,
+        sha256: ARTIFACTS.verification.sha256,
+      },
+      productionObservationSql: {
+        path: "scripts/flight-consumer-stripe-test-journal-104-production-observation.sql",
+        sha256: sha256(productionObservation),
+      },
+    });
+  });
+
+  it("keeps the Production observation artifact read only and target bound", () => {
+    expect(productionObservation).toContain("begin read only;");
+    expect(productionObservation).toContain("commit;");
+    expect(productionObservation).toContain("allliumarkejinplrggl");
+    expect(productionObservation).toContain("202608260104");
+    expect(productionObservation).not.toMatch(
+      /\b(?:insert|update|delete|merge|create|alter|drop|truncate|grant|revoke)\b\s+/i,
+    );
   });
 
   it("has no default operation or target and requires exact target confirmations", () => {

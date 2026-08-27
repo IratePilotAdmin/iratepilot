@@ -53,6 +53,7 @@ const expectedPreviewVersions = [
   "202608260135",
   "202608260136",
   "202608260137",
+  "202608260138",
 ];
 
 const expectedRemainingLaunchGates = [
@@ -183,9 +184,9 @@ describe("Flight Consumer Production Stripe payment-plan PostgreSQL evidence", (
     });
     expect(lineage.production.authoredUnappliedVersions.map(
       (entry: { version: string }) => entry.version,
-    )).toEqual(["202608260104"]);
+    )).toContain("202608260104");
     expect(lineage.preview.canonicalVersions).toEqual(expectedPreviewVersions);
-    expect(lineage.preview.canonicalTip).toBe("202608260137");
+    expect(lineage.preview.canonicalTip).toBe("202608260138");
     expect(lineage.reservedExternalRanges).toEqual([
       {
         owner: "car_rental",

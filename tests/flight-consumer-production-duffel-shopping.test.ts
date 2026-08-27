@@ -9,6 +9,9 @@ import {
   type FlightConsumerProductionDuffelShoppingJournalPort,
 } from "../lib/flights/consumer-production/duffel-shopping.server";
 import {
+  deriveFlightConsumerProductionDuffelLiveOfferIdSha256,
+} from "../lib/flights/consumer-production/duffel-live-offer-reprice.server";
+import {
   deriveFlightConsumerProductionDuffelAccountSha256,
   deriveFlightConsumerProductionDuffelCredentialSha256,
   FLIGHT_CONSUMER_PRODUCTION_DUFFEL_SHOPPING_CONFIRMATION,
@@ -116,13 +119,32 @@ function response(payload = body(), status = 200) {
   });
 }
 
+function offerSources() {
+  return {
+    record: vi.fn(async (parameters: {
+      p_source_shopping_attempt_id: string;
+      p_sources: readonly unknown[];
+    }) => [{
+      source_shopping_attempt_id: parameters.p_source_shopping_attempt_id,
+      recorded_source_count: parameters.p_sources.length,
+    }]),
+    resolve: vi.fn(),
+  };
+}
+
 describe("Flight Consumer Production Duffel shopping dark workflow", () => {
   it("performs one journaled live offer request and exposes no provider reference", async () => {
     const port = journal();
+    const sources = offerSources();
     const fetcher = vi.fn<typeof fetch>(async () => response());
     const result = await createFlightConsumerProductionDarkDuffelShoppingWorkflow(
       env,
-      { journal: port, fetcher: fetcher as typeof fetch, now: () => now },
+      {
+        journal: port,
+        offerSources: sources,
+        fetcher: fetcher as typeof fetch,
+        now: () => now,
+      },
     ).execute(request);
 
     expect(result).toMatchObject({
@@ -153,6 +175,19 @@ describe("Flight Consumer Production Duffel shopping dark workflow", () => {
     expect(journalEnvelope).not.toContain(env.FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ACCOUNT_SHA256);
     expect(journalEnvelope).not.toContain(env.FLIGHT_CONSUMER_PRODUCTION_DUFFEL_CREDENTIAL_SHA256);
     expect(port.claim).toHaveBeenCalledBefore(port.complete as ReturnType<typeof vi.fn>);
+    expect(sources.record).toHaveBeenCalledWith({
+      p_source_shopping_attempt_id: attemptId,
+      p_source_shopping_execution_scope_sha256:
+        expect.stringMatching(/^[0-9a-f]{64}$/),
+      p_source_response_sha256: expect.stringMatching(/^[0-9a-f]{64}$/),
+      p_sources: [{
+        offerIdSha256: deriveFlightConsumerProductionDuffelLiveOfferIdSha256(
+          "off_0000000000000001",
+        ),
+        expiresAt: "2026-08-26T17:30:00.000Z",
+      }],
+    });
+    expect(JSON.stringify(sources.record.mock.calls)).not.toMatch(/off_|orq_/);
     expect(port.complete).toHaveBeenCalledWith(expect.objectContaining({
       p_terminal_state: "succeeded",
       p_terminal_http_status: 200,
@@ -174,7 +209,7 @@ describe("Flight Consumer Production Duffel shopping dark workflow", () => {
 
     await expect(createFlightConsumerProductionDarkDuffelShoppingWorkflow(
       env,
-      { journal: port, fetcher, now: () => now },
+      { journal: port, offerSources: offerSources(), fetcher, now: () => now },
     ).execute(request)).resolves.toMatchObject({
       state: "succeeded",
       liveMode: true,
@@ -198,7 +233,12 @@ describe("Flight Consumer Production Duffel shopping dark workflow", () => {
     const fetcher = vi.fn();
     await expect(createFlightConsumerProductionDarkDuffelShoppingWorkflow(
       env,
-      { journal: port, fetcher: fetcher as typeof fetch, now: () => now },
+      {
+        journal: port,
+        offerSources: offerSources(),
+        fetcher: fetcher as typeof fetch,
+        now: () => now,
+      },
     ).execute(request)).resolves.toMatchObject({
       replay: true,
       offerCount: 7,
@@ -226,11 +266,21 @@ describe("Flight Consumer Production Duffel shopping dark workflow", () => {
 
     await createFlightConsumerProductionDarkDuffelShoppingWorkflow(
       env,
-      { journal: first, fetcher: fetcher as typeof fetch, now: () => now },
+      {
+        journal: first,
+        offerSources: offerSources(),
+        fetcher: fetcher as typeof fetch,
+        now: () => now,
+      },
     ).execute(request);
     await createFlightConsumerProductionDarkDuffelShoppingWorkflow(
       env,
-      { journal: second, fetcher: fetcher as typeof fetch, now: () => now },
+      {
+        journal: second,
+        offerSources: offerSources(),
+        fetcher: fetcher as typeof fetch,
+        now: () => now,
+      },
     ).execute(request);
 
     const firstEnvelope = (first.begin as ReturnType<typeof vi.fn>).mock.calls[0]?.[0];
@@ -248,7 +298,12 @@ describe("Flight Consumer Production Duffel shopping dark workflow", () => {
     const fetcher = vi.fn(async () => response(body(false)));
     await expect(createFlightConsumerProductionDarkDuffelShoppingWorkflow(
       env,
-      { journal: port, fetcher: fetcher as typeof fetch, now: () => now },
+      {
+        journal: port,
+        offerSources: offerSources(),
+        fetcher: fetcher as typeof fetch,
+        now: () => now,
+      },
     ).execute(request)).rejects.toMatchObject({
       status: 502,
       diagnostic: "provider_contract_refused",
@@ -265,7 +320,12 @@ describe("Flight Consumer Production Duffel shopping dark workflow", () => {
     const fetcher = vi.fn(async () => response('{"errors":[]}', 422));
     await expect(createFlightConsumerProductionDarkDuffelShoppingWorkflow(
       env,
-      { journal: port, fetcher: fetcher as typeof fetch, now: () => now },
+      {
+        journal: port,
+        offerSources: offerSources(),
+        fetcher: fetcher as typeof fetch,
+        now: () => now,
+      },
     ).execute(request)).rejects.toMatchObject({
       status: 502,
       diagnostic: "provider_rejected",
@@ -288,7 +348,12 @@ describe("Flight Consumer Production Duffel shopping dark workflow", () => {
     const fetcher = vi.fn();
     await expect(createFlightConsumerProductionDarkDuffelShoppingWorkflow(
       env,
-      { journal: port, fetcher: fetcher as typeof fetch, now: () => now },
+      {
+        journal: port,
+        offerSources: offerSources(),
+        fetcher: fetcher as typeof fetch,
+        now: () => now,
+      },
     ).execute({ ...request, confirmation: "BOOK_ONE_LIVE_FLIGHT" })).rejects.toMatchObject({
       status: 409,
       diagnostic: "request_contract_refused",
@@ -301,7 +366,12 @@ describe("Flight Consumer Production Duffel shopping dark workflow", () => {
     const fetcher = vi.fn();
     await expect(createFlightConsumerProductionDarkDuffelShoppingWorkflow(
       env,
-      { journal: port, fetcher: fetcher as typeof fetch, now: () => now },
+      {
+        journal: port,
+        offerSources: offerSources(),
+        fetcher: fetcher as typeof fetch,
+        now: () => now,
+      },
     ).execute({ ...request, idempotencyKey: "live-search:client-must-not-control" }))
       .rejects.toMatchObject({
         status: 409,

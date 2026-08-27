@@ -207,8 +207,8 @@ describe("Flight Consumer Stripe payment-plan managed-UAT evidence", () => {
       carReservedRangeUntouched: "202608260200-202608260207",
     });
     expect(lineage.preview.canonicalVersions.at(0)).toBe("202608260120");
-    expect(lineage.preview.canonicalVersions.at(-1)).toBe("202608260137");
-    expect(lineage.preview.canonicalTip).toBe("202608260137");
+    expect(lineage.preview.canonicalVersions.at(-1)).toBe("202608260138");
+    expect(lineage.preview.canonicalTip).toBe("202608260138");
     expect(lineage.reservedExternalRanges).toEqual([
       {
         owner: "car_rental",

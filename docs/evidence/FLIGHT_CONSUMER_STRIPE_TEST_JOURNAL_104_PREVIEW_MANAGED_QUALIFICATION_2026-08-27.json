@@ -1,0 +1,123 @@
+{
+  "evidence": {
+    "version": "flight-consumer-stripe-test-journal-104-preview-managed-qualification-v1",
+    "checkedAt": "2026-08-27T02:51:13-05:00",
+    "environment": "managed_supabase_preview_runtime_locked",
+    "scope": "verify_preexisting_migration_104_objects_without_apply_or_provider_dispatch",
+    "result": "PASS",
+    "sanitized": true,
+    "secretsIncluded": false,
+    "providerRequestIdentifiersIncluded": false,
+    "target": {
+      "provider": "Supabase",
+      "projectRef": "eiqmdldjnedqgbtoozqa",
+      "projectName": "iratepilot-preview-20260817",
+      "organizationName": "iRatePilot Group, LLC",
+      "targetKind": "preview_runtime",
+      "consumerProduction": false,
+      "runtimeLockedAtVerification": true
+    },
+    "reviewedArtifacts": {
+      "forwardMigration": {
+        "path": "supabase/production-migrations/202608260104_flight_consumer_stripe_test_execution_journal.sql",
+        "sha256": "50dcca75f06111de027833ca138519dbe7f71e91bfd5ca9839fa9425699dfa1b"
+      },
+      "rollbackMigration": {
+        "path": "supabase/production-rollbacks/202608260104_flight_consumer_stripe_test_execution_journal.rollback.sql",
+        "sha256": "10d9095be8250a1f50247534aa98e8fc35f51a06211458b5f19f1df43d9d2328"
+      },
+      "managedPreflightSql": {
+        "path": "scripts/flight-consumer-stripe-test-journal-104-managed-preflight.sql",
+        "sha256": "3f29163d5b5cdf73a484a710e0bc19bcb60fda806eb4ec173984c8869bd83ef0"
+      },
+      "managedVerificationSql": {
+        "path": "scripts/flight-consumer-stripe-test-journal-104-managed-verification.sql",
+        "sha256": "4e8a19e5960208aedbb639fcfacdf6c6a22246b7dc12ce383cf410e36298b65b"
+      },
+      "productionObservationSql": {
+        "path": "scripts/flight-consumer-stripe-test-journal-104-production-observation.sql",
+        "sha256": "fcb1a3d99c80e3a74357144f3c3e41ffaccba80414f80f71fe3e968f72cd1fe3"
+      }
+    },
+    "preflight": {
+      "mode": "read_only",
+      "result": "STOPPED_EXPECTED_OBJECT_COLLISION",
+      "errorClassification": "target_relation_or_index_collides",
+      "writesPerformed": false,
+      "blindApplyAttempted": false,
+      "forwardMigrationAppliedThisRun": false
+    },
+    "observedPreexistingState": {
+      "expectedJournalTablesPresent": 3,
+      "expectedRecorderAndProtectionFunctionsPresent": 6,
+      "rowLevelSecurityEnabledAndForced": true,
+      "migration104LedgerEntryPresent": false,
+      "applicationProvenance": "unknown_preexisting_managed_state",
+      "disposition": "object_applied_not_ledgered_in_preview"
+    },
+    "productionCatalogObservation": {
+      "observedAt": "2026-08-27T03:12:31-05:00",
+      "mode": "read_only",
+      "result": "PASS",
+      "projectRef": "allliumarkejinplrggl",
+      "database": "postgres",
+      "databaseUser": "postgres",
+      "postgresServerVersionNum": 170006,
+      "matchingRelationCount": 0,
+      "matchingRelationNames": [],
+      "matchingFunctionCount": 0,
+      "matchingFunctionNames": [],
+      "migration104LedgerEntryPresent": false,
+      "writesPerformed": false,
+      "objectState": "absent"
+    },
+    "verificationReceipt": {
+      "gate": "flight_consumer_stripe_test_journal_104_managed_verification",
+      "result": "PASS",
+      "targetKind": "preview_runtime",
+      "projectRef": "eiqmdldjnedqgbtoozqa",
+      "catalogContract": "passed",
+      "forcedRlsAndAcl": "passed",
+      "modernClaimsServiceRole": "passed",
+      "createdThenReplayed": true,
+      "driftRefused": true,
+      "malformedRefused": true,
+      "boundedLeaseAndObservation": true,
+      "syntheticRowsAfterSavepointRollback": 0,
+      "verificationHarnessObjects": 0,
+      "migration104LedgerEntryPresent": false,
+      "providerRequests": 0,
+      "stripeRequests": 0,
+      "charges": 0,
+      "orders": 0,
+      "tickets": 0
+    },
+    "disposition": {
+      "previewDatabasePermanentWritesPerformed": false,
+      "syntheticRowsCreatedInsideSavepoint": true,
+      "syntheticRowsRolledBack": true,
+      "migrationLedgerMutationPerformed": false,
+      "migrationObjectsCreatedThisRun": false,
+      "stripeTraffic": false,
+      "duffelTraffic": false,
+      "paymentActivity": false,
+      "bookingActivity": false,
+      "ticketingActivity": false,
+      "productionDatabaseReadPerformed": true,
+      "productionDatabaseWritesPerformed": false,
+      "productionRuntimeChanged": false,
+      "publicReleaseChanged": false
+    },
+    "lineageState": {
+      "productionMigration104RepositoryClassification": "authored_unapplied",
+      "productionMigration104ObjectState": "read_only_verified_absent",
+      "productionMigration104LedgerEntryPresent": false,
+      "productionApplyAuthority": "not_granted",
+      "previewMigration104ObjectState": "object_applied_not_ledgered",
+      "previewCanonicalRange": "202608260120-202608260138",
+      "previewCanonicalTip": "202608260138",
+      "carReservedRangeUntouched": "202608260200-202608260207"
+    },
+    "outcome": "preview_stripe_test_journal_104_preexisting_objects_verified_zero_residue_no_dispatch"
+  }
+}

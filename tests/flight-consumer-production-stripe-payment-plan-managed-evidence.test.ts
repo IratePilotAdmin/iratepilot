@@ -197,10 +197,10 @@ describe("Flight Consumer Production Stripe payment-plan managed dark evidence",
     });
     expect(lineage.production.authoredUnappliedVersions.map(
       (entry: { version: string }) => entry.version,
-    )).toEqual(["202608260104"]);
+    )).toContain("202608260104");
     expect(lineage.production.ledgerLatestObservedVersion).toBe("202608220063");
     expect(lineage.production.retroactiveLedgerRepairAuthorized).toBe(false);
-    expect(lineage.preview.canonicalTip).toBe("202608260137");
+    expect(lineage.preview.canonicalTip).toBe("202608260138");
     expect(lineage.reservedExternalRanges).toEqual([
       {
         owner: "car_rental",

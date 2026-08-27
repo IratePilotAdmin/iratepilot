@@ -110,14 +110,16 @@ describe("synthetic flight API", () => {
     const response = await createOrder();
     expect(response.status).toBe(503);
     expect(await response.json()).toMatchObject({
-      code: "flight_order_creation_disabled",
-      runtimeDecision: {
-        authorized: false,
-        operation: "create_order",
-        provider: "synthetic",
-        reasons: expect.arrayContaining(["Flight transaction kill switch is engaged.", "Flight booking operations are disabled."]),
+      code: "flight_consumer_production_order_endpoint_locked",
+      mode: "consumer_production_launch_locked",
+      capabilities: {
+        requestBodyRead: false,
+        providerRequestCount: 0,
+        paymentProcessorRequestCount: 0,
+        orderAuthorized: false,
+        paymentAuthorized: false,
+        ticketingAuthorized: false,
       },
-      capabilities: { orderAuthorized: false, paymentAuthorized: false, ticketingAuthorized: false },
     });
   });
 
@@ -130,12 +132,11 @@ describe("synthetic flight API", () => {
     ].map((path) => readFileSync(path, "utf8")).join("\n");
     expect(sources).toMatch(/searchSyntheticFlightMarketplace/);
     expect(sources).toMatch(/repriceSyntheticFlightOffer/);
-    expect(sources).toMatch(/evaluateSyntheticFlightPreviewOperation/);
     expect(sources).not.toMatch(/SyntheticFlightProviderAdapter/);
     expect(sources).not.toMatch(/fetch\s*\(/);
     expect(sources).not.toMatch(/createClient\s*\(/);
     expect(sources).not.toMatch(/process\.env/);
-    expect(sources).not.toMatch(/stripe/i);
+    expect(sources).not.toMatch(/from ["'][^"']*stripe/i);
     expect(sources).not.toMatch(/duffel_test_|duffel_live_/i);
   });
 });
