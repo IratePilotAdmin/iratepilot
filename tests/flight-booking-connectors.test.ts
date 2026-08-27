@@ -46,6 +46,8 @@ describe("flight booking connector catalog", () => {
   });
 
   it("preserves host-brand relationships", () => {
+    expect(getFlightBookingConnectorDefinition("amadeus").integrationFamily)
+      .toBe("amadeus");
     expect(getFlightBookingConnectorDefinition("worldspan").integrationFamily)
       .toBe("travelport");
     expect(getFlightBookingConnectorDefinition("galileo").integrationFamily)

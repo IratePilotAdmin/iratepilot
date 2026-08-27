@@ -26,7 +26,7 @@ export type FlightBookingConnectorId = (typeof flightBookingConnectorIds)[number
 export type FlightBookingConnectorDefinition = Readonly<{
   id: FlightBookingConnectorId;
   label: string;
-  integrationFamily: "sabre" | "travelport" | "ndc_aggregator";
+  integrationFamily: "sabre" | "amadeus" | "travelport" | "ndc_aggregator";
   category: "gds" | "ndc_aggregator" | "lcc_aggregator";
   plannedOperations: readonly string[];
   lifecycle: "catalogued_not_activated";
@@ -54,7 +54,7 @@ const connectorDefinitions = [
   {
     id: "amadeus",
     label: "Amadeus Self-Service Flight APIs",
-    integrationFamily: "ndc_aggregator",
+    integrationFamily: "amadeus",
     category: "gds",
     plannedOperations: ["shopping", "pricing", "create_orders", "order_management"],
     lifecycle: "catalogued_not_activated",
