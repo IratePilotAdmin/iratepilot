@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   createFlightBookingConnectorAdapter,
@@ -5,6 +6,8 @@ import {
   flightBookingConnectorIds,
   getFlightBookingConnectorDefinition,
 } from "../lib/flights/booking-connectors";
+
+const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
 describe("flight booking connector catalog", () => {
   it("catalogues every requested GDS, host brand, and aggregator", () => {
@@ -64,5 +67,13 @@ describe("flight booking connector catalog", () => {
       execute,
       providerId: "wrong_provider_id",
     })).toThrow("requires provider ID sabre_flight_adapter");
+  });
+
+  it("surfaces the catalog in the protected administrator workspace", () => {
+    const page = read("app/admin/flights/page.tsx");
+    expect(page).toContain("GDS and airline adapter surfaces");
+    expect(page).toContain("flightBookingConnectorDefinitions.map");
+    expect(page).toContain("Not activated");
+    expect(page).not.toContain("connector.externalNetworkAccess = true");
   });
 });
