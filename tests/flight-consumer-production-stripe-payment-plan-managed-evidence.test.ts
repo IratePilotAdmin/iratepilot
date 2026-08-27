@@ -195,7 +195,9 @@ describe("Flight Consumer Production Stripe payment-plan managed dark evidence",
       status: "object_applied_via_guarded_dashboard_sql_not_ledgered",
       objectVerification: "passed",
     });
-    expect(lineage.production.authoredUnappliedVersions).toEqual([]);
+    expect(lineage.production.authoredUnappliedVersions.map(
+      (entry: { version: string }) => entry.version,
+    )).toEqual(["202608260104"]);
     expect(lineage.production.ledgerLatestObservedVersion).toBe("202608220063");
     expect(lineage.production.retroactiveLedgerRepairAuthorized).toBe(false);
     expect(lineage.preview.canonicalTip).toBe("202608260137");

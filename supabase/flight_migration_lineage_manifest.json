@@ -100,7 +100,22 @@
         "objectVerification": "passed"
       }
     ],
-    "authoredUnappliedVersions": [],
+    "authoredUnappliedVersions": [
+      {
+        "version": "202608260104",
+        "filename": "202608260104_flight_consumer_stripe_test_execution_journal.sql",
+        "forwardSha256": "50dcca75f06111de027833ca138519dbe7f71e91bfd5ca9839fa9425699dfa1b",
+        "rollbackSha256": "10d9095be8250a1f50247534aa98e8fc35f51a06211458b5f19f1df43d9d2328",
+        "status": "authored_unapplied",
+        "targetEnvironment": "stripe_test_only",
+        "objectVerification": "not_run_managed",
+        "localPostgresqlVerification": "passed_postgresql_17_11",
+        "acceptanceEvidence": "docs/evidence/FLIGHT_CONSUMER_STRIPE_TEST_EXECUTION_JOURNAL_POSTGRES_ACCEPTANCE_2026-08-26.json",
+        "acceptanceEvidenceSha256": "8cf38983ea74af770bfa96c7e85581c9feb23e1df2f0075a5e0f7375a78b8710",
+        "applyAuthority": "not_granted",
+        "productionApplyAuthority": "not_granted"
+      }
+    ],
     "intentionallyUnused": {
       "version": "202608260100",
       "status": "never_created_never_applied_intentionally_unused"

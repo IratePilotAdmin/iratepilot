@@ -112,7 +112,9 @@ describe("flight migration lineage freeze manifest", () => {
     if (!entry) {
       throw new Error("Production migration 103 is missing from the lineage manifest");
     }
-    expect(manifest.production.authoredUnappliedVersions).toEqual([]);
+    expect(manifest.production.authoredUnappliedVersions.map(
+      ({ version }: { version: string }) => version,
+    )).toEqual(["202608260104"]);
 
     const rollbackFilename = entry.filename.replace(/\.sql$/, ".rollback.sql");
     expect(sha256(`supabase/production-migrations/${entry.filename}`))
@@ -134,18 +136,54 @@ describe("flight migration lineage freeze manifest", () => {
     const authoredVersions = manifest.production.authoredUnappliedVersions.map(
       ({ version }: { version: string }) => version,
     );
-    expect(authoredVersions).toEqual([]);
+    expect(authoredVersions).toEqual(["202608260104"]);
     expect(authoredVersions.some((version: string) => appliedVersions.has(version)))
       .toBe(false);
 
-    const expectedForward = manifest.production.versions.map(
-      ({ filename }: { filename: string }) => filename,
-    ).sort();
+    const expectedForward = [
+      ...manifest.production.versions,
+      ...manifest.production.authoredUnappliedVersions,
+    ].map(({ filename }: { filename: string }) => filename).sort();
     const expectedRollback = expectedForward.map(
       (filename: string) => filename.replace(/\.sql$/, ".rollback.sql"),
     ).sort();
     expect(readdirSync("supabase/production-migrations").sort()).toEqual(expectedForward);
     expect(readdirSync("supabase/production-rollbacks").sort()).toEqual(expectedRollback);
+  });
+
+  it("hash-pins the Stripe TEST execution journal as authored and unapplied", () => {
+    expect(manifest.production.authoredUnappliedVersions).toEqual([{
+      version: "202608260104",
+      filename: "202608260104_flight_consumer_stripe_test_execution_journal.sql",
+      forwardSha256: "50dcca75f06111de027833ca138519dbe7f71e91bfd5ca9839fa9425699dfa1b",
+      rollbackSha256: "10d9095be8250a1f50247534aa98e8fc35f51a06211458b5f19f1df43d9d2328",
+      status: "authored_unapplied",
+      targetEnvironment: "stripe_test_only",
+      objectVerification: "not_run_managed",
+      localPostgresqlVerification: "passed_postgresql_17_11",
+      acceptanceEvidence:
+        "docs/evidence/FLIGHT_CONSUMER_STRIPE_TEST_EXECUTION_JOURNAL_POSTGRES_ACCEPTANCE_2026-08-26.json",
+      acceptanceEvidenceSha256:
+        "8cf38983ea74af770bfa96c7e85581c9feb23e1df2f0075a5e0f7375a78b8710",
+      applyAuthority: "not_granted",
+      productionApplyAuthority: "not_granted",
+    }]);
+
+    const [entry] = manifest.production.authoredUnappliedVersions;
+    const rollbackFilename = entry.filename.replace(/\.sql$/, ".rollback.sql");
+    expect(sha256(`supabase/production-migrations/${entry.filename}`))
+      .toBe(entry.forwardSha256);
+    expect(sha256(`supabase/production-rollbacks/${rollbackFilename}`))
+      .toBe(entry.rollbackSha256);
+    expect(sha256(entry.acceptanceEvidence)).toBe(entry.acceptanceEvidenceSha256);
+    expect(existsSync(`supabase/migrations/${entry.filename}`)).toBe(false);
+    expect(existsSync(`supabase/rollbacks/${rollbackFilename}`)).toBe(false);
+    expect(entry.version).toBe("202608260104");
+    expect(entry.version < "202608260120").toBe(true);
+    expect(entry.version < "202608260200").toBe(true);
+    expect(manifest.production.versions.some(
+      ({ version }: { version: string }) => version === entry.version,
+    )).toBe(false);
   });
 
   it("reserves car versions without assigning any of them to flight", () => {

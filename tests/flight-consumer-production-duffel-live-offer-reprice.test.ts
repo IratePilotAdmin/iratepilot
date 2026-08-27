@@ -447,12 +447,11 @@ describe("Flight Consumer Production Duffel live offer reprice adapter", () => {
     vi.useFakeTimers();
     try {
       const authority = issued();
-      let observedSignal: AbortSignal | null = null;
       const stalled = {
         retrieveBoundOffer: vi.fn((
           request: FlightConsumerProductionDuffelLiveOfferRepriceRequest,
         ) => {
-          observedSignal = request.signal;
+          void request;
           return new Promise<FlightConsumerProductionDuffelLiveOfferRepriceResponse>(
             () => undefined,
           );
@@ -476,9 +475,9 @@ describe("Flight Consumer Production Duffel live offer reprice adapter", () => {
 
       await vi.advanceTimersByTimeAsync(30_001);
       await refusal;
-      expect(observedSignal).not.toBeNull();
-      expect(observedSignal?.aborted).toBe(true);
       expect(stalled.retrieveBoundOffer).toHaveBeenCalledTimes(1);
+      expect(stalled.retrieveBoundOffer.mock.calls[0]?.[0].signal.aborted)
+        .toBe(true);
     } finally {
       vi.useRealTimers();
     }

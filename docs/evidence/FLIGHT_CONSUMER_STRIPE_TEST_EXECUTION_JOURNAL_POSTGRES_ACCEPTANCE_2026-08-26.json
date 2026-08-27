@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "evidenceType": "flight_consumer_stripe_test_execution_journal_postgresql_runtime_acceptance",
+  "recordedOn": "2026-08-26",
+  "sanitized": true,
+  "secretsIncluded": false,
+  "reviewedArtifacts": {
+    "migration104": {
+      "path": "supabase/production-migrations/202608260104_flight_consumer_stripe_test_execution_journal.sql",
+      "sha256": "50dcca75f06111de027833ca138519dbe7f71e91bfd5ca9839fa9425699dfa1b"
+    },
+    "rollback104": {
+      "path": "supabase/production-rollbacks/202608260104_flight_consumer_stripe_test_execution_journal.rollback.sql",
+      "sha256": "10d9095be8250a1f50247534aa98e8fc35f51a06211458b5f19f1df43d9d2328"
+    },
+    "runtimeSql": {
+      "path": "tests/postgres/flight-consumer-stripe-test-execution-journal-runtime.sql",
+      "sha256": "f2a6ff95565689f719f7b74223e39fa8d545885db03789c63b034e56ffc6bf3e"
+    },
+    "serverPersistenceContract": {
+      "path": "lib/flights/consumer-production/stripe-test-execution-persistence.server.ts",
+      "sha256": "874648092eeb3bdcf04d62af60eaa87fb053fd7e691d9dc4e64dfe37ca25961b"
+    }
+  },
+  "runtime": {
+    "databaseProduct": "PostgreSQL",
+    "serverVersionNum": 170011,
+    "serverVersion": "17.11",
+    "networkScope": "ipv4_loopback_only",
+    "clusterType": "local_disposable_codex_cluster",
+    "supabaseAuthRoleFunction": "minimal_local_stub"
+  },
+  "activity": {
+    "localDisposableDatabaseWritesPerformed": true,
+    "managedSupabaseWritesPerformed": false,
+    "previewDatabaseWritesPerformed": false,
+    "productionDatabaseWritesPerformed": false,
+    "deploymentPerformed": false,
+    "providerTraffic": false,
+    "stripeTraffic": false,
+    "duffelTraffic": false,
+    "paymentActivity": false,
+    "captureActivity": false,
+    "refundActivity": false,
+    "bookingActivity": false,
+    "ticketingActivity": false,
+    "credentialsRead": false,
+    "rawIdentifiersStored": false,
+    "rawPayloadsStored": false,
+    "paymentDataStored": false
+  },
+  "verification": {
+    "freshMigrationApplies": 2,
+    "catalogShape": "passed",
+    "postgresOwnership": "passed",
+    "forcedRlsAndAclClosure": "passed",
+    "serviceRoleRpcBoundary": "passed",
+    "attemptCreateAndExactReplay": "passed",
+    "identityDriftAndMalformedInputRefusal": "passed",
+    "leaseClaimAndRevisionCas": "passed",
+    "hashedPaymentIntentBinding": "passed",
+    "retrieveObservationWithExactLease": "passed",
+    "asyncWebhookClaimSupersessionWithExactRevision": "passed",
+    "webhookDigestReplayAndConflictRefusal": "passed",
+    "captureAndRefundObservationPlaceholders": "passed",
+    "expiredLeaseRecovery": "passed_after_bounded_15_second_expiry",
+    "blindRetryAuthorized": false,
+    "appendPreservation": "passed",
+    "runtimeReceipt": "FLIGHT_STRIPE104_POSTGRES_GATE_PASS",
+    "emptyJournalRollback": "passed_with_zero_remaining_objects",
+    "evidenceBearingRollback": "refused_and_preserved_4_attempts_3_webhook_events_4_observations",
+    "cleanupReceipt": "zero_gate_databases_zero_gate_roles_server_stopped"
+  },
+  "lineage": {
+    "version": "202608260104",
+    "status": "authored_unapplied",
+    "target": "stripe_test_only",
+    "productionApplyAuthority": "not_granted",
+    "productionMigration103Modified": false,
+    "previewCanonicalRangeModified": false,
+    "carReservedRangeModified": false
+  },
+  "limitations": {
+    "managedSupabaseAcceptance": "not_run",
+    "providerDispatch": "not_implemented",
+    "stripeWebhookSignatureVerification": "not_implemented_by_journal",
+    "workflowIntegration": "not_implemented",
+    "captureOrRefundDispatch": "not_implemented",
+    "consumerRelease": "not_authorized",
+    "productionApply": "not_authorized"
+  }
+}
