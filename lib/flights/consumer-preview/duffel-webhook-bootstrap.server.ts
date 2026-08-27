@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { isIP } from "node:net";
 import { z } from "zod";
 
@@ -185,6 +185,21 @@ const convergenceResultSchema = z.object({
   webhookLeaseCompletionRequired: z.literal(false),
 }).strict();
 
+const completionLeaseReplayResultSchema = z.array(z.object({
+  decision: z.literal("replayed"),
+  lease_revision: z.number().int().nonnegative(),
+  lease_state: z.literal("completed"),
+  lease_token_sha256: z.null(),
+  lease_expires_at: z.null(),
+  order_status: z.literal("ticketed"),
+  issued_ticket_count: z.number().int().positive(),
+  provider_attempt_state: z.literal("succeeded"),
+  provider_attempt_revision: z.literal(2),
+  payment_attempt_state: z.literal("succeeded"),
+  payment_attempt_revision: z.literal(2),
+  provider_redispatch_authorized: z.literal(false),
+}).strict()).length(1);
+
 const providerErrorTokenSchema = z.string()
   .min(1)
   .max(128)
@@ -250,6 +265,9 @@ export type FlightConsumerPreviewDuffelRetainedOrderConvergenceDependencies = Re
     operatorClient: FlightConsumerPreviewDuffelRetainedOrderOperatorClient,
   ) => Promise<RetainedTargetSnapshot>;
   createConvergence: typeof createFlightConsumerPreviewAsyncDuffelConvergence;
+  completeCheckoutReplay: (
+    runtime: FlightConsumerPreviewRuntime,
+  ) => Promise<Readonly<{ issuedTicketCount: number }>>;
 }>;
 
 export type FlightConsumerPreviewDuffelRetainedOrderConvergenceResult = Readonly<{
@@ -257,6 +275,7 @@ export type FlightConsumerPreviewDuffelRetainedOrderConvergenceResult = Readonly
   mode: "duffel_test_mode";
   status: "ticketed";
   issuedTicketCount: number;
+  completionLeaseState: "completed";
 }>;
 
 const retainedTargetIdentity = Object.freeze({
@@ -278,6 +297,10 @@ const retainedTargetIdentity = Object.freeze({
     "69365626a4aa1cf92edf5f2b0ee47fcbb65cfe0b600bad283783d1d68a97986e",
   recoveryRetentionExpiresAt: "2026-09-03T06:36:45.402Z",
   occurredAt: "2026-08-27T06:36:43.834Z",
+  completionIdempotencyKeySha256:
+    "89ab257265cabd16255cf6b86d078d57a8ea62ebde302a32eab634c8397fc797",
+  completionRequestSha256:
+    "22f61c203268825572491b17f2e5e84737b0827254cfba145b35aefdede193e5",
 } as const);
 
 export class FlightConsumerPreviewDuffelWebhookBootstrapError extends Error {
@@ -802,6 +825,33 @@ export async function executeFlightConsumerPreviewDuffelWebhookBootstrap(
   }
 }
 
+export async function completeFlightConsumerPreviewDuffelRetainedOrderCheckoutReplay(
+  runtime: FlightConsumerPreviewRuntime,
+) {
+  const leaseTokenSha256 = createHash("sha256")
+    .update(randomBytes(32))
+    .digest("hex");
+  const { data, error } = await createAdminClient().rpc(
+    "acquire_flight_consumer_completion_lease_v1",
+    {
+      p_customer_id: retainedTargetIdentity.customerId,
+      p_order_id: retainedTargetIdentity.orderId,
+      p_idempotency_key_sha256:
+        retainedTargetIdentity.completionIdempotencyKeySha256,
+      p_request_sha256: retainedTargetIdentity.completionRequestSha256,
+      p_execution_scope_sha256: runtime.binding.executionScopeSha256,
+      p_lease_token_sha256: leaseTokenSha256,
+      p_lease_duration_seconds: 60,
+    },
+  );
+  if (error !== null) fail();
+  const parsed = completionLeaseReplayResultSchema.safeParse(data);
+  if (!parsed.success) fail();
+  return Object.freeze({
+    issuedTicketCount: parsed.data[0]!.issued_ticket_count,
+  });
+}
+
 const retainedOrderConvergenceDependencies = Object.freeze({
   env: process.env,
   fetcher: fetch,
@@ -811,6 +861,8 @@ const retainedOrderConvergenceDependencies = Object.freeze({
   requireRuntime: requireFlightConsumerPreviewRequestRuntime,
   readTarget: readFlightConsumerPreviewDuffelRetainedOrderTarget,
   createConvergence: createFlightConsumerPreviewAsyncDuffelConvergence,
+  completeCheckoutReplay:
+    completeFlightConsumerPreviewDuffelRetainedOrderCheckoutReplay,
 }) satisfies FlightConsumerPreviewDuffelRetainedOrderConvergenceDependencies;
 
 export async function executeFlightConsumerPreviewDuffelRetainedOrderConvergence(
@@ -833,6 +885,7 @@ export async function executeFlightConsumerPreviewDuffelRetainedOrderConvergence
       || typeof dependencies.requireRuntime !== "function"
       || typeof dependencies.readTarget !== "function"
       || typeof dependencies.createConvergence !== "function"
+      || typeof dependencies.completeCheckoutReplay !== "function"
     ) fail();
     const receiverUrl = createExactReceiverUrl(dependencies.env);
     const accessToken = validateDuffelSandboxAccessToken(
@@ -907,11 +960,14 @@ export async function executeFlightConsumerPreviewDuffelRetainedOrderConvergence
       providerOfferRefSha256: retainedTargetIdentity.providerOfferRefSha256,
     }));
     if (result.orderId !== retainedTargetIdentity.orderId) fail("conflict");
+    const completion = await dependencies.completeCheckoutReplay(secondRuntime);
+    if (completion.issuedTicketCount !== result.issuedTicketCount) fail("conflict");
     return Object.freeze({
       decision: "locally_converged" as const,
       mode: "duffel_test_mode" as const,
       status: "ticketed" as const,
       issuedTicketCount: result.issuedTicketCount,
+      completionLeaseState: "completed" as const,
     });
   } catch (error) {
     if (error instanceof FlightConsumerPreviewDuffelWebhookBootstrapError) throw error;

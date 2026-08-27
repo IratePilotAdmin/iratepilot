@@ -164,6 +164,7 @@ describe("temporary native Consumer Flight Preview operator", () => {
       mode: "duffel_test_mode",
       status: "ticketed",
       issuedTicketCount: 1,
+      completionLeaseState: "completed",
     });
     mocks.activate.mockResolvedValue({ decision: "activated", controlKey: "global" });
     mocks.recoverReprice.mockResolvedValue({

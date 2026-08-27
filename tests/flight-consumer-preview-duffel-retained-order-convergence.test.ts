@@ -7,6 +7,7 @@ vi.mock("../lib/flights/consumer-preview/runtime-authority.server", () => ({
 }));
 
 import {
+  completeFlightConsumerPreviewDuffelRetainedOrderCheckoutReplay,
   executeFlightConsumerPreviewDuffelRetainedOrderConvergence,
   FLIGHT_CONSUMER_PREVIEW_DUFFEL_FAILED_ORDER_CREATED_EVENTS_LIST_URL,
   FLIGHT_CONSUMER_PREVIEW_DUFFEL_RETAINED_ORDER_CONVERGENCE_CONFIRMATION,
@@ -109,6 +110,7 @@ function harness(options: Readonly<{
   events?: unknown[];
   eventAfter?: string | null;
   eventResponse?: Response;
+  completeCheckoutReplay?: ReturnType<typeof vi.fn>;
   readTarget?: ReturnType<typeof vi.fn>;
   sha256?: (value: string) => string;
   webhookRows?: unknown[];
@@ -131,6 +133,9 @@ function harness(options: Readonly<{
     webhookLeaseCompletionRequired: false,
   });
   const createConvergence = vi.fn(() => ({ converge }));
+  const completeCheckoutReplay = options.completeCheckoutReplay ?? vi.fn().mockResolvedValue({
+    issuedTicketCount: 1,
+  });
   const operatorRpc = vi.fn();
   const operatorClient = { rpc: operatorRpc } as unknown as
     FlightConsumerPreviewDuffelRetainedOrderOperatorClient;
@@ -148,8 +153,10 @@ function harness(options: Readonly<{
     requireRuntime,
     readTarget,
     createConvergence,
+    completeCheckoutReplay,
   } as unknown as FlightConsumerPreviewDuffelRetainedOrderConvergenceDependencies;
   return {
+    completeCheckoutReplay,
     converge,
     createConvergence,
     dependencies,
@@ -169,6 +176,66 @@ describe("fixed retained-evidence Duffel TEST order convergence", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it("completes only the exact durable checkout replay and never authorizes redispatch", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [{
+        decision: "replayed",
+        lease_revision: 2,
+        lease_state: "completed",
+        lease_token_sha256: null,
+        lease_expires_at: null,
+        order_status: "ticketed",
+        issued_ticket_count: 1,
+        provider_attempt_state: "succeeded",
+        provider_attempt_revision: 2,
+        payment_attempt_state: "succeeded",
+        payment_attempt_revision: 2,
+        provider_redispatch_authorized: false,
+      }],
+      error: null,
+    });
+    vi.mocked(createAdminClient).mockReturnValue({ rpc } as never);
+
+    await expect(
+      completeFlightConsumerPreviewDuffelRetainedOrderCheckoutReplay(runtime as never),
+    ).resolves.toEqual({ issuedTicketCount: 1 });
+    expect(rpc).toHaveBeenCalledExactlyOnceWith(
+      "acquire_flight_consumer_completion_lease_v1",
+      expect.objectContaining({
+        p_customer_id: FLIGHT_CONSUMER_PREVIEW_DUFFEL_RETAINED_ORDER_TARGET.customerId,
+        p_order_id: FLIGHT_CONSUMER_PREVIEW_DUFFEL_RETAINED_ORDER_TARGET.orderId,
+        p_idempotency_key_sha256:
+          "89ab257265cabd16255cf6b86d078d57a8ea62ebde302a32eab634c8397fc797",
+        p_request_sha256:
+          "22f61c203268825572491b17f2e5e84737b0827254cfba145b35aefdede193e5",
+        p_execution_scope_sha256: scopeSha256,
+        p_lease_token_sha256: expect.stringMatching(/^[0-9a-f]{64}$/),
+        p_lease_duration_seconds: 60,
+      }),
+    );
+
+    rpc.mockResolvedValueOnce({
+      data: [{
+        decision: "replayed",
+        lease_revision: 2,
+        lease_state: "completed",
+        lease_token_sha256: null,
+        lease_expires_at: null,
+        order_status: "ticketed",
+        issued_ticket_count: 1,
+        provider_attempt_state: "succeeded",
+        provider_attempt_revision: 2,
+        payment_attempt_state: "succeeded",
+        payment_attempt_revision: 2,
+        provider_redispatch_authorized: true,
+      }],
+      error: null,
+    });
+    await expect(
+      completeFlightConsumerPreviewDuffelRetainedOrderCheckoutReplay(runtime as never),
+    ).rejects.toBeInstanceOf(FlightConsumerPreviewDuffelWebhookBootstrapError);
   });
 
   it("exercises the production read-only target projection and exact signed replay/payment/evidence bindings", async () => {
@@ -318,6 +385,7 @@ describe("fixed retained-evidence Duffel TEST order convergence", () => {
       mode: "duffel_test_mode",
       status: "ticketed",
       issuedTicketCount: 1,
+      completionLeaseState: "completed",
     });
     expect(test.fetcher).toHaveBeenCalledTimes(2);
     expect(test.fetcher.mock.calls.map((call) => call[0])).toEqual([
@@ -350,6 +418,7 @@ describe("fixed retained-evidence Duffel TEST order convergence", () => {
       providerOrderRefSha256,
       providerOfferRefSha256,
     });
+    expect(test.completeCheckoutReplay).toHaveBeenCalledExactlyOnceWith(runtime);
     expect(JSON.stringify(result)).not.toMatch(
       /wev_|ord_|b0c13dde|duffel_test_1234567890abcdef/,
     );
@@ -429,6 +498,18 @@ describe("fixed retained-evidence Duffel TEST order convergence", () => {
     )).resolves.toMatchObject({ decision: "locally_converged", status: "ticketed" });
     expect(test.converge).toHaveBeenCalledTimes(1);
     expect(test.converge.mock.calls[0][0].leaseTokenSha256).toBeNull();
+    expect(test.fetcher.mock.calls.every((call) => call[1].method === "GET")).toBe(true);
+  });
+
+  it("fails closed when the durable checkout lease replay does not match the issued tickets", async () => {
+    const completeCheckoutReplay = vi.fn().mockResolvedValue({ issuedTicketCount: 2 });
+    const test = harness({ completeCheckoutReplay });
+
+    await expect(executeFlightConsumerPreviewDuffelRetainedOrderConvergence(
+      input(), test.operatorClient, test.dependencies,
+    )).rejects.toMatchObject({ kind: "conflict" });
+    expect(test.converge).toHaveBeenCalledTimes(1);
+    expect(completeCheckoutReplay).toHaveBeenCalledExactlyOnceWith(runtime);
     expect(test.fetcher.mock.calls.every((call) => call[1].method === "GET")).toBe(true);
   });
 });

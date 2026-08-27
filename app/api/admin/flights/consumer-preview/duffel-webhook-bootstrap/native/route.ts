@@ -261,6 +261,7 @@ export async function POST(request: Request) {
         result.decision !== "locally_converged"
         || result.mode !== "duffel_test_mode"
         || result.status !== "ticketed"
+        || result.completionLeaseState !== "completed"
         || !Number.isSafeInteger(result.issuedTicketCount)
         || result.issuedTicketCount < 1
       ) return errorResponse(503);
