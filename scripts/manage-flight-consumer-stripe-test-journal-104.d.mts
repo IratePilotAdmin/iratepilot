@@ -1,6 +1,23 @@
 export type Managed104TargetKind = "isolated_uat" | "preview_runtime";
 export type Managed104Operation = "preflight" | "verify" | "apply-verify";
 
+export type Managed104Spawn = (
+  command: string,
+  args: string[],
+  options: Readonly<{
+    env: Record<string, string>;
+    input: Buffer;
+    encoding: "utf8";
+    maxBuffer: number;
+    windowsHide: true;
+  }>,
+) => Readonly<{
+  error?: Error;
+  status: number | null;
+  stderr?: string | Buffer;
+  stdout?: string | Buffer;
+}>;
+
 export interface Managed104Target {
   readonly kind: Managed104TargetKind;
   readonly projectRef: string;
@@ -57,7 +74,7 @@ export function executePsql(options: {
   psql: string;
   input: Buffer;
   childEnvironment: Record<string, string>;
-  spawn?: (...args: any[]) => any;
+  spawn?: Managed104Spawn;
 }): string;
 
 export function runManagedGate(options: {
@@ -67,7 +84,7 @@ export function runManagedGate(options: {
     "preflight" | "migration" | "verification" | "rollback",
     Buffer
   >>;
-  spawn?: (...args: any[]) => any;
+  spawn?: Managed104Spawn;
 }): Readonly<{
   operation: Managed104Operation;
   targetKind: Managed104TargetKind;
