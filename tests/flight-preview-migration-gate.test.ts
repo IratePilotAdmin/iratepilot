@@ -166,6 +166,7 @@ CREATE TABLE public.flight_passenger_refs (
 );
 CREATE TABLE public.flight_ticket_documents (
   id uuid DEFAULT gen_random_uuid() NOT NULL,
+  order_id uuid NOT NULL,
   status text NOT NULL,
   document_ref_ciphertext text,
   document_ref_sha256 text
@@ -307,6 +308,9 @@ ALTER TABLE ONLY public.flight_ticket_documents
     AND char_length(split_part(document_ref_ciphertext, ':', 3))
       BETWEEN 16 AND 4080
   );
+ALTER TABLE ONLY public.flight_ticket_documents
+  ADD CONSTRAINT flight_ticket_documents_order_id_document_ref_sha256_key
+  UNIQUE (order_id, document_ref_sha256);
 ALTER TABLE ONLY public.flight_payments
   ADD CONSTRAINT flight_payments_processor_reference_ciphertext_check CHECK (
     processor_reference_ciphertext ~ '^enc:v[1-9][0-9]*:[A-Za-z0-9_-]+$'
@@ -1173,6 +1177,8 @@ ALTER TABLE ONLY public.flight_runtime_controls ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ONLY public.flight_runtime_controls FORCE ROW LEVEL SECURITY;
 ALTER TABLE ONLY public.flight_provider_request_attempts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ONLY public.flight_provider_request_attempts FORCE ROW LEVEL SECURITY;
+ALTER TABLE ONLY public.flight_ticket_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ONLY public.flight_ticket_documents FORCE ROW LEVEL SECURITY;
 ALTER TABLE ONLY public.flight_offer_evidence_vault ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ONLY public.flight_offer_evidence_vault FORCE ROW LEVEL SECURITY;
 ALTER TABLE ONLY public.flight_secure_pii_records ENABLE ROW LEVEL SECURITY;
@@ -1205,7 +1211,7 @@ ALTER TABLE ONLY public.flight_consumer_completion_leases FORCE ROW LEVEL SECURI
 }
 
 describe("flight Preview migration gate", () => {
-  it("pins the exact historical 068 through 080 and canonical 120 through 137 bytes", () => {
+  it("pins the exact historical 068 through 080 and canonical 120 through 138 bytes", () => {
     expect(PINNED_FLIGHT_MIGRATIONS).toEqual([
       {
         version: "202608230068",
@@ -1412,6 +1418,15 @@ describe("flight Preview migration gate", () => {
         rollbackFilename: "202608260137_flight_consumer_terminal_offer_local_identity.rollback.sql",
         rollbackSha256: "438367c921f972db2c8736e06c39663f025931879e3655423025c984fd50a2db",
       },
+      {
+        version: "202608260138",
+        filename: "202608260138_flight_ticket_document_identity_scope_repair.sql",
+        sha256: "8c9852a6d27c23512bfecfc589321109c0c3b0944bbe0a27aa519e6ef46704e7",
+        rollbackFilename:
+          "202608260138_flight_ticket_document_identity_scope_repair.rollback.sql",
+        rollbackSha256:
+          "7265425bea2497961f4ca64199f9cabce4a05a149cc59a4bc4d9cbca237cca37",
+      },
     ]);
     expect(pinnedPlan.baselineVersions.at(-1)).toBe(REQUIRED_REMOTE_FLIGHT_BASELINE_TIP);
     expect(pinnedPlan.flightVersions).toEqual([
@@ -1433,10 +1448,11 @@ describe("flight Preview migration gate", () => {
       "202608260135",
       "202608260136",
       "202608260137",
+      "202608260138",
     ]);
     expect(pinnedPlan.flightVersions).toEqual(CANONICAL_FLIGHT_MIGRATION_VERSIONS);
-    expect(pinnedPlan.flightVersions).toHaveLength(18);
-    expect(repositoryVersions.slice(-18)).toEqual(pinnedPlan.flightVersions);
+    expect(pinnedPlan.flightVersions).toHaveLength(19);
+    expect(repositoryVersions.slice(-19)).toEqual(pinnedPlan.flightVersions);
     expect(RETIRED_FLIGHT_MIGRATION_VERSIONS).toHaveLength(18);
     expect(pinnedPlan.sharedHotelMigrationPresent).toBe(true);
   });
@@ -1618,7 +1634,7 @@ describe("flight Preview migration gate", () => {
 
   it("defaults to planning and recognizes only one exact apply confirmation flag", () => {
     expect(APPLY_CONFIRMATION_FLAG).toBe(
-      "--apply-confirmation=PREVIEW_eiqmdldjnedqgbtoozqa_FLIGHT_120_137",
+      "--apply-confirmation=PREVIEW_eiqmdldjnedqgbtoozqa_FLIGHT_120_138",
     );
     expect(parseInvocationMode()).toBe("plan");
     expect(parseInvocationMode([])).toBe("plan");
@@ -1645,7 +1661,7 @@ describe("flight Preview migration gate", () => {
       log: (value: unknown) => logged.push(value),
     });
     const rendered = JSON.stringify({ summary, logged });
-    expect(summary.gate).toBe("flight-preview-migrations-120-137");
+    expect(summary.gate).toBe("flight-preview-migrations-120-138");
     expect(summary.mode).toBe("plan");
     expect(summary.networkExecuted).toBe(false);
     expect(summary.allowedPendingSets).toEqual(Array.from(
@@ -1673,6 +1689,7 @@ describe("flight Preview migration gate", () => {
       "202608260135",
       "202608260136",
       "202608260137",
+      "202608260138",
     ]);
     expect(rendered).not.toContain(previewUrl);
     expect(rendered).not.toContain(previewPassword);
@@ -1686,7 +1703,7 @@ describe("flight Preview migration gate", () => {
     expect(assertPreviewLedger(
       migrationList(repositoryVersions.slice(0, -1)),
       pinnedPlan,
-    ).pendingVersions).toEqual(["202608260137"]);
+    ).pendingVersions).toEqual(["202608260138"]);
     expect(assertPreviewLedger(
       migrationList(repositoryVersions),
       pinnedPlan,
@@ -1710,7 +1727,7 @@ describe("flight Preview migration gate", () => {
         "202608260126", "202608260127", "202608260128",
         "202608260129", "202608260130", "202608260131", "202608260132",
         "202608260133", "202608260134", "202608260135", "202608260136",
-        "202608260137",
+        "202608260137", "202608260138",
       ]);
 
     const gapAfter125 = repositoryVersions.filter(
@@ -1784,6 +1801,7 @@ describe("flight Preview migration gate", () => {
       "Would push migration 202608260135_flight_consumer_completion_lease_recovery.sql",
       "Would push migration 202608260136_flight_consumer_terminal_offer_evidence_recovery.sql",
       "Would push migration 202608260137_flight_consumer_terminal_offer_local_identity.sql",
+      "Would push migration 202608260138_flight_ticket_document_identity_scope_repair.sql",
     ].join("\n");
     expect(assertExactFlightDryRun(exact)).toEqual([
       "202608260120",
@@ -1804,6 +1822,7 @@ describe("flight Preview migration gate", () => {
       "202608260135",
       "202608260136",
       "202608260137",
+      "202608260138",
     ]);
     const historicalFlight = "Would push migration 202608250080_flight_consumer_preview_activation_control.sql";
     expect(() => assertExactFlightDryRun(historicalFlight, ["202608250080"])).toThrow();
@@ -1927,6 +1946,21 @@ describe("flight Preview migration gate", () => {
         "flight_payments_missing_ciphertext_check",
       ),
     )).toThrow("migration-124 ciphertext constraint repair");
+    expect(() => assertFlightSchemaDump(
+      dump.replace(
+        "flight_ticket_documents_order_id_document_ref_sha256_key",
+        "flight_ticket_documents_execution_scope_sha256_execution_mo_key",
+      ).replace(
+        "UNIQUE (order_id, document_ref_sha256)",
+        "UNIQUE (execution_scope_sha256, execution_mode, document_ref_sha256)",
+      ),
+    )).toThrow("migration-138 ticket identity scope repair");
+    expect(() => assertFlightSchemaDump(
+      dump.replace(
+        /ALTER TABLE ONLY public\.flight_ticket_documents\n  ADD CONSTRAINT flight_ticket_documents_order_id_document_ref_sha256_key\n  UNIQUE \(order_id, document_ref_sha256\);\n/,
+        "",
+      ),
+    )).toThrow("migration-138 ticket identity scope repair");
     expect(() => assertFlightSchemaDump(
       dump.replace(
         "^enc:v[1-9][0-9]*:[A-Za-z0-9_-]+$",
@@ -2471,6 +2505,7 @@ GRANT EXECUTE ON FUNCTION public.get_flight_offer_local_identity_for_terminal_re
         "Would push migration 202608260135_flight_consumer_completion_lease_recovery.sql",
         "Would push migration 202608260136_flight_consumer_terminal_offer_evidence_recovery.sql",
         "Would push migration 202608260137_flight_consumer_terminal_offer_local_identity.sql",
+        "Would push migration 202608260138_flight_ticket_document_identity_scope_repair.sql",
       ].join("\n"),
       migrationList(requiredRemotePredecessorVersions),
       "applied",
@@ -2510,7 +2545,7 @@ GRANT EXECUTE ON FUNCTION public.get_flight_offer_local_identity_for_terminal_re
     expect(JSON.stringify(calls)).not.toContain(previewPassword);
   });
 
-  it("applies only migrations 126 through 137 when the exact through-125 prefix is installed", () => {
+  it("applies only migrations 126 through 138 when the exact through-125 prefix is installed", () => {
     const calls: string[][] = [];
     const through125 = [
       ...requiredRemotePredecessorVersions,
@@ -2531,6 +2566,7 @@ GRANT EXECUTE ON FUNCTION public.get_flight_offer_local_identity_for_terminal_re
         "Would push migration 202608260135_flight_consumer_completion_lease_recovery.sql",
         "Would push migration 202608260136_flight_consumer_terminal_offer_evidence_recovery.sql",
         "Would push migration 202608260137_flight_consumer_terminal_offer_local_identity.sql",
+        "Would push migration 202608260138_flight_ticket_document_identity_scope_repair.sql",
       ].join("\n"),
       migrationList(through125),
       "applied",
@@ -2554,7 +2590,7 @@ GRANT EXECUTE ON FUNCTION public.get_flight_offer_local_identity_for_terminal_re
         "202608260129", "202608260130",
         "202608260131", "202608260132", "202608260133",
         "202608260134", "202608260135", "202608260136",
-        "202608260137",
+        "202608260137", "202608260138",
       ],
       pendingAfter: [],
       physicalSchemaBoundaryVerified: true,
@@ -2602,6 +2638,7 @@ GRANT EXECUTE ON FUNCTION public.get_flight_offer_local_identity_for_terminal_re
         "Would push migration 202608260135_flight_consumer_completion_lease_recovery.sql",
         "Would push migration 202608260136_flight_consumer_terminal_offer_evidence_recovery.sql",
         "Would push migration 202608260137_flight_consumer_terminal_offer_local_identity.sql",
+        "Would push migration 202608260138_flight_ticket_document_identity_scope_repair.sql",
       ].join("\n"),
       migrationList(repositoryVersions),
       physicalSchemaDump(),

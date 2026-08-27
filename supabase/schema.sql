@@ -3095,7 +3095,7 @@ create table public.flight_ticket_documents (
   updated_at timestamptz not null default now(),
   foreign key (passenger_ref_id, order_id)
     references public.flight_passenger_refs(id, order_id) on delete restrict,
-  unique (execution_scope_sha256, execution_mode, document_ref_sha256),
+  unique (order_id, document_ref_sha256),
   check (
     (status in ('pending', 'failed')
       and document_ref_ciphertext is null and document_ref_sha256 is null)

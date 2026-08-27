@@ -3,14 +3,14 @@
 ## Status
 
 The guarded installer is implemented and locally verified for the applied flight baseline
-068 through 080 and the collision-free canonical pending block 120 through 137. It is a
+068 through 080 and the collision-free canonical pending block 120 through 138. It is a
 Preview-only, fail-closed operator gate. It does not encode a claim about the current remote
 ledger; apply mode reads and validates that ledger at execution time. Production is
 hard-blocked and was not contacted by the local verification described here.
 
 Applying these migrations does not activate Consumer Preview or authorize provider traffic,
 orders, payment capture, ticketing, email, Production deployment, or live booking. Migrations
-126 through 137 require the runtime to be relocked before their changes can be installed.
+126 through 138 require the runtime to be relocked before their changes can be installed.
 The unpublished flight identifiers 081 through 098 are retired permanently. The colliding
 identifier 082 remains owned by the separately published hotel agreement-evidence migration;
 this flight-only gate never applies that file. Apply mode instead requires the exact hotel
@@ -27,13 +27,13 @@ remote predecessor before any canonical flight migration can be pending.
 - Required external predecessor: the pinned, separately owned
   `202608250082_hotel_commercial_agreement_evidence.sql`, already present in the remote ledger.
 - Accepted remote states: the complete flight baseline through 080, external hotel 082, and
-  exactly one installed prefix of canonical migrations 120 through 137.
-- Permitted pending states: only the corresponding exact suffix of 120 through 137, including
-  the full 18-migration suffix and the empty suffix. Gaps, reordering, extra migrations, and
+  exactly one installed prefix of canonical migrations 120 through 138.
+- Permitted pending states: only the corresponding exact suffix of 120 through 138, including
+  the full 19-migration suffix and the empty suffix. Gaps, reordering, extra migrations, and
   every retired flight identifier 081 and 083 through 098 are rejected. Numeric 082 is
   accepted only as the exact pinned hotel-owned external predecessor.
 
-The 31 flight migrations and 25 rollback artifacts for 074 through 080 and 120 through 137,
+The 32 flight migrations and 26 rollback artifacts for 074 through 080 and 120 through 138,
 plus the external hotel 082 migration and rollback, are byte-pinned. Rollback files are
 verified but never executed by this gate.
 
@@ -70,13 +70,14 @@ verified but never executed by this gate.
 | 29 | `202608260135_flight_consumer_completion_lease_recovery.sql` | `7a57a21709b3d979226987b10419694389fa2aef2428216ccc8ac915283e8fb4` | `f8ef205df51c9f5d0b671042fc51a341cf46ebfb9e5466c1d95149f2c1863930` |
 | 30 | `202608260136_flight_consumer_terminal_offer_evidence_recovery.sql` | `89880fa51d3c997b8364b6663ef617a735c3eaf712348ee55a5eb295a11e91da` | `1d890c2ed74a3a2a8b37ee07f16f8f3d5781e0c63e8812ccae8811b878d94bd5` |
 | 31 | `202608260137_flight_consumer_terminal_offer_local_identity.sql` | `09a89471334e6c25df324e54e242fef8a86416a278b3c37a19cb4d1f7986aeb8` | `438367c921f972db2c8736e06c39663f025931879e3655423025c984fd50a2db` |
+| 32 | `202608260138_flight_ticket_document_identity_scope_repair.sql` | `8c9852a6d27c23512bfecfc589321109c0c3b0944bbe0a27aa519e6ef46704e7` | `7265425bea2497961f4ca64199f9cabce4a05a149cc59a4bc4d9cbca237cca37` |
 
-The frozen repository schema mirror that accompanies migration 137 has SHA-256
-`45a708d50c69d12458df7d12e5e9479044621d510023a76a6e8ef8ac28b1d8b8`.
+The frozen repository schema mirror that accompanies migration 138 has SHA-256
+`7eb9b3767bbadb31a1afd0abc75f20021e7ff9e9daa52cb2582efe74ed0946d4`.
 The installer does not use that mirror hash as a substitute for its read-only post-apply
 remote schema verification.
 
-## Safety repairs in 126 through 137
+## Safety repairs in 126 through 138
 
 - 126 repairs output-parameter-safe capture, terminal response, synchronous/async
   finalization, and refund projections.
@@ -84,6 +85,9 @@ remote schema verification.
   preserving exact captured-payment liability.
 - 128 bounds create-order dispatch by refreshed offer authority, rechecks locked evidence at
   claim time, and returns explicit recovery deadline/evidence metadata.
+- 138 scopes opaque Duffel ticket-document identity uniqueness to its provider order, so
+  separate TEST orders may reuse a sandbox identifier while duplicates inside one order
+  remain rejected. It changes no dispatch or payment authority.
 - 129 adds append-only pending linkage and terminal resolution for a valid Duffel webhook that
   arrives while its exact create-order attempt is still dispatching.
 - 130 adds a digest-only, order-scoped completion lease so HTTP idempotency keys coordinate
@@ -150,8 +154,8 @@ Run from the repository root after the exact Preview environment is injected.
 node scripts/apply-flight-preview-migrations.mjs --plan
 ```
 
-Plan mode validates the target metadata and all pinned local bytes, reports the 18-migration
-canonical apply order and all 19 permitted pending suffixes, and performs no CLI, network, or
+Plan mode validates the target metadata and all pinned local bytes, reports the 19-migration
+canonical apply order and all 20 permitted pending suffixes, and performs no CLI, network, or
 database action. If hotel 082 is absent locally, plan mode reports that apply blocker without
 mutating anything.
 
@@ -160,7 +164,7 @@ mutating anything.
 Only after reviewing the plan and receiving the separate shared-Preview approval:
 
 ```text
-node scripts/apply-flight-preview-migrations.mjs --apply-confirmation=PREVIEW_eiqmdldjnedqgbtoozqa_FLIGHT_120_137
+node scripts/apply-flight-preview-migrations.mjs --apply-confirmation=PREVIEW_eiqmdldjnedqgbtoozqa_FLIGHT_120_138
 ```
 
 No shorter `--apply` or `--yes` invocation exists.
@@ -172,20 +176,20 @@ No shorter `--apply` or `--yes` invocation exists.
 2. Read the remote migration ledger.
 3. Require local history to match the repository exactly.
 4. Require the complete remote flight baseline through 080, the already-applied external
-   hotel 082 predecessor, and one exact installed prefix of 120 through 137; derive the only
+   hotel 082 predecessor, and one exact installed prefix of 120 through 138; derive the only
    permitted pending suffix. Reject remote retired flight identifiers 081 and 083 through
    098. Hotel 082 is exempt only in its pinned external-predecessor role.
 5. If pending, run `supabase db push --dry-run` and require exactly that suffix, once each and
    in order.
 6. Recheck the pins and remote ledger immediately before mutation. If a concurrent operator
    installed the complete suffix, skip the redundant push; any other change stops the gate.
-7. If still pending, push only the approved suffix, then require the complete 120–137 ledger.
+7. If still pending, push only the approved suffix, then require the complete 120–138 ledger.
 8. Take a read-only `public` schema dump and verify the targeted table/column contracts, exact
    RPC signatures, enabled and forced RLS, service-role-only function grants, absence of direct
    access to the new evidence tables, isolation of the internal 131 projector, and the narrow
-   121–137 safety-body markers enforced by this gate.
+   121–138 safety-body markers enforced by this gate.
 
-If all 31 migrations are installed, the gate performs no push but still executes the physical
+If all 32 migrations are installed, the gate performs no push but still executes the physical
 schema verification.
 
 The schema result is a targeted physical boundary, not a byte-for-byte attestation of every
@@ -204,13 +208,13 @@ checks.
 
 `tests/flight-preview-migration-gate.test.ts` covers:
 
-- exact historical 068–080 and canonical 120–137 migration and rollback bytes and order;
+- exact historical 068–080 and canonical 120–138 migration and rollback bytes and order;
 - exact Preview identity, official URL shapes, and Production refusal;
 - default plan behavior and the sole apply confirmation;
 - secret-safe summaries and child-process isolation;
 - mandatory local and remote hotel-082 predecessor evidence, including missing/wrong local
   file and hash failures;
-- every exact-prefix pending state for 120–137, including rejection of retired flight 081 and
+- every exact-prefix pending state for 120–138, including rejection of retired flight 081 and
   083–098 identifiers, gaps, extra versions, malformed ledgers, and local drift;
 - exact ledger-derived dry-run files and order;
 - fixed non-shell CLI sequencing and concurrent-install rechecks;

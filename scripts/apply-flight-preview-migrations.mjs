@@ -8,7 +8,7 @@ export const PRODUCTION_PROJECT_REF = "allliumarkejinplrggl";
 export const REQUIRED_BASELINE_TIP = "202608170067";
 export const REQUIRED_REMOTE_FLIGHT_BASELINE_TIP = "202608250080";
 export const APPLY_CONFIRMATION_FLAG =
-  "--apply-confirmation=PREVIEW_eiqmdldjnedqgbtoozqa_FLIGHT_120_137";
+  "--apply-confirmation=PREVIEW_eiqmdldjnedqgbtoozqa_FLIGHT_120_138";
 
 export const SHARED_HOTEL_MIGRATION = Object.freeze({
   version: "202608250082",
@@ -31,7 +31,7 @@ export const CANONICAL_FLIGHT_MIGRATION_VERSIONS = Object.freeze([
   "202608260124", "202608260125", "202608260126", "202608260127",
   "202608260128", "202608260129", "202608260130", "202608260131",
   "202608260132", "202608260133", "202608260134", "202608260135",
-  "202608260136", "202608260137",
+  "202608260136", "202608260137", "202608260138",
 ]);
 
 const PINNED_TERMINAL_RECOVERY_FUNCTION_BODY_SHA256 = Object.freeze({
@@ -247,6 +247,13 @@ export const PINNED_FLIGHT_MIGRATIONS = Object.freeze([
     rollbackFilename: "202608260137_flight_consumer_terminal_offer_local_identity.rollback.sql",
     rollbackSha256: "438367c921f972db2c8736e06c39663f025931879e3655423025c984fd50a2db",
   }),
+  Object.freeze({
+    version: "202608260138",
+    filename: "202608260138_flight_ticket_document_identity_scope_repair.sql",
+    sha256: "8c9852a6d27c23512bfecfc589321109c0c3b0944bbe0a27aa519e6ef46704e7",
+    rollbackFilename: "202608260138_flight_ticket_document_identity_scope_repair.rollback.sql",
+    rollbackSha256: "7265425bea2497961f4ca64199f9cabce4a05a149cc59a4bc4d9cbca237cca37",
+  }),
 ]);
 
 const REPOSITORY_ROOT_URL = new URL("../", import.meta.url);
@@ -343,7 +350,7 @@ export function assertPinnedFlightMigrations({
   ));
   if (JSON.stringify(postBaseline) !== JSON.stringify(expectedPostBaseline)) {
     throw new Error(
-      "Only pinned flight migrations 068 through 080 and 120 through 137, plus the externally owned hotel 082 file when present, may follow migration 067.",
+      "Only pinned flight migrations 068 through 080 and 120 through 138, plus the externally owned hotel 082 file when present, may follow migration 067.",
     );
   }
 
@@ -394,7 +401,7 @@ export function assertPinnedFlightMigrations({
     ({ version }) => canonicalSet.has(version),
   );
   if (canonicalMigrations.length !== CANONICAL_FLIGHT_MIGRATION_VERSIONS.length) {
-    throw new Error("The canonical flight migration block 120 through 137 is incomplete.");
+    throw new Error("The canonical flight migration block 120 through 138 is incomplete.");
   }
 
   return {
@@ -583,7 +590,7 @@ export function assertPreviewLedger(output, pinnedPlan) {
   ])));
   if (prefixLength === undefined) {
     throw new Error(
-      "The Preview remote ledger must contain the complete flight baseline through 080, the already-applied external hotel migration 082, and an exact prefix of canonical flight migrations 120 through 137.",
+      "The Preview remote ledger must contain the complete flight baseline through 080, the already-applied external hotel migration 082, and an exact prefix of canonical flight migrations 120 through 138.",
     );
   }
 
@@ -1273,6 +1280,7 @@ export function assertFlightSchemaDump(output) {
   const requiredTables = [
     "flight_runtime_controls",
     "flight_provider_request_attempts",
+    "flight_ticket_documents",
     "flight_offer_evidence_vault",
     "flight_secure_pii_records",
     "flight_payment_operation_attempts",
@@ -1294,6 +1302,42 @@ export function assertFlightSchemaDump(output) {
       throw new Error("The post-apply schema dump is missing a required flight table.");
     }
   }
+
+  const ticketIdentityConstraint = normalizedSqlFragment(
+    "alter table only public.flight_ticket_documents "
+      + "add constraint flight_ticket_documents_order_id_document_ref_sha256_key "
+      + "unique (order_id, document_ref_sha256)",
+  );
+  const ticketIdentityStatements = normalizedSqlStatements(output).filter(
+    (statement) => statement.includes(
+      "flight_ticket_documents_order_id_document_ref_sha256_key",
+    ),
+  );
+  if (
+    ticketIdentityStatements.length !== 1
+    || ticketIdentityStatements[0] !== ticketIdentityConstraint
+    || normalizedSqlStatements(output).some((statement) => statement.includes(
+      "flight_ticket_documents_execution_scope_sha256_execution_mo_key",
+    ))
+  ) {
+    throw new Error(
+      "The post-apply schema dump does not prove the migration-138 ticket identity scope repair.",
+    );
+  }
+  const ticketDocuments = tableDefinition(output, "flight_ticket_documents");
+  assertTableColumn(
+    ticketDocuments,
+    "flight_ticket_documents",
+    "order_id",
+    "uuid",
+    ["not null"],
+  );
+  assertTableColumn(
+    ticketDocuments,
+    "flight_ticket_documents",
+    "document_ref_sha256",
+    "text",
+  );
 
   const controls = tableDefinition(output, "flight_runtime_controls");
   assertTableColumn(controls, "flight_runtime_controls", "control_key", "text", ["not null"]);
@@ -2385,7 +2429,7 @@ export function runSupabaseCli(args, databasePassword, sourceEnv = process.env) 
 function safeSummary(mode, pinnedPlan, extra = {}) {
   const canonicalSet = new Set(CANONICAL_FLIGHT_MIGRATION_VERSIONS);
   return {
-    gate: "flight-preview-migrations-120-137",
+    gate: "flight-preview-migrations-120-138",
     mode,
     approvedPreviewProjectRef: PREVIEW_PROJECT_REF,
     requiredRemoteBaselineTip: REQUIRED_REMOTE_FLIGHT_BASELINE_TIP,

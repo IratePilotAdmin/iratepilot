@@ -57,7 +57,7 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
   it("recognizes later flight migrations without adding them to the legacy Preview apply allowlist", () => {
     const versions = listMigrationVersions();
     expect(versions).toEqual(expect.arrayContaining(REQUIRED_PREVIEW_BASELINE));
-    expect(versions.at(-1)).toBe("202608260137");
+    expect(versions.at(-1)).toBe("202608260138");
     expect(APPROVED_PREVIEW_PENDING).toEqual([
       "202608170064",
       "202608170065",

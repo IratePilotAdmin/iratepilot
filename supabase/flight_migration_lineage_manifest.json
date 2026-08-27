@@ -1,13 +1,14 @@
 {
   "schemaVersion": 1,
   "evidenceType": "flight_migration_lineage_freeze",
-  "recordedOn": "2026-08-26",
+  "recordedOn": "2026-08-27",
   "sanitized": true,
   "secretsIncluded": false,
   "databaseWritesPerformed": true,
   "preview": {
     "requiredRemoteFlightBaselineTip": "202608250080",
-    "canonicalTip": "202608260137",
+    "canonicalTip": "202608260138",
+    "canonicalRange": "202608260120-202608260138",
     "canonicalVersions": [
       "202608260120",
       "202608260121",
@@ -26,8 +27,18 @@
       "202608260134",
       "202608260135",
       "202608260136",
-      "202608260137"
+      "202608260137",
+      "202608260138"
     ],
+    "canonicalTipArtifact": {
+      "version": "202608260138",
+      "filename": "202608260138_flight_ticket_document_identity_scope_repair.sql",
+      "forwardSha256": "8c9852a6d27c23512bfecfc589321109c0c3b0944bbe0a27aa519e6ef46704e7",
+      "rollbackFilename": "202608260138_flight_ticket_document_identity_scope_repair.rollback.sql",
+      "rollbackSha256": "7265425bea2497961f4ca64199f9cabce4a05a149cc59a4bc4d9cbca237cca37",
+      "status": "authored_unapplied",
+      "targetEnvironment": "preview_test_only"
+    },
     "retiredVersionMap": [
       { "retired": "202608250081", "canonical": "202608260120" },
       { "retired": "202608250082", "canonical": "202608260121" },

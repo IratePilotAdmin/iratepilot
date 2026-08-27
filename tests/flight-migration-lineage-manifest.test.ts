@@ -20,13 +20,31 @@ describe("flight migration lineage freeze manifest", () => {
   it("freezes the retired-to-canonical Preview mapping and tip", () => {
     expect(manifest.preview.requiredRemoteFlightBaselineTip).toBe("202608250080");
     expect(manifest.preview.canonicalVersions).toEqual(CANONICAL_FLIGHT_MIGRATION_VERSIONS);
-    expect(manifest.preview.canonicalTip).toBe("202608260137");
+    expect(manifest.preview.canonicalTip).toBe("202608260138");
+    expect(manifest.preview.canonicalRange).toBe("202608260120-202608260138");
     expect(manifest.preview.retiredVersionMap.map(
       ({ retired }: { retired: string }) => retired,
     )).toEqual(RETIRED_FLIGHT_MIGRATION_VERSIONS);
     expect(manifest.preview.retiredVersionMap.map(
       ({ canonical }: { canonical: string }) => canonical,
-    )).toEqual(CANONICAL_FLIGHT_MIGRATION_VERSIONS);
+    )).toEqual(CANONICAL_FLIGHT_MIGRATION_VERSIONS.slice(0, -1));
+    expect(manifest.preview.canonicalTipArtifact).toEqual({
+      version: "202608260138",
+      filename: "202608260138_flight_ticket_document_identity_scope_repair.sql",
+      forwardSha256: "8c9852a6d27c23512bfecfc589321109c0c3b0944bbe0a27aa519e6ef46704e7",
+      rollbackFilename:
+        "202608260138_flight_ticket_document_identity_scope_repair.rollback.sql",
+      rollbackSha256:
+        "7265425bea2497961f4ca64199f9cabce4a05a149cc59a4bc4d9cbca237cca37",
+      status: "authored_unapplied",
+      targetEnvironment: "preview_test_only",
+    });
+    expect(sha256(
+      `supabase/migrations/${manifest.preview.canonicalTipArtifact.filename}`,
+    )).toBe(manifest.preview.canonicalTipArtifact.forwardSha256);
+    expect(sha256(
+      `supabase/rollbacks/${manifest.preview.canonicalTipArtifact.rollbackFilename}`,
+    )).toBe(manifest.preview.canonicalTipArtifact.rollbackSha256);
     expect(manifest.preview.ledgerVerification).toEqual({
       status: "not_verified_stored_preview_db_credential_stale",
       mandatoryBeforeAnyFutureApply: true,
