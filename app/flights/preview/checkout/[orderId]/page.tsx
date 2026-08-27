@@ -44,7 +44,7 @@ export default async function ConsumerFlightPreviewCheckoutPage({ params }: { pa
       />
       <div className="container-page py-10">
         <ConsumerFlightPreviewDisclosure />
-        <div className="mt-8"><ConsumerFlightPreviewCheckout key={order.id} enabled={runtime.enabled} order={order} publishableKey={process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY} /></div>
+        <div className="mt-8"><ConsumerFlightPreviewCheckout key={order.id} enabled={runtime.enabled} order={order} publishableKey={process.env.NEXT_PUBLIC_FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY} /></div>
       </div>
     </ConsumerFlightPreviewFrame>
   );

@@ -110,9 +110,10 @@ export function auditFlightConsumerPreviewEnvironment(env) {
   if ((env.STRIPE_SECRET_KEY ?? "").trim().length > 0) {
     issue(issues, "STRIPE_SECRET_KEY", "broad_secret_must_be_absent");
   }
-  const stripePublishableKey = env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
+  const stripePublishableKey =
+    env.NEXT_PUBLIC_FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY ?? "";
   if (!/^pk_test_[A-Za-z0-9_]{8,}$/.test(stripePublishableKey)) {
-    issue(issues, "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "not_test_credential");
+    issue(issues, "NEXT_PUBLIC_FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY", "not_test_credential");
   }
   const stripePublishableKeySha256 =
     env.FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY_SHA256 ?? "";

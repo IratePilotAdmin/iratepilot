@@ -41,7 +41,8 @@ describe("Flight Consumer Preview dedicated Stripe credential", () => {
       FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY: restrictedKey,
       FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY_SHA256:
         restrictedKeySha256,
-      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: publishableKey,
+      NEXT_PUBLIC_FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY:
+        publishableKey,
       FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY_SHA256:
         publishableKeySha256,
     };

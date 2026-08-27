@@ -61,7 +61,8 @@ export function hasBoundFlightConsumerPreviewStripeRestrictedKey(
 export function hasBoundFlightConsumerPreviewStripePublishableKey(
   env: FlightConsumerPreviewStripeEnvironment,
 ) {
-  const credential = env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
+  const credential =
+    env.NEXT_PUBLIC_FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY ?? "";
   const expectedSha256 =
     env.FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY_SHA256 ?? "";
   if (

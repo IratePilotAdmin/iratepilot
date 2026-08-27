@@ -36,7 +36,8 @@ const baseEnv = Object.freeze({
   NEXT_PUBLIC_SUPABASE_URL: `https://${FLIGHT_CONSUMER_PREVIEW_PROJECT_REF}.supabase.co`,
   FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY: restrictedKey,
   FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY_SHA256: restrictedKeySha256,
-  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_test_preview_public_12345678",
+  NEXT_PUBLIC_FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY:
+    "pk_test_preview_public_12345678",
   FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY_SHA256: createHash("sha256")
     .update("pk_test_preview_public_12345678", "utf8")
     .digest("hex"),
@@ -211,7 +212,7 @@ describe("Flight Consumer Preview runtime gate", () => {
     ["FLIGHT_PRODUCTION_TRAFFIC_ENABLED", "true"],
     ["FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY", "sk_live_not_allowed_12345678"],
     ["FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY_SHA256", "0".repeat(64)],
-    ["NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "pk_live_not_allowed_12345678"],
+    ["NEXT_PUBLIC_FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY", "pk_live_not_allowed_12345678"],
     ["FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY_SHA256", "0".repeat(64)],
     ["STRIPE_SECRET_KEY", "sk_test_broad_not_allowed_12345678"],
     ["DUFFEL_TEST_ACCESS_TOKEN", "duffel_live_not_allowed_12345678"],

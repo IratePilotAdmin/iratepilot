@@ -113,6 +113,12 @@ describe("Flight Consumer Preview checkout browser-loss recovery", () => {
       "utf8",
     );
     expect(page).toContain("<ConsumerFlightPreviewCheckout key={order.id}");
+    expect(page).toContain(
+      "process.env.NEXT_PUBLIC_FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY",
+    );
+    expect(page).not.toContain(
+      "publishableKey={process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}",
+    );
   });
 
   it.each([

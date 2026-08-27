@@ -23,15 +23,18 @@ Store both variables in Vercel **Preview only**:
 - `FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY`: the restricted TEST key;
 - `FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY_SHA256`: lowercase SHA-256 of
   the exact key bytes.
+- `NEXT_PUBLIC_FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY`: the dedicated
+  TEST publishable key used only by the Flight Consumer Preview checkout;
 - `FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY_SHA256`: lowercase SHA-256
-  of the exact `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` bytes.
+  of the exact dedicated publishable-key bytes.
 
 Do not copy the restricted key into Production, Development, source control,
 test output, evidence files, tickets, or chat. Remove `STRIPE_SECRET_KEY` from
 the Preview environment entirely; an available broad secret disables the
-flight runtime. The server validates both key prefixes and exact digests before
-constructing the Stripe SDK client. Flight Consumer Preview never reads the
-shared `STRIPE_SECRET_KEY` for payment or webhook work.
+flight runtime. The server validates both dedicated key prefixes and exact
+digests before constructing the Stripe SDK client. Flight Consumer Preview
+never reads the shared `STRIPE_SECRET_KEY` or
+`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` for payment or checkout work.
 
 ## Acceptance
 
