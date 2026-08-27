@@ -202,6 +202,7 @@ describe("flight migration lineage freeze manifest", () => {
       "202608260118",
       "202608260119",
       "202608260139",
+      "202608260140",
     ]);
 
     const rollbackFilename = entry.filename.replace(/\.sql$/, ".rollback.sql");
@@ -242,6 +243,7 @@ describe("flight migration lineage freeze manifest", () => {
       "202608260118",
       "202608260119",
       "202608260139",
+      "202608260140",
     ]);
     expect(authoredVersions.some((version: string) => appliedVersions.has(version)))
       .toBe(false);
@@ -1117,6 +1119,111 @@ describe("flight migration lineage freeze manifest", () => {
       expect(sha256(artifact)).toBe(expectedSha256);
     }
     expect(entry.version > "202608260138").toBe(true);
+    expect(entry.version < "202608260200").toBe(true);
+    expect(manifest.production.versions.some(
+      ({ version }: { version: string }) => version === entry.version,
+    )).toBe(false);
+    expect(manifest.production.isolatedManagedUatAcceptance.acceptedVersions)
+      .not.toContain(entry.version);
+  });
+
+  it("hash-pins default-off private-preview live-search gate 140", () => {
+    const entry = manifest.production.authoredUnappliedVersions.find(
+      ({ version }: { version: string }) => version === "202608260140",
+    );
+    expect(entry).toEqual({
+      version: "202608260140",
+      filename:
+        "202608260140_flight_consumer_live_private_preview_exposure_reconciliation.sql",
+      forwardSha256:
+        "af48debf2dffbf0ef572ca60293c4dd297001a474735b16827ad3fda7633bda2",
+      rollbackSha256:
+        "5142a7184657d32b52517a79ea15193f8338322021e33810bf69560cecb4d6ea",
+      status: "authored_unapplied",
+      targetEnvironment: "production_private_preview_default_off",
+      objectVerification: "not_run_production",
+      managedUatVerification: "not_run",
+      localPostgresqlVerification:
+        "passed_exact_stack_pglite_0_5_7_postgresql_18_3",
+      implementationArtifact:
+        "lib/flights/consumer-production/private-preview-live-shopping.server.ts",
+      implementationArtifactSha256:
+        "2af92b3e63501e9f1c074604d7c830b50d7fcb94a96cf9073f1ec6ef1dc49590",
+      httpBoundaryArtifact:
+        "lib/flights/consumer-production/private-preview-live-shopping-http.server.ts",
+      httpBoundaryArtifactSha256:
+        "40924c87bbbabbb27154bc3f8aa985b118ca7085303486d5b6c1ced0120354da",
+      routeArtifact: "app/api/flights/private-preview/live-search/route.ts",
+      routeArtifactSha256:
+        "41f9a23cd82c7920084292b6d4d0369ebef66387d5a454ab251c3b9a50dfd9af",
+      verificationArtifact:
+        "scripts/verify-flight-consumer-private-preview-reconciliation-pglite.mjs",
+      verificationArtifactSha256:
+        "aad4a1f7910281d43b9e63bd04e9bbd6e4cc68c5d507dd4ba6d2f0cdab31fcb5",
+      documentationArtifact:
+        "docs/FLIGHT_CONSUMER_PRODUCTION_PRIVATE_PREVIEW_LIVE_SEARCH_GATE_140.md",
+      documentationArtifactSha256:
+        "40e72376e5f8169d830205feb5c17ad04940c20f1309a7571f2d343f415ed167",
+      runtimeTestArtifact:
+        "tests/flight-consumer-production-private-preview-live-shopping.test.ts",
+      runtimeTestArtifactSha256:
+        "da636b408bf54d49eb0d769603184ef73c8c105c04a2ab385eb251b5c5304969",
+      routeTestArtifact:
+        "tests/flight-consumer-production-private-preview-live-shopping-route.test.ts",
+      routeTestArtifactSha256:
+        "827e6f84640b8bd99570e19aa03e15b5edc26312ecc7717a51d7a164a92d5fdb",
+      migrationTestArtifact:
+        "tests/flight-consumer-live-private-preview-reconciliation-migration.test.ts",
+      migrationTestArtifactSha256:
+        "4d50efbd7d4b6946aaa6dc1dd1619696c11fbf04d2f7e29f699f5c591ddb330f",
+      providerRequests: 0,
+      stripeRequests: 0,
+      routeImplemented: true,
+      routeDefaultOff: true,
+      routeDeployed: false,
+      routeExposed: false,
+      privateCohortOnly: true,
+      publicConsumerExposure: false,
+      cookieAuthenticationRequired: true,
+      exactOriginFetchMetadataRequired: true,
+      strictIdempotencyRequired: true,
+      zeroOfferResponseSupported: true,
+      crashSafeExposureReconciliation: true,
+      membershipProvisioned: false,
+      providerRedispatchAuthorized: false,
+      blindRetryAuthorized: false,
+      orderAuthorized: false,
+      paymentAuthorized: false,
+      captureAuthorized: false,
+      refundAuthorized: false,
+      ticketingAuthorized: false,
+      servicingAuthorized: false,
+      consumerReleaseEnabled: false,
+      applyAuthority: "not_granted",
+      productionApplyAuthority: "not_granted",
+    });
+    if (!entry) throw new Error("Production-local migration 140 is missing");
+    expect(sha256(`supabase/production-migrations/${entry.filename}`))
+      .toBe(entry.forwardSha256);
+    expect(sha256(
+      `supabase/production-rollbacks/${entry.filename.replace(/\.sql$/, ".rollback.sql")}`,
+    )).toBe(entry.rollbackSha256);
+    for (const [artifact, expectedSha256] of [
+      [entry.implementationArtifact, entry.implementationArtifactSha256],
+      [entry.httpBoundaryArtifact, entry.httpBoundaryArtifactSha256],
+      [entry.routeArtifact, entry.routeArtifactSha256],
+      [entry.verificationArtifact, entry.verificationArtifactSha256],
+      [entry.documentationArtifact, entry.documentationArtifactSha256],
+      [entry.runtimeTestArtifact, entry.runtimeTestArtifactSha256],
+      [entry.routeTestArtifact, entry.routeTestArtifactSha256],
+      [entry.migrationTestArtifact, entry.migrationTestArtifactSha256],
+    ] as const) {
+      expect(sha256(artifact)).toBe(expectedSha256);
+    }
+    expect(readFileSync(".env.example", "utf8")).toContain(
+      "FLIGHT_CONSUMER_PRODUCTION_PRIVATE_PREVIEW_ROUTE_ENABLED=false",
+    );
+    expect(entry.version > "202608260139").toBe(true);
     expect(entry.version < "202608260200").toBe(true);
     expect(manifest.production.versions.some(
       ({ version }: { version: string }) => version === entry.version,
