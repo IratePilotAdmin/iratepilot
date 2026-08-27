@@ -98,6 +98,10 @@ describe("Flight Consumer managed UAT Gates 115-119", () => {
       .toBe(sha256(readFileSync(
         "scripts/render-flight-consumer-public-shopping-115-119-managed-uat-sql.mjs",
       )));
+    expect(evidence.reviewedArtifacts.offlineBehavioralVerifier.sha256)
+      .toBe(sha256(readFileSync(
+        "scripts/verify-flight-consumer-public-shopping-115-119-managed-uat-pglite.mjs",
+      )));
     expect(() => readAndAssertArtifacts()).not.toThrow();
     expect(ROLLBACKS.find((item) => item.version === "202608260118"))
       .toMatchObject({ forwardOnly: true });
@@ -160,6 +164,19 @@ describe("Flight Consumer managed UAT Gates 115-119", () => {
     expect(verification.match(
       /^rollback to savepoint flight_public_shopping_115_119_synthetic_rows;$/gim,
     )).toHaveLength(1);
+    const savepointIndex = verification.indexOf(
+      "savepoint flight_public_shopping_115_119_synthetic_rows;",
+    );
+    const fixtureGrantIndex = verification.indexOf(
+      "grant execute on function\n"
+      + "  public.canonical_flight_consumer_public_offer_json_v1(jsonb)",
+    );
+    const rollbackIndex = verification.indexOf(
+      "rollback to savepoint flight_public_shopping_115_119_synthetic_rows;",
+    );
+    expect(fixtureGrantIndex).toBeGreaterThan(savepointIndex);
+    expect(rollbackIndex).toBeGreaterThan(fixtureGrantIndex);
+    expect(verification).toContain("synthetic canonicalizer grant survived");
     for (const fragment of [
       "zero source header changed",
       "non-empty source accounting changed",

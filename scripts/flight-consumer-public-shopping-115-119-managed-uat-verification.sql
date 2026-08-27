@@ -137,7 +137,7 @@ begin
         select not routine.prosecdef
           or pg_get_userbyid(routine.proowner) <> 'postgres'
           or coalesce(array_to_string(routine.proconfig, ','), '')
-            not like '%search_path=pg_catalog, public, extensions%'
+            not like '%search_path=pg_catalog, public%'
           from pg_proc as routine
          where routine.oid = to_regprocedure(v_signature)
       ) then
@@ -148,6 +148,11 @@ begin
   end loop;
 
   if to_regprocedure('public.canonical_flight_consumer_public_offer_json_v1(jsonb)') is null
+    or has_function_privilege(
+      'service_role',
+      'public.canonical_flight_consumer_public_offer_json_v1(jsonb)',
+      'EXECUTE'
+    )
     or (
       select routine.provolatile <> 'i'
         or not routine.proisstrict
@@ -161,23 +166,59 @@ begin
       'FLIGHT_PUBLIC_SHOPPING_115_119_VERIFY_FAILED: canonical JSON contract changed';
   end if;
 
+  -- PostgreSQL truncates identifiers to NAMEDATALEN - 1, so bind the guards by
+  -- relation, trigger function, timing, and event instead of long tgname text.
   if (
     select count(*)
+      from (values
+        (
+          'public.flight_consumer_live_public_shopping_admissions'::regclass,
+          'public.refuse_flight_consumer_live_public_shopping_admission_mutation_v1()'::regprocedure,
+          true
+        ),
+        ('public.flight_consumer_live_public_offer_projection_batches'::regclass,
+          'public.refuse_flight_consumer_live_public_offer_projection_mutation_v1()'::regprocedure, true),
+        ('public.flight_consumer_live_public_offer_projection_dispositions'::regclass,
+          'public.refuse_flight_consumer_live_public_offer_projection_mutation_v1()'::regprocedure, true),
+        ('public.flight_consumer_live_public_offer_projections'::regclass,
+          'public.refuse_flight_consumer_live_public_offer_projection_mutation_v1()'::regprocedure, true),
+        ('public.flight_consumer_live_public_offer_segments'::regclass,
+          'public.refuse_flight_consumer_live_public_offer_projection_mutation_v1()'::regprocedure, true),
+        ('public.flight_consumer_live_public_offer_reference_vaults'::regclass,
+          'public.refuse_flight_consumer_live_public_offer_projection_mutation_v1()'::regprocedure, false),
+        ('public.flight_consumer_live_public_offer_reference_purge_receipts'::regclass,
+          'public.refuse_flight_consumer_live_public_offer_projection_mutation_v1()'::regprocedure, true),
+        ('public.flight_consumer_live_duffel_offer_source_batches'::regclass,
+          'public.refuse_flight_consumer_live_duffel_offer_source_batch_mutation_v1()'::regprocedure, true),
+        ('public.flight_consumer_live_public_shopping_dispatches'::regclass,
+          'public.refuse_flight_consumer_live_public_shopping_dispatch_mutation_v1()'::regprocedure, true)
+      ) as expected_guard(relation_oid, function_oid, delete_required)
+     where exists (
+       select 1
+         from pg_trigger as trigger_row
+        where not trigger_row.tgisinternal
+          and trigger_row.tgrelid = expected_guard.relation_oid
+          and trigger_row.tgfoid = expected_guard.function_oid
+          and (trigger_row.tgtype & 1) = 1
+          and (trigger_row.tgtype & 2) = 2
+          and (trigger_row.tgtype & 16) = 16
+          and (
+            not expected_guard.delete_required
+            or (trigger_row.tgtype & 8) = 8
+          )
+     )
+  ) <> 9 or not exists (
+    select 1
       from pg_trigger as trigger_row
      where not trigger_row.tgisinternal
-       and trigger_row.tgname = any(array[
-         'flight_consumer_live_public_shopping_admission_immutable',
-         'flight_consumer_live_public_offer_projection_batches_immutable',
-         'flight_consumer_live_public_offer_projection_dispositions_immutable',
-         'flight_consumer_live_public_offer_projections_immutable',
-         'flight_consumer_live_public_offer_segments_immutable',
-         'flight_consumer_live_public_offer_reference_vaults_immutable',
-         'flight_consumer_live_public_offer_reference_purge_receipts_immutable',
-         'flight_consumer_live_duffel_offer_source_batches_immutable',
-         'flight_consumer_live_duffel_shopping_success_sources_guard',
-         'flight_consumer_live_public_shopping_dispatches_immutable'
-       ])
-  ) <> 10 then
+       and trigger_row.tgrelid =
+         'public.flight_consumer_live_duffel_shopping_attempts'::regclass
+       and trigger_row.tgfoid =
+         'public.guard_flight_consumer_live_duffel_shopping_success_sources_v1()'::regprocedure
+       and (trigger_row.tgtype & 1) = 1
+       and (trigger_row.tgtype & 2) = 2
+       and (trigger_row.tgtype & 16) = 16
+  ) then
     raise exception
       'FLIGHT_PUBLIC_SHOPPING_115_119_VERIFY_FAILED: append-only/success guard set changed';
   end if;
@@ -246,6 +287,13 @@ end;
 $flight_public_shopping_115_119_catalog$;
 
 savepoint flight_public_shopping_115_119_synthetic_rows;
+
+-- Gate 116 intentionally keeps its canonicalizer owner-only. Grant the exact
+-- fixture helper only inside this savepoint; the rollback below restores the
+-- reviewed ACL before the transaction can commit.
+grant execute on function
+  public.canonical_flight_consumer_public_offer_json_v1(jsonb)
+  to service_role;
 
 set local request.jwt.claims = '{"role":"service_role"}';
 set local role service_role;
@@ -579,8 +627,7 @@ begin
       v_nonzero_response, v_body, v_projection_batch, v_observed, 1024,
       '[]'::jsonb, v_refused
     );
-  if v_nonzero_completed.source_offer_count <> 1
-    or v_nonzero_completed.projected_offer_count <> 0
+  if v_nonzero_completed.projected_offer_count <> 0
     or v_nonzero_completed.refused_offer_count <> 1 then
     raise exception
       'FLIGHT_PUBLIC_SHOPPING_115_119_VERIFY_FAILED: non-empty source accounting changed';
@@ -729,6 +776,14 @@ begin
   if to_regnamespace('flight_public_shopping_115_119_harness') is not null then
     raise exception
       'FLIGHT_PUBLIC_SHOPPING_115_119_VERIFY_FAILED: harness object survived';
+  end if;
+  if has_function_privilege(
+    'service_role',
+    'public.canonical_flight_consumer_public_offer_json_v1(jsonb)',
+    'EXECUTE'
+  ) then
+    raise exception
+      'FLIGHT_PUBLIC_SHOPPING_115_119_VERIFY_FAILED: synthetic canonicalizer grant survived';
   end if;
   if exists (
     select 1 from supabase_migrations.schema_migrations

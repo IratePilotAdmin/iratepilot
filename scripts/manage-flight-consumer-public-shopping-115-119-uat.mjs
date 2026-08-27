@@ -87,7 +87,7 @@ export const ARTIFACTS = Object.freeze({
   }),
   verification: Object.freeze({
     path: "scripts/flight-consumer-public-shopping-115-119-managed-uat-verification.sql",
-    sha256: "d98c8e04c849bd7a4d4e029bdf9c3640bfa91056a870238aa916b47c102c4fb4",
+    sha256: "e0de70e0541008530b0cd43b6828f42d25fc091e1677529467bdbc004e4165f4",
   }),
 });
 

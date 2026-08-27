@@ -35,10 +35,11 @@ The managed package must pin its own artifacts before any apply is authorized:
 
 | Required managed artifact | SHA-256 before authorization |
 | --- | --- |
-| `scripts/flight-consumer-public-shopping-115-119-managed-uat-preflight.sql` | Required; not recorded by this preparation document |
-| `scripts/flight-consumer-public-shopping-115-119-managed-uat-verification.sql` | Required; not recorded by this preparation document |
-| `scripts/manage-flight-consumer-public-shopping-115-119-uat.mjs` | Required; not recorded by this preparation document |
-| `scripts/render-flight-consumer-public-shopping-115-119-managed-uat-sql.mjs` | Required for SQL Editor fallback; hash-pinned in the evidence template |
+| `scripts/flight-consumer-public-shopping-115-119-managed-uat-preflight.sql` | `fe5e9f432a9de751df7d364462960d696ffef65ba082c85541049ed14e17c631` |
+| `scripts/flight-consumer-public-shopping-115-119-managed-uat-verification.sql` | `e0de70e0541008530b0cd43b6828f42d25fc091e1677529467bdbc004e4165f4` |
+| `scripts/manage-flight-consumer-public-shopping-115-119-uat.mjs` | `56dd3f31bcae39d67a857df5359596e49945096b60c32e153fea25b55ea6fe83` |
+| `scripts/render-flight-consumer-public-shopping-115-119-managed-uat-sql.mjs` | `14d502fc6c5f32cc95fbcf4ba4be30cce1010dff988e89a3becd7ddfd7dda9a8` |
+| `scripts/verify-flight-consumer-public-shopping-115-119-managed-uat-pglite.mjs` | `11b7dd591ce53c75aeef263f0b5b1b170e2b1b381caeb9962bd3476061216834` |
 
 Do not execute a command in this runbook until those files exist, their hashes
 are independently recorded, and their tests pass.
@@ -190,29 +191,30 @@ completed in the selected managed target.
 Each canonical migration contains its own transaction and must run in a separate,
 fail-fast `psql` session in ascending order. Never concatenate the files.
 
-The managed runner must split the operation into three separately confirmed
-segments:
+The managed runner requires two independent authorities before the ordered
+apply begins:
 
-1. Apply 115, 116, and 117 individually; after each commit, perform a read-only
-   exact-catalog and zero-row checkpoint.
-2. Stop for the irreversible boundary. Apply 118 only after a separate operator
-   acknowledgement that its canonical rollback always refuses. Verify its
-   repaired Gate 105 constraint/function behavior, source-batch objects, guard,
-   and zero rows before continuing.
-3. Apply 119 individually and perform the final managed verification.
+1. One target- and range-bound authority for exact object-only Gates 115-119,
+   with no migration-ledger write.
+2. A separate acknowledgement that Gate 118 is a forward-only canonical repair
+   whose rollback always refuses.
+
+After both authorities are present, the runner applies 115 through 119 in five
+separate fail-fast `psql` sessions and then performs the exact managed
+verification. It stops at the first error and never attempts cleanup or
+rollback automatically.
 
 The exact confirmations are:
 
 ```text
-APPLY_115_117_OBJECTS_ONLY_exipwtvyjaihsvdhsbbt_NO_LEDGER
-APPLY_118_FORWARD_ONLY_exipwtvyjaihsvdhsbbt_NO_LEDGER
-APPLY_119_OBJECTS_ONLY_exipwtvyjaihsvdhsbbt_NO_LEDGER
+APPLY_115_119_OBJECTS_ONLY_exipwtvyjaihsvdhsbbt_NO_LEDGER
+ACCEPT_118_FORWARD_ONLY_exipwtvyjaihsvdhsbbt_NO_ROLLBACK
 ```
 
-No runner implementation is acceptable if it crosses Gate 118 under one broad
-confirmation, offers a rollback operation, writes the migration ledger, or can
-select another target. Stop at the first SQL or checkpoint error. Do not retry
-or attempt cleanup without a new inspection and separate authorization.
+No runner implementation is acceptable if it crosses Gate 118 without the
+separate forward-only acknowledgement, offers a rollback operation, writes the
+migration ledger, or can select another target. Stop at the first SQL error. Do
+not retry or attempt cleanup without a new inspection and separate authority.
 
 After 118 commits, 115-118 are retained as a unit. Reverting 115, 116, or 117
 under the repaired 118 catalog would create a noncanonical partial state. Gate
