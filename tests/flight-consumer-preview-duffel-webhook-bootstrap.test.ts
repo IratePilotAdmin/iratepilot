@@ -203,6 +203,41 @@ describe("temporary Consumer Preview Duffel webhook bootstrap", () => {
     expect(JSON.stringify(result)).not.toContain(bypassSecret);
   });
 
+  it("projects only bounded machine-readable Duffel ping diagnostics", async () => {
+    const unsafeMessage = "do not retain this provider response message";
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(listResponse([webhook()]))
+      .mockResolvedValueOnce(jsonResponse({
+        errors: [{
+          code: "malformed_data_param",
+          message: unsafeMessage,
+          title: "Malformed data",
+          type: "invalid_request_error",
+        }],
+        meta: { request_id: "FZW0H3HdJwKk5HMAAKxB", status: 422 },
+      }, 422));
+
+    const error = await executeFlightConsumerPreviewDuffelWebhookBootstrap(
+      input(FLIGHT_CONSUMER_PREVIEW_DUFFEL_WEBHOOK_PING_CONFIRMATION),
+      dependencies(fetcher),
+    ).catch((value: unknown) => value);
+
+    expect(error).toBeInstanceOf(FlightConsumerPreviewDuffelWebhookBootstrapError);
+    expect((error as FlightConsumerPreviewDuffelWebhookBootstrapError).diagnostic)
+      .toEqual({
+        operation: "ping_response_contract",
+        responseStatus: 422,
+        redirected: false,
+        urlMatched: true,
+        bodyWasNull: false,
+        providerErrorCodes: ["malformed_data_param"],
+        providerErrorTypes: ["invalid_request_error"],
+        providerRequestId: "FZW0H3HdJwKk5HMAAKxB",
+      });
+    expect(JSON.stringify(error)).not.toContain(unsafeMessage);
+    expect(JSON.stringify(error)).not.toContain(bypassSecret);
+  });
+
   it("never pings when count, URL, event set, mode, or active state differs", async () => {
     const mismatches = [
       [],

@@ -62,6 +62,22 @@ const createResponseSchema = z.object({
   }),
 }).passthrough();
 
+const providerErrorTokenSchema = z.string()
+  .min(1)
+  .max(128)
+  .regex(/^[a-z0-9_]+$/);
+
+const providerErrorResponseSchema = z.object({
+  errors: z.array(z.object({
+    code: providerErrorTokenSchema,
+    type: providerErrorTokenSchema,
+  }).passthrough()).min(1).max(16),
+  meta: z.object({
+    request_id: z.string().min(8).max(128).regex(/^[A-Za-z0-9_-]+$/),
+    status: z.number().int(),
+  }).passthrough(),
+}).passthrough();
+
 type BootstrapEnvironment = Readonly<Record<string, string | undefined>>;
 
 export type FlightConsumerPreviewDuffelWebhookBootstrapDependencies = Readonly<{
@@ -91,6 +107,9 @@ export class FlightConsumerPreviewDuffelWebhookBootstrapError extends Error {
     redirected: boolean;
     urlMatched: boolean;
     bodyWasNull: boolean;
+    providerErrorCodes: readonly string[];
+    providerErrorTypes: readonly string[];
+    providerRequestId: string | null;
   }> | null;
 
   constructor(
@@ -100,7 +119,11 @@ export class FlightConsumerPreviewDuffelWebhookBootstrapError extends Error {
     super("The temporary Duffel test-webhook operation is unavailable.");
     this.name = "FlightConsumerPreviewDuffelWebhookBootstrapError";
     this.kind = kind;
-    this.diagnostic = diagnostic === null ? null : Object.freeze({ ...diagnostic });
+    this.diagnostic = diagnostic === null ? null : Object.freeze({
+      ...diagnostic,
+      providerErrorCodes: Object.freeze([...diagnostic.providerErrorCodes]),
+      providerErrorTypes: Object.freeze([...diagnostic.providerErrorTypes]),
+    });
   }
 }
 
@@ -233,6 +256,32 @@ async function readBoundedJsonResponse(response: Response) {
   }
 }
 
+async function projectProviderError(response: Response) {
+  const empty = Object.freeze({
+    providerErrorCodes: Object.freeze([] as string[]),
+    providerErrorTypes: Object.freeze([] as string[]),
+    providerRequestId: null as string | null,
+  });
+  const contentType = response.headers.get("content-type")?.trim() ?? "";
+  if (
+    response.body === null
+    || !/^application\/json(?:\s*;\s*charset=(?:utf-8|"utf-8"))?$/i.test(contentType)
+  ) return empty;
+  try {
+    const parsed = providerErrorResponseSchema.safeParse(
+      await readBoundedJsonResponse(response.clone()),
+    );
+    if (!parsed.success || parsed.data.meta.status !== response.status) return empty;
+    return Object.freeze({
+      providerErrorCodes: Object.freeze(parsed.data.errors.map((item) => item.code)),
+      providerErrorTypes: Object.freeze(parsed.data.errors.map((item) => item.type)),
+      providerRequestId: parsed.data.meta.request_id,
+    });
+  } catch {
+    return empty;
+  }
+}
+
 function requestHeaders(accessToken: string, correlationId: string) {
   return {
     Accept: "application/json",
@@ -322,13 +371,17 @@ async function pingExactTestWebhook(input: Readonly<{
     || response.redirected
     || (response.url !== "" && response.url !== pingUrl)
     || response.body !== null
-  ) fail("unavailable", {
-    operation: "ping_response_contract",
-    responseStatus: response.status,
-    redirected: response.redirected,
-    urlMatched: response.url === "" || response.url === pingUrl,
-    bodyWasNull: response.body === null,
-  });
+  ) {
+    const providerError = await projectProviderError(response);
+    fail("unavailable", {
+      operation: "ping_response_contract",
+      responseStatus: response.status,
+      redirected: response.redirected,
+      urlMatched: response.url === "" || response.url === pingUrl,
+      bodyWasNull: response.body === null,
+      ...providerError,
+    });
+  }
   return Object.freeze({
     decision: "ping_requested" as const,
     mode: "duffel_test_mode" as const,
