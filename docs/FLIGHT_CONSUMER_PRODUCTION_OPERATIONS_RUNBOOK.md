@@ -6,10 +6,13 @@ This runbook covers the flight-specific monitoring foundation in
 `lib/monitoring/flight-consumer-production.ts`.
 
 The implemented code is a pure, fail-closed evaluator. It accepts one strict,
-aggregate-only operational snapshot and returns typed alerts. It performs no
-Stripe, Duffel, email, database, network, payment, order, ticket, refund, or
-release action. A passing monitoring report means only that the supplied
-snapshot passed this monitoring gate. It never authorizes consumer release.
+aggregate-only operational snapshot plus a separate trusted monitoring context
+and returns typed alerts. The trusted context carries the finance-approved
+Duffel reserve policy and authoritative collection receipts for every source.
+It performs no Stripe, Duffel, email, database, network, payment, order, ticket,
+refund, or release action. A passing monitoring report means only that the
+snapshot and trusted context passed this monitoring gate. It never authorizes
+consumer release.
 
 Production staffing, provider collectors, alert delivery, dashboards, feature
 flag control, settlement funding, and commercial activation remain separate
@@ -19,16 +22,17 @@ requirements.
 
 | Capability | Implemented behavior |
 | --- | --- |
-| Input validation | Strict Production-only aggregate schema; missing, extra, partial, contradictory, stale, and future-dated evidence blocks the monitoring gate. |
+| Input validation | Strict Production-only aggregate schema plus a separately validated trusted context; missing, extra, partial, contradictory, stale, future-dated, misordered, or digest-mismatched evidence blocks the monitoring gate. |
+| Source receipts | Every snapshot section must exactly match an authoritative source receipt digest collected no later than the snapshot and inside the five-minute freshness bound. Embedded occurrence timestamps cannot post-date their receipt; ticket deadlines are exempt because they are prospective. |
 | Stripe webhook health | Detects missing/stale endpoint verification, processing lag, and failed events. |
 | Payment attempt health | Detects stuck and ambiguous attempts. |
 | Commerce integrity | Detects authorization or capture without an order, order without ticket, and ticket without captured payment. |
 | Ticket deadline | Escalates deadlines inside the warning window and expired deadlines. |
-| Duffel balance | Blocks when the reserve threshold is unconfigured, evidence is stale, or available balance is below the configured reserve in the same currency. |
+| Duffel balance | The untrusted snapshot supplies only current balance evidence. Currency and minimum reserve come from the separate finance-approved policy; missing/stale evidence, currency drift, or insufficient balance blocks. |
 | Refund and dispute health | Detects delayed or failed refunds and unacknowledged disputes. |
 | Schedule changes | Warns immediately for an unacknowledged change and escalates it after the acknowledgement threshold. |
 | Traveler notifications | Detects delayed and failed notifications. |
-| Safe output | Emits aggregate counts, ages, thresholds, severity, response target, and runbook section only. It emits no raw provider identifiers, traveler data, credentials, or payment data. |
+| Safe output | Emits aggregate counts, ages, thresholds, severity, response target, runbook section, and the digest binding the accepted trusted context only. It emits no raw provider identifiers, traveler data, credentials, or payment data. |
 
 ## What is not implemented
 
@@ -38,9 +42,14 @@ provider setup, named ownership, and acceptance evidence:
 
 - a durable aggregate snapshot query over Production payment, order, ticket,
   webhook, refund, dispute, schedule-change, and notification ledgers;
+- an authoritative receipt issuer for each source query. The caller must build
+  the trusted context from these server-side receipts, never from a consumer
+  request or from fields copied out of the untrusted snapshot;
 - an authenticated Stripe endpoint-verification and webhook-lag collector;
 - a Duffel Balance collector or an approved operator receipt with the correct
-  settlement currency and a finance-approved minimum reserve;
+  settlement currency and a finance-approved minimum reserve. The approval
+  receipt digest, currency, reserve amount, and exact derived policy digest
+  belong only in the trusted context;
 - an alert sink, paging policy, dashboard, retention policy, and delivery test;
 - primary and backup on-call owners for incident command, payments, Duffel,
   ticketing, traveler support, notifications, privacy/security, and executive
@@ -56,12 +65,16 @@ public release should be inferred from this foundation.
 ## Code-reviewed threshold policy
 
 The evaluator uses fixed engineering baselines. They cannot be weakened by a
-runtime snapshot. Named operational, finance, supplier, and support owners must
-review them before launch; changing them requires a reviewed code change.
+runtime snapshot. The Duffel reserve amount and currency are separately bound
+to a finance approval receipt in the trusted context and are never accepted
+from the snapshot. Named operational, finance, supplier, and support owners
+must review the baselines before launch; changing them requires a reviewed code
+change or, for the reserve policy, a new approved receipt.
 
 | Signal | Threshold |
 | --- | ---: |
 | Aggregate snapshot age | 5 minutes |
+| Per-source authoritative receipt age | 5 minutes |
 | Allowed future clock skew | 1 minute |
 | Stripe endpoint verification age | 15 minutes |
 | Stripe webhook processing lag | 5 minutes |
@@ -80,7 +93,7 @@ produce `degraded`; no alerts produces `healthy`. The report always returns
 
 | Severity | Target acknowledgement | Flight examples |
 | --- | ---: | --- |
-| P0 | 15 minutes | Captured payment without order, ticket without captured payment, expired ticket deadline, insufficient Duffel reserve, invalid or stale monitoring evidence. |
+| P0 | 15 minutes | Captured payment without order, ticket without captured payment, expired ticket deadline, insufficient or wrong-currency Duffel reserve, invalid trusted context, and stale/misordered/digest-mismatched monitoring evidence. |
 | P1 | 30 minutes | Stripe webhook failure/lag, stuck or ambiguous payment, unresolved order without ticket, refund failure/lag, dispute, overdue schedule change, notification failure/lag. |
 | P2 | 4 business hours | Newly received schedule change awaiting acknowledgement inside its escalation window. |
 
@@ -114,11 +127,18 @@ the targets and an end-to-end page test has succeeded.
 ### Monitoring evidence failure
 
 Codes: `monitor_clock_invalid`, `monitoring_snapshot_invalid`,
-`monitoring_snapshot_stale`, `signal_timestamp_in_future`.
+`monitoring_trusted_context_invalid`, `monitoring_snapshot_stale`,
+`source_collection_receipt_after_snapshot`,
+`source_collection_receipt_stale`,
+`source_collection_receipt_binding_mismatch`,
+`source_signal_after_collection_receipt`, `signal_timestamp_in_future`.
 
 - Treat observability loss as a P0 release blocker.
 - Verify the collector clock, query completion, schema version, and last
   successful snapshot without replacing missing values with zeros.
+- Verify every source receipt against the immutable collector record and confirm
+  its section digest, receipt time, and snapshot time before regenerating the
+  trusted context. Never mint a replacement receipt from request data.
 - Do not declare commerce healthy from provider dashboards alone.
 
 ### Stripe webhook health
@@ -170,12 +190,14 @@ Codes: `ticket_deadline_at_risk`, `ticket_deadline_expired`.
 
 ### Duffel balance protection
 
-Codes: `duffel_balance_threshold_unconfigured`,
-`duffel_balance_evidence_stale`, `duffel_balance_below_threshold`.
+Codes: `duffel_balance_policy_currency_mismatch`,
+`duffel_balance_evidence_missing`, `duffel_balance_evidence_stale`,
+`duffel_balance_below_threshold`.
 
 - Do not place new balance-funded orders.
 - The finance owner must confirm the settlement currency, pending liabilities,
-  required reserve, and replenishment receipt through approved Duffel access.
+  required reserve, approval receipt, and replenishment receipt through
+  approved Duffel access. Snapshot fields cannot change the approved policy.
 - Re-run the collector only after funding is final; a pending transfer is not
   available balance.
 
@@ -213,6 +235,8 @@ Codes: `notification_delivery_lag`, `notification_delivery_failed`.
 ## Evidence required to close the monitoring launch gate
 
 - one current, valid snapshot with every required aggregate signal populated;
+- a separately assembled trusted-context digest binding the finance-approved
+  reserve policy and fresh exact receipt for all nine sources;
 - zero alerts from the evaluator;
 - a recorded alert-delivery test for each severity;
 - named primary and backup owners with acknowledged response targets;
