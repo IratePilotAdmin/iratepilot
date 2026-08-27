@@ -196,6 +196,10 @@ describe("flight migration lineage freeze manifest", () => {
       "202608260112",
       "202608260113",
       "202608260114",
+      "202608260115",
+      "202608260116",
+      "202608260117",
+      "202608260118",
     ]);
 
     const rollbackFilename = entry.filename.replace(/\.sql$/, ".rollback.sql");
@@ -230,6 +234,10 @@ describe("flight migration lineage freeze manifest", () => {
       "202608260112",
       "202608260113",
       "202608260114",
+      "202608260115",
+      "202608260116",
+      "202608260117",
+      "202608260118",
     ]);
     expect(authoredVersions.some((version: string) => appliedVersions.has(version)))
       .toBe(false);
@@ -487,10 +495,24 @@ describe("flight migration lineage freeze manifest", () => {
         "lib/flights/consumer-production/stripe-confirmation-evidence-persistence.server.ts",
       implementationArtifactSha256:
         "239a6e6c23b681886b7c8ed0e71770a6ccb7102e604a294ca94a5c94f93f58ff",
+      stripeConfirmationOrchestratorArtifact:
+        "lib/flights/consumer-production/stripe-live-payment-intent-confirmation-orchestrator.server.ts",
+      stripeConfirmationOrchestratorArtifactSha256:
+        "9c89d3c022430d99d143fa2d75900d3c917d9da22302354b8601866941e0387f",
+      confirmationReleaseBoundaryArtifact:
+        "docs/FLIGHT_CONSUMER_PRODUCTION_STRIPE_CONFIRMATION_DARK_GATE.md",
+      confirmationReleaseBoundaryArtifactSha256:
+        "bd601d7739add7ef983cc85d2f44a57217ed7fde252b5af73d85589873611258",
       providerRequests: 0,
       stripeConfirmationRequests: 0,
       routeExposed: false,
+      browserHandoffRouteExposed: false,
+      terminalObservationRouteExposed: false,
+      reconciliationRouteExposed: false,
       stripeTransportImplemented: false,
+      lateAuthorizationCancellationImplemented: false,
+      lateAuthorizationReaperImplemented: false,
+      consumerReady: false,
       captureAuthorized: false,
       orderAuthorized: false,
       futureCheckoutFinalizationPrerequisiteVersion: "202608260110",
@@ -506,6 +528,10 @@ describe("flight migration lineage freeze manifest", () => {
       .toBe(entry.rollbackSha256);
     expect(sha256(entry.implementationArtifact))
       .toBe(entry.implementationArtifactSha256);
+    expect(sha256(entry.stripeConfirmationOrchestratorArtifact))
+      .toBe(entry.stripeConfirmationOrchestratorArtifactSha256);
+    expect(sha256(entry.confirmationReleaseBoundaryArtifact))
+      .toBe(entry.confirmationReleaseBoundaryArtifactSha256);
     expect(entry.version < "202608260120").toBe(true);
     expect(entry.version < "202608260200").toBe(true);
     expect(manifest.production.versions.some(
@@ -669,6 +695,249 @@ describe("flight migration lineage freeze manifest", () => {
     )).toBe(
       manifest.production.isolatedManagedUatAcceptance.acceptanceEvidenceSha256,
     );
+  });
+
+  it("hash-pins non-dispatching public-shopping admission gate 115", () => {
+    const entry = manifest.production.authoredUnappliedVersions.find(
+      ({ version }: { version: string }) => version === "202608260115",
+    );
+    expect(entry).toEqual({
+      version: "202608260115",
+      filename:
+        "202608260115_flight_consumer_live_public_shopping_admission.sql",
+      forwardSha256:
+        "06f956ac88cba042d34ae7ac1c8a628dcdee2ea76936ada1cf7d7577c863cd63",
+      rollbackSha256:
+        "f1687425757d5856638a2f97d61d06c31cc77980e35113cbc0fa1ab7c8efc911",
+      status: "authored_unapplied",
+      targetEnvironment: "production_dark_only",
+      objectVerification: "not_run_production",
+      managedUatVerification: "not_run",
+      localPostgresqlVerification:
+        "passed_pglite_0_5_7_postgresql_18_3",
+      implementationArtifact:
+        "lib/flights/consumer-production/public-shopping-admission.server.ts",
+      implementationArtifactSha256:
+        "1fe0e5d1cb7eedd9f77b1f1f5ec1c12c5d1fc7c50d7c1d67ddfecad591b32e6a",
+      contractArtifact:
+        "lib/flights/consumer-production/public-shopping-contract.ts",
+      contractArtifactSha256:
+        "cb48e105a90f185d893e19623064842d0e5de7df3813f9750826f70b0d5564d5",
+      verificationArtifact:
+        "scripts/verify-flight-consumer-public-shopping-admission-pglite.mjs",
+      verificationArtifactSha256:
+        "f6cb390c70958e134ad14eb12a40011aa812412c914b5f6419c05e4c20fccaf4",
+      documentationArtifact:
+        "docs/FLIGHT_CONSUMER_PRODUCTION_PUBLIC_SHOPPING_ADMISSION.md",
+      documentationArtifactSha256:
+        "40096e152eb71eb000b8d3dba96f34e5aa922aa69c72f977d69edf7db6266f76",
+      providerRequests: 0,
+      stripeRequests: 0,
+      routeExposed: false,
+      publicConsumerExposure: false,
+      providerTransportImplemented: false,
+      trustedIdentityCapabilityRequired: true,
+      preRpcAuthenticatedLimiterRequired: true,
+      refusalEvidenceCoalesced: true,
+      trustedClockAssignedAfterSerializationLock: true,
+      captureAuthorized: false,
+      refundAuthorized: false,
+      consumerReleaseEnabled: false,
+      blindRetryAuthorized: false,
+      budgetReservationCapability: "default_off_non_dispatching",
+      claimGrantsDispatchAuthority: false,
+      applyAuthority: "not_granted",
+      productionApplyAuthority: "not_granted",
+    });
+    if (!entry) throw new Error("Production-local migration 115 is missing");
+    const rollbackFilename = entry.filename.replace(/\.sql$/, ".rollback.sql");
+    expect(sha256(`supabase/production-migrations/${entry.filename}`))
+      .toBe(entry.forwardSha256);
+    expect(sha256(`supabase/production-rollbacks/${rollbackFilename}`))
+      .toBe(entry.rollbackSha256);
+    for (const [artifact, expectedSha256] of [
+      [entry.implementationArtifact, entry.implementationArtifactSha256],
+      [entry.contractArtifact, entry.contractArtifactSha256],
+      [entry.verificationArtifact, entry.verificationArtifactSha256],
+      [entry.documentationArtifact, entry.documentationArtifactSha256],
+    ] as const) {
+      expect(sha256(artifact)).toBe(expectedSha256);
+    }
+    expect(entry.version < "202608260120").toBe(true);
+    expect(entry.version < "202608260200").toBe(true);
+    expect(manifest.production.versions.some(
+      ({ version }: { version: string }) => version === entry.version,
+    )).toBe(false);
+    expect(manifest.production.isolatedManagedUatAcceptance.acceptedVersions)
+      .not.toContain(entry.version);
+  });
+
+  it("hash-pins route-free public offer projection gates 116 through 118", () => {
+    const expected = [
+      {
+        version: "202608260116",
+        filename:
+          "202608260116_flight_consumer_live_public_offer_projection.sql",
+        forwardSha256:
+          "64237bd6afc967349940805876a1e432c78d21801ac520f6990f2f14053423d0",
+        rollbackSha256:
+          "03640a468e17bd8213006a2f726dab40c740a7b6bd5855773e0a808acc90c232",
+        artifacts: [
+          [
+            "lib/flights/consumer-production/duffel-live-public-offer-projection.server.ts",
+            "18bd2bc7268124585d468ca9da02c7073f945ae24023e247710ae65877ad3ea9",
+          ],
+          [
+            "lib/flights/consumer-production/public-offer-projection-contract.ts",
+            "2b342ef8dcc47862e17116b00c877d012f0cce5d167c103328ee3f3b09104732",
+          ],
+          [
+            "lib/flights/consumer-production/public-offer-projection-persistence.server.ts",
+            "1aef94774cc22f0bee5774bd4fb230866443a9c35265dc6b9f5e930ec3d4bbd5",
+          ],
+          [
+            "lib/flights/consumer-production/public-offer-reference-encryption-port.server.ts",
+            "dd9145768e30022efcc5fd30c8e5df4fcc2153612e28abd0f3ceb9a9b92b135a",
+          ],
+          [
+            "scripts/verify-flight-consumer-public-offer-projection-pglite.mjs",
+            "2d1afb7ac6412cbe2ff3d80f199b83e61c8d3baa88bee985894c1b88e8b508c2",
+          ],
+          [
+            "docs/FLIGHT_CONSUMER_PRODUCTION_PUBLIC_OFFER_PROJECTION_GATE.md",
+            "1b3d0fd401fe79a2e7a151e3079eb61b0839e23fe4f6aa44e661ba7b6c7fdbb0",
+          ],
+        ],
+      },
+      {
+        version: "202608260117",
+        filename:
+          "202608260117_flight_consumer_live_public_offer_reference_retention.sql",
+        forwardSha256:
+          "1881c1e02e43a8e17129090ff41deb44f1f80feb4277905d40bd349131f727df",
+        rollbackSha256:
+          "7e763fbf14350a78d731793bc545c82186f0c6d9f45326062a6aec81bab6d77e",
+        artifacts: [
+          [
+            "lib/flights/consumer-production/duffel-live-public-offer-reference-encryption.server.ts",
+            "00ca100ee0e9bdc56e1d4fcdd0187dace928929eac0a797cef0092210e0e2532",
+          ],
+          [
+            "lib/flights/consumer-production/public-offer-reference-retention.server.ts",
+            "3facb6805eada5ca5de4f6f26cf3426395f16cb5f37c24dd0a9a6a87aedbe723",
+          ],
+          [
+            "scripts/verify-flight-consumer-public-offer-reference-retention-pglite.mjs",
+            "c298d2b8932e5ecbc8a9e874365bc3634f3f9e8d761340d87370dc8fa80e6ee0",
+          ],
+          [
+            "docs/FLIGHT_CONSUMER_PRODUCTION_PUBLIC_OFFER_REFERENCE_RETENTION_GATE.md",
+            "f414c5a5b5c011e83552f0a979f0f27fd880d0c299b1247d77a50e0ccdb686cf",
+          ],
+        ],
+      },
+      {
+        version: "202608260118",
+        filename:
+          "202608260118_flight_consumer_live_duffel_offer_source_conflict_repair.sql",
+        forwardSha256:
+          "7bc225346c6b55c8a0c8f7b150a44c20c746bed092ac3a6e4791d89dddeda84f",
+        rollbackSha256:
+          "ca145d0d4e0559a3c983fbc0a7b702986d3caaf175292b23d0df5ebf7f8df102",
+        artifacts: [
+          [
+            "scripts/verify-flight-consumer-duffel-offer-source-repair-pglite.mjs",
+            "271fc80e5b9269963e1dee697e65b54780bcc81ce6c830b4477476f11ac5dd32",
+          ],
+          [
+            "docs/FLIGHT_CONSUMER_PRODUCTION_DUFFEL_OFFER_SOURCE_REPAIR_GATE_118.md",
+            "34e36fa60736ec625d338a0fbf384f0edbf7d79ba799f3931c4b9d81a32679d0",
+          ],
+          [
+            "tests/flight-consumer-live-duffel-offer-source-conflict-repair-migration.test.ts",
+            "023d9eaf13cb7d0b57c1b8a1e1b30d4c2ccdf5f7eceb4993b1b9813a98712281",
+          ],
+        ],
+      },
+    ] as const;
+
+    for (const gate of expected) {
+      const entry = manifest.production.authoredUnappliedVersions.find(
+        ({ version }: { version: string }) => version === gate.version,
+      );
+      if (!entry) throw new Error(`Production-local migration ${gate.version} is missing`);
+      expect(entry).toMatchObject({
+        version: gate.version,
+        filename: gate.filename,
+        forwardSha256: gate.forwardSha256,
+        rollbackSha256: gate.rollbackSha256,
+        status: "authored_unapplied",
+        targetEnvironment: "production_dark_only",
+        objectVerification: "not_run_production",
+        managedUatVerification: "not_run",
+        providerRequests: 0,
+        stripeRequests: 0,
+        routeExposed: false,
+        publicConsumerExposure: false,
+        captureAuthorized: false,
+        refundAuthorized: false,
+        consumerReleaseEnabled: false,
+        applyAuthority: "not_granted",
+        productionApplyAuthority: "not_granted",
+      });
+      expect(sha256(`supabase/production-migrations/${gate.filename}`))
+        .toBe(gate.forwardSha256);
+      expect(sha256(
+        `supabase/production-rollbacks/${gate.filename.replace(/\.sql$/, ".rollback.sql")}`,
+      )).toBe(gate.rollbackSha256);
+      for (const [artifact, expectedSha256] of gate.artifacts) {
+        expect(sha256(artifact)).toBe(expectedSha256);
+      }
+      expect(entry.version < "202608260120").toBe(true);
+      expect(entry.version < "202608260200").toBe(true);
+      expect(manifest.production.versions.some(
+        ({ version }: { version: string }) => version === entry.version,
+      )).toBe(false);
+      expect(manifest.production.isolatedManagedUatAcceptance.acceptedVersions)
+        .not.toContain(entry.version);
+    }
+
+    const gate116 = manifest.production.authoredUnappliedVersions.find(
+      ({ version }: { version: string }) => version === "202608260116",
+    );
+    expect(gate116).toMatchObject({
+      strictProviderNormalization: true,
+      batchDigestRecomputedByDatabase: true,
+      scopeResponseAndSourceAccountingBound: true,
+      topologyAndTravelDatesBound: true,
+      zeroOfferBindingPrerequisiteVersion: "202608260118",
+      plaintextProviderOfferIdPersisted: false,
+    });
+    const gate117 = manifest.production.authoredUnappliedVersions.find(
+      ({ version }: { version: string }) => version === "202608260117",
+    );
+    expect(gate117).toMatchObject({
+      envKeyAdapterImplemented: true,
+      kmsKeyringImplemented: false,
+      decryptPathImplemented: false,
+      keyRotationImplemented: false,
+      purgeSchedulerImplemented: false,
+      backupCryptoShredImplemented: false,
+      plaintextProviderOfferIdPersisted: false,
+    });
+    const gate118 = manifest.production.authoredUnappliedVersions.find(
+      ({ version }: { version: string }) => version === "202608260118",
+    );
+    expect(gate118).toMatchObject({
+      preservedGate105ForwardSha256:
+        "c10757ec05ab4c1f55b9da881e37c74679cc8a44c6e0afe3298ae1d7da8249b9",
+      gate105AmbiguityRepairedByStableConstraint: true,
+      immutableZeroAndNonzeroResponseHeader: true,
+      completionGuardRequiresExactHeader: true,
+      sourceListingRequiresExactHeader: true,
+      crossResponseOrphanRefused: true,
+      crossScopeOrphanRefused: true,
+    });
   });
 
   it("reserves car versions without assigning any of them to flight", () => {
