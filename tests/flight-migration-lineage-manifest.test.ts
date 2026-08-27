@@ -200,6 +200,7 @@ describe("flight migration lineage freeze manifest", () => {
       "202608260116",
       "202608260117",
       "202608260118",
+      "202608260119",
     ]);
 
     const rollbackFilename = entry.filename.replace(/\.sql$/, ".rollback.sql");
@@ -238,6 +239,7 @@ describe("flight migration lineage freeze manifest", () => {
       "202608260116",
       "202608260117",
       "202608260118",
+      "202608260119",
     ]);
     expect(authoredVersions.some((version: string) => appliedVersions.has(version)))
       .toBe(false);
@@ -938,6 +940,101 @@ describe("flight migration lineage freeze manifest", () => {
       crossResponseOrphanRefused: true,
       crossScopeOrphanRefused: true,
     });
+  });
+
+  it("hash-pins route-free public-shopping dispatch gate 119", () => {
+    const entry = manifest.production.authoredUnappliedVersions.find(
+      ({ version }: { version: string }) => version === "202608260119",
+    );
+    expect(entry).toEqual({
+      version: "202608260119",
+      filename:
+        "202608260119_flight_consumer_live_public_shopping_dispatch.sql",
+      forwardSha256:
+        "51329d4d4d95d5b8c0e7a90d239c760c0ce432e8766e3319ae3c02f31cf2269c",
+      rollbackSha256:
+        "66be858df46aa4495bfef405ec17013598daa57a70bde55d92ae8e480e03f14d",
+      status: "authored_unapplied",
+      targetEnvironment: "production_dark_only",
+      objectVerification: "not_run_production",
+      managedUatVerification: "not_run",
+      localPostgresqlVerification:
+        "passed_exact_stack_pglite_0_5_7_postgresql_18_3",
+      implementationArtifact:
+        "lib/flights/consumer-production/public-shopping-dispatch.server.ts",
+      implementationArtifactSha256:
+        "1bac77f6f001ded146340d9b1c81bb0ee3c3ebe4350521bb804907ed75fd0b08",
+      persistenceArtifact:
+        "lib/flights/consumer-production/public-shopping-dispatch-persistence.server.ts",
+      persistenceArtifactSha256:
+        "e8fe8708f6c67f6ab4e121287ba813a5dff2af2579efe0e2bae92611f4b54852",
+      verificationArtifact:
+        "scripts/verify-flight-consumer-public-shopping-dispatch-pglite.mjs",
+      verificationArtifactSha256:
+        "8be1574ed607dc4125a3a7f98a685e0c9fb64cfb058c173bdcfca51f1113b623",
+      documentationArtifact:
+        "docs/FLIGHT_CONSUMER_PRODUCTION_PUBLIC_SHOPPING_DISPATCH_GATE_119.md",
+      documentationArtifactSha256:
+        "eb8c52afa99c019ccd53cc1e66916088ba3db2a44475f579c9298e1c40691acc",
+      runtimeTestArtifact:
+        "tests/flight-consumer-production-public-shopping-dispatch.test.ts",
+      runtimeTestArtifactSha256:
+        "9b4570ac260b9f3bc7898ad2179366accd564be19f61e059a41868f5bbb71c8d",
+      migrationTestArtifact:
+        "tests/flight-consumer-live-public-shopping-dispatch-migration.test.ts",
+      migrationTestArtifactSha256:
+        "b3e7b1140516528b2ea67d09a5940cd9ad140a51c32032c434a4956a7166e7c1",
+      providerRequests: 0,
+      stripeRequests: 0,
+      routeExposed: false,
+      publicConsumerExposure: false,
+      providerTransportImplemented: true,
+      defaultDependencyComposerImplemented: false,
+      trustedCredentialAndAccountBoundRuntime: true,
+      exactGate115AdmissionAndSearchBound: true,
+      atomicAdmissionAttemptDispatchReceipt: true,
+      exactSucceededReplayWithoutRedispatch: true,
+      boundedTimedIdentityResponseRequired: true,
+      zeroAndNonzeroExactStackVerified: true,
+      staleDispatchReaperImplemented: false,
+      lateResultReconciliationImplemented: false,
+      blindRetryAuthorized: false,
+      orderAuthorized: false,
+      paymentAuthorized: false,
+      captureAuthorized: false,
+      refundAuthorized: false,
+      ticketingAuthorized: false,
+      servicingAuthorized: false,
+      consumerReleaseEnabled: false,
+      applyAuthority: "not_granted",
+      productionApplyAuthority: "not_granted",
+    });
+    if (!entry) throw new Error("Production-local migration 119 is missing");
+    expect(sha256(`supabase/production-migrations/${entry.filename}`))
+      .toBe(entry.forwardSha256);
+    expect(sha256(
+      `supabase/production-rollbacks/${entry.filename.replace(/\.sql$/, ".rollback.sql")}`,
+    )).toBe(entry.rollbackSha256);
+    for (const [artifact, expectedSha256] of [
+      [entry.implementationArtifact, entry.implementationArtifactSha256],
+      [entry.persistenceArtifact, entry.persistenceArtifactSha256],
+      [entry.verificationArtifact, entry.verificationArtifactSha256],
+      [entry.documentationArtifact, entry.documentationArtifactSha256],
+      [entry.runtimeTestArtifact, entry.runtimeTestArtifactSha256],
+      [entry.migrationTestArtifact, entry.migrationTestArtifactSha256],
+    ] as const) {
+      expect(sha256(artifact)).toBe(expectedSha256);
+    }
+    expect(readFileSync(".env.example", "utf8")).toContain(
+      "FLIGHT_CONSUMER_PRODUCTION_PUBLIC_SHOPPING_DISPATCH_ENABLED=false",
+    );
+    expect(entry.version < "202608260120").toBe(true);
+    expect(entry.version < "202608260200").toBe(true);
+    expect(manifest.production.versions.some(
+      ({ version }: { version: string }) => version === entry.version,
+    )).toBe(false);
+    expect(manifest.production.isolatedManagedUatAcceptance.acceptedVersions)
+      .not.toContain(entry.version);
   });
 
   it("reserves car versions without assigning any of them to flight", () => {
