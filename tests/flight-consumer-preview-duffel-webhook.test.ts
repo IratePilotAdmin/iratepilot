@@ -12,6 +12,7 @@ import {
   FlightConsumerPreviewDuffelWebhookError,
   type FlightConsumerPreviewDuffelOrderConvergencePort,
   type FlightConsumerPreviewDuffelWebhookLedgerPort,
+  verifyFlightConsumerPreviewDuffelPing,
 } from "../lib/flights/consumer-preview/duffel-webhook.server";
 import { sha256FlightConsumerPreviewReference } from "../lib/flights/consumer-preview/reference-crypto.server";
 
@@ -541,6 +542,56 @@ describe("Consumer Preview Duffel webhook", () => {
     expect(port.recordUnlinked).not.toHaveBeenCalled();
     expect(port.enqueuePending).not.toHaveBeenCalled();
     expect(port.resolvePending).not.toHaveBeenCalled();
+  });
+
+  it("verifies signed pings before activation without authorizing non-ping processing", () => {
+    const ping = eventBody({ type: "ping.triggered" });
+    expect(verifyFlightConsumerPreviewDuffelPing(
+      { rawBody: ping, signature: signature(ping) },
+      { webhookSecret: secret, nowSeconds: () => nowSeconds },
+    )).toMatchObject({
+      decision: "verified_ping",
+      eventType: "ping.triggered",
+      linkedOrderId: null,
+      directMutationAuthorized: false,
+    });
+
+    expect(verifyFlightConsumerPreviewDuffelPing(
+      { rawBody: ping, signature: signature(ping, nowSeconds, "v2") },
+      { webhookSecret: secret, nowSeconds: () => nowSeconds },
+    )).toMatchObject({
+      decision: "verified_ping",
+      eventType: "ping.triggered",
+    });
+
+    const order = eventBody();
+    expect(verifyFlightConsumerPreviewDuffelPing(
+      { rawBody: order, signature: signature(order) },
+      { webhookSecret: secret, nowSeconds: () => nowSeconds },
+    )).toBeNull();
+    expect(() => verifyFlightConsumerPreviewDuffelPing(
+      { rawBody: ping, signature: `t=${nowSeconds},v1=${"0".repeat(64)}` },
+      { webhookSecret: secret, nowSeconds: () => nowSeconds },
+    )).toThrow(FlightConsumerPreviewDuffelWebhookError);
+  });
+
+  it("fails preactivation ping verification closed for stale, live, or unconfigured input", () => {
+    const ping = eventBody({ type: "ping.triggered" });
+    expect(() => verifyFlightConsumerPreviewDuffelPing(
+      { rawBody: ping, signature: signature(ping, nowSeconds - 301) },
+      { webhookSecret: secret, nowSeconds: () => nowSeconds },
+    )).toThrow(expect.objectContaining({ status: 400 }));
+
+    const livePing = eventBody({ type: "ping.triggered", liveMode: true });
+    expect(() => verifyFlightConsumerPreviewDuffelPing(
+      { rawBody: livePing, signature: signature(livePing) },
+      { webhookSecret: secret, nowSeconds: () => nowSeconds },
+    )).toThrow(expect.objectContaining({ status: 400 }));
+
+    expect(() => verifyFlightConsumerPreviewDuffelPing(
+      { rawBody: ping, signature: signature(ping) },
+      { webhookSecret: "", nowSeconds: () => nowSeconds },
+    )).toThrow(expect.objectContaining({ status: 503 }));
   });
 
   it("accepts a live-style v2 ping with six-digit created_at without any ledger operation", async () => {

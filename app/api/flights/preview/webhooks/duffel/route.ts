@@ -4,6 +4,7 @@ import {
   createFlightConsumerPreviewDuffelWebhookWorkflow,
   FLIGHT_CONSUMER_PREVIEW_DUFFEL_WEBHOOK_MAX_BYTES,
   FlightConsumerPreviewDuffelWebhookError,
+  verifyFlightConsumerPreviewDuffelPing,
 } from "@/lib/flights/consumer-preview/duffel-webhook.server";
 import { queueFlightConsumerPreviewNotification } from "@/lib/email/flight-notification-delivery.server";
 
@@ -35,6 +36,13 @@ export async function POST(request: Request) {
     rawBody = new Uint8Array(await request.arrayBuffer());
     if (rawBody.byteLength < 2 || rawBody.byteLength > FLIGHT_CONSUMER_PREVIEW_DUFFEL_WEBHOOK_MAX_BYTES) {
       return NextResponse.json({ error: "Invalid webhook." }, { status: 400 });
+    }
+    const ping = verifyFlightConsumerPreviewDuffelPing({ rawBody, signature });
+    if (ping !== null) {
+      return NextResponse.json({ received: true }, {
+        status: 200,
+        headers: { "Cache-Control": "no-store" },
+      });
     }
     const workflow = await createFlightConsumerPreviewDuffelWebhookWorkflow({
       onOrderTicketed: ({ customerId, orderId }) => {

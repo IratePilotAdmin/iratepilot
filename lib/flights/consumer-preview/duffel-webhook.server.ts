@@ -413,6 +413,67 @@ function signedEnvelopeDiagnostic(error: unknown) {
   return "signed_envelope_json_shape";
 }
 
+function verifyIncomingDuffelSandboxEvent(input: Readonly<{
+  rawBody: unknown;
+  signature: unknown;
+  webhookSecret: unknown;
+  nowSeconds: unknown;
+}>) {
+  if (
+    !(input.rawBody instanceof Uint8Array)
+    || input.rawBody.byteLength < 2
+    || input.rawBody.byteLength > FLIGHT_CONSUMER_PREVIEW_DUFFEL_WEBHOOK_MAX_BYTES
+    || typeof input.signature !== "string"
+    || input.signature.length < 8
+    || input.signature.length > 4_096
+  ) throw new FlightConsumerPreviewDuffelWebhookError(400, "request_contract_rejected");
+  if (
+    typeof input.webhookSecret !== "string"
+    || input.webhookSecret.length < 16
+    || input.webhookSecret.length > 512
+    || typeof input.nowSeconds !== "number"
+    || !Number.isSafeInteger(input.nowSeconds)
+    || input.nowSeconds < 0
+  ) throw new FlightConsumerPreviewDuffelWebhookError();
+  const rawBody = Uint8Array.from(input.rawBody);
+  const verification = verifyDuffelWebhookSignature({
+    rawBody,
+    signatureHeader: input.signature,
+    secret: input.webhookSecret,
+    nowSeconds: input.nowSeconds,
+  });
+  if (!verification.verified) {
+    rawBody.fill(0);
+    throw new FlightConsumerPreviewDuffelWebhookError(
+      400,
+      `signature_${verification.reason}`,
+    );
+  }
+  try {
+    return Object.freeze({
+      event: sanitizeVerifiedDuffelSandboxWebhook(rawBody, verification),
+      rawBody,
+    });
+  } catch (error) {
+    rawBody.fill(0);
+    throw new FlightConsumerPreviewDuffelWebhookError(
+      400,
+      signedEnvelopeDiagnostic(error),
+    );
+  }
+}
+
+function verifiedPingResult(): FlightConsumerPreviewDuffelWebhookResult {
+  return Object.freeze({
+    version: "flight-consumer-preview-duffel-webhook-result-v1" as const,
+    decision: "verified_ping" as const,
+    eventType: "ping.triggered" as const,
+    linkedOrderId: null,
+    reconciliationRequired: true as const,
+    directMutationAuthorized: false as const,
+  });
+}
+
 function newWebhookLeaseTokenSha256() {
   return sha256(randomBytes(32));
 }
@@ -495,52 +556,24 @@ export function createInjectedFlightConsumerPreviewDuffelWebhookWorkflow(input: 
 
   return Object.freeze({
     async ingest(untrusted: Readonly<{ rawBody: Uint8Array; signature: string }>) {
+      let verifiedRawBody: Uint8Array | null = null;
       try {
-        if (
-          !(untrusted.rawBody instanceof Uint8Array)
-          || untrusted.rawBody.byteLength < 2
-          || untrusted.rawBody.byteLength > FLIGHT_CONSUMER_PREVIEW_DUFFEL_WEBHOOK_MAX_BYTES
-          || typeof untrusted.signature !== "string"
-          || untrusted.signature.length < 8
-          || untrusted.signature.length > 4_096
-        ) throw new FlightConsumerPreviewDuffelWebhookError(400, "request_contract_rejected");
-        const rawBody = Uint8Array.from(untrusted.rawBody);
-        const verification = verifyDuffelWebhookSignature({
-          rawBody,
-          signatureHeader: untrusted.signature,
-          secret: input.webhookSecret,
+        const verified = verifyIncomingDuffelSandboxEvent({
+          rawBody: untrusted.rawBody,
+          signature: untrusted.signature,
+          webhookSecret: input.webhookSecret,
           nowSeconds: input.nowSeconds(),
         });
-        if (!verification.verified) {
-          throw new FlightConsumerPreviewDuffelWebhookError(
-            400,
-            `signature_${verification.reason}`,
-          );
-        }
-        let event;
-        try {
-          event = sanitizeVerifiedDuffelSandboxWebhook(rawBody, verification);
-        } catch (error) {
-          throw new FlightConsumerPreviewDuffelWebhookError(
-            400,
-            signedEnvelopeDiagnostic(error),
-          );
-        }
+        verifiedRawBody = verified.rawBody;
+        const event = verified.event;
         if (event.eventType === "ping.triggered") {
-          return Object.freeze({
-            version: "flight-consumer-preview-duffel-webhook-result-v1" as const,
-            decision: "verified_ping" as const,
-            eventType: "ping.triggered" as const,
-            linkedOrderId: null,
-            reconciliationRequired: true as const,
-            directMutationAuthorized: false as const,
-          });
+          return verifiedPingResult();
         }
         if (!FLIGHT_CONSUMER_PREVIEW_DUFFEL_WEBHOOK_EVENTS.includes(
           event.eventType as SupportedEventType,
         )) throw new FlightConsumerPreviewDuffelWebhookError(400, "unsupported_event_type");
         const eventType = event.eventType as SupportedEventType;
-        const references = providerReferences(rawBody, eventType);
+        const references = providerReferences(verifiedRawBody, eventType);
         const providerOrderRefSha256 = references.providerOrderId === null
           ? null
           : sha256FlightConsumerPreviewReference({
@@ -1001,9 +1034,42 @@ export function createInjectedFlightConsumerPreviewDuffelWebhookWorkflow(input: 
       } catch (error) {
         if (error instanceof FlightConsumerPreviewDuffelWebhookError) throw error;
         throw new FlightConsumerPreviewDuffelWebhookError();
+      } finally {
+        verifiedRawBody?.fill(0);
       }
     },
   });
+}
+
+export function verifyFlightConsumerPreviewDuffelPing(
+  untrusted: Readonly<{ rawBody: Uint8Array; signature: string }>,
+  dependencies: Readonly<{
+    webhookSecret: string;
+    nowSeconds: () => number;
+  }> = {
+    webhookSecret: process.env.FLIGHT_CONSUMER_PREVIEW_DUFFEL_WEBHOOK_SECRET ?? "",
+    nowSeconds: () => Math.floor(Date.now() / 1_000),
+  },
+): FlightConsumerPreviewDuffelWebhookResult | null {
+  try {
+    if (typeof dependencies.nowSeconds !== "function") {
+      throw new FlightConsumerPreviewDuffelWebhookError();
+    }
+    const verified = verifyIncomingDuffelSandboxEvent({
+      rawBody: untrusted.rawBody,
+      signature: untrusted.signature,
+      webhookSecret: dependencies.webhookSecret,
+      nowSeconds: dependencies.nowSeconds(),
+    });
+    try {
+      return verified.event.eventType === "ping.triggered" ? verifiedPingResult() : null;
+    } finally {
+      verified.rawBody.fill(0);
+    }
+  } catch (error) {
+    if (error instanceof FlightConsumerPreviewDuffelWebhookError) throw error;
+    throw new FlightConsumerPreviewDuffelWebhookError();
+  }
 }
 
 export async function createFlightConsumerPreviewDuffelWebhookWorkflow(input: Readonly<{

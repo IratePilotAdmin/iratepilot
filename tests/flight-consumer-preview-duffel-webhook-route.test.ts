@@ -15,6 +15,7 @@ const state = vi.hoisted(() => {
     MockWebhookError,
     ingest: vi.fn(),
     factory: vi.fn(),
+    verifyPing: vi.fn(),
     after: vi.fn(),
     rawBodies: [] as Uint8Array[],
   };
@@ -31,6 +32,7 @@ vi.mock("@/lib/flights/consumer-preview/duffel-webhook.server", () => ({
   FLIGHT_CONSUMER_PREVIEW_DUFFEL_WEBHOOK_MAX_BYTES: 262_144,
   FlightConsumerPreviewDuffelWebhookError: state.MockWebhookError,
   createFlightConsumerPreviewDuffelWebhookWorkflow: state.factory,
+  verifyFlightConsumerPreviewDuffelPing: state.verifyPing,
 }));
 
 import { POST, maxDuration, runtime } from "../app/api/flights/preview/webhooks/duffel/route";
@@ -72,6 +74,7 @@ describe("Flight Consumer Preview Duffel webhook Route Handler", () => {
   beforeEach(() => {
     state.ingest.mockReset();
     state.factory.mockReset();
+    state.verifyPing.mockReset();
     state.after.mockReset();
     state.rawBodies.length = 0;
     state.ingest.mockImplementation(async ({ rawBody }: { rawBody: Uint8Array }) => {
@@ -79,6 +82,7 @@ describe("Flight Consumer Preview Duffel webhook Route Handler", () => {
       return result("processed");
     });
     state.factory.mockResolvedValue({ ingest: state.ingest });
+    state.verifyPing.mockReturnValue(null);
   });
 
   it("runs in Node and forwards the exact body bytes and signature", async () => {
@@ -91,6 +95,51 @@ describe("Flight Consumer Preview Duffel webhook Route Handler", () => {
     expect(new TextDecoder().decode(state.rawBodies[0])).toBe(rawBody);
     expect(call.signature).toBe(signature);
     await expect(response.json()).resolves.toEqual({ received: true });
+  });
+
+  it("acknowledges a verified ping before loading runtime or database authority", async () => {
+    state.verifyPing.mockReturnValueOnce({
+      ...result("verified_ping"),
+      eventType: "ping.triggered",
+      linkedOrderId: null,
+    });
+
+    const response = await POST(request());
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ received: true });
+    expect(state.verifyPing).toHaveBeenCalledTimes(1);
+    const call = state.verifyPing.mock.calls[0]![0] as {
+      rawBody: Uint8Array;
+      signature: string;
+    };
+    expect(call.rawBody).toBeInstanceOf(Uint8Array);
+    expect(call.rawBody.byteLength).toBe(new TextEncoder().encode(rawBody).byteLength);
+    expect(call.signature).toBe(signature);
+    expect(state.factory).not.toHaveBeenCalled();
+    expect(state.ingest).not.toHaveBeenCalled();
+  });
+
+  it("keeps a verified non-ping event behind the locked runtime authority", async () => {
+    state.verifyPing.mockReturnValueOnce(null);
+    state.factory.mockRejectedValueOnce(new state.MockWebhookError(
+      503,
+      "workflow_unavailable",
+    ));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    const response = await POST(request());
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({ error: "Webhook could not be processed." });
+    expect(state.verifyPing).toHaveBeenCalledTimes(1);
+    expect(state.factory).toHaveBeenCalledTimes(1);
+    expect(state.ingest).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith(
+      "[flight-consumer-preview] Duffel webhook workflow rejected",
+      { diagnostic: "workflow_unavailable", status: 503 },
+    );
+    warn.mockRestore();
   });
 
   it("returns retryable 503 for a nonterminal processing lease and 200 for terminal outcomes", async () => {
