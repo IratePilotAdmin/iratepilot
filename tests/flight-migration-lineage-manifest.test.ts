@@ -164,7 +164,7 @@ describe("flight migration lineage freeze manifest", () => {
       acceptanceEvidence:
         "docs/evidence/FLIGHT_CONSUMER_STRIPE_TEST_EXECUTION_JOURNAL_POSTGRES_ACCEPTANCE_2026-08-26.json",
       acceptanceEvidenceSha256:
-        "8cf38983ea74af770bfa96c7e85581c9feb23e1df2f0075a5e0f7375a78b8710",
+        "72e79220dd96050ef9dce9c0c809dc3ea4a720dc481c85c11a88eb20c13f37bc",
       applyAuthority: "not_granted",
       productionApplyAuthority: "not_granted",
     }]);

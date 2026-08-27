@@ -39,15 +39,19 @@
     "providerTraffic": false,
     "stripeTraffic": false,
     "duffelTraffic": false,
-    "paymentActivity": false,
-    "captureActivity": false,
-    "refundActivity": false,
+    "providerPaymentActivity": false,
+    "providerCaptureActivity": false,
+    "providerRefundActivity": false,
+    "syntheticJournalRowsWritten": true,
+    "syntheticPaymentAttemptRowsWritten": 4,
+    "syntheticWebhookEventRowsWritten": 3,
+    "syntheticPaymentObservationRowsWritten": 4,
     "bookingActivity": false,
     "ticketingActivity": false,
     "credentialsRead": false,
     "rawIdentifiersStored": false,
     "rawPayloadsStored": false,
-    "paymentDataStored": false
+    "sensitivePaymentMethodDataStored": false
   },
   "verification": {
     "freshMigrationApplies": 2,
