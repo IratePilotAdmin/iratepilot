@@ -195,7 +195,10 @@ describe("temporary Consumer Preview Duffel webhook bootstrap", () => {
       cache: "no-store",
       redirect: "error",
     });
-    expect("body" in pingRequest).toBe(false);
+    expect(new Headers(pingRequest.headers).get("content-type")).toBe(
+      "application/json",
+    );
+    expect(JSON.parse(pingRequest.body as string)).toEqual({});
     expect(JSON.stringify(result)).not.toContain(webhookId);
     expect(JSON.stringify(result)).not.toContain(bypassSecret);
   });

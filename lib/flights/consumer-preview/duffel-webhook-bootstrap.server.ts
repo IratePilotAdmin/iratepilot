@@ -308,7 +308,11 @@ async function pingExactTestWebhook(input: Readonly<{
   const pingUrl = `${DUFFEL_API_BASE_URL}/air/webhooks/${input.webhook.id}/actions/ping`;
   const response = await input.fetcher(pingUrl, {
     method: "POST",
-    headers: requestHeaders(input.accessToken, input.correlationId),
+    headers: {
+      ...requestHeaders(input.accessToken, input.correlationId),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({}),
     redirect: "error",
     cache: "no-store",
     signal: AbortSignal.timeout(requestTimeoutMs),
