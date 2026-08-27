@@ -22,6 +22,17 @@ The guarded factory accepts an explicit provider executor and exact runtime
 bindings only; authorization, payment, settlement, ticketing, and result
 validation remain enforced by the existing flight runtime safety boundary.
 
+## Next activation gate
+
+`lib/flights/connector-activation-readiness.ts` records ten separately owned
+activation gates for each connector: provider decision, contract/authority,
+credentials, sandbox access, shopping certification, order/ticketing
+certification, servicing certification, payment/settlement, security/privacy,
+and release approval. The current state is **0 of 10 for all 9 connectors**.
+Even complete checklist evidence does not authorize external traffic, ticketing,
+payment, or Production; those capabilities remain explicit runtime and release
+decisions.
+
 Adding a catalog entry does not complete provider onboarding. Each connector
 still needs a commercial agreement, approved credentials, airline coverage and
 ticketing authority, sandbox certification, servicing/support evidence, payment

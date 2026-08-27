@@ -6,6 +6,11 @@ import {
   flightBookingConnectorIds,
   getFlightBookingConnectorDefinition,
 } from "../lib/flights/booking-connectors";
+import {
+  buildFlightConnectorActivationReadiness,
+  flightConnectorActivationStages,
+  FLIGHT_CONNECTOR_ACTIVATION_MODE,
+} from "../lib/flights/connector-activation-readiness";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -72,8 +77,33 @@ describe("flight booking connector catalog", () => {
   it("surfaces the catalog in the protected administrator workspace", () => {
     const page = read("app/admin/flights/page.tsx");
     expect(page).toContain("GDS and airline adapter surfaces");
-    expect(page).toContain("flightBookingConnectorDefinitions.map");
-    expect(page).toContain("Not activated");
+    expect(page).toContain("buildFlightConnectorActivationReadiness");
+    expect(page).toContain("{connector.completedCount}/{connector.totalCount} gates");
     expect(page).not.toContain("connector.externalNetworkAccess = true");
+  });
+
+  it("keeps every connector at zero of ten activation gates by default", () => {
+    const readiness = buildFlightConnectorActivationReadiness();
+    expect(FLIGHT_CONNECTOR_ACTIVATION_MODE).toBe("catalogued_readiness_only");
+    expect(flightConnectorActivationStages).toHaveLength(10);
+    expect(readiness.totalConnectors).toBe(9);
+    expect(readiness.readyConnectorCount).toBe(0);
+    expect(readiness.liveConnectorCount).toBe(0);
+    expect(readiness.tracks.every((track) => track.completedCount === 0 && track.totalCount === 10)).toBe(true);
+    expect(readiness.tracks.every((track) => !track.externalNetworkAccess && !track.productionTrafficAuthorized)).toBe(true);
+  });
+
+  it("does not turn a completed checklist into external authorization", () => {
+    const evidence = Object.fromEntries(flightBookingConnectorIds.map((id) => [
+      id,
+      Object.fromEntries(flightConnectorActivationStages.map((stage) => [stage.id, true])),
+    ]));
+    const readiness = buildFlightConnectorActivationReadiness(evidence);
+    expect(readiness.readyConnectorCount).toBe(9);
+    expect(readiness.liveConnectorCount).toBe(0);
+    expect(readiness.externalNetworkAccess).toBe(false);
+    expect(readiness.productionTrafficAuthorized).toBe(false);
+    expect(readiness.ticketingAuthorized).toBe(false);
+    expect(readiness.paymentAuthorized).toBe(false);
   });
 });

@@ -19,7 +19,7 @@ import { buildFlightRehearsalAuthorizationReadiness, flightRehearsalAuthorizatio
 import { buildFlightRehearsalCloseoutDesign, flightRehearsalCloseoutArtifacts, flightRehearsalCloseoutSafeguards } from "@/lib/flights/rehearsal-closeout";
 import { buildFlightRehearsalExecutionControlDesign, flightRehearsalExecutionSafeguards, flightRehearsalExecutionStages } from "@/lib/flights/rehearsal-execution-control";
 import { buildFlightRehearsalPreflightDesign, flightRehearsalPreflightControls, flightRehearsalPreflightSafeguards } from "@/lib/flights/rehearsal-preflight";
-import { flightBookingConnectorDefinitions } from "@/lib/flights/booking-connectors";
+import { buildFlightConnectorActivationReadiness } from "@/lib/flights/connector-activation-readiness";
 import { buildFlightSupplierDueDiligence, flightSupplierContractLanes, flightSupplierEvidenceWorkstreams } from "@/lib/flights/supplier-due-diligence";
 import { buildFlightSupplierReadiness, flightCapabilityGroups, flightSupplierPaths } from "@/lib/flights/supplier-readiness";
 import { buildFlightSupplierSelectionPlan, flightSandboxAdapterOperations, flightSupplierSelectionCriteria } from "@/lib/flights/supplier-selection";
@@ -31,6 +31,7 @@ export const metadata: Metadata = {
 
 export default function Page() {
   const readiness = buildFlightSupplierReadiness();
+  const connectorReadiness = buildFlightConnectorActivationReadiness();
   const selection = buildFlightSupplierSelectionPlan();
   const diligence = buildFlightSupplierDueDiligence();
   const governance = buildFlightEvaluationGovernance();
@@ -1754,9 +1755,9 @@ export default function Page() {
         <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Connector catalog</p><h2 className="mt-2 text-2xl font-bold">GDS and airline adapter surfaces</h2></div><Network className="h-7 w-7 text-slate-400" /></div>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">The nine requested provider surfaces are catalogued for future diligence. Every entry is dark by default: no credential, endpoint, external request, booking, ticketing, payment, or live-traffic authority is implied.</p>
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {flightBookingConnectorDefinitions.map((connector) => (
-            <article key={connector.id} className="rounded-2xl border border-slate-200 bg-white p-6">
-              <div className="flex items-start justify-between gap-3"><h3 className="font-bold">{connector.label}</h3><span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-700">Not activated</span></div>
+          {connectorReadiness.tracks.map((connector) => (
+            <article key={connector.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <div className="flex items-start justify-between gap-3"><h3 className="font-bold">{connector.label}</h3><span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-700">{connector.completedCount}/{connector.totalCount} gates</span></div>
               <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{connector.category.replaceAll("_", " ")}</p>
               <p className="mt-3 text-sm leading-6 text-slate-600">{connector.notes}</p>
               <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500"><strong className="text-slate-700">Planned scope:</strong> {connector.plannedOperations.join(", ")}</p>
