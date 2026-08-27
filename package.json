@@ -14,6 +14,8 @@
     "test": "vitest run",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build",
     "commercial:sandbox-preflight": "node scripts/commercial-sandbox-preflight.mjs",
+    "flight:managed-104": "node scripts/manage-flight-consumer-stripe-test-journal-104.mjs",
+    "flight:render-managed-104": "node scripts/render-flight-consumer-stripe-test-journal-104-managed-sql.mjs",
     "preview:migrations": "node scripts/reconcile-preview-migrations.mjs"
   },
   "dependencies": {
