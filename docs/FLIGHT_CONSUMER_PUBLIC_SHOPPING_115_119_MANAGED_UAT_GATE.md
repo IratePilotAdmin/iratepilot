@@ -7,7 +7,7 @@
 This gate is limited to applying and verifying the exact production-local
 public-shopping migrations `202608260115` through `202608260119` in the
 isolated, data-less Supabase UAT project whose ref is
-`exipwtvyjaihsvdhsbbt`. It has no Production target and no default operation.
+`bzxqbvmrkmjyvudlspss`. It has no Production target and no default operation.
 
 The source boundary is commit
 `54b49dc3d4249d4358233a2b102cf12416396eb2`. Later migrations, including
@@ -35,11 +35,11 @@ The managed package must pin its own artifacts before any apply is authorized:
 
 | Required managed artifact | SHA-256 before authorization |
 | --- | --- |
-| `scripts/flight-consumer-public-shopping-115-119-managed-uat-preflight.sql` | `fe5e9f432a9de751df7d364462960d696ffef65ba082c85541049ed14e17c631` |
-| `scripts/flight-consumer-public-shopping-115-119-managed-uat-verification.sql` | `e0de70e0541008530b0cd43b6828f42d25fc091e1677529467bdbc004e4165f4` |
-| `scripts/manage-flight-consumer-public-shopping-115-119-uat.mjs` | `56dd3f31bcae39d67a857df5359596e49945096b60c32e153fea25b55ea6fe83` |
+| `scripts/flight-consumer-public-shopping-115-119-managed-uat-preflight.sql` | `6678c663c4579405c3f60bdfad5086e0da929eba3b19328af361fb6f94006ed6` |
+| `scripts/flight-consumer-public-shopping-115-119-managed-uat-verification.sql` | `23f727ab43728803ec60a7ffe15428727285d47372f25b433ed811462fe6562f` |
+| `scripts/manage-flight-consumer-public-shopping-115-119-uat.mjs` | `3362a2d38af5cea83a08b006b454dd28735686b08c40ab5d2a8826451af465fa` |
 | `scripts/render-flight-consumer-public-shopping-115-119-managed-uat-sql.mjs` | `14d502fc6c5f32cc95fbcf4ba4be30cce1010dff988e89a3becd7ddfd7dda9a8` |
-| `scripts/verify-flight-consumer-public-shopping-115-119-managed-uat-pglite.mjs` | `11b7dd591ce53c75aeef263f0b5b1b170e2b1b381caeb9962bd3476061216834` |
+| `scripts/verify-flight-consumer-public-shopping-115-119-managed-uat-pglite.mjs` | `b1ae4b1005aa804f5745741a2e37d7d02dac740ea1fa37d4e1a95e7bafcb50ad` |
 
 Do not execute a command in this runbook until those files exist, their hashes
 are independently recorded, and their tests pass.
@@ -49,7 +49,7 @@ are independently recorded, and their tests pass.
 | Property | Required value |
 | --- | --- |
 | Target kind | `isolated_uat` |
-| Supabase project ref | `exipwtvyjaihsvdhsbbt` |
+| Supabase project ref | `bzxqbvmrkmjyvudlspss` |
 | Branch | `iratepilot-flight-payment-uat-20260827` |
 | Database | `postgres` |
 | Database user | `postgres` |
@@ -59,9 +59,9 @@ are independently recorded, and their tests pass.
 | Migration-ledger policy | Objects applied without writing `supabase_migrations.schema_migrations` |
 
 The runner must accept only this target/ref. A direct connection must use
-`db.exipwtvyjaihsvdhsbbt.supabase.co`, port `5432`, database `postgres`, and
+`db.bzxqbvmrkmjyvudlspss.supabase.co`, port `5432`, database `postgres`, and
 user `postgres`. A managed Supabase pooler must use a
-`*.pooler.supabase.com` host and user `postgres.exipwtvyjaihsvdhsbbt`.
+`*.pooler.supabase.com` host and user `postgres.bzxqbvmrkmjyvudlspss`.
 Local databases, raw IPs, arbitrary URLs, arbitrary SQL paths, any other ref,
 and any port other than `5432` must be refused.
 
@@ -131,7 +131,7 @@ password supplied only through the shell environment. Never put a password or
 URL on the command line.
 
 ```powershell
-$env:FLIGHT_MANAGED_115_119_DB_HOST = 'db.exipwtvyjaihsvdhsbbt.supabase.co'
+$env:FLIGHT_MANAGED_115_119_DB_HOST = 'db.bzxqbvmrkmjyvudlspss.supabase.co'
 $env:FLIGHT_MANAGED_115_119_DB_PORT = '5432'
 $env:FLIGHT_MANAGED_115_119_DB_NAME = 'postgres'
 $env:FLIGHT_MANAGED_115_119_DB_USER = 'postgres'
@@ -157,7 +157,7 @@ node scripts/manage-flight-consumer-public-shopping-115-119-uat.mjs `
 
 It must stop unless all of the following are freshly observed:
 
-1. The target binding is exactly `exipwtvyjaihsvdhsbbt`, database and user are
+1. The target binding is exactly `bzxqbvmrkmjyvudlspss`, database and user are
    `postgres`, PostgreSQL is major 17, required Supabase roles exist, and the
    session can assume the reviewed `service_role` context.
 2. The accepted predecessor catalog through Gate 114 is present and exact.
@@ -207,8 +207,8 @@ rollback automatically.
 The exact confirmations are:
 
 ```text
-APPLY_115_119_OBJECTS_ONLY_exipwtvyjaihsvdhsbbt_NO_LEDGER
-ACCEPT_118_FORWARD_ONLY_exipwtvyjaihsvdhsbbt_NO_ROLLBACK
+APPLY_115_119_OBJECTS_ONLY_bzxqbvmrkmjyvudlspss_NO_LEDGER
+ACCEPT_118_FORWARD_ONLY_bzxqbvmrkmjyvudlspss_NO_ROLLBACK
 ```
 
 No runner implementation is acceptable if it crosses Gate 118 without the
@@ -227,7 +227,7 @@ Verification temporarily exercises only database RPC behavior inside one
 transaction and one named savepoint. Its exact confirmation is:
 
 ```text
-VERIFY_115_119_SAVEPOINT_ONLY_exipwtvyjaihsvdhsbbt_ZERO_RESIDUE
+VERIFY_115_119_SAVEPOINT_ONLY_bzxqbvmrkmjyvudlspss_ZERO_RESIDUE
 ```
 
 The verifier must check:
@@ -274,7 +274,7 @@ The resulting acceptance record must explicitly state:
 SQL Editor may be used only if no reviewed `psql` path is available and the
 operator has an authenticated session in the exact isolated UAT project. Before
 every query, verify the dashboard URL and editor header both show
-`exipwtvyjaihsvdhsbbt`. Use a new clean query for each preflight, each of the
+`bzxqbvmrkmjyvudlspss`. Use a new clean query for each preflight, each of the
 five migrations, each read-only checkpoint, and the final verifier.
 
 The renderer must generate target-bound, hash-pinned preflight/checkpoint/

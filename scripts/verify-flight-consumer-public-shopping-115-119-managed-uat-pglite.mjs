@@ -71,7 +71,7 @@ await db.exec(`
     'app.flight_managed_115_119_target_kind', 'isolated_uat', false
   );
   select set_config(
-    'app.flight_managed_115_119_project_ref', 'exipwtvyjaihsvdhsbbt', false
+    'app.flight_managed_115_119_project_ref', 'bzxqbvmrkmjyvudlspss', false
   );
 `);
 await db.exec(verification);

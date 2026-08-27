@@ -32,7 +32,7 @@ declare
 begin
   if row(v_target_kind, v_project_ref) is distinct from row(
     'isolated_uat'::text,
-    'exipwtvyjaihsvdhsbbt'::text
+    'bzxqbvmrkmjyvudlspss'::text
   ) then
     raise exception
       'FLIGHT_PUBLIC_SHOPPING_115_119_VERIFY_FAILED: target binding is absent or invalid';

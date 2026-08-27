@@ -12,7 +12,7 @@
   "templateNotice": "This file is an unexecuted evidence template. Null observation fields are intentional and must not be interpreted as PASS, acceptance, application, or verification.",
   "scope": {
     "targetKind": "isolated_uat",
-    "allowedProjectRef": "exipwtvyjaihsvdhsbbt",
+    "allowedProjectRef": "bzxqbvmrkmjyvudlspss",
     "migrationRange": "202608260115-202608260119",
     "expectedDisposition": "object_applied_not_ledgered_in_isolated_uat",
     "productionTargetPermitted": false,
@@ -28,7 +28,7 @@
   },
   "plannedTarget": {
     "provider": "Supabase",
-    "projectRef": "exipwtvyjaihsvdhsbbt",
+    "projectRef": "bzxqbvmrkmjyvudlspss",
     "branchName": "iratepilot-flight-payment-uat-20260827",
     "database": "postgres",
     "databaseUser": "postgres",
@@ -66,17 +66,17 @@
   "reviewedArtifacts": {
     "managedPreflightSql": {
       "path": "scripts/flight-consumer-public-shopping-115-119-managed-uat-preflight.sql",
-      "sha256": "fe5e9f432a9de751df7d364462960d696ffef65ba082c85541049ed14e17c631",
+      "sha256": "6678c663c4579405c3f60bdfad5086e0da929eba3b19328af361fb6f94006ed6",
       "hashVerifiedAtExecution": null
     },
     "managedVerificationSql": {
       "path": "scripts/flight-consumer-public-shopping-115-119-managed-uat-verification.sql",
-      "sha256": "e0de70e0541008530b0cd43b6828f42d25fc091e1677529467bdbc004e4165f4",
+      "sha256": "23f727ab43728803ec60a7ffe15428727285d47372f25b433ed811462fe6562f",
       "hashVerifiedAtExecution": null
     },
     "managedRunner": {
       "path": "scripts/manage-flight-consumer-public-shopping-115-119-uat.mjs",
-      "sha256": "56dd3f31bcae39d67a857df5359596e49945096b60c32e153fea25b55ea6fe83",
+      "sha256": "3362a2d38af5cea83a08b006b454dd28735686b08c40ab5d2a8826451af465fa",
       "hashVerifiedAtExecution": null
     },
     "sqlEditorRenderer": {
@@ -86,7 +86,7 @@
     },
     "offlineBehavioralVerifier": {
       "path": "scripts/verify-flight-consumer-public-shopping-115-119-managed-uat-pglite.mjs",
-      "sha256": "11b7dd591ce53c75aeef263f0b5b1b170e2b1b381caeb9962bd3476061216834",
+      "sha256": "b1ae4b1005aa804f5745741a2e37d7d02dac740ea1fa37d4e1a95e7bafcb50ad",
       "hashVerifiedAtExecution": null
     }
   },

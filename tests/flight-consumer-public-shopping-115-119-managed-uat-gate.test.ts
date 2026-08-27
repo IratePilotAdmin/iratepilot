@@ -114,16 +114,16 @@ describe("Flight Consumer managed UAT Gates 115-119", () => {
     ])).toThrow("exact isolated UAT target");
     expect(() => parseArgs([
       "--operation=apply-verify", "--target=isolated_uat", `--psql=${fakePsql}`,
-      "--apply-confirmation=APPLY_115_119_OBJECTS_ONLY_exipwtvyjaihsvdhsbbt_NO_LEDGER",
+      "--apply-confirmation=APPLY_115_119_OBJECTS_ONLY_bzxqbvmrkmjyvudlspss_NO_LEDGER",
     ])).toThrow("Gate 118 forward-only confirmation");
     expect(parseArgs([
       "--operation=apply-verify", "--target=isolated_uat", `--psql=${fakePsql}`,
-      "--apply-confirmation=APPLY_115_119_OBJECTS_ONLY_exipwtvyjaihsvdhsbbt_NO_LEDGER",
-      "--forward-only-confirmation=ACCEPT_118_FORWARD_ONLY_exipwtvyjaihsvdhsbbt_NO_ROLLBACK",
+      "--apply-confirmation=APPLY_115_119_OBJECTS_ONLY_bzxqbvmrkmjyvudlspss_NO_LEDGER",
+      "--forward-only-confirmation=ACCEPT_118_FORWARD_ONLY_bzxqbvmrkmjyvudlspss_NO_ROLLBACK",
     ])).toMatchObject({ operation: "apply-verify", target: TARGETS.isolated_uat });
     expect(parseArgs([
       "--operation=verify", "--target=isolated_uat", `--psql=${fakePsql}`,
-      "--verify-confirmation=VERIFY_115_119_SAVEPOINT_ONLY_exipwtvyjaihsvdhsbbt_ZERO_RESIDUE",
+      "--verify-confirmation=VERIFY_115_119_SAVEPOINT_ONLY_bzxqbvmrkmjyvudlspss_ZERO_RESIDUE",
     ])).toMatchObject({ operation: "verify" });
   });
 
@@ -131,14 +131,14 @@ describe("Flight Consumer managed UAT Gates 115-119", () => {
     expect(validateConnectionEnvironment(
       environment(), TARGETS.isolated_uat,
     )).toMatchObject({
-      host: "db.exipwtvyjaihsvdhsbbt.supabase.co",
+      host: "db.bzxqbvmrkmjyvudlspss.supabase.co",
       user: "postgres",
       port: "5432",
       database: "postgres",
     });
     expect(validateConnectionEnvironment(
       environment("pooler"), TARGETS.isolated_uat,
-    )).toMatchObject({ user: "postgres.exipwtvyjaihsvdhsbbt" });
+    )).toMatchObject({ user: "postgres.bzxqbvmrkmjyvudlspss" });
     expect(() => validateConnectionEnvironment({
       ...environment(),
       FLIGHT_MANAGED_115_119_DB_HOST: "db.allliumarkejinplrggl.supabase.co",
@@ -147,7 +147,7 @@ describe("Flight Consumer managed UAT Gates 115-119", () => {
 
   it("keeps preflight read-only, zero-row, target-bound, and ledger-observing", () => {
     expect(preflight).toContain("begin read only;");
-    expect(preflight).toContain("exipwtvyjaihsvdhsbbt");
+    expect(preflight).toContain("bzxqbvmrkmjyvudlspss");
     expect(preflight).toContain("accepted predecessor through Gate 114");
     expect(preflight).toContain("predecessor relation % is not empty");
     expect(preflight).toContain("ledger_versions_sha256");
@@ -246,7 +246,7 @@ describe("Flight Consumer managed UAT Gates 115-119", () => {
       expect(call.env).toMatchObject({
         PGSSLMODE: "verify-full",
         PGDATABASE: "postgres",
-        PGUSER: "postgres.exipwtvyjaihsvdhsbbt",
+        PGUSER: "postgres.bzxqbvmrkmjyvudlspss",
       });
     }
   });
@@ -258,7 +258,7 @@ describe("Flight Consumer managed UAT Gates 115-119", () => {
     const rendered = renderManagedSql(parseRenderArgs([
       "--target=isolated_uat", "--phase=preflight",
     ])).toString("utf8");
-    expect(rendered).toContain("'exipwtvyjaihsvdhsbbt'");
+    expect(rendered).toContain("'bzxqbvmrkmjyvudlspss'");
     expect(rendered).toContain("begin read only;");
     expect(rendered).not.toContain("\\set ON_ERROR_STOP");
     expect(evidence.templateState).toBe("UNEXECUTED_TEMPLATE");
@@ -271,7 +271,7 @@ describe("Flight Consumer managed UAT Gates 115-119", () => {
       Buffer.from("begin read only; commit;"), TARGETS.isolated_uat,
     ).toString("utf8");
     expect(sql).toContain("'isolated_uat'");
-    expect(sql).toContain("'exipwtvyjaihsvdhsbbt'");
+    expect(sql).toContain("'bzxqbvmrkmjyvudlspss'");
     expect(sql).not.toContain("allliumarkejinplrggl");
   });
 });

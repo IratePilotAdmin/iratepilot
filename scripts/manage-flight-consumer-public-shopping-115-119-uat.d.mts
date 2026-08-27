@@ -1,6 +1,6 @@
 export type Managed115119Target = Readonly<{
   kind: "isolated_uat";
-  projectRef: "exipwtvyjaihsvdhsbbt";
+  projectRef: "bzxqbvmrkmjyvudlspss";
   projectName: "iratepilot-flight-payment-uat-20260827";
 }>;
 

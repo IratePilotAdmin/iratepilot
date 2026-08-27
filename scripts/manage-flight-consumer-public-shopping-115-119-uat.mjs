@@ -17,7 +17,7 @@ export const CANONICAL_REPOSITORY_TIP = "202608260140";
 export const TARGETS = Object.freeze({
   isolated_uat: Object.freeze({
     kind: "isolated_uat",
-    projectRef: "exipwtvyjaihsvdhsbbt",
+    projectRef: "bzxqbvmrkmjyvudlspss",
     projectName: "iratepilot-flight-payment-uat-20260827",
   }),
 });
@@ -83,11 +83,11 @@ export const ROLLBACKS = Object.freeze([
 export const ARTIFACTS = Object.freeze({
   preflight: Object.freeze({
     path: "scripts/flight-consumer-public-shopping-115-119-managed-uat-preflight.sql",
-    sha256: "fe5e9f432a9de751df7d364462960d696ffef65ba082c85541049ed14e17c631",
+    sha256: "6678c663c4579405c3f60bdfad5086e0da929eba3b19328af361fb6f94006ed6",
   }),
   verification: Object.freeze({
     path: "scripts/flight-consumer-public-shopping-115-119-managed-uat-verification.sql",
-    sha256: "e0de70e0541008530b0cd43b6828f42d25fc091e1677529467bdbc004e4165f4",
+    sha256: "23f727ab43728803ec60a7ffe15428727285d47372f25b433ed811462fe6562f",
   }),
 });
 
@@ -122,11 +122,11 @@ Required environment (never command-line arguments):
   FLIGHT_MANAGED_115_119_DB_PASSWORD
 
 Apply confirmations (both required):
-  --apply-confirmation=APPLY_115_119_OBJECTS_ONLY_exipwtvyjaihsvdhsbbt_NO_LEDGER
-  --forward-only-confirmation=ACCEPT_118_FORWARD_ONLY_exipwtvyjaihsvdhsbbt_NO_ROLLBACK
+  --apply-confirmation=APPLY_115_119_OBJECTS_ONLY_bzxqbvmrkmjyvudlspss_NO_LEDGER
+  --forward-only-confirmation=ACCEPT_118_FORWARD_ONLY_bzxqbvmrkmjyvudlspss_NO_ROLLBACK
 
 Verify-only confirmation:
-  --verify-confirmation=VERIFY_115_119_SAVEPOINT_ONLY_exipwtvyjaihsvdhsbbt_ZERO_RESIDUE
+  --verify-confirmation=VERIFY_115_119_SAVEPOINT_ONLY_bzxqbvmrkmjyvudlspss_ZERO_RESIDUE
 
 There is no default target/operation, Production/Preview target, database URL,
 arbitrary SQL path, migration-ledger write, rollback, Gate 139/140 apply, or
