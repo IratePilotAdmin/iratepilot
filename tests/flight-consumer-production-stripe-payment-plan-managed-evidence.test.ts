@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const evidencePath =
-  "docs/evidence/FLIGHT_CONSUMER_UAT_STRIPE_PAYMENT_PLAN_MANAGED_ACCEPTANCE_2026-08-26.json";
+  "docs/evidence/FLIGHT_CONSUMER_PRODUCTION_STRIPE_PAYMENT_PLAN_MANAGED_DARK_ACCEPTANCE_2026-08-26.json";
 const rawEvidence = readFileSync(evidencePath, "utf8");
 const evidence = JSON.parse(rawEvidence).evidence;
 const lineage = JSON.parse(
@@ -17,9 +17,9 @@ function sha256(path: string) {
 
 const expectedArtifacts = {
   preflightSql: {
-    path: "scripts/flight-consumer-live-stripe-payment-plan-managed-uat-preflight.sql",
+    path: "scripts/flight-consumer-live-stripe-payment-plan-production-preflight.sql",
     sha256:
-      "e5f6852d1a1a170b69b17d7002800801a9e96a0afa8546797511cbcbcb685bfa",
+      "ed4c556e082b86e145d83192c07d40a96da5e75eb3c26f7cd921fa8ad8b1ddaa",
   },
   migration103: {
     path: "supabase/production-migrations/202608260103_flight_consumer_live_stripe_payment_intent_plan_journal.sql",
@@ -27,9 +27,9 @@ const expectedArtifacts = {
       "c4d5dec63faa07b37a2f57dc26a57faf94d698e09cf7f7e5be55a145a052d2cd",
   },
   verificationSql: {
-    path: "scripts/flight-consumer-live-stripe-payment-plan-managed-uat-verification.sql",
+    path: "scripts/flight-consumer-live-stripe-payment-plan-production-verification.sql",
     sha256:
-      "f0bcd64d8f1c92466ff717c7ec8f3d35f38b12b6cac3b3f7475bc506726b2d0d",
+      "6279f1d462130ed8328ae673262a796c5e4ead497a145346c6afb52e65533035",
   },
   rollback103: {
     path: "supabase/production-rollbacks/202608260103_flight_consumer_live_stripe_payment_intent_plan_journal.rollback.sql",
@@ -38,56 +38,60 @@ const expectedArtifacts = {
   },
 };
 
-describe("Flight Consumer Stripe payment-plan managed-UAT evidence", () => {
+describe("Flight Consumer Production Stripe payment-plan managed dark evidence", () => {
   it("pins every reviewed and executed repository artifact", () => {
     expect(evidence.reviewedArtifacts).toEqual(expectedArtifacts);
     for (const artifact of Object.values(expectedArtifacts)) {
-      expect(artifact.sha256).toMatch(/^[0-9a-f]{64}$/);
       expect(sha256(artifact.path)).toBe(artifact.sha256);
     }
   });
 
-  it("binds acceptance to the isolated PG17 UAT target", () => {
+  it("binds the receipt to the exact signed-in Production dashboard target", () => {
     expect(evidence).toMatchObject({
-      version: "flight-consumer-stripe-payment-plan-managed-uat-acceptance-v1",
-      environment: "isolated_managed_supabase_uat",
-      scope: "migration_103_managed_uat_apply_and_zero_dispatch_acceptance",
+      version:
+        "flight-consumer-stripe-payment-plan-production-dark-acceptance-v1",
+      environment: "managed_supabase_consumer_production_dark",
+      scope:
+        "migration_103_production_object_apply_and_zero_dispatch_acceptance",
       result: "PASS",
       secretsIncluded: false,
       providerRequestIdentifiersIncluded: false,
     });
     expect(evidence.target).toEqual({
       provider: "Supabase",
-      projectRef: "exipwtvyjaihsvdhsbbt",
-      projectName: "iratepilot-flight-payment-uat-20260827",
-      intendedPurpose: "flight_payment_uat_only",
-      consumerProduction: false,
+      projectRef: "allliumarkejinplrggl",
+      projectName: "iRatePilot Project",
+      organizationName: "iRatePilot Group, LLC",
+      intendedPurpose: "consumer_production_dark_payment_journal",
+      consumerProduction: true,
       dashboardBranchLabel: "Production",
-      dashboardBranchLabelMeaning:
-        "supabase_primary_branch_label_only_not_iratepilot_consumer_production",
       region: "us-east-1",
-      compute: "micro",
-      postgresServiceVersion: "17.6.1.165",
+      compute: "nano",
+      postgresServiceVersion: "17.6.1.147",
       postgresServerVersionNum: 170006,
-      dataApiEnabled: false,
     });
     expect(evidence.preApplyState).toEqual({
       projectStatus: "Healthy",
-      automaticRlsSelectedAtProvisioning: true,
-      publicApplicationObjects: "no_tables_or_views",
-      standardMigrationLedger: "no_migrations",
-      githubRepositoryConnected: false,
-      databaseBranches: 0,
+      signedInDashboardProjectUrlAndHeaderVerified: true,
+      migrationLedgerPresent: true,
+      migrationLedgerLatestVersion: "202608220063",
+      objectOnlyVersionsAbsentFromLedger: [
+        "202608260099",
+        "202608260101",
+        "202608260102",
+        "202608260103",
+      ],
       targetObjectsAbsent: true,
       migration103LedgerEntryAbsent: true,
     });
   });
 
-  it("records the guarded object apply without inventing a ledger receipt", () => {
+  it("records a guarded object-only apply without inventing a ledger receipt", () => {
     expect(evidence.authorization).toEqual({
-      managedUatApplyAuthorizedAtActionTime: true,
+      productionDarkObjectApplyAuthorizedAtActionTime: true,
       syntheticRollbackProbeAuthorizedAtActionTime: true,
-      productionApplyAuthorized: false,
+      retroactiveLedgerRepairAuthorized: false,
+      rollbackAuthorized: false,
       providerTrafficAuthorized: false,
       paymentAuthorized: false,
       bookingAuthorized: false,
@@ -96,7 +100,7 @@ describe("Flight Consumer Stripe payment-plan managed-UAT evidence", () => {
     });
     expect(evidence.application).toEqual({
       method: "guarded_supabase_dashboard_sql_editor",
-      collisionPreflight: "passed",
+      collisionAndLedgerPreflight: "passed",
       sourceHashVerifiedImmediatelyBeforeEntry: true,
       cleanEditorExecutedFromReviewedSource: true,
       remoteEditorByteIdentityCryptographicallyAttested: false,
@@ -107,19 +111,17 @@ describe("Flight Consumer Stripe payment-plan managed-UAT evidence", () => {
         "declared_dashboard_target_label_not_runtime_database_invariant",
       sqlReceiptZeroCountSemantics:
         "synthetic_journal_assertions_not_global_provider_telemetry",
+      dashboardRlsHeuristicDisposition:
+        "ran_exact_reviewed_source_without_dashboard_rewrite_migration_itself_enabled_and_forced_rls",
       transactionOutcome: "committed",
-      initialMixedBufferAttempt: {
-        outcome: "parse_rejected_before_migration_application",
-        followUpCleanPreflight: "passed_with_target_objects_absent",
-      },
       standardMigrationLedgerState: "object_applied_not_ledgered",
       standardMigrationLedgerContains103: false,
       retroactiveLedgerRepairPerformed: false,
     });
   });
 
-  it("records the exact catalog, forced-RLS, ACL, and runtime proof", () => {
-    expect(evidence.objectVerification).toEqual({
+  it("records exact catalog, forced-RLS, ACL, runtime, and rollback proofs", () => {
+    expect(evidence.objectVerification).toMatchObject({
       status: "passed",
       ordinaryPostgresOwnedTable: true,
       columnCount: 36,
@@ -136,13 +138,7 @@ describe("Flight Consumer Stripe payment-plan managed-UAT evidence", () => {
       recorderLanguage: "plpgsql",
       recorderSearchPath: "pg_catalog, public",
       recorderExactTableResult: true,
-      publicDirectTablePrivileges: false,
-      anonDirectTablePrivileges: false,
-      authenticatedDirectTablePrivileges: false,
-      serviceRoleDirectTablePrivileges: false,
       serviceRoleRecorderExecute: true,
-      anonRecorderExecute: false,
-      authenticatedRecorderExecute: false,
       shadowRecorderPresent: false,
       mutationLifecycleRpcPresent: false,
       permanentRowCount: 0,
@@ -170,12 +166,15 @@ describe("Flight Consumer Stripe payment-plan managed-UAT evidence", () => {
     });
   });
 
-  it("denies commerce authority and preserves its historical Production snapshot", () => {
+  it("proves zero commerce traffic and advances only the object lineage", () => {
     expect(evidence.disposition).toEqual({
-      activityScope: "this_managed_uat_gate_only",
-      managedUatWritesPerformed: true,
+      activityScope: "production_migration_103_dark_gate_only",
+      managedUatWritesPerformed: false,
       previewDatabaseWritesPerformed: false,
-      productionDatabaseWritesPerformed: false,
+      productionDatabaseWritesPerformed: true,
+      migrationJournalObjectsCreated: true,
+      syntheticRowsRolledBack: true,
+      permanentJournalRows: 0,
       stripeTraffic: false,
       duffelTraffic: false,
       providerTraffic: false,
@@ -187,27 +186,18 @@ describe("Flight Consumer Stripe payment-plan managed-UAT evidence", () => {
       rawPayloadsStored: false,
       paymentDataStored: false,
     });
-
     const migration103 = lineage.production.versions.find(
       (entry: { version: string }) => entry.version === "202608260103",
     );
     expect(migration103).toMatchObject({
+      forwardSha256: expectedArtifacts.migration103.sha256,
+      rollbackSha256: expectedArtifacts.rollback103.sha256,
       status: "object_applied_via_guarded_dashboard_sql_not_ledgered",
       objectVerification: "passed",
     });
-    expect(evidence.lineageState).toEqual({
-      productionMigration103Status: "authored_unapplied",
-      productionMigration103ObjectVerification: "not_run",
-      productionMigration103ApplyAuthority: "not_granted",
-      uatMigration103ObjectStatus:
-        "object_applied_via_guarded_dashboard_sql_not_ledgered",
-      uatMigration103ObjectVerification: "passed",
-      canonicalPreviewRange: "202608260120-202608260137",
-      canonicalPreviewTip: "202608260137",
-      carReservedRangeUntouched: "202608260200-202608260207",
-    });
-    expect(lineage.preview.canonicalVersions.at(0)).toBe("202608260120");
-    expect(lineage.preview.canonicalVersions.at(-1)).toBe("202608260137");
+    expect(lineage.production.authoredUnappliedVersions).toEqual([]);
+    expect(lineage.production.ledgerLatestObservedVersion).toBe("202608220063");
+    expect(lineage.production.retroactiveLedgerRepairAuthorized).toBe(false);
     expect(lineage.preview.canonicalTip).toBe("202608260137");
     expect(lineage.reservedExternalRanges).toEqual([
       {
@@ -217,10 +207,57 @@ describe("Flight Consumer Stripe payment-plan managed-UAT evidence", () => {
         flightUseAuthorized: false,
       },
     ]);
+    expect(evidence.lineageState).toEqual({
+      productionMigration103Status:
+        "object_applied_via_guarded_dashboard_sql_not_ledgered",
+      productionMigration103ObjectVerification: "passed",
+      productionMigration103LedgerEntryPresent: false,
+      productionLedgerLatestObservedVersion: "202608220063",
+      retroactiveLedgerRepairAuthorized: false,
+      intentionalProductionVersionGap: "202608260100",
+      canonicalPreviewRange: "202608260120-202608260137",
+      canonicalPreviewTip: "202608260137",
+      carReservedRangeUntouched: "202608260200-202608260207",
+    });
     expect(evidence.outcome).toBe(
-      "isolated_managed_supabase_uat_acceptance_passed_production_103_remains_unapplied",
+      "production_dark_payment_plan_journal_applied_verified_zero_dispatch",
     );
-    expect(evidence.remainingLaunchGates).toHaveLength(3);
+    expect(evidence.remainingLaunchGates).toHaveLength(9);
+  });
+
+  it("keeps Production SQL target-specific, transport-free, and rollback-safe", () => {
+    const preflight = readFileSync(expectedArtifacts.preflightSql.path, "utf8");
+    const verification = readFileSync(
+      expectedArtifacts.verificationSql.path,
+      "utf8",
+    );
+    for (const sql of [preflight, verification]) {
+      expect(sql).toContain("allliumarkejinplrggl");
+      expect(sql).toContain("202608220063");
+      for (const version of [
+        "202608260099",
+        "202608260101",
+        "202608260102",
+        "202608260103",
+      ]) {
+        expect(sql).toContain(version);
+      }
+      expect(sql).not.toContain("exipwtvyjaihsvdhsbbt");
+      expect(sql).not.toMatch(/FLIGHT_STRIPE_UAT/);
+      expect(sql).not.toMatch(/https?:\/\//i);
+      expect(sql).not.toMatch(
+        /\b(?:dblink|http_get|http_post|pg_notify|lo_import|lo_export)\b|\bnet\./i,
+      );
+    }
+    expect((preflight.match(/^begin;$/gim) ?? [])).toHaveLength(1);
+    expect((preflight.match(/^commit;$/gim) ?? [])).toHaveLength(1);
+    expect(preflight).not.toMatch(/^rollback;$/gim);
+    expect(preflight).not.toMatch(
+      /^\s*(?:create|alter|drop|truncate|insert|update|delete|merge|grant|revoke|comment)\b/gim,
+    );
+    expect((verification.match(/^begin;$/gim) ?? [])).toHaveLength(1);
+    expect((verification.match(/^rollback;$/gim) ?? [])).toHaveLength(1);
+    expect(verification).not.toMatch(/^commit;$/gim);
   });
 
   it("keeps the receipt sanitized and free of credentials or query IDs", () => {
@@ -259,7 +296,6 @@ describe("Flight Consumer Stripe payment-plan managed-UAT evidence", () => {
       }
     };
     visit(evidence);
-
     for (const value of strings) {
       expect(value).not.toMatch(/^[a-z]:[\\/]/i);
       expect(value).not.toMatch(/^(?:\\\\|\/\/)[^/\\]+[\\/]/);

@@ -4,7 +4,7 @@
   "recordedOn": "2026-08-26",
   "sanitized": true,
   "secretsIncluded": false,
-  "databaseWritesPerformed": false,
+  "databaseWritesPerformed": true,
   "preview": {
     "requiredRemoteFlightBaselineTip": "202608250080",
     "canonicalTip": "202608260137",
@@ -90,19 +90,17 @@
         "rollbackSha256": "39e4e8f1d5e118405ee0a1027866fd0224ca43d889f9c21a152dd0a4d99536aa",
         "status": "object_applied_via_guarded_dashboard_sql_not_ledgered",
         "objectVerification": "passed"
-      }
-    ],
-    "authoredUnappliedVersions": [
+      },
       {
         "version": "202608260103",
         "filename": "202608260103_flight_consumer_live_stripe_payment_intent_plan_journal.sql",
         "forwardSha256": "c4d5dec63faa07b37a2f57dc26a57faf94d698e09cf7f7e5be55a145a052d2cd",
         "rollbackSha256": "29f22e4a5d9de9aa767695ede19b0026c03f60e9a2c534ac63768e5026492ed3",
-        "status": "authored_unapplied",
-        "objectVerification": "not_run",
-        "applyAuthority": "not_granted"
+        "status": "object_applied_via_guarded_dashboard_sql_not_ledgered",
+        "objectVerification": "passed"
       }
     ],
+    "authoredUnappliedVersions": [],
     "intentionallyUnused": {
       "version": "202608260100",
       "status": "never_created_never_applied_intentionally_unused"

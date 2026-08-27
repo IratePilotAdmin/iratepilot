@@ -170,18 +170,18 @@ describe("Flight Consumer Production Stripe payment-plan PostgreSQL evidence", (
     });
   });
 
-  it("keeps migration 103 authored/unapplied and preserves shared ranges", () => {
-    const migration103 = lineage.production.authoredUnappliedVersions.find(
+  it("preserves the historical unapplied receipt while the live lineage advances", () => {
+    const migration103 = lineage.production.versions.find(
       (entry: { version: string }) => entry.version === "202608260103",
     );
     expect(migration103).toMatchObject({
       version: "202608260103",
       forwardSha256: evidence.reviewedArtifacts.migration103.sha256,
       rollbackSha256: evidence.reviewedArtifacts.rollback103.sha256,
-      status: "authored_unapplied",
-      objectVerification: "not_run",
-      applyAuthority: "not_granted",
+      status: "object_applied_via_guarded_dashboard_sql_not_ledgered",
+      objectVerification: "passed",
     });
+    expect(lineage.production.authoredUnappliedVersions).toEqual([]);
     expect(lineage.preview.canonicalVersions).toEqual(expectedPreviewVersions);
     expect(lineage.preview.canonicalTip).toBe("202608260137");
     expect(lineage.reservedExternalRanges).toEqual([

@@ -73,7 +73,12 @@ describe("flight migration lineage freeze manifest", () => {
     });
     expect(manifest.production.versions.map(
       ({ version }: { version: string }) => version,
-    )).toEqual(["202608260099", "202608260101", "202608260102"]);
+    )).toEqual([
+      "202608260099",
+      "202608260101",
+      "202608260102",
+      "202608260103",
+    ]);
     expect(existsSync("supabase/production-migrations/202608260100_flight.sql")).toBe(false);
     expect(readdirSync("supabase/production-migrations").some(
       (name) => name.startsWith("202608260100_"),
@@ -92,18 +97,23 @@ describe("flight migration lineage freeze manifest", () => {
     }
   });
 
-  it("hash-pins the isolated Stripe plan journal as authored and unapplied", () => {
-    expect(manifest.production.authoredUnappliedVersions).toEqual([{
+  it("hash-pins the verified Production Stripe plan journal as object-applied", () => {
+    const entry = manifest.production.versions.find(
+      ({ version }: { version: string }) => version === "202608260103",
+    );
+    expect(entry).toEqual({
       version: "202608260103",
       filename: "202608260103_flight_consumer_live_stripe_payment_intent_plan_journal.sql",
       forwardSha256: "c4d5dec63faa07b37a2f57dc26a57faf94d698e09cf7f7e5be55a145a052d2cd",
       rollbackSha256: "29f22e4a5d9de9aa767695ede19b0026c03f60e9a2c534ac63768e5026492ed3",
-      status: "authored_unapplied",
-      objectVerification: "not_run",
-      applyAuthority: "not_granted",
-    }]);
+      status: "object_applied_via_guarded_dashboard_sql_not_ledgered",
+      objectVerification: "passed",
+    });
+    if (!entry) {
+      throw new Error("Production migration 103 is missing from the lineage manifest");
+    }
+    expect(manifest.production.authoredUnappliedVersions).toEqual([]);
 
-    const [entry] = manifest.production.authoredUnappliedVersions;
     const rollbackFilename = entry.filename.replace(/\.sql$/, ".rollback.sql");
     expect(sha256(`supabase/production-migrations/${entry.filename}`))
       .toBe(entry.forwardSha256);
@@ -124,16 +134,15 @@ describe("flight migration lineage freeze manifest", () => {
     const authoredVersions = manifest.production.authoredUnappliedVersions.map(
       ({ version }: { version: string }) => version,
     );
-    expect(authoredVersions).toEqual(["202608260103"]);
+    expect(authoredVersions).toEqual([]);
     expect(authoredVersions.some((version: string) => appliedVersions.has(version)))
       .toBe(false);
 
-    const expectedForward = [
-      ...manifest.production.versions.map(({ filename }: { filename: string }) => filename),
-      entry.filename,
-    ].sort();
+    const expectedForward = manifest.production.versions.map(
+      ({ filename }: { filename: string }) => filename,
+    ).sort();
     const expectedRollback = expectedForward.map(
-      (filename) => filename.replace(/\.sql$/, ".rollback.sql"),
+      (filename: string) => filename.replace(/\.sql$/, ".rollback.sql"),
     ).sort();
     expect(readdirSync("supabase/production-migrations").sort()).toEqual(expectedForward);
     expect(readdirSync("supabase/production-rollbacks").sort()).toEqual(expectedRollback);
