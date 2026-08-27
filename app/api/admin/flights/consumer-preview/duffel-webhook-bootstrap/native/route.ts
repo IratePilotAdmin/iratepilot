@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
+import { after } from "next/server";
 
 import { requireRole } from "@/lib/auth/require-role";
+import { queueFlightConsumerPreviewNotification } from "@/lib/email/flight-notification-delivery.server";
 import {
   activateFlightConsumerPreview,
   FLIGHT_CONSUMER_PREVIEW_ACTIVATION_CONFIRMATION,
@@ -10,10 +12,14 @@ import {
   type FlightConsumerPreviewActivationControlClient,
 } from "@/lib/flights/consumer-preview/activation-control.server";
 import {
+  executeFlightConsumerPreviewDuffelRetainedOrderConvergence,
   executeFlightConsumerPreviewDuffelWebhookBootstrap,
+  FLIGHT_CONSUMER_PREVIEW_DUFFEL_RETAINED_ORDER_CONVERGENCE_CONFIRMATION,
+  FLIGHT_CONSUMER_PREVIEW_DUFFEL_RETAINED_ORDER_TARGET,
   FLIGHT_CONSUMER_PREVIEW_DUFFEL_WEBHOOK_BOOTSTRAP_CONFIRMATION,
   FLIGHT_CONSUMER_PREVIEW_DUFFEL_WEBHOOK_PING_CONFIRMATION,
   FlightConsumerPreviewDuffelWebhookBootstrapError,
+  type FlightConsumerPreviewDuffelRetainedOrderOperatorClient,
 } from "@/lib/flights/consumer-preview/duffel-webhook-bootstrap.server";
 import { validateSameOriginMutation } from "@/lib/flights/consumer-preview/http.server";
 import {
@@ -24,7 +30,7 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 30;
+export const maxDuration = 300;
 
 const maximumFormBytes = 768;
 const transport = "NATIVE_OPERATOR_FORM_V1" as const;
@@ -34,6 +40,8 @@ const operatorPagePath =
 const operationContracts = Object.freeze({
   bootstrap: FLIGHT_CONSUMER_PREVIEW_DUFFEL_WEBHOOK_BOOTSTRAP_CONFIRMATION,
   ping: FLIGHT_CONSUMER_PREVIEW_DUFFEL_WEBHOOK_PING_CONFIRMATION,
+  converge_retained_order:
+    FLIGHT_CONSUMER_PREVIEW_DUFFEL_RETAINED_ORDER_CONVERGENCE_CONFIRMATION,
   activate: FLIGHT_CONSUMER_PREVIEW_ACTIVATION_CONFIRMATION,
   recover_reprice: FLIGHT_CONSUMER_PREVIEW_REPRICE_RECOVERY_CONFIRMATION,
   relock: FLIGHT_CONSUMER_PREVIEW_RELOCK_CONFIRMATION,
@@ -240,6 +248,46 @@ export async function POST(request: Request) {
       return htmlResponse({
         body: "<p>The one terminal TEST reprice attempt was closed without provider redispatch, refreshed evidence, or order creation.</p>",
         title: "Terminal TEST reprice closed",
+      });
+    }
+
+    if (parsed.operation === "converge_retained_order") {
+      const result = await executeFlightConsumerPreviewDuffelRetainedOrderConvergence(
+        input,
+        authentication.supabase as unknown as
+          FlightConsumerPreviewDuffelRetainedOrderOperatorClient,
+      );
+      if (
+        result.decision !== "locally_converged"
+        || result.mode !== "duffel_test_mode"
+        || result.status !== "ticketed"
+        || !Number.isSafeInteger(result.issuedTicketCount)
+        || result.issuedTicketCount < 1
+      ) return errorResponse(503);
+      try {
+        after(async () => {
+          try {
+            await queueFlightConsumerPreviewNotification({
+              customerId:
+                FLIGHT_CONSUMER_PREVIEW_DUFFEL_RETAINED_ORDER_TARGET.customerId,
+              orderId:
+                FLIGHT_CONSUMER_PREVIEW_DUFFEL_RETAINED_ORDER_TARGET.orderId,
+              event: "ticketed",
+            });
+          } catch {
+            console.warn("[flight-consumer-preview] Ticket notification enqueue failed", {
+              diagnostic: "retained_order_ticket_notification_enqueue_failed",
+            });
+          }
+        });
+      } catch {
+        console.warn("[flight-consumer-preview] Ticket notification scheduling failed", {
+          diagnostic: "retained_order_ticket_notification_schedule_failed",
+        });
+      }
+      return htmlResponse({
+        body: "<p>The fixed Duffel TEST order was converged locally from retained signed evidence and is ticketed. No Duffel provider write was sent.</p>",
+        title: "Duffel TEST order locally converged",
       });
     }
 

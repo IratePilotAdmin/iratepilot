@@ -42,6 +42,12 @@ describe("temporary Duffel webhook bootstrap admin page", () => {
     expect(pageSource).toContain("Native: Ping exact Duffel TEST webhook");
     expect(pageSource).toContain("Native: Activate Consumer Flight Preview TEST only");
     expect(pageSource).toContain("Native: Close one terminal TEST reprice without redispatch");
+    expect(pageSource).toContain(
+      "Native: Converge fixed Duffel TEST order from retained evidence",
+    );
+    expect(pageSource).toContain(
+      "FLIGHT_CONSUMER_PREVIEW_DUFFEL_RETAINED_ORDER_CONVERGENCE_CONFIRMATION",
+    );
     expect(pageSource).toContain("Native: Relock and stop all test operations");
   });
 

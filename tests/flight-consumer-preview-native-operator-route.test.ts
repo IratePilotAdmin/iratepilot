@@ -32,21 +32,40 @@ const mocks = vi.hoisted(() => {
     MockActivationError,
     MockBootstrapError,
     MockRecoveryError,
+    after: vi.fn(),
     activate: vi.fn(),
     bootstrap: vi.fn(),
+    convergeRetainedOrder: vi.fn(),
+    notify: vi.fn(),
     recoverReprice: vi.fn(),
     relock: vi.fn(),
     requireRole: vi.fn(),
     sameOrigin: vi.fn(),
+    scheduled: null as null | (() => Promise<void>),
   };
 });
 
+vi.mock("next/server", async () => {
+  const actual = await vi.importActual<typeof import("next/server")>("next/server");
+  return { ...actual, after: mocks.after };
+});
 vi.mock("@/lib/auth/require-role", () => ({ requireRole: mocks.requireRole }));
+vi.mock("@/lib/email/flight-notification-delivery.server", () => ({
+  queueFlightConsumerPreviewNotification: mocks.notify,
+}));
 vi.mock("@/lib/flights/consumer-preview/http.server", () => ({
   validateSameOriginMutation: mocks.sameOrigin,
 }));
 vi.mock("@/lib/flights/consumer-preview/duffel-webhook-bootstrap.server", () => ({
+  executeFlightConsumerPreviewDuffelRetainedOrderConvergence:
+    mocks.convergeRetainedOrder,
   executeFlightConsumerPreviewDuffelWebhookBootstrap: mocks.bootstrap,
+  FLIGHT_CONSUMER_PREVIEW_DUFFEL_RETAINED_ORDER_CONVERGENCE_CONFIRMATION:
+    "CONVERGE_ONE_SIGNED_PROCESSED_DUFFEL_TEST_ORDER_FROM_RETAINED_EVIDENCE",
+  FLIGHT_CONSUMER_PREVIEW_DUFFEL_RETAINED_ORDER_TARGET: {
+    customerId: "3020e8bc-1f5d-45ce-a759-dece25c65661",
+    orderId: "5249a6d4-40b9-4232-8179-b326ecd8c0e4",
+  },
   FLIGHT_CONSUMER_PREVIEW_DUFFEL_WEBHOOK_BOOTSTRAP_CONFIRMATION:
     "BOOTSTRAP_ONE_DUFFEL_TEST_WEBHOOK_FOR_CONSUMER_PREVIEW",
   FLIGHT_CONSUMER_PREVIEW_DUFFEL_WEBHOOK_PING_CONFIRMATION:
@@ -69,7 +88,10 @@ vi.mock("@/lib/flights/consumer-preview/reprice-recovery.server", () => ({
   FlightConsumerPreviewRepriceRecoveryError: mocks.MockRecoveryError,
 }));
 
-import { POST } from "../app/api/admin/flights/consumer-preview/duffel-webhook-bootstrap/native/route";
+import {
+  maxDuration,
+  POST,
+} from "../app/api/admin/flights/consumer-preview/duffel-webhook-bootstrap/native/route";
 
 const originalVercelEnvironment = process.env.VERCEL_ENV;
 const actorId = "11111111-1111-4111-8111-111111111111";
@@ -80,6 +102,8 @@ const routeUrl =
 const confirmations = Object.freeze({
   bootstrap: "BOOTSTRAP_ONE_DUFFEL_TEST_WEBHOOK_FOR_CONSUMER_PREVIEW",
   ping: "PING_EXACT_DUFFEL_TEST_WEBHOOK_FOR_CONSUMER_PREVIEW",
+  converge_retained_order:
+    "CONVERGE_ONE_SIGNED_PROCESSED_DUFFEL_TEST_ORDER_FROM_RETAINED_EVIDENCE",
   activate: "ACTIVATE_CONSUMER_FLIGHT_PREVIEW_TEST_ONLY",
   recover_reprice: "CLOSE_ONE_TERMINAL_CONSUMER_PREVIEW_REPRICE_WITHOUT_REDISPATCH",
   relock: "RELOCK_CONSUMER_FLIGHT_PREVIEW_AND_STOP_ALL_TEST_OPERATIONS",
@@ -124,12 +148,22 @@ describe("temporary native Consumer Flight Preview operator", () => {
     vi.clearAllMocks();
     process.env.VERCEL_ENV = "preview";
     mocks.sameOrigin.mockReturnValue(true);
+    mocks.after.mockImplementation((callback: () => Promise<void>) => {
+      mocks.scheduled = callback;
+    });
+    mocks.scheduled = null;
     mocks.requireRole.mockResolvedValue({ supabase, user: { id: actorId } });
     mocks.bootstrap.mockResolvedValue({
       decision: "created",
       mode: "duffel_test_mode",
       signingSecret: "safe-one-time-signing-secret",
       webhookIdSha256: "a".repeat(64),
+    });
+    mocks.convergeRetainedOrder.mockResolvedValue({
+      decision: "locally_converged",
+      mode: "duffel_test_mode",
+      status: "ticketed",
+      issuedTicketCount: 1,
     });
     mocks.activate.mockResolvedValue({ decision: "activated", controlKey: "global" });
     mocks.recoverReprice.mockResolvedValue({
@@ -153,11 +187,13 @@ describe("temporary native Consumer Flight Preview operator", () => {
     }
     expect(mocks.requireRole).not.toHaveBeenCalled();
     expect(mocks.bootstrap).not.toHaveBeenCalled();
+    expect(mocks.convergeRetainedOrder).not.toHaveBeenCalled();
 
     mocks.requireRole.mockResolvedValueOnce({ error: "Authentication required.", status: 401 });
     const unauthenticated = await POST(request());
     expect(unauthenticated.status).toBe(401);
     expect(mocks.bootstrap).not.toHaveBeenCalled();
+    expect(mocks.convergeRetainedOrder).not.toHaveBeenCalled();
   });
 
   it("is unavailable outside Preview before origin or authentication evaluation", async () => {
@@ -188,9 +224,39 @@ describe("temporary native Consumer Flight Preview operator", () => {
       expect(response.status).toBe(400);
     }
     expect(mocks.bootstrap).not.toHaveBeenCalled();
+    expect(mocks.convergeRetainedOrder).not.toHaveBeenCalled();
     expect(mocks.activate).not.toHaveBeenCalled();
     expect(mocks.recoverReprice).not.toHaveBeenCalled();
     expect(mocks.relock).not.toHaveBeenCalled();
+  });
+
+  it("locally converges only the fixed retained-evidence order and schedules notification fail-open", async () => {
+    expect(maxDuration).toBe(300);
+    const response = await POST(request("converge_retained_order"));
+    expect(response.status).toBe(200);
+    const html = await response.text();
+    expect(html).toContain("converged locally from retained signed evidence");
+    expect(html).toContain("No Duffel provider write was sent");
+    expect(html).not.toMatch(/5249a6d4|3020e8bc|b0c13dde|ord_|wev_|receipt|digest/i);
+    expect(mocks.convergeRetainedOrder).toHaveBeenCalledWith({
+      actorId,
+      confirmation: confirmations.converge_retained_order,
+      idempotencyKey: expect.stringMatching(/^[0-9a-f-]{36}$/i),
+    }, supabase);
+    expect(mocks.after).toHaveBeenCalledTimes(1);
+    expect(mocks.notify).not.toHaveBeenCalled();
+    expect(mocks.scheduled).not.toBeNull();
+    await expect(mocks.scheduled!()).resolves.toBeUndefined();
+    expect(mocks.notify).toHaveBeenCalledWith({
+      customerId: "3020e8bc-1f5d-45ce-a759-dece25c65661",
+      orderId: "5249a6d4-40b9-4232-8179-b326ecd8c0e4",
+      event: "ticketed",
+    });
+
+    mocks.notify.mockRejectedValueOnce(new Error("notification provider unavailable"));
+    const replay = await POST(request("converge_retained_order"));
+    expect(replay.status).toBe(200);
+    await expect(mocks.scheduled!()).resolves.toBeUndefined();
   });
 
   it("creates exactly one webhook and HTML-escapes only the one-time secret", async () => {

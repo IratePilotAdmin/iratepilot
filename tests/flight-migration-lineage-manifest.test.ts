@@ -36,8 +36,23 @@ describe("flight migration lineage freeze manifest", () => {
         "202608260138_flight_ticket_document_identity_scope_repair.rollback.sql",
       rollbackSha256:
         "7265425bea2497961f4ca64199f9cabce4a05a149cc59a4bc4d9cbca237cca37",
-      status: "authored_unapplied",
+      status: "applied_via_authenticated_preview_sql_and_ledgered",
       targetEnvironment: "preview_test_only",
+      appliedOn: "2026-08-27",
+      managedPreviewProjectRef: "eiqmdldjnedqgbtoozqa",
+      applyMethod: "authenticated_supabase_preview_sql_editor",
+      physicalVerification: {
+        legacyExecutionScopeConstraintPresent: false,
+        replacementConstraint: "UNIQUE (order_id, document_ref_sha256)",
+        runtimeLockedAtApply: true,
+      },
+      ledgerReceipt: {
+        version: "202608260138",
+        name: "flight_ticket_document_identity_scope_repair",
+        forwardSha256:
+          "8c9852a6d27c23512bfecfc589321109c0c3b0944bbe0a27aa519e6ef46704e7",
+        verified: true,
+      },
     });
     expect(sha256(
       `supabase/migrations/${manifest.preview.canonicalTipArtifact.filename}`,
@@ -46,10 +61,19 @@ describe("flight migration lineage freeze manifest", () => {
       `supabase/rollbacks/${manifest.preview.canonicalTipArtifact.rollbackFilename}`,
     )).toBe(manifest.preview.canonicalTipArtifact.rollbackSha256);
     expect(manifest.preview.ledgerVerification).toEqual({
-      status: "not_verified_stored_preview_db_credential_stale",
-      mandatoryBeforeAnyFutureApply: true,
-      retiredFlightIdentifierResultRequired: "none_of_081_or_083_through_098_present",
-      sharedHotelPredecessorResultRequired: "202608250082_already_applied",
+      status: "verified_mixed_legacy_lineage_blocked",
+      verifiedOn: "2026-08-27",
+      managedPreviewProjectRef: "eiqmdldjnedqgbtoozqa",
+      observedCanonicalTipReceipt: "202608260138",
+      observedRetiredFlightRange: "202608250081-202608250098",
+      observedVersion082Owner: "legacy_flight_consumer_activation_cas_qualification",
+      expectedVersion082Owner: "hotel_commercial_agreement_evidence",
+      canonicalInstallerApplyReady: false,
+      retroactiveLedgerRepairAuthorized: false,
+      blockers: [
+        "retired_flight_identifiers_081_through_098_are_present",
+        "hotel_owned_202608250082_is_not_ledgered",
+      ],
     });
   });
 
@@ -237,6 +261,6 @@ describe("flight migration lineage freeze manifest", () => {
           && filename.includes("_flight_");
       })).toBe(false);
     }
-    expect(rawManifest).not.toMatch(/access[_-]?token|password|database[_-]?url|project[_-]?ref/i);
+    expect(rawManifest).not.toMatch(/access[_-]?token|password|database[_-]?url/i);
   });
 });

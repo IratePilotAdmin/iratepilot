@@ -9,6 +9,7 @@ import {
   FLIGHT_CONSUMER_PREVIEW_RELOCK_CONFIRMATION,
 } from "@/lib/flights/consumer-preview/activation-control.server";
 import {
+  FLIGHT_CONSUMER_PREVIEW_DUFFEL_RETAINED_ORDER_CONVERGENCE_CONFIRMATION,
   FLIGHT_CONSUMER_PREVIEW_DUFFEL_WEBHOOK_BOOTSTRAP_CONFIRMATION,
   FLIGHT_CONSUMER_PREVIEW_DUFFEL_WEBHOOK_PING_CONFIRMATION,
 } from "@/lib/flights/consumer-preview/duffel-webhook-bootstrap.server";
@@ -40,7 +41,13 @@ function NativeOperatorForm({
 }: Readonly<{
   confirmation: string;
   label: string;
-  operation: "bootstrap" | "ping" | "activate" | "recover_reprice" | "relock";
+  operation:
+    | "bootstrap"
+    | "ping"
+    | "activate"
+    | "converge_retained_order"
+    | "recover_reprice"
+    | "relock";
   primary?: boolean;
 }>) {
   return (
@@ -109,6 +116,13 @@ export default async function TemporaryDuffelWebhookBootstrapPage() {
             confirmation={FLIGHT_CONSUMER_PREVIEW_REPRICE_RECOVERY_CONFIRMATION}
             label="Native: Close one terminal TEST reprice without redispatch"
             operation="recover_reprice"
+          />
+          <NativeOperatorForm
+            confirmation={
+              FLIGHT_CONSUMER_PREVIEW_DUFFEL_RETAINED_ORDER_CONVERGENCE_CONFIRMATION
+            }
+            label="Native: Converge fixed Duffel TEST order from retained evidence"
+            operation="converge_retained_order"
           />
           <NativeOperatorForm
             confirmation={FLIGHT_CONSUMER_PREVIEW_RELOCK_CONFIRMATION}
