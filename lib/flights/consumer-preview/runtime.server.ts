@@ -6,6 +6,7 @@ import { validateDuffelSandboxAccessToken } from "../duffel/credentials.server";
 import { readFlightConsumerPreviewOfferEvidenceKeyring } from "./evidence-crypto.server";
 import { readFlightConsumerPreviewPiiKeyring } from "./pii-crypto.server";
 import { readFlightConsumerPreviewReferenceKeyring } from "./reference-crypto.server";
+import { hasIsolatedFlightConsumerPreviewStripeKeyPair } from "./stripe-credential.server";
 
 export const FLIGHT_CONSUMER_PREVIEW_MODE = "flight_consumer_preview_test" as const;
 export const FLIGHT_CONSUMER_PREVIEW_PROJECT_REF = "eiqmdldjnedqgbtoozqa" as const;
@@ -219,8 +220,7 @@ function requiresExact(
 }
 
 function testStripeKeysAreExact(env: FlightConsumerPreviewEnvironment) {
-  return /^sk_test_[A-Za-z0-9_]{8,}$/.test(env.STRIPE_SECRET_KEY ?? "")
-    && /^pk_test_[A-Za-z0-9_]{8,}$/.test(env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "");
+  return hasIsolatedFlightConsumerPreviewStripeKeyPair(env);
 }
 
 function testPreviewWebhookConfigurationIsSafe(

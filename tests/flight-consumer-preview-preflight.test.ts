@@ -19,6 +19,7 @@ function key() {
 function fixture() {
   const accountId = "acct_preview12345678";
   const accountSha256 = sha256(accountId);
+  const restrictedKey = "rk_test_preview_restricted_12345678";
   const authority = {
     version: "flight-consumer-preview-runtime-authority-v1",
     authorized: true,
@@ -79,8 +80,11 @@ function fixture() {
     ENABLE_LIVE_STRIPE_WEBHOOKS: "false",
     NEXT_PUBLIC_PUBLIC_BOOKING: "false",
     NEXT_PUBLIC_SUPABASE_URL: "https://eiqmdldjnedqgbtoozqa.supabase.co",
-    STRIPE_SECRET_KEY: "sk_test_12345678",
+    FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY: restrictedKey,
+    FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY_SHA256: sha256(restrictedKey),
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_test_12345678",
+    FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY_SHA256:
+      sha256("pk_test_12345678"),
     FLIGHT_CONSUMER_PREVIEW_STRIPE_WEBHOOK_SECRET: "whsec_preview123456789",
     FLIGHT_CONSUMER_PREVIEW_DUFFEL_WEBHOOK_SECRET: "duffel-preview-webhook-secret",
     STRIPE_WEBHOOK_SECRET: "whsec_generic123456789",
@@ -133,6 +137,8 @@ describe("Consumer Preview runtime preflight", () => {
     expect(result.ready).toBe(false);
     expect(result.checks.runtimeConfiguration).toBe(false);
     expect(result.checks.stripeAccountBinding).toBe(false);
-    expect(JSON.stringify(result)).not.toContain(env.STRIPE_SECRET_KEY);
+    expect(JSON.stringify(result)).not.toContain(
+      env.FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY,
+    );
   });
 });

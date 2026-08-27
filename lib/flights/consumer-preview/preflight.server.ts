@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { createAdminClient } from "../../supabase/admin";
 import { resolveFlightConsumerPreviewRuntime } from "./runtime.server";
+import { readFlightConsumerPreviewStripeRestrictedKey } from "./stripe-credential.server";
 
 const stripeAccountSchema = z.object({
   id: z.string().regex(/^acct_[A-Za-z0-9]{8,127}$/),
@@ -77,8 +78,8 @@ export async function inspectFlightConsumerPreviewPreflight(
   let stripeAccountSha256: string | null = null;
   let stripeTestAccount = false;
   let stripeAccountBinding = false;
-  const secret = env.STRIPE_SECRET_KEY ?? "";
-  if (/^sk_test_[A-Za-z0-9_]{8,}$/.test(secret)) {
+  try {
+    const secret = readFlightConsumerPreviewStripeRestrictedKey(env);
     try {
       const parsed = stripeAccountSchema.safeParse(
         await dependencies.fetchStripeAccount(secret),
@@ -96,6 +97,8 @@ export async function inspectFlightConsumerPreviewPreflight(
     } catch {
       stripeTestAccount = false;
     }
+  } catch {
+    stripeTestAccount = false;
   }
   if (!stripeTestAccount) issues.push("The Stripe test account identity could not be verified.");
   if (!stripeAccountBinding) issues.push("The Stripe test account is not bound end-to-end.");

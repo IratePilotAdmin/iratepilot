@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url";
 export const PREVIEW_PROJECT_REF = "eiqmdldjnedqgbtoozqa";
 
 const EXACT_VALUES = Object.freeze({
+  VERCEL_ENV: "preview",
   PILOT_MODE: "true",
   FLIGHT_CONSUMER_PREVIEW_ENABLED: "true",
   FLIGHT_RUNTIME_MODE: "sandbox",
@@ -93,11 +94,33 @@ export function auditFlightConsumerPreviewEnvironment(env) {
   if (!/^duffel_test_[A-Za-z0-9_-]{16,500}$/.test(env.DUFFEL_TEST_ACCESS_TOKEN ?? "")) {
     issue(issues, "DUFFEL_TEST_ACCESS_TOKEN", "not_test_credential");
   }
-  if (!/^sk_test_[A-Za-z0-9_]{8,}$/.test(env.STRIPE_SECRET_KEY ?? "")) {
-    issue(issues, "STRIPE_SECRET_KEY", "not_test_credential");
+  const stripeRestrictedKey =
+    env.FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY ?? "";
+  if (!/^rk_test_[A-Za-z0-9_]{8,}$/.test(stripeRestrictedKey)) {
+    issue(issues, "FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY", "not_restricted_test_credential");
   }
-  if (!/^pk_test_[A-Za-z0-9_]{8,}$/.test(env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "")) {
+  const stripeRestrictedKeySha256 =
+    env.FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY_SHA256 ?? "";
+  if (
+    !sha256Pattern.test(stripeRestrictedKeySha256)
+    || sha256(stripeRestrictedKey) !== stripeRestrictedKeySha256
+  ) {
+    issue(issues, "FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY_SHA256", "does_not_bind_restricted_key");
+  }
+  if ((env.STRIPE_SECRET_KEY ?? "").trim().length > 0) {
+    issue(issues, "STRIPE_SECRET_KEY", "broad_secret_must_be_absent");
+  }
+  const stripePublishableKey = env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
+  if (!/^pk_test_[A-Za-z0-9_]{8,}$/.test(stripePublishableKey)) {
     issue(issues, "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "not_test_credential");
+  }
+  const stripePublishableKeySha256 =
+    env.FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY_SHA256 ?? "";
+  if (
+    !sha256Pattern.test(stripePublishableKeySha256)
+    || sha256(stripePublishableKey) !== stripePublishableKeySha256
+  ) {
+    issue(issues, "FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY_SHA256", "does_not_bind_publishable_key");
   }
   if (!/^whsec_[A-Za-z0-9_]{16,}$/.test(env.FLIGHT_CONSUMER_PREVIEW_STRIPE_WEBHOOK_SECRET ?? "")) {
     issue(issues, "FLIGHT_CONSUMER_PREVIEW_STRIPE_WEBHOOK_SECRET", "invalid_dedicated_secret");
@@ -156,7 +179,10 @@ export async function verifyStripeTestAccountBinding(env, fetcher = fetch) {
   try {
     const response = await fetcher("https://api.stripe.com/v1/account", {
       method: "GET",
-      headers: { Authorization: `Bearer ${env.STRIPE_SECRET_KEY}` },
+      headers: {
+        Authorization:
+          `Bearer ${env.FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY}`,
+      },
       redirect: "error",
       signal: AbortSignal.timeout(15_000),
     });
@@ -176,13 +202,21 @@ export async function verifyStripeTestAccountBinding(env, fetcher = fetch) {
 }
 
 export async function discoverStripeTestAccountBinding(env, fetcher = fetch) {
-  if (!/^sk_test_[A-Za-z0-9_]{8,}$/.test(env.STRIPE_SECRET_KEY ?? "")) {
+  const restrictedKey =
+    env.FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY ?? "";
+  const restrictedKeySha256 =
+    env.FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY_SHA256 ?? "";
+  if (
+    !/^rk_test_[A-Za-z0-9_]{8,}$/.test(restrictedKey)
+    || !sha256Pattern.test(restrictedKeySha256)
+    || sha256(restrictedKey) !== restrictedKeySha256
+  ) {
     return Object.freeze({ discovered: false, reason: "test_secret_unavailable" });
   }
   try {
     const response = await fetcher("https://api.stripe.com/v1/account", {
       method: "GET",
-      headers: { Authorization: `Bearer ${env.STRIPE_SECRET_KEY}` },
+      headers: { Authorization: `Bearer ${restrictedKey}` },
       redirect: "error",
       signal: AbortSignal.timeout(15_000),
     });

@@ -16,6 +16,7 @@ import {
   readFlightConsumerPreviewReferenceKeyring,
 } from "./reference-crypto.server";
 import { requireFlightConsumerPreviewRequestRuntime } from "./runtime-authority.server";
+import { readFlightConsumerPreviewStripeRestrictedKey } from "./stripe-credential.server";
 
 export const FLIGHT_CONSUMER_PREVIEW_STRIPE_WEBHOOK_EVENTS = Object.freeze([
   "payment_intent.amount_capturable_updated",
@@ -33,7 +34,7 @@ const stripeEventIdSchema = z.string().regex(/^evt_[A-Za-z0-9]{8,255}$/);
 const paymentIntentIdSchema = z.string().regex(/^pi_[A-Za-z0-9]{8,127}$/);
 const chargeIdSchema = z.string().regex(/^ch_[A-Za-z0-9]{8,127}$/);
 const stripeAccountIdSchema = z.string().regex(/^acct_[A-Za-z0-9]{8,127}$/);
-const stripeTestSecretSchema = z.string().regex(/^sk_test_[A-Za-z0-9_]{8,}$/);
+const stripeTestSecretSchema = z.string().regex(/^rk_test_[A-Za-z0-9_]{8,}$/);
 const webhookSecretSchema = z.string().regex(/^whsec_[A-Za-z0-9_]{16,}$/);
 const positiveAmountSchema = z.number().int().min(1).max(99_999_999);
 const amountSchema = z.number().int().min(0).max(99_999_999);
@@ -339,8 +340,8 @@ function projectEvent(event: Stripe.Event) {
 class StripeSdkWebhookPort implements FlightConsumerPreviewStripeWebhookStripePort {
   readonly #stripe: ReturnType<typeof getStripe>;
 
-  constructor() {
-    this.#stripe = getStripe();
+  constructor(restrictedTestKey: string) {
+    this.#stripe = getStripe(restrictedTestKey);
   }
 
   constructEvent(rawBody: string, signature: string, webhookSecret: string) {
@@ -865,8 +866,9 @@ export function createInjectedFlightConsumerPreviewStripeWebhookWorkflow(
 export async function createFlightConsumerPreviewStripeWebhookWorkflow() {
   try {
     const runtime = await requireFlightConsumerPreviewRequestRuntime();
+    const restrictedTestKey = readFlightConsumerPreviewStripeRestrictedKey();
     const configuration = webhookConfigurationSchema.parse({
-      stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? "",
+      stripeSecretKey: restrictedTestKey,
       previewWebhookSecret: process.env.FLIGHT_CONSUMER_PREVIEW_STRIPE_WEBHOOK_SECRET ?? "",
       genericWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
       previewStripeAccountSha256:
@@ -881,7 +883,7 @@ export async function createFlightConsumerPreviewStripeWebhookWorkflow() {
       paymentSourceSha256: runtime.binding.paymentSourceSha256,
       paymentAdapterVersionSha256: runtime.binding.paymentAdapterVersionSha256,
     }, configuration, {
-      stripe: Object.freeze(new StripeSdkWebhookPort()),
+      stripe: Object.freeze(new StripeSdkWebhookPort(restrictedTestKey)),
       ledger: createFlightConsumerPreviewStripeWebhookLedgerPort(),
       readTrustedTime: () => new Date().toISOString(),
     });

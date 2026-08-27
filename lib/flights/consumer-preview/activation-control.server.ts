@@ -13,6 +13,7 @@ import {
 } from "./preflight.server";
 import { readFlightConsumerPreviewPiiKeyring } from "./pii-crypto.server";
 import { readFlightConsumerPreviewReferenceKeyring } from "./reference-crypto.server";
+import { hasIsolatedFlightConsumerPreviewStripeKeyPair } from "./stripe-credential.server";
 import { flightConsumerPreviewRuntimeAuthoritySchema } from "./runtime.server";
 
 export const FLIGHT_CONSUMER_PREVIEW_ACTIVATION_CONFIRMATION =
@@ -196,8 +197,7 @@ function activationEnvironmentIsReady(env: ActivationControlEnvironment) {
   ] as const) {
     if (typeof env[name] !== "string" || env[name]!.length < 16) return false;
   }
-  if (!/^sk_test_[A-Za-z0-9_]{8,}$/.test(env.STRIPE_SECRET_KEY ?? "")) return false;
-  if (!/^pk_test_[A-Za-z0-9_]{8,}$/.test(env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "")) return false;
+  if (!hasIsolatedFlightConsumerPreviewStripeKeyPair(env)) return false;
   if (!/^whsec_[A-Za-z0-9_]{16,}$/.test(
     env.FLIGHT_CONSUMER_PREVIEW_STRIPE_WEBHOOK_SECRET ?? "",
   )) return false;

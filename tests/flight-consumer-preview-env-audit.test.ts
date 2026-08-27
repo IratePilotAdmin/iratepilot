@@ -14,8 +14,10 @@ function sha256(value: string) {
 
 function validEnvironment() {
   const accountId = "acct_preview12345678";
+  const stripeRestrictedKey = "rk_test_preview_restricted_12345678";
   const key = () => randomBytes(32).toString("base64url");
   return {
+    VERCEL_ENV: "preview",
     PILOT_MODE: "true",
     FLIGHT_CONSUMER_PREVIEW_ENABLED: "true",
     FLIGHT_RUNTIME_MODE: "sandbox",
@@ -43,8 +45,12 @@ function validEnvironment() {
     SUPABASE_SERVICE_ROLE_KEY: "service-role-preview-key",
     DUFFEL_TEST_ACCESS_TOKEN: "duffel_test_1234567890abcdef",
     FLIGHT_DUFFEL_TEST_AUTHORITY_SECRET: "authority-secret-at-least-thirty-two-characters",
-    STRIPE_SECRET_KEY: "sk_test_12345678",
+    FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY: stripeRestrictedKey,
+    FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY_SHA256:
+      sha256(stripeRestrictedKey),
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_test_12345678",
+    FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY_SHA256:
+      sha256("pk_test_12345678"),
     STRIPE_WEBHOOK_SECRET: "whsec_generic123456789",
     FLIGHT_CONSUMER_PREVIEW_STRIPE_WEBHOOK_SECRET: "whsec_preview123456789",
     FLIGHT_CONSUMER_PREVIEW_DUFFEL_WEBHOOK_SECRET: "duffel-webhook-preview-secret",
@@ -86,8 +92,34 @@ describe("Consumer Preview environment audit", () => {
       { variable: "FLIGHT_CONSUMER_PREVIEW_STRIPE_ACCOUNT_SHA256", reason: "does_not_bind_account_id" },
       { variable: "FLIGHT_CONSUMER_PREVIEW_PII_HMAC_KEY_BASE64URL", reason: "must_differ_from_encryption_key" },
     ]));
-    expect(JSON.stringify(result)).not.toContain(env.STRIPE_SECRET_KEY);
+    expect(JSON.stringify(result)).not.toContain(
+      env.FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY,
+    );
     expect(JSON.stringify(result)).not.toContain(env.FLIGHT_CONSUMER_PREVIEW_PII_HMAC_KEY_BASE64URL);
+  });
+
+  it("rejects a non-Preview host, a broad shared key, or an unbound publishable key", () => {
+    const broad: Record<string, string> = validEnvironment();
+    broad.STRIPE_SECRET_KEY = "sk_test_broad_not_allowed_12345678";
+    expect(auditFlightConsumerPreviewEnvironment(broad).issues).toContainEqual({
+      variable: "STRIPE_SECRET_KEY",
+      reason: "broad_secret_must_be_absent",
+    });
+
+    const wrongEnvironment = validEnvironment();
+    wrongEnvironment.VERCEL_ENV = "production";
+    expect(auditFlightConsumerPreviewEnvironment(wrongEnvironment).issues).toContainEqual({
+      variable: "VERCEL_ENV",
+      reason: "unexpected_or_missing",
+    });
+
+    const unboundPublishable = validEnvironment();
+    unboundPublishable.FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY_SHA256 =
+      "0".repeat(64);
+    expect(auditFlightConsumerPreviewEnvironment(unboundPublishable).issues).toContainEqual({
+      variable: "FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY_SHA256",
+      reason: "does_not_bind_publishable_key",
+    });
   });
 
   it("parses quoted Vercel dotenv output and rejects unsupported lines", () => {
@@ -127,6 +159,16 @@ describe("Consumer Preview environment audit", () => {
       id: env.FLIGHT_CONSUMER_PREVIEW_STRIPE_ACCOUNT_ID,
       livemode: true,
     }), { status: 200 }))).resolves.toEqual({ discovered: false, reason: "invalid_test_account" });
+
+    const fetcher = vi.fn();
+    await expect(discoverStripeTestAccountBinding({
+      ...env,
+      FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY_SHA256: "0".repeat(64),
+    }, fetcher)).resolves.toEqual({
+      discovered: false,
+      reason: "test_secret_unavailable",
+    });
+    expect(fetcher).not.toHaveBeenCalled();
   });
 
   it("fails closed on a Stripe account mismatch or incomplete environment", async () => {

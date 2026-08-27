@@ -9,6 +9,7 @@ import {
   sha256FlightEvidence,
   type FlightCanonicalJsonValue,
 } from "../runtime-safety";
+import { readFlightConsumerPreviewStripeRestrictedKey } from "./stripe-credential.server";
 
 export const FLIGHT_CONSUMER_PREVIEW_STRIPE_CURRENCY = "usd" as const;
 export const FLIGHT_CONSUMER_PREVIEW_STRIPE_MAX_AMOUNT_CENTS = 99_999_999 as const;
@@ -20,7 +21,7 @@ const refundIdSchema = z.string().regex(/^re_[A-Za-z0-9]{8,127}$/);
 const clientSecretSchema = z.string().regex(/^pi_[A-Za-z0-9]{8,127}_secret_[A-Za-z0-9]{8,256}$/);
 const amountSchema = z.number().int().min(50).max(FLIGHT_CONSUMER_PREVIEW_STRIPE_MAX_AMOUNT_CENTS);
 const nonnegativeAmountSchema = z.number().int().min(0).max(FLIGHT_CONSUMER_PREVIEW_STRIPE_MAX_AMOUNT_CENTS);
-const stripeTestSecretSchema = z.string().regex(/^sk_test_[A-Za-z0-9_]{8,}$/);
+const stripeTestSecretSchema = z.string().regex(/^rk_test_[A-Za-z0-9_]{8,}$/);
 
 const paymentBindingSchema = z.object({
   orderId: uuidSchema,
@@ -573,8 +574,8 @@ function projectRefund(refund: Stripe.Refund) {
 class StripeSdkFlightConsumerPreviewAdapter implements FlightConsumerPreviewStripeAdapter {
   readonly #stripe: ReturnType<typeof getStripe>;
 
-  constructor() {
-    this.#stripe = getStripe();
+  constructor(restrictedTestKey: string) {
+    this.#stripe = getStripe(restrictedTestKey);
   }
 
   async createPaymentIntent(
@@ -986,6 +987,7 @@ export async function createFlightConsumerPreviewStripePayment(input: Readonly<{
 }>): Promise<FlightConsumerPreviewStripePayment> {
   let phase = "validate_adapter_binding";
   try {
+    const restrictedTestKey = readFlightConsumerPreviewStripeRestrictedKey();
     const identity = z.object({
       orderId: uuidSchema,
       customerId: uuidSchema,
@@ -1018,8 +1020,10 @@ export async function createFlightConsumerPreviewStripePayment(input: Readonly<{
       amountCents: identity.amountCents,
       ...identity.runtimeBinding,
     }, {
-      adapter: Object.freeze(new StripeSdkFlightConsumerPreviewAdapter()),
-      stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? "",
+      adapter: Object.freeze(new StripeSdkFlightConsumerPreviewAdapter(
+        restrictedTestKey,
+      )),
+      stripeSecretKey: restrictedTestKey,
     });
   } catch (error) {
     throw new FlightConsumerPreviewStripePaymentError(

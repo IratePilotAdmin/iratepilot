@@ -40,6 +40,7 @@ const nonce = "server_generated_nonce_1234567890";
 function fixtures() {
   const stripeAccountId = "acct_preview12345678";
   const stripeAccountSha256 = sha256(stripeAccountId);
+  const stripeRestrictedKey = "rk_test_preview_restricted_12345678";
   const env: Record<string, string> = {
     VERCEL_ENV: "preview",
     PILOT_MODE: "true",
@@ -67,8 +68,12 @@ function fixtures() {
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "preview-publishable-key",
     SUPABASE_SERVICE_ROLE_KEY: "preview-service-role-key",
     FLIGHT_DUFFEL_TEST_AUTHORITY_SECRET: "preview-duffel-authority-secret",
-    STRIPE_SECRET_KEY: "sk_test_12345678",
+    FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY: stripeRestrictedKey,
+    FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY_SHA256:
+      sha256(stripeRestrictedKey),
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_test_12345678",
+    FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY_SHA256:
+      sha256("pk_test_12345678"),
     FLIGHT_CONSUMER_PREVIEW_STRIPE_WEBHOOK_SECRET: "whsec_preview_1234567890",
     STRIPE_WEBHOOK_SECRET: "whsec_generic_1234567890",
     FLIGHT_CONSUMER_PREVIEW_DUFFEL_WEBHOOK_SECRET: "duffel-preview-webhook-secret",
@@ -250,7 +255,9 @@ describe("Flight Consumer Preview activation control", () => {
       activationEvidenceSha256: newEvidence,
       runtimeControlReceiptSha256: newReceipt,
     });
-    expect(JSON.stringify(result)).not.toContain(fixture.env.STRIPE_SECRET_KEY);
+    expect(JSON.stringify(result)).not.toContain(
+      fixture.env.FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY,
+    );
   });
 
   it("fails before DB preflight when any dedicated environment prerequisite is missing", async () => {

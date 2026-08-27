@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
@@ -9,6 +10,11 @@ import {
   resolveFlightConsumerPreviewRuntime,
   type FlightConsumerPreviewRuntimeAuthority,
 } from "../lib/flights/consumer-preview/runtime.server";
+
+const restrictedKey = "rk_test_preview_restricted_12345678";
+const restrictedKeySha256 = createHash("sha256")
+  .update(restrictedKey, "utf8")
+  .digest("hex");
 
 const baseEnv = Object.freeze({
   VERCEL_ENV: "preview",
@@ -28,8 +34,12 @@ const baseEnv = Object.freeze({
   FLIGHT_PRODUCTION_TRAFFIC_ENABLED: "false",
   FLIGHT_TRANSACTION_KILL_SWITCH: "disengaged",
   NEXT_PUBLIC_SUPABASE_URL: `https://${FLIGHT_CONSUMER_PREVIEW_PROJECT_REF}.supabase.co`,
-  STRIPE_SECRET_KEY: "sk_test_preview_secret_12345678",
+  FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY: restrictedKey,
+  FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY_SHA256: restrictedKeySha256,
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_test_preview_public_12345678",
+  FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY_SHA256: createHash("sha256")
+    .update("pk_test_preview_public_12345678", "utf8")
+    .digest("hex"),
   STRIPE_WEBHOOK_SECRET: "whsec_general_12345678",
   FLIGHT_CONSUMER_PREVIEW_STRIPE_WEBHOOK_SECRET: "whsec_preview_12345678",
   FLIGHT_CONSUMER_PREVIEW_DUFFEL_WEBHOOK_SECRET: "duffel-preview-webhook-secret",
@@ -125,7 +135,7 @@ describe("Flight Consumer Preview runtime gate", () => {
 
     const serialized = JSON.stringify(decision);
     for (const secret of [
-      baseEnv.STRIPE_SECRET_KEY,
+      baseEnv.FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY,
       baseEnv.STRIPE_WEBHOOK_SECRET,
       baseEnv.FLIGHT_CONSUMER_PREVIEW_STRIPE_WEBHOOK_SECRET,
       baseEnv.DUFFEL_TEST_ACCESS_TOKEN,
@@ -199,8 +209,11 @@ describe("Flight Consumer Preview runtime gate", () => {
     ["FLIGHT_SETTLEMENT_ENABLED", "false"],
     ["FLIGHT_TRANSACTION_KILL_SWITCH", "engaged"],
     ["FLIGHT_PRODUCTION_TRAFFIC_ENABLED", "true"],
-    ["STRIPE_SECRET_KEY", "sk_live_not_allowed_12345678"],
+    ["FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY", "sk_live_not_allowed_12345678"],
+    ["FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY_SHA256", "0".repeat(64)],
     ["NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "pk_live_not_allowed_12345678"],
+    ["FLIGHT_CONSUMER_PREVIEW_STRIPE_PUBLISHABLE_KEY_SHA256", "0".repeat(64)],
+    ["STRIPE_SECRET_KEY", "sk_test_broad_not_allowed_12345678"],
     ["DUFFEL_TEST_ACCESS_TOKEN", "duffel_live_not_allowed_12345678"],
     ["NEXT_PUBLIC_SUPABASE_URL", "https://production-project.supabase.co"],
   ])("fails closed when %s is %s", (name, value) => {
@@ -269,7 +282,10 @@ describe("Flight Consumer Preview runtime gate", () => {
   it("throws a generic unavailable error without echoing secrets", () => {
     let thrown: unknown;
     try {
-      requireFlightConsumerPreviewRuntime({ ...baseEnv, STRIPE_SECRET_KEY: "private-bad-value" }, authority);
+      requireFlightConsumerPreviewRuntime({
+        ...baseEnv,
+        FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY: "private-bad-value",
+      }, authority);
     } catch (error) {
       thrown = error;
     }

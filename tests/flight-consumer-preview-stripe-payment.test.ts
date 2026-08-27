@@ -31,7 +31,7 @@ const refundAttemptId = "55555555-5555-4555-8555-555555555555";
 const paymentIntentId = "pi_testpayment0001";
 const clientSecret = `${paymentIntentId}_secret_testsecret0001`;
 const refundId = "re_testrefund00001";
-const secretMarker = "sk_test_DO_NOT_LEAK_THIS_SECRET_12345678";
+const secretMarker = "rk_test_DO_NOT_LEAK_THIS_SECRET_12345678";
 
 const binding = Object.freeze({
   orderId,
@@ -300,7 +300,13 @@ function stripeKeyHash(key: string) {
 
 describe("Flight Consumer Preview Stripe test-payment orchestration", () => {
   it("projects a full runtime authority down to the exact Stripe binding", async () => {
-    vi.stubEnv("STRIPE_SECRET_KEY", secretMarker);
+    mocks.getStripe.mockClear();
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_broad_process_key_12345678");
+    vi.stubEnv("FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY", secretMarker);
+    vi.stubEnv(
+      "FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY_SHA256",
+      createHash("sha256").update(secretMarker, "utf8").digest("hex"),
+    );
     try {
       await expect(createFlightConsumerPreviewStripePayment({
         orderId,
@@ -317,6 +323,7 @@ describe("Flight Consumer Preview Stripe test-payment orchestration", () => {
         },
       } as Parameters<typeof createFlightConsumerPreviewStripePayment>[0]))
         .resolves.toBeDefined();
+      expect(mocks.getStripe).toHaveBeenCalledWith(secretMarker);
     } finally {
       vi.unstubAllEnvs();
     }
@@ -336,7 +343,11 @@ describe("Flight Consumer Preview Stripe test-payment orchestration", () => {
       url: "/v1/refunds",
     }));
     mocks.getStripe.mockReturnValue({ paymentIntents: { retrieve, capture }, refunds: { list } });
-    vi.stubEnv("STRIPE_SECRET_KEY", secretMarker);
+    vi.stubEnv("FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY", secretMarker);
+    vi.stubEnv(
+      "FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY_SHA256",
+      createHash("sha256").update(secretMarker, "utf8").digest("hex"),
+    );
     try {
       const payment = await createFlightConsumerPreviewStripePayment({
         orderId,
@@ -398,7 +409,11 @@ describe("Flight Consumer Preview Stripe test-payment orchestration", () => {
       url: "/v1/refunds",
     }));
     mocks.getStripe.mockReturnValue({ paymentIntents: { retrieve }, refunds: { list } });
-    vi.stubEnv("STRIPE_SECRET_KEY", secretMarker);
+    vi.stubEnv("FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY", secretMarker);
+    vi.stubEnv(
+      "FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY_SHA256",
+      createHash("sha256").update(secretMarker, "utf8").digest("hex"),
+    );
     try {
       const payment = await createFlightConsumerPreviewStripePayment({
         orderId,
@@ -445,7 +460,7 @@ describe("Flight Consumer Preview Stripe test-payment orchestration", () => {
       metadata: expectedMetadata,
     });
     const serialized = JSON.stringify(adapter.createCalls[0]!.parameters).toLowerCase();
-    expect(serialized).not.toMatch(/card_number|cardnumber|\bcvc\b|client_secret|sk_test_|sk_live_/);
+    expect(serialized).not.toMatch(/card_number|cardnumber|\bcvc\b|client_secret|rk_test_|sk_test_|sk_live_/);
   });
 
   it("derives stable, operation-bound, hash-only Stripe idempotency keys from UUID attempts", async () => {
@@ -467,8 +482,8 @@ describe("Flight Consumer Preview Stripe test-payment orchestration", () => {
     expect(another.paymentIdempotencyKeySha256).not.toBe(first.paymentIdempotencyKeySha256);
   });
 
-  it("rejects live, restricted, missing, and malformed Stripe keys before any operation", () => {
-    for (const key of ["sk_live_not_allowed_12345678", "rk_test_not_allowed_12345678", "", "private-key"]) {
+  it("rejects live, standard, missing, and malformed Stripe keys before any operation", () => {
+    for (const key of ["sk_live_not_allowed_12345678", "sk_test_not_allowed_12345678", "", "private-key"]) {
       expect(() => createSubject(new FakeStripeAdapter(), key)).toThrow(FlightConsumerPreviewStripePaymentError);
     }
   });

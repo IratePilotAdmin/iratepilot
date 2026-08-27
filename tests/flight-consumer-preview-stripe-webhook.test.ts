@@ -1,13 +1,21 @@
+import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 
+const mocks = vi.hoisted(() => ({
+  getStripe: vi.fn(),
+  requireRuntime: vi.fn(),
+}));
+
 vi.mock("server-only", () => ({}));
+vi.mock("../lib/stripe", () => ({ getStripe: mocks.getStripe }));
 vi.mock("../lib/flights/consumer-preview/runtime-authority.server", () => ({
-  requireFlightConsumerPreviewRequestRuntime: vi.fn(),
+  requireFlightConsumerPreviewRequestRuntime: mocks.requireRuntime,
 }));
 
 import {
   FLIGHT_CONSUMER_PREVIEW_STRIPE_WEBHOOK_MAX_BYTES,
   FlightConsumerPreviewStripeWebhookError,
+  createFlightConsumerPreviewStripeWebhookWorkflow,
   createInjectedFlightConsumerPreviewStripeWebhookWorkflow,
   type FlightConsumerPreviewStripeWebhookBinding,
   type FlightConsumerPreviewStripeWebhookConfiguration,
@@ -45,7 +53,7 @@ const binding: FlightConsumerPreviewStripeWebhookBinding = Object.freeze({
 });
 
 const configuration: FlightConsumerPreviewStripeWebhookConfiguration = Object.freeze({
-  stripeSecretKey: "sk_test_preview_secret_12345678",
+  stripeSecretKey: "rk_test_preview_restricted_12345678",
   previewWebhookSecret: "whsec_flight_preview_only_12345678",
   genericWebhookSecret: "whsec_generic_hotel_webhook_12345678",
   previewStripeAccountSha256: binding.paymentAccountSha256,
@@ -236,6 +244,36 @@ function createSubject(
 }
 
 describe("Flight Consumer Preview Stripe webhook ingestion", () => {
+  it("constructs the runtime Stripe client with only the dedicated restricted key", async () => {
+    const restrictedKey = "rk_test_preview_factory_12345678";
+    mocks.getStripe.mockClear();
+    mocks.getStripe.mockReturnValue({});
+    mocks.requireRuntime.mockResolvedValue({ binding });
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_broad_process_key_12345678");
+    vi.stubEnv("FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY", restrictedKey);
+    vi.stubEnv(
+      "FLIGHT_CONSUMER_PREVIEW_STRIPE_RESTRICTED_KEY_SHA256",
+      createHash("sha256").update(restrictedKey, "utf8").digest("hex"),
+    );
+    vi.stubEnv(
+      "FLIGHT_CONSUMER_PREVIEW_STRIPE_WEBHOOK_SECRET",
+      configuration.previewWebhookSecret,
+    );
+    vi.stubEnv("STRIPE_WEBHOOK_SECRET", configuration.genericWebhookSecret ?? "");
+    vi.stubEnv(
+      "FLIGHT_CONSUMER_PREVIEW_STRIPE_ACCOUNT_SHA256",
+      configuration.previewStripeAccountSha256,
+    );
+    vi.stubEnv("FLIGHT_CONSUMER_PREVIEW_STRIPE_ACCOUNT_ID", accountId);
+    try {
+      await expect(createFlightConsumerPreviewStripeWebhookWorkflow())
+        .resolves.toBeDefined();
+      expect(mocks.getStripe).toHaveBeenCalledWith(restrictedKey);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it.each([
     ["payment_intent.amount_capturable_updated", paymentIntent("requires_capture")],
     ["payment_intent.succeeded", paymentIntent("succeeded")],
