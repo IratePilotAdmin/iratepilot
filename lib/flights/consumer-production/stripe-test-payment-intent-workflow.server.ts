@@ -91,7 +91,7 @@ const foundationInputSchema = z.object({
 
 const observationSchema = z.object({
   source: z.enum(["stripe_webhook", "stripe_retrieve"]),
-  webhookSignatureVerified: z.boolean(),
+  callerClaimsWebhookSignatureVerified: z.boolean(),
   webhookEventIdSha256: sha256Schema.nullable(),
   webhookEventType: z.enum([
     "payment_intent.amount_capturable_updated",
@@ -112,24 +112,23 @@ const observationSchema = z.object({
   confirmationMethod: z.enum(["automatic", "manual"]),
   status: paymentIntentStatusSchema,
   metadataSha256: sha256Schema,
-  latestChargeMatches: z.boolean(),
+  callerClaimsLatestChargeMatches: z.boolean(),
   disputed: z.boolean(),
 }).strict().superRefine((value, context) => {
   if (
     value.source === "stripe_webhook"
-    && (!value.webhookSignatureVerified
-      || value.webhookEventIdSha256 === null
+    && (value.webhookEventIdSha256 === null
       || value.webhookEventType === null)
   ) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
-      path: ["webhookSignatureVerified"],
-      message: "Webhook observations require verified event evidence.",
+      path: ["webhookEventIdSha256"],
+      message: "Webhook candidates require caller-projected event evidence.",
     });
   }
   if (
     value.source === "stripe_retrieve"
-    && (value.webhookSignatureVerified
+    && (value.callerClaimsWebhookSignatureVerified
       || value.webhookEventIdSha256 !== null
       || value.webhookEventType !== null)
   ) {
@@ -141,14 +140,11 @@ const observationSchema = z.object({
   }
 });
 
-const refundInputSchema = z.object({
-  refundAttemptId: uuidSchema,
-  refundAmountCents: amountSchema,
-  reason: z.enum(["requested_by_customer", "duplicate", "fraudulent"]),
-}).strict();
-
 const recoveryInputSchema = z.object({
-  operation: z.enum(["create_payment_intent", "refund_payment"]),
+  operation: z.literal("create_payment_intent"),
+  paymentAttemptReferenceSha256: sha256Schema,
+  plannedIdempotencyRequestSha256: sha256Schema,
+  plannedIdempotencyKeySha256: sha256Schema,
   dispatchState: z.enum(["not_started", "started", "response_received"]),
   providerOutcome: z.enum([
     "not_observed",
@@ -163,26 +159,48 @@ const recoveryInputSchema = z.object({
     "succeeded",
     "failed",
   ]),
-}).strict();
+  leaseState: z.enum(["not_applicable", "active", "expired_attested"]),
+  reconciliationState: z.enum([
+    "not_run",
+    "provider_absence_attested",
+    "provider_present",
+    "unresolved",
+  ]),
+  reconciliationEvidenceSha256: sha256Schema.nullable(),
+}).strict().superRefine((value, context) => {
+  const reconciliationHasEvidence =
+    value.reconciliationState !== "not_run";
+  if (
+    reconciliationHasEvidence
+    !== (value.reconciliationEvidenceSha256 !== null)
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["reconciliationEvidenceSha256"],
+      message: "Reconciliation state and evidence must be complete.",
+    });
+  }
+});
 
 const authorityBrand = Symbol("flight-consumer-production-stripe-test-authority");
 
 export type FlightConsumerProductionStripeTestWorkflowAuthority = Readonly<{
-  version: "flight-consumer-production-stripe-test-workflow-authority-v1";
+  version: "flight-consumer-production-stripe-test-workflow-authority-v2";
   mode: "test_contract_only";
   processorCode: "stripe";
   processorEnvironment: "test";
   executionScopeSha256: string;
   paymentBindingSha256: string;
   accountSha256: string;
-  credentialBindingMatched: true;
-  webhookSecretBindingMatched: true;
+  credentialInputsSelfConsistent: true;
+  webhookSecretInputsSelfConsistent: true;
+  providerVerificationPerformed: false;
   allowedOperations: readonly [
     "plan_payment_intent",
-    "evaluate_test_webhook",
-    "reconcile_test_payment",
-    "plan_test_refund",
-    "classify_test_failure",
+    "classify_webhook_candidate",
+    "classify_retrieve_candidate",
+    "describe_refund_requirements",
+    "classify_payment_intent_recovery",
   ];
   providerDispatchEnabled: false;
   liveModeEnabled: false;
@@ -196,7 +214,7 @@ export type FlightConsumerProductionStripeTestWorkflowAuthority = Readonly<{
 }>;
 
 export type FlightConsumerProductionStripeTestWorkflowFoundation = Readonly<{
-  version: "flight-consumer-production-stripe-test-workflow-foundation-v1";
+  version: "flight-consumer-production-stripe-test-workflow-foundation-v2";
   mode: "test_contract_only";
   amountCents: number;
   currency: "usd";
@@ -211,15 +229,16 @@ export type FlightConsumerProductionStripeTestWorkflowFoundation = Readonly<{
   metadataSha256: string;
   requestBodySha256: string;
   requestEnvelopeSha256: string;
-  idempotencyRequestSha256: string;
-  idempotencyKeySha256: string;
+  plannedIdempotencyRequestSha256: string;
+  plannedIdempotencyKeySha256: string;
   workflowSha256: string;
   webhook: Readonly<{
-    rawBodyRequired: true;
-    stripeSignatureRequired: true;
-    signatureToleranceSeconds: 300;
+    futureRawBodyVerificationRequired: true;
+    callerSignatureClaimIsAuthentication: false;
+    trustedSignatureVerifierAvailable: false;
     livemodeRequired: false;
-    eventIdIdempotencyRequired: true;
+    futureDurableEventDeduplicationRequired: true;
+    durableEventDeduplicationAvailable: false;
     allowedEvents: readonly [
       "payment_intent.amount_capturable_updated",
       "payment_intent.payment_failed",
@@ -228,27 +247,38 @@ export type FlightConsumerProductionStripeTestWorkflowFoundation = Readonly<{
       "charge.refunded",
       "refund.updated",
     ];
-    outOfOrderStrategy: "retrieve_then_reconcile";
+    candidateOnly: true;
   }>;
   reconciliation: Readonly<{
-    sourceOfTruth: "stripe_retrieve_payment_intent";
-    exactBindingRequired: true;
+    futureSourceOfTruth: "trusted_stripe_retrieve_adapter";
+    trustedAdapterAvailable: false;
+    callerProjectionCanAuthorize: false;
+    paymentIntentReferenceBindingAvailable: false;
     latestChargeRequiredForCapture: true;
     refundAndDisputeInspectionRequired: true;
     mismatchDisposition: "manual_review";
   }>;
   refund: Readonly<{
-    capturedPaymentRequired: true;
-    exactAmountRequired: true;
-    distinctIdempotencyKeyRequired: true;
-    pendingRequiresReconciliation: true;
+    planningAvailable: false;
+    unavailableReason: "trusted_adapter_and_persistence_not_implemented";
+    futureCapturedPaymentAttestationRequired: true;
+    futureExactAmountRequired: true;
+    futureDistinctIdempotencyKeyRequired: true;
     dispatchEnabled: false;
   }>;
   recovery: Readonly<{
-    sameIdempotencyKeyRequired: true;
-    ambiguousDispatchRequiresReconciliation: true;
+    classificationOnly: true;
+    paymentAttemptBindingRequired: true;
+    plannedIdempotencyBindingRequired: true;
+    inProgressRetryRequiresExpiredLeaseAndProviderAbsence: true;
     blindRetryEnabled: false;
-    journalFailureRequiresReconciliation: true;
+    refundRecoveryAvailable: false;
+  }>;
+  persistence: Readonly<{
+    target: "none";
+    durableAttemptStateAvailable: false;
+    migration103CompatibilityImplemented: false;
+    migration103JournalWriteAvailable: false;
   }>;
   providerRequestCount: 0;
   stripeRequestCount: 0;
@@ -268,49 +298,41 @@ export type FlightConsumerProductionStripeTestWorkflowFoundation = Readonly<{
 }>;
 
 export type FlightConsumerProductionStripeTestObservation = Readonly<{
-  version: "flight-consumer-production-stripe-test-observation-v1";
-  decision: "pending" | "authorized" | "captured" | "quarantined";
+  version: "flight-consumer-production-stripe-test-observation-v2";
+  state:
+    | "awaiting_payment_method"
+    | "payment_failed"
+    | "awaiting_confirmation"
+    | "action_required"
+    | "processing"
+    | "authorization_candidate"
+    | "canceled"
+    | "capture_candidate";
+  disposition: "candidate_only" | "quarantined";
   reason:
-    | "matched_pending"
-    | "matched_authorized"
-    | "matched_captured"
+    | "caller_asserted_untrusted_evidence"
     | "binding_mismatch"
     | "live_mode_refused"
+    | "webhook_signature_untrusted"
     | "webhook_event_mismatch"
     | "refund_or_dispute_observed"
-    | "capture_state_mismatch";
+    | "capture_state_mismatch"
+    | "latest_charge_attestation_missing";
   source: "stripe_webhook" | "stripe_retrieve";
   paymentIntentReferenceSha256: string;
   evidenceSha256: string;
+  trustedAdapterEvidence: false;
+  webhookAuthenticated: false;
+  paymentIntentReferenceBound: false;
+  refundPlanningAvailable: false;
   providerMutationAuthorized: false;
   orderAuthorized: false;
   ticketingAuthorized: false;
   consumerReleaseEnabled: false;
 }>;
 
-export type FlightConsumerProductionStripeTestRefundPlan = Readonly<{
-  version: "flight-consumer-production-stripe-test-refund-plan-v1";
-  mode: "test_contract_only";
-  amountCents: number;
-  currency: "usd";
-  reason: "requested_by_customer" | "duplicate" | "fraudulent";
-  paymentIntentReferenceSha256: string;
-  refundAttemptReferenceSha256: string;
-  requestBodySha256: string;
-  requestEnvelopeSha256: string;
-  idempotencyRequestSha256: string;
-  idempotencyKeySha256: string;
-  refundPlanSha256: string;
-  dispatchEnabled: false;
-  refundAuthorized: false;
-  providerRequestCount: 0;
-  refundCount: 0;
-  externalRequestMade: false;
-  consumerReleaseEnabled: false;
-}>;
-
 export type FlightConsumerProductionStripeTestFailureRecovery = Readonly<{
-  version: "flight-consumer-production-stripe-test-failure-recovery-v1";
+  version: "flight-consumer-production-stripe-test-failure-recovery-v2";
   nextStep:
     | "retry_same_idempotency_key"
     | "reconcile_before_retry"
@@ -320,6 +342,11 @@ export type FlightConsumerProductionStripeTestFailureRecovery = Readonly<{
   sameIdempotencyKeyRequired: true;
   blindRetryAuthorized: false;
   providerDispatchAuthorized: false;
+  classificationOnly: true;
+  persistenceAvailable: false;
+  paymentAttemptReferenceSha256: string;
+  plannedIdempotencyRequestSha256: string;
+  plannedIdempotencyKeySha256: string;
   evidenceSha256: string;
 }>;
 
@@ -334,13 +361,7 @@ export class FlightConsumerProductionStripeTestWorkflowError extends Error {
 
 const issuedAuthorities = new WeakSet<object>();
 const foundationPrivate = new WeakMap<object, Readonly<{
-  orderId: string;
   workflowSha256: string;
-}>>();
-const acceptedCapturedObservations = new WeakMap<object, Readonly<{
-  foundation: object;
-  workflowSha256: string;
-  paymentIntentReferenceSha256: string;
 }>>();
 
 function deepFreeze<T>(value: T): Readonly<T> {
@@ -440,7 +461,7 @@ export function createFlightConsumerProductionStripeTestWorkflowAuthority(
   const paymentBinding = input.paymentBinding satisfies FlightRuntimePaymentBinding;
   const paymentBindingSha256 = digestFlightRuntimePaymentBinding(paymentBinding);
   const executionScopeSha256 = sha256FlightEvidence({
-    version: "flight-consumer-production-stripe-test-workflow-scope-v1",
+    version: "flight-consumer-production-stripe-test-workflow-scope-v2",
     processorCode: "stripe",
     processorEnvironment: "test",
     accountSha256,
@@ -455,21 +476,22 @@ export function createFlightConsumerProductionStripeTestWorkflowAuthority(
     transactionKillSwitchEngaged: true,
   });
   const authority = deepFreeze({
-    version: "flight-consumer-production-stripe-test-workflow-authority-v1" as const,
+    version: "flight-consumer-production-stripe-test-workflow-authority-v2" as const,
     mode: "test_contract_only" as const,
     processorCode: "stripe" as const,
     processorEnvironment: "test" as const,
     executionScopeSha256,
     paymentBindingSha256,
     accountSha256,
-    credentialBindingMatched: true as const,
-    webhookSecretBindingMatched: true as const,
+    credentialInputsSelfConsistent: true as const,
+    webhookSecretInputsSelfConsistent: true as const,
+    providerVerificationPerformed: false as const,
     allowedOperations: [
       "plan_payment_intent",
-      "evaluate_test_webhook",
-      "reconcile_test_payment",
-      "plan_test_refund",
-      "classify_test_failure",
+      "classify_webhook_candidate",
+      "classify_retrieve_candidate",
+      "describe_refund_requirements",
+      "classify_payment_intent_recovery",
     ] as const,
     providerDispatchEnabled: false as const,
     liveModeEnabled: false as const,
@@ -556,7 +578,7 @@ export function buildFlightConsumerProductionStripeTestWorkflowFoundation(
       requestBodySha256,
     },
   });
-  const createIdempotencyKeySha256 = idempotencyKeySha256(
+  const plannedIdempotencyKeySha256 = idempotencyKeySha256(
     idempotency.idempotencyKey,
   );
   const requestEnvelopeSha256 = sha256FlightEvidence({
@@ -564,12 +586,12 @@ export function buildFlightConsumerProductionStripeTestWorkflowFoundation(
     method: "POST",
     path: "/v1/payment_intents",
     requestBodySha256,
-    idempotencyRequestSha256: idempotency.requestDigest,
-    idempotencyKeySha256: createIdempotencyKeySha256,
+    plannedIdempotencyRequestSha256: idempotency.requestDigest,
+    plannedIdempotencyKeySha256,
     expectedLivemode: false,
   });
   const workflowSha256 = sha256FlightEvidence({
-    version: "flight-consumer-production-stripe-test-workflow-evidence-v1",
+    version: "flight-consumer-production-stripe-test-workflow-evidence-v2",
     amountCents: input.paymentAmountCents,
     currency: "usd",
     captureMethod: "manual",
@@ -583,12 +605,14 @@ export function buildFlightConsumerProductionStripeTestWorkflowFoundation(
     metadataSha256,
     requestBodySha256,
     requestEnvelopeSha256,
-    idempotencyRequestSha256: idempotency.requestDigest,
-    idempotencyKeySha256: createIdempotencyKeySha256,
+    plannedIdempotencyRequestSha256: idempotency.requestDigest,
+    plannedIdempotencyKeySha256,
+    persistenceTarget: "none",
+    migration103CompatibilityImplemented: false,
   });
 
   const foundation = deepFreeze({
-    version: "flight-consumer-production-stripe-test-workflow-foundation-v1" as const,
+    version: "flight-consumer-production-stripe-test-workflow-foundation-v2" as const,
     mode: "test_contract_only" as const,
     amountCents: input.paymentAmountCents,
     currency: "usd" as const,
@@ -603,15 +627,16 @@ export function buildFlightConsumerProductionStripeTestWorkflowFoundation(
     metadataSha256,
     requestBodySha256,
     requestEnvelopeSha256,
-    idempotencyRequestSha256: idempotency.requestDigest,
-    idempotencyKeySha256: createIdempotencyKeySha256,
+    plannedIdempotencyRequestSha256: idempotency.requestDigest,
+    plannedIdempotencyKeySha256,
     workflowSha256,
     webhook: {
-      rawBodyRequired: true as const,
-      stripeSignatureRequired: true as const,
-      signatureToleranceSeconds: 300 as const,
+      futureRawBodyVerificationRequired: true as const,
+      callerSignatureClaimIsAuthentication: false as const,
+      trustedSignatureVerifierAvailable: false as const,
       livemodeRequired: false as const,
-      eventIdIdempotencyRequired: true as const,
+      futureDurableEventDeduplicationRequired: true as const,
+      durableEventDeduplicationAvailable: false as const,
       allowedEvents: [
         "payment_intent.amount_capturable_updated",
         "payment_intent.payment_failed",
@@ -620,27 +645,39 @@ export function buildFlightConsumerProductionStripeTestWorkflowFoundation(
         "charge.refunded",
         "refund.updated",
       ] as const,
-      outOfOrderStrategy: "retrieve_then_reconcile" as const,
+      candidateOnly: true as const,
     },
     reconciliation: {
-      sourceOfTruth: "stripe_retrieve_payment_intent" as const,
-      exactBindingRequired: true as const,
+      futureSourceOfTruth: "trusted_stripe_retrieve_adapter" as const,
+      trustedAdapterAvailable: false as const,
+      callerProjectionCanAuthorize: false as const,
+      paymentIntentReferenceBindingAvailable: false as const,
       latestChargeRequiredForCapture: true as const,
       refundAndDisputeInspectionRequired: true as const,
       mismatchDisposition: "manual_review" as const,
     },
     refund: {
-      capturedPaymentRequired: true as const,
-      exactAmountRequired: true as const,
-      distinctIdempotencyKeyRequired: true as const,
-      pendingRequiresReconciliation: true as const,
+      planningAvailable: false as const,
+      unavailableReason:
+        "trusted_adapter_and_persistence_not_implemented" as const,
+      futureCapturedPaymentAttestationRequired: true as const,
+      futureExactAmountRequired: true as const,
+      futureDistinctIdempotencyKeyRequired: true as const,
       dispatchEnabled: false as const,
     },
     recovery: {
-      sameIdempotencyKeyRequired: true as const,
-      ambiguousDispatchRequiresReconciliation: true as const,
+      classificationOnly: true as const,
+      paymentAttemptBindingRequired: true as const,
+      plannedIdempotencyBindingRequired: true as const,
+      inProgressRetryRequiresExpiredLeaseAndProviderAbsence: true as const,
       blindRetryEnabled: false as const,
-      journalFailureRequiresReconciliation: true as const,
+      refundRecoveryAvailable: false as const,
+    },
+    persistence: {
+      target: "none" as const,
+      durableAttemptStateAvailable: false as const,
+      migration103CompatibilityImplemented: false as const,
+      migration103JournalWriteAvailable: false as const,
     },
     providerRequestCount: 0 as const,
     stripeRequestCount: 0 as const,
@@ -659,7 +696,6 @@ export function buildFlightConsumerProductionStripeTestWorkflowFoundation(
     consumerReleaseEnabled: false as const,
   });
   foundationPrivate.set(foundation, Object.freeze({
-    orderId: input.orderId,
     workflowSha256,
   }));
   return foundation;
@@ -671,6 +707,9 @@ function mismatchReason(
 ): FlightConsumerProductionStripeTestObservation["reason"] | null {
   if (observation.livemode) return "live_mode_refused";
   if (observation.source === "stripe_webhook") {
+    if (!observation.callerClaimsWebhookSignatureVerified) {
+      return "webhook_signature_untrusted";
+    }
     if (
       observation.webhookEventType === "charge.refunded"
       || observation.webhookEventType === "refund.updated"
@@ -711,14 +750,37 @@ function mismatchReason(
     )
   ) return "capture_state_mismatch";
   if (
+    observation.status === "requires_capture"
+    && !observation.callerClaimsLatestChargeMatches
+  ) return "latest_charge_attestation_missing";
+  if (
     observation.status === "succeeded"
     && (
       observation.amountCapturableCents !== 0
       || observation.amountReceivedCents !== foundation.amountCents
-      || !observation.latestChargeMatches
     )
   ) return "capture_state_mismatch";
+  if (
+    observation.status === "succeeded"
+    && !observation.callerClaimsLatestChargeMatches
+  ) return "latest_charge_attestation_missing";
   return null;
+}
+
+function observationState(
+  observation: z.infer<typeof observationSchema>,
+): FlightConsumerProductionStripeTestObservation["state"] {
+  if (
+    observation.webhookEventType === "payment_intent.payment_failed"
+  ) return "payment_failed";
+  const { status } = observation;
+  if (status === "requires_payment_method") return "awaiting_payment_method";
+  if (status === "requires_confirmation") return "awaiting_confirmation";
+  if (status === "requires_action") return "action_required";
+  if (status === "processing") return "processing";
+  if (status === "requires_capture") return "authorization_candidate";
+  if (status === "canceled") return "canceled";
+  return "capture_candidate";
 }
 
 export function evaluateFlightConsumerProductionStripeTestObservation(
@@ -737,27 +799,18 @@ export function evaluateFlightConsumerProductionStripeTestObservation(
   ) throw new FlightConsumerProductionStripeTestWorkflowError();
   const observation = accepted.data;
   const mismatch = mismatchReason(foundation, observation);
-  let decision: FlightConsumerProductionStripeTestObservation["decision"];
-  let reason: FlightConsumerProductionStripeTestObservation["reason"];
-  if (mismatch !== null) {
-    decision = "quarantined";
-    reason = mismatch;
-  } else if (observation.status === "requires_capture") {
-    decision = "authorized";
-    reason = "matched_authorized";
-  } else if (observation.status === "succeeded") {
-    decision = "captured";
-    reason = "matched_captured";
-  } else {
-    decision = "pending";
-    reason = "matched_pending";
-  }
+  const state = observationState(observation);
+  const disposition = mismatch === null ? "candidate_only" : "quarantined";
+  const reason = mismatch ?? "caller_asserted_untrusted_evidence";
   const evidenceSha256 = sha256FlightEvidence({
-    version: "flight-consumer-production-stripe-test-observation-evidence-v1",
+    version: "flight-consumer-production-stripe-test-observation-evidence-v2",
     workflowSha256: foundation.workflowSha256,
-    decision,
+    state,
+    disposition,
     reason,
     source: observation.source,
+    callerClaimsWebhookSignatureVerified:
+      observation.callerClaimsWebhookSignatureVerified,
     webhookEventIdSha256: observation.webhookEventIdSha256,
     webhookEventType: observation.webhookEventType,
     paymentIntentReferenceSha256: observation.paymentIntentReferenceSha256,
@@ -771,122 +824,28 @@ export function evaluateFlightConsumerProductionStripeTestObservation(
     confirmationMethod: observation.confirmationMethod,
     status: observation.status,
     metadataSha256: observation.metadataSha256,
-    latestChargeMatches: observation.latestChargeMatches,
+    callerClaimsLatestChargeMatches:
+      observation.callerClaimsLatestChargeMatches,
     disputed: observation.disputed,
+    trustedAdapterEvidence: false,
+    webhookAuthenticated: false,
+    paymentIntentReferenceBound: false,
   });
-  const result = deepFreeze({
-    version: "flight-consumer-production-stripe-test-observation-v1" as const,
-    decision,
+  return deepFreeze({
+    version: "flight-consumer-production-stripe-test-observation-v2" as const,
+    state,
+    disposition,
     reason,
     source: observation.source,
     paymentIntentReferenceSha256: observation.paymentIntentReferenceSha256,
     evidenceSha256,
+    trustedAdapterEvidence: false as const,
+    webhookAuthenticated: false as const,
+    paymentIntentReferenceBound: false as const,
+    refundPlanningAvailable: false as const,
     providerMutationAuthorized: false as const,
     orderAuthorized: false as const,
     ticketingAuthorized: false as const,
-    consumerReleaseEnabled: false as const,
-  });
-  if (decision === "captured") {
-    acceptedCapturedObservations.set(result, Object.freeze({
-      foundation,
-      workflowSha256: foundationBinding.workflowSha256,
-      paymentIntentReferenceSha256: observation.paymentIntentReferenceSha256,
-    }));
-  }
-  return result;
-}
-
-export function buildFlightConsumerProductionStripeTestRefundPlan(
-  authority: FlightConsumerProductionStripeTestWorkflowAuthority,
-  foundation: FlightConsumerProductionStripeTestWorkflowFoundation,
-  capturedObservation: FlightConsumerProductionStripeTestObservation,
-  untrustedInput: unknown,
-): FlightConsumerProductionStripeTestRefundPlan {
-  requireIssuedAuthority(authority);
-  const foundationBinding = foundationPrivate.get(foundation);
-  const captureBinding = acceptedCapturedObservations.get(capturedObservation);
-  const accepted = refundInputSchema.safeParse(untrustedInput);
-  if (
-    foundationBinding === undefined
-    || captureBinding === undefined
-    || captureBinding.foundation !== foundation
-    || captureBinding.workflowSha256 !== foundationBinding.workflowSha256
-    || foundation.executionScopeSha256 !== authority.executionScopeSha256
-    || !accepted.success
-    || accepted.data.refundAmountCents !== foundation.amountCents
-  ) throw new FlightConsumerProductionStripeTestWorkflowError();
-  const input = accepted.data;
-  const refundAttemptReferenceSha256 = referenceSha256(
-    "refund-attempt-reference",
-    input.refundAttemptId,
-  );
-  const requestBodySha256 = sha256FlightEvidence({
-    version: "flight-consumer-production-stripe-test-refund-body-v1",
-    amount: input.refundAmountCents,
-    reason: input.reason,
-    paymentIntentReferenceSha256: captureBinding.paymentIntentReferenceSha256,
-    refundAttemptReferenceSha256,
-    workflowSha256: foundation.workflowSha256,
-  });
-  const idempotency = buildFlightIdempotencyIntent({
-    operation: "refund_payment",
-    scopeId: foundationBinding.orderId,
-    requestId: input.refundAttemptId,
-    payload: {
-      version: "flight-consumer-production-stripe-test-refund-idempotency-v1",
-      amountCents: input.refundAmountCents,
-      currency: "USD",
-      reason: input.reason,
-      paymentIntentReferenceSha256: captureBinding.paymentIntentReferenceSha256,
-      refundAttemptReferenceSha256,
-      workflowSha256: foundation.workflowSha256,
-      captureObservationSha256: capturedObservation.evidenceSha256,
-    },
-  });
-  const refundIdempotencyKeySha256 = idempotencyKeySha256(
-    idempotency.idempotencyKey,
-  );
-  const requestEnvelopeSha256 = sha256FlightEvidence({
-    version: "flight-consumer-production-stripe-test-refund-envelope-v1",
-    method: "POST",
-    path: "/v1/refunds",
-    requestBodySha256,
-    idempotencyRequestSha256: idempotency.requestDigest,
-    idempotencyKeySha256: refundIdempotencyKeySha256,
-    expectedLivemode: false,
-  });
-  const refundPlanSha256 = sha256FlightEvidence({
-    version: "flight-consumer-production-stripe-test-refund-plan-evidence-v1",
-    amountCents: input.refundAmountCents,
-    currency: "usd",
-    reason: input.reason,
-    executionScopeSha256: foundation.executionScopeSha256,
-    paymentBindingSha256: foundation.paymentBindingSha256,
-    paymentIntentReferenceSha256: captureBinding.paymentIntentReferenceSha256,
-    refundAttemptReferenceSha256,
-    requestBodySha256,
-    requestEnvelopeSha256,
-    idempotencyRequestSha256: idempotency.requestDigest,
-    idempotencyKeySha256: refundIdempotencyKeySha256,
-  });
-  return deepFreeze({
-    version: "flight-consumer-production-stripe-test-refund-plan-v1" as const,
-    mode: "test_contract_only" as const,
-    amountCents: input.refundAmountCents,
-    currency: "usd" as const,
-    reason: input.reason,
-    paymentIntentReferenceSha256: captureBinding.paymentIntentReferenceSha256,
-    refundAttemptReferenceSha256,
-    requestBodySha256,
-    requestEnvelopeSha256,
-    idempotencyRequestSha256: idempotency.requestDigest,
-    idempotencyKeySha256: refundIdempotencyKeySha256,
-    refundPlanSha256,
-    dispatchEnabled: false as const,
-    refundAuthorized: false as const,
-    providerRequestCount: 0 as const,
-    refundCount: 0 as const,
-    externalRequestMade: false as const,
     consumerReleaseEnabled: false as const,
   });
 }
@@ -894,21 +853,58 @@ export function buildFlightConsumerProductionStripeTestRefundPlan(
 function failureRecoveryNextStep(
   input: z.infer<typeof recoveryInputSchema>,
 ): FlightConsumerProductionStripeTestFailureRecovery["nextStep"] | null {
+  if (
+    (input.dispatchState === "not_started"
+      && input.providerOutcome !== "not_observed")
+    || (input.dispatchState === "started"
+      && input.providerOutcome !== "not_observed")
+    || (input.dispatchState === "response_received"
+      && input.providerOutcome === "not_observed")
+  ) return null;
+  if (
+    input.journalState === "in_progress"
+    ? input.leaseState === "not_applicable"
+    : input.leaseState !== "not_applicable"
+  ) return null;
+  if (
+    input.reconciliationState === "provider_absence_attested"
+    && input.providerOutcome !== "not_observed"
+  ) return null;
+  if (
+    input.reconciliationState === "provider_present"
+    && input.providerOutcome === "not_observed"
+  ) return null;
   if (input.journalState === "succeeded") {
-    return input.providerOutcome === "success" ? "return_recorded_success" : null;
+    return input.dispatchState === "response_received"
+      && input.providerOutcome === "success"
+      ? "return_recorded_success"
+      : null;
   }
   if (input.journalState === "failed") {
-    return input.providerOutcome === "definitive_failure"
+    return input.dispatchState === "response_received"
+      && input.providerOutcome === "definitive_failure"
       ? "return_recorded_failure"
       : null;
   }
   if (
     input.dispatchState === "not_started"
     && input.providerOutcome === "not_observed"
-    && ["absent", "in_progress"].includes(input.journalState)
+    && input.journalState === "absent"
+    && input.reconciliationState === "not_run"
   ) return "retry_same_idempotency_key";
   if (
+    input.journalState === "in_progress"
+    && input.leaseState === "expired_attested"
+    && input.reconciliationState === "provider_absence_attested"
+  ) return "retry_same_idempotency_key";
+  if (
+    input.dispatchState === "response_received"
+    && input.providerOutcome === "definitive_failure"
+    && input.journalState === "in_progress"
+  ) return "manual_review";
+  if (
     input.journalState === "ambiguous"
+    || input.journalState === "in_progress"
     || input.dispatchState === "started"
     || input.providerOutcome === "pending"
     || (
@@ -916,33 +912,50 @@ function failureRecoveryNextStep(
       && input.providerOutcome === "success"
     )
   ) return "reconcile_before_retry";
-  if (
-    input.dispatchState === "response_received"
-    && input.providerOutcome === "definitive_failure"
-    && input.journalState === "in_progress"
-  ) return "manual_review";
   return null;
 }
 
 export function classifyFlightConsumerProductionStripeTestFailureRecovery(
   authority: FlightConsumerProductionStripeTestWorkflowAuthority,
+  foundation: FlightConsumerProductionStripeTestWorkflowFoundation,
   untrustedInput: unknown,
 ): FlightConsumerProductionStripeTestFailureRecovery {
   requireIssuedAuthority(authority);
+  const foundationBinding = foundationPrivate.get(foundation);
   const accepted = recoveryInputSchema.safeParse(untrustedInput);
-  if (!accepted.success) throw new FlightConsumerProductionStripeTestWorkflowError();
+  if (
+    foundationBinding === undefined
+    || foundation.executionScopeSha256 !== authority.executionScopeSha256
+    || foundation.paymentBindingSha256 !== authority.paymentBindingSha256
+    || !accepted.success
+    || accepted.data.paymentAttemptReferenceSha256
+      !== foundation.paymentAttemptReferenceSha256
+    || accepted.data.plannedIdempotencyRequestSha256
+      !== foundation.plannedIdempotencyRequestSha256
+    || accepted.data.plannedIdempotencyKeySha256
+      !== foundation.plannedIdempotencyKeySha256
+  ) throw new FlightConsumerProductionStripeTestWorkflowError();
   const nextStep = failureRecoveryNextStep(accepted.data);
   if (nextStep === null) throw new FlightConsumerProductionStripeTestWorkflowError();
   return deepFreeze({
-    version: "flight-consumer-production-stripe-test-failure-recovery-v1" as const,
+    version: "flight-consumer-production-stripe-test-failure-recovery-v2" as const,
     nextStep,
     sameIdempotencyKeyRequired: true as const,
     blindRetryAuthorized: false as const,
     providerDispatchAuthorized: false as const,
+    classificationOnly: true as const,
+    persistenceAvailable: false as const,
+    paymentAttemptReferenceSha256:
+      accepted.data.paymentAttemptReferenceSha256,
+    plannedIdempotencyRequestSha256:
+      accepted.data.plannedIdempotencyRequestSha256,
+    plannedIdempotencyKeySha256:
+      accepted.data.plannedIdempotencyKeySha256,
     evidenceSha256: sha256FlightEvidence({
-      version: "flight-consumer-production-stripe-test-failure-recovery-evidence-v1",
+      version: "flight-consumer-production-stripe-test-failure-recovery-evidence-v2",
       executionScopeSha256: authority.executionScopeSha256,
       paymentBindingSha256: authority.paymentBindingSha256,
+      workflowSha256: foundationBinding.workflowSha256,
       ...accepted.data,
       nextStep,
     }),

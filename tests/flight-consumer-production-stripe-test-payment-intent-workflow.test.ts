@@ -5,7 +5,6 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import {
-  buildFlightConsumerProductionStripeTestRefundPlan,
   buildFlightConsumerProductionStripeTestWorkflowFoundation,
   classifyFlightConsumerProductionStripeTestFailureRecovery,
   createFlightConsumerProductionStripeTestWorkflowAuthority,
@@ -71,46 +70,78 @@ function foundationInput() {
   };
 }
 
-function buildFoundation() {
+function buildFoundation(input = foundationInput()) {
   const authority = createFlightConsumerProductionStripeTestWorkflowAuthority(
     authorityInput(),
   );
   const foundation =
     buildFlightConsumerProductionStripeTestWorkflowFoundation(
       authority,
-      foundationInput(),
+      input,
     );
   return { authority, foundation };
 }
 
-function retrieveObservation(
-  foundation: ReturnType<
-    typeof buildFlightConsumerProductionStripeTestWorkflowFoundation
-  >,
+type Foundation = ReturnType<
+  typeof buildFlightConsumerProductionStripeTestWorkflowFoundation
+>;
+
+function retrieveCandidate(
+  foundation: Foundation,
+  status:
+    | "requires_payment_method"
+    | "requires_confirmation"
+    | "requires_action"
+    | "processing"
+    | "requires_capture"
+    | "canceled"
+    | "succeeded" = "requires_capture",
 ) {
+  const authorized = status === "requires_capture";
+  const captured = status === "succeeded";
   return {
     source: "stripe_retrieve" as const,
-    webhookSignatureVerified: false,
+    callerClaimsWebhookSignatureVerified: false,
     webhookEventIdSha256: null,
     webhookEventType: null,
     paymentIntentReferenceSha256: digest("9"),
     livemode: false,
     amountCents: foundation.amountCents,
-    amountCapturableCents: foundation.amountCents,
-    amountReceivedCents: 0,
+    amountCapturableCents: authorized ? foundation.amountCents : 0,
+    amountReceivedCents: captured ? foundation.amountCents : 0,
     amountRefundedCents: 0,
     currency: "usd",
     captureMethod: "manual" as const,
     confirmationMethod: "automatic" as const,
-    status: "requires_capture" as const,
+    status,
     metadataSha256: foundation.metadataSha256,
-    latestChargeMatches: false,
+    callerClaimsLatestChargeMatches: authorized || captured,
     disputed: false,
   };
 }
 
+function recoveryInput(
+  foundation: Foundation,
+  changes: Readonly<Record<string, unknown>> = {},
+) {
+  return {
+    operation: "create_payment_intent",
+    paymentAttemptReferenceSha256: foundation.paymentAttemptReferenceSha256,
+    plannedIdempotencyRequestSha256:
+      foundation.plannedIdempotencyRequestSha256,
+    plannedIdempotencyKeySha256: foundation.plannedIdempotencyKeySha256,
+    dispatchState: "not_started",
+    providerOutcome: "not_observed",
+    journalState: "absent",
+    leaseState: "not_applicable",
+    reconciliationState: "not_run",
+    reconciliationEvidenceSha256: null,
+    ...changes,
+  };
+}
+
 describe("Flight Consumer Production Stripe TEST PaymentIntent workflow foundation", () => {
-  it("issues a test-only, contract-only authority without exposing credentials", () => {
+  it("issues only self-consistent local contract authority", () => {
     const first = createFlightConsumerProductionStripeTestWorkflowAuthority(
       authorityInput(),
     );
@@ -120,21 +151,22 @@ describe("Flight Consumer Production Stripe TEST PaymentIntent workflow foundati
 
     expect(second).toEqual(first);
     expect(first).toMatchObject({
-      version: "flight-consumer-production-stripe-test-workflow-authority-v1",
+      version: "flight-consumer-production-stripe-test-workflow-authority-v2",
       mode: "test_contract_only",
       processorCode: "stripe",
       processorEnvironment: "test",
       executionScopeSha256: expect.stringMatching(/^[0-9a-f]{64}$/),
       paymentBindingSha256: expect.stringMatching(/^[0-9a-f]{64}$/),
       accountSha256: expect.stringMatching(/^[0-9a-f]{64}$/),
-      credentialBindingMatched: true,
-      webhookSecretBindingMatched: true,
+      credentialInputsSelfConsistent: true,
+      webhookSecretInputsSelfConsistent: true,
+      providerVerificationPerformed: false,
       allowedOperations: [
         "plan_payment_intent",
-        "evaluate_test_webhook",
-        "reconcile_test_payment",
-        "plan_test_refund",
-        "classify_test_failure",
+        "classify_webhook_candidate",
+        "classify_retrieve_candidate",
+        "describe_refund_requirements",
+        "classify_payment_intent_recovery",
       ],
       providerDispatchEnabled: false,
       liveModeEnabled: false,
@@ -153,7 +185,7 @@ describe("Flight Consumer Production Stripe TEST PaymentIntent workflow foundati
     expect(serialized).not.toContain(webhookTestSecret);
   });
 
-  it("binds authority to exact credential, account, webhook, scope, and adapter evidence", () => {
+  it("binds local authority evidence to every supplied scope input", () => {
     const base = authorityInput();
     const expected = createFlightConsumerProductionStripeTestWorkflowAuthority(
       base,
@@ -192,7 +224,6 @@ describe("Flight Consumer Production Stripe TEST PaymentIntent workflow foundati
         },
       },
     ];
-
     for (const input of changed) {
       expect(
         createFlightConsumerProductionStripeTestWorkflowAuthority(input)
@@ -214,6 +245,10 @@ describe("Flight Consumer Production Stripe TEST PaymentIntent workflow foundati
         ...base,
         paymentBinding: { ...base.paymentBinding, processorId: "stripe_live" },
       },
+      {
+        ...base,
+        paymentBinding: { ...base.paymentBinding, rawCredential: "not_allowed" },
+      },
       { ...base, providerDispatchEnabled: true },
       { ...base, liveModeEnabled: true },
       { ...base, productionPaymentEnabled: true },
@@ -222,9 +257,7 @@ describe("Flight Consumer Production Stripe TEST PaymentIntent workflow foundati
       { ...base, ticketingEnabled: true },
       { ...base, consumerReleaseEnabled: true },
       { ...base, transactionKillSwitchEngaged: false },
-      { ...base, secretKey: restrictedTestKey },
     ];
-
     for (const input of refused) {
       expect(() =>
         createFlightConsumerProductionStripeTestWorkflowAuthority(input)
@@ -232,67 +265,70 @@ describe("Flight Consumer Production Stripe TEST PaymentIntent workflow foundati
     }
 
     const issued = createFlightConsumerProductionStripeTestWorkflowAuthority(base);
-    const forged = { ...issued } as typeof issued;
-    expect(() =>
-      buildFlightConsumerProductionStripeTestWorkflowFoundation(
-        forged,
-        foundationInput(),
-      )
-    ).toThrow(FlightConsumerProductionStripeTestWorkflowError);
+    expect(() => buildFlightConsumerProductionStripeTestWorkflowFoundation(
+      { ...issued } as typeof issued,
+      foundationInput(),
+    )).toThrow(FlightConsumerProductionStripeTestWorkflowError);
   });
 
-  it("builds deterministic manual-capture TEST contracts with no execution authority", () => {
-    const authority = createFlightConsumerProductionStripeTestWorkflowAuthority(
-      authorityInput(),
-    );
-    const first = buildFlightConsumerProductionStripeTestWorkflowFoundation(
-      authority,
-      foundationInput(),
-    );
-    const second = buildFlightConsumerProductionStripeTestWorkflowFoundation(
+  it("builds deterministic request evidence without persistence or capability", () => {
+    const { authority, foundation } = buildFoundation();
+    const repeated = buildFlightConsumerProductionStripeTestWorkflowFoundation(
       authority,
       foundationInput(),
     );
 
-    expect(second).toEqual(first);
-    expect(first).toMatchObject({
-      version: "flight-consumer-production-stripe-test-workflow-foundation-v1",
+    expect(repeated).toEqual(foundation);
+    expect(foundation).toMatchObject({
+      version: "flight-consumer-production-stripe-test-workflow-foundation-v2",
       mode: "test_contract_only",
       amountCents: 25_000,
       currency: "usd",
       captureMethod: "manual",
       confirmationMethod: "automatic",
       paymentMethodTypes: ["card"],
-      executionScopeSha256: authority.executionScopeSha256,
-      paymentBindingSha256: authority.paymentBindingSha256,
-      workflowSha256: expect.stringMatching(/^[0-9a-f]{64}$/),
+      plannedIdempotencyRequestSha256:
+        expect.stringMatching(/^[0-9a-f]{64}$/),
+      plannedIdempotencyKeySha256: expect.stringMatching(/^[0-9a-f]{64}$/),
       webhook: {
-        rawBodyRequired: true,
-        stripeSignatureRequired: true,
-        signatureToleranceSeconds: 300,
+        futureRawBodyVerificationRequired: true,
+        callerSignatureClaimIsAuthentication: false,
+        trustedSignatureVerifierAvailable: false,
         livemodeRequired: false,
-        eventIdIdempotencyRequired: true,
-        outOfOrderStrategy: "retrieve_then_reconcile",
+        futureDurableEventDeduplicationRequired: true,
+        durableEventDeduplicationAvailable: false,
+        candidateOnly: true,
       },
       reconciliation: {
-        sourceOfTruth: "stripe_retrieve_payment_intent",
-        exactBindingRequired: true,
+        futureSourceOfTruth: "trusted_stripe_retrieve_adapter",
+        trustedAdapterAvailable: false,
+        callerProjectionCanAuthorize: false,
+        paymentIntentReferenceBindingAvailable: false,
         latestChargeRequiredForCapture: true,
         refundAndDisputeInspectionRequired: true,
         mismatchDisposition: "manual_review",
       },
       refund: {
-        capturedPaymentRequired: true,
-        exactAmountRequired: true,
-        distinctIdempotencyKeyRequired: true,
-        pendingRequiresReconciliation: true,
+        planningAvailable: false,
+        unavailableReason: "trusted_adapter_and_persistence_not_implemented",
+        futureCapturedPaymentAttestationRequired: true,
+        futureExactAmountRequired: true,
+        futureDistinctIdempotencyKeyRequired: true,
         dispatchEnabled: false,
       },
       recovery: {
-        sameIdempotencyKeyRequired: true,
-        ambiguousDispatchRequiresReconciliation: true,
+        classificationOnly: true,
+        paymentAttemptBindingRequired: true,
+        plannedIdempotencyBindingRequired: true,
+        inProgressRetryRequiresExpiredLeaseAndProviderAbsence: true,
         blindRetryEnabled: false,
-        journalFailureRequiresReconciliation: true,
+        refundRecoveryAvailable: false,
+      },
+      persistence: {
+        target: "none",
+        durableAttemptStateAvailable: false,
+        migration103CompatibilityImplemented: false,
+        migration103JournalWriteAvailable: false,
       },
       providerRequestCount: 0,
       stripeRequestCount: 0,
@@ -310,9 +346,8 @@ describe("Flight Consumer Production Stripe TEST PaymentIntent workflow foundati
       ticketingAuthorized: false,
       consumerReleaseEnabled: false,
     });
-    expect(new Set(first.webhook.allowedEvents).size).toBe(6);
-    expect(Object.isFrozen(first)).toBe(true);
-    expect(Object.isFrozen(first.webhook.allowedEvents)).toBe(true);
+    expect(new Set(foundation.webhook.allowedEvents).size).toBe(6);
+    expect(Object.isFrozen(foundation.webhook.allowedEvents)).toBe(true);
   });
 
   it("changes workflow evidence for every authoritative input", () => {
@@ -334,7 +369,6 @@ describe("Flight Consumer Production Stripe TEST PaymentIntent workflow foundati
       { ...base, orderPlanSha256: digest("c") },
       { ...base, orderRequestEnvelopeSha256: digest("d") },
     ];
-
     for (const input of changed) {
       expect(buildFlightConsumerProductionStripeTestWorkflowFoundation(
         authority,
@@ -343,7 +377,7 @@ describe("Flight Consumer Production Stripe TEST PaymentIntent workflow foundati
     }
   });
 
-  it("rejects amount drift, duplicate identities, prohibited fields, and malformed evidence", () => {
+  it("rejects amount drift, duplicate identities, sensitive fields, and malformed evidence", () => {
     const authority = createFlightConsumerProductionStripeTestWorkflowAuthority(
       authorityInput(),
     );
@@ -357,109 +391,123 @@ describe("Flight Consumer Production Stripe TEST PaymentIntent workflow foundati
       { ...base, paymentIntentId: "pi_not_allowed" },
       { ...base, clientSecret: "pi_not_allowed_secret_value" },
       { ...base, cardNumber: "4242424242424242" },
-      { ...base, credential: restrictedTestKey },
     ];
     for (const input of refused) {
-      expect(() =>
-        buildFlightConsumerProductionStripeTestWorkflowFoundation(
-          authority,
-          input,
-        )
-      ).toThrow(FlightConsumerProductionStripeTestWorkflowError);
+      expect(() => buildFlightConsumerProductionStripeTestWorkflowFoundation(
+        authority,
+        input,
+      )).toThrow(FlightConsumerProductionStripeTestWorkflowError);
     }
   });
 
-  it("evaluates signed webhook and retrieve observations without granting mutations", () => {
+  it.each([
+    ["requires_payment_method", "awaiting_payment_method"],
+    ["requires_confirmation", "awaiting_confirmation"],
+    ["requires_action", "action_required"],
+    ["processing", "processing"],
+    ["requires_capture", "authorization_candidate"],
+    ["canceled", "canceled"],
+    ["succeeded", "capture_candidate"],
+  ] as const)("keeps Stripe state %s explicit as %s", (status, state) => {
     const { authority, foundation } = buildFoundation();
-    const authorized = evaluateFlightConsumerProductionStripeTestObservation(
+    const result = evaluateFlightConsumerProductionStripeTestObservation(
       authority,
       foundation,
-      retrieveObservation(foundation),
+      retrieveCandidate(foundation, status),
     );
-    const captured = evaluateFlightConsumerProductionStripeTestObservation(
-      authority,
-      foundation,
-      {
-        ...retrieveObservation(foundation),
-        amountCapturableCents: 0,
-        amountReceivedCents: foundation.amountCents,
-        status: "succeeded",
-        latestChargeMatches: true,
-      },
-    );
-    const pending = evaluateFlightConsumerProductionStripeTestObservation(
-      authority,
-      foundation,
-      {
-        ...retrieveObservation(foundation),
-        amountCapturableCents: 0,
-        status: "processing",
-      },
-    );
-    const webhook = evaluateFlightConsumerProductionStripeTestObservation(
-      authority,
-      foundation,
-      {
-        ...retrieveObservation(foundation),
-        source: "stripe_webhook",
-        webhookSignatureVerified: true,
-        webhookEventIdSha256: digest("a"),
-        webhookEventType: "payment_intent.amount_capturable_updated",
-      },
-    );
-    const inconsistentWebhook =
-      evaluateFlightConsumerProductionStripeTestObservation(
-        authority,
-        foundation,
-        {
-          ...retrieveObservation(foundation),
-          source: "stripe_webhook",
-          webhookSignatureVerified: true,
-          webhookEventIdSha256: digest("b"),
-          webhookEventType: "payment_intent.succeeded",
-        },
-      );
-    const refundWebhook = evaluateFlightConsumerProductionStripeTestObservation(
-      authority,
-      foundation,
-      {
-        ...retrieveObservation(foundation),
-        source: "stripe_webhook",
-        webhookSignatureVerified: true,
-        webhookEventIdSha256: digest("c"),
-        webhookEventType: "charge.refunded",
-      },
-    );
-
-    expect(authorized).toMatchObject({
-      decision: "authorized",
-      reason: "matched_authorized",
+    expect(result).toMatchObject({
+      state,
+      disposition: "candidate_only",
+      reason: "caller_asserted_untrusted_evidence",
+      trustedAdapterEvidence: false,
+      webhookAuthenticated: false,
+      paymentIntentReferenceBound: false,
+      refundPlanningAvailable: false,
       providerMutationAuthorized: false,
       orderAuthorized: false,
       ticketingAuthorized: false,
       consumerReleaseEnabled: false,
     });
-    expect(captured).toMatchObject({
-      decision: "captured",
-      reason: "matched_captured",
-    });
-    expect(pending).toMatchObject({
-      decision: "pending",
-      reason: "matched_pending",
-    });
-    expect(webhook).toMatchObject({
+  });
+
+  it.each(["requires_capture", "succeeded"] as const)(
+    "quarantines %s without latest-charge attestation",
+    (status) => {
+      const { authority, foundation } = buildFoundation();
+      const candidate = retrieveCandidate(foundation, status);
+      expect(evaluateFlightConsumerProductionStripeTestObservation(
+        authority,
+        foundation,
+        { ...candidate, callerClaimsLatestChargeMatches: false },
+      )).toMatchObject({
+        disposition: "quarantined",
+        reason: "latest_charge_attestation_missing",
+        refundPlanningAvailable: false,
+      });
+    },
+  );
+
+  it("classifies caller-asserted webhook candidates without authenticating them", () => {
+    const { authority, foundation } = buildFoundation();
+    const webhook = {
+      ...retrieveCandidate(foundation, "requires_payment_method"),
       source: "stripe_webhook",
-      decision: "authorized",
+      callerClaimsWebhookSignatureVerified: true,
+      webhookEventIdSha256: digest("a"),
+      webhookEventType: "payment_intent.payment_failed",
+    };
+    const claimed = evaluateFlightConsumerProductionStripeTestObservation(
+      authority,
+      foundation,
+      webhook,
+    );
+    const unclaimed = evaluateFlightConsumerProductionStripeTestObservation(
+      authority,
+      foundation,
+      { ...webhook, callerClaimsWebhookSignatureVerified: false },
+    );
+
+    expect(claimed).toMatchObject({
+      state: "payment_failed",
+      disposition: "candidate_only",
+      reason: "caller_asserted_untrusted_evidence",
+      webhookAuthenticated: false,
+      trustedAdapterEvidence: false,
+      paymentIntentReferenceBound: false,
+      refundPlanningAvailable: false,
     });
-    expect(inconsistentWebhook).toMatchObject({
-      decision: "quarantined",
-      reason: "webhook_event_mismatch",
+    expect(unclaimed).toMatchObject({
+      disposition: "quarantined",
+      reason: "webhook_signature_untrusted",
+      webhookAuthenticated: false,
     });
-    expect(refundWebhook).toMatchObject({
-      decision: "quarantined",
-      reason: "refund_or_dispute_observed",
-    });
-    expect(Object.isFrozen(captured)).toBe(true);
+  });
+
+  it("never binds a caller-projected PaymentIntent reference", () => {
+    const { authority, foundation } = buildFoundation();
+    const first = evaluateFlightConsumerProductionStripeTestObservation(
+      authority,
+      foundation,
+      retrieveCandidate(foundation, "succeeded"),
+    );
+    const second = evaluateFlightConsumerProductionStripeTestObservation(
+      authority,
+      foundation,
+      {
+        ...retrieveCandidate(foundation, "succeeded"),
+        paymentIntentReferenceSha256: digest("a"),
+      },
+    );
+    for (const result of [first, second]) {
+      expect(result).toMatchObject({
+        state: "capture_candidate",
+        disposition: "candidate_only",
+        paymentIntentReferenceBound: false,
+        trustedAdapterEvidence: false,
+        refundPlanningAvailable: false,
+      });
+    }
+    expect(second.evidenceSha256).not.toBe(first.evidenceSha256);
   });
 
   it.each([
@@ -471,242 +519,287 @@ describe("Flight Consumer Production Stripe TEST PaymentIntent workflow foundati
     ["refund observed", { amountRefundedCents: 1 }, "refund_or_dispute_observed"],
     ["dispute observed", { disputed: true }, "refund_or_dispute_observed"],
     ["capturable drift", { amountCapturableCents: 1 }, "capture_state_mismatch"],
-  ])("quarantines %s observations", (_label, change, reason) => {
+  ])("quarantines %s candidates", (_label, change, reason) => {
     const { authority, foundation } = buildFoundation();
     expect(evaluateFlightConsumerProductionStripeTestObservation(
       authority,
       foundation,
-      { ...retrieveObservation(foundation), ...change },
-    )).toMatchObject({ decision: "quarantined", reason });
+      { ...retrieveCandidate(foundation), ...change },
+    )).toMatchObject({ disposition: "quarantined", reason });
   });
 
-  it("rejects unsigned webhooks, webhook fields on retrieves, and extra provider data", () => {
+  it("quarantines webhook event/status conflicts and refund events", () => {
     const { authority, foundation } = buildFoundation();
-    const base = retrieveObservation(foundation);
+    const base = {
+      ...retrieveCandidate(foundation),
+      source: "stripe_webhook",
+      callerClaimsWebhookSignatureVerified: true,
+      webhookEventIdSha256: digest("a"),
+    };
+    expect(evaluateFlightConsumerProductionStripeTestObservation(
+      authority,
+      foundation,
+      { ...base, webhookEventType: "payment_intent.succeeded" },
+    )).toMatchObject({
+      disposition: "quarantined",
+      reason: "webhook_event_mismatch",
+    });
+    expect(evaluateFlightConsumerProductionStripeTestObservation(
+      authority,
+      foundation,
+      { ...base, webhookEventType: "charge.refunded" },
+    )).toMatchObject({
+      disposition: "quarantined",
+      reason: "refund_or_dispute_observed",
+    });
+  });
+
+  it("rejects malformed candidate projections and extra provider data", () => {
+    const { authority, foundation } = buildFoundation();
+    const base = retrieveCandidate(foundation);
     const refused = [
-      {
-        ...base,
-        source: "stripe_webhook",
-        webhookEventIdSha256: digest("a"),
-        webhookEventType: "payment_intent.amount_capturable_updated",
-      },
-      {
-        ...base,
-        webhookSignatureVerified: true,
-        webhookEventIdSha256: digest("a"),
-        webhookEventType: "payment_intent.succeeded",
-      },
+      { ...base, callerClaimsWebhookSignatureVerified: true },
       { ...base, paymentIntentId: "pi_raw_not_allowed" },
       { ...base, latestChargeId: "ch_raw_not_allowed" },
       { ...base, clientSecret: "pi_secret_not_allowed" },
+      {
+        ...base,
+        source: "stripe_webhook",
+        webhookEventIdSha256: null,
+        webhookEventType: null,
+      },
     ];
-    for (const observation of refused) {
+    for (const candidate of refused) {
       expect(() => evaluateFlightConsumerProductionStripeTestObservation(
         authority,
         foundation,
-        observation,
+        candidate,
       )).toThrow(FlightConsumerProductionStripeTestWorkflowError);
     }
   });
 
-  it("plans an exact full TEST refund only from a matched captured observation", () => {
+  it("keeps refund planning unavailable until trusted adapter and persistence exist", () => {
     const { authority, foundation } = buildFoundation();
-    const captured = evaluateFlightConsumerProductionStripeTestObservation(
+    const captureCandidate = evaluateFlightConsumerProductionStripeTestObservation(
       authority,
       foundation,
-      {
-        ...retrieveObservation(foundation),
-        amountCapturableCents: 0,
-        amountReceivedCents: foundation.amountCents,
-        status: "succeeded",
-        latestChargeMatches: true,
-      },
+      retrieveCandidate(foundation, "succeeded"),
     );
-    const refund = buildFlightConsumerProductionStripeTestRefundPlan(
-      authority,
-      foundation,
-      captured,
-      {
-        refundAttemptId: "00000000-0000-4000-8000-000000000004",
-        refundAmountCents: foundation.amountCents,
-        reason: "requested_by_customer",
-      },
-    );
-
-    expect(refund).toMatchObject({
-      version: "flight-consumer-production-stripe-test-refund-plan-v1",
-      mode: "test_contract_only",
-      amountCents: 25_000,
-      currency: "usd",
-      paymentIntentReferenceSha256: captured.paymentIntentReferenceSha256,
-      refundAttemptReferenceSha256: expect.stringMatching(/^[0-9a-f]{64}$/),
-      requestBodySha256: expect.stringMatching(/^[0-9a-f]{64}$/),
-      requestEnvelopeSha256: expect.stringMatching(/^[0-9a-f]{64}$/),
-      idempotencyRequestSha256: expect.stringMatching(/^[0-9a-f]{64}$/),
-      idempotencyKeySha256: expect.stringMatching(/^[0-9a-f]{64}$/),
-      refundPlanSha256: expect.stringMatching(/^[0-9a-f]{64}$/),
-      dispatchEnabled: false,
-      refundAuthorized: false,
-      providerRequestCount: 0,
-      refundCount: 0,
-      externalRequestMade: false,
-      consumerReleaseEnabled: false,
+    expect(captureCandidate).toMatchObject({
+      state: "capture_candidate",
+      disposition: "candidate_only",
+      trustedAdapterEvidence: false,
+      paymentIntentReferenceBound: false,
+      refundPlanningAvailable: false,
     });
-    expect(refund.idempotencyKeySha256)
-      .not.toBe(foundation.idempotencyKeySha256);
-    expect(Object.isFrozen(refund)).toBe(true);
+    expect(foundation.refund).toMatchObject({
+      planningAvailable: false,
+      dispatchEnabled: false,
+    });
   });
 
-  it("refuses partial refunds, non-captured evidence, cross-workflow evidence, and extra fields", () => {
-    const first = buildFoundation();
-    const second = buildFoundation();
-    const authorized = evaluateFlightConsumerProductionStripeTestObservation(
-      first.authority,
-      first.foundation,
-      retrieveObservation(first.foundation),
-    );
-    const captured = evaluateFlightConsumerProductionStripeTestObservation(
-      first.authority,
-      first.foundation,
-      {
-        ...retrieveObservation(first.foundation),
-        amountCapturableCents: 0,
-        amountReceivedCents: first.foundation.amountCents,
-        status: "succeeded",
-        latestChargeMatches: true,
-      },
-    );
-    const valid = {
-      refundAttemptId: "00000000-0000-4000-8000-000000000004",
-      refundAmountCents: first.foundation.amountCents,
-      reason: "duplicate" as const,
-    };
-
-    expect(() => buildFlightConsumerProductionStripeTestRefundPlan(
-      first.authority,
-      first.foundation,
-      authorized,
-      valid,
-    )).toThrow(FlightConsumerProductionStripeTestWorkflowError);
-    expect(() => buildFlightConsumerProductionStripeTestRefundPlan(
-      second.authority,
-      second.foundation,
-      captured,
-      valid,
-    )).toThrow(FlightConsumerProductionStripeTestWorkflowError);
-    expect(() => buildFlightConsumerProductionStripeTestRefundPlan(
-      first.authority,
-      first.foundation,
-      captured,
-      { ...valid, refundAmountCents: 10_000 },
-    )).toThrow(FlightConsumerProductionStripeTestWorkflowError);
-    expect(() => buildFlightConsumerProductionStripeTestRefundPlan(
-      first.authority,
-      first.foundation,
-      captured,
-      { ...valid, refundId: "re_not_allowed" },
-    )).toThrow(FlightConsumerProductionStripeTestWorkflowError);
-  });
-
-  it.each([
-    [
-      { operation: "create_payment_intent", dispatchState: "not_started", providerOutcome: "not_observed", journalState: "absent" },
-      "retry_same_idempotency_key",
-    ],
-    [
-      { operation: "create_payment_intent", dispatchState: "started", providerOutcome: "not_observed", journalState: "ambiguous" },
-      "reconcile_before_retry",
-    ],
-    [
-      { operation: "refund_payment", dispatchState: "response_received", providerOutcome: "pending", journalState: "in_progress" },
-      "reconcile_before_retry",
-    ],
-    [
-      { operation: "create_payment_intent", dispatchState: "response_received", providerOutcome: "success", journalState: "succeeded" },
-      "return_recorded_success",
-    ],
-    [
-      { operation: "refund_payment", dispatchState: "response_received", providerOutcome: "definitive_failure", journalState: "failed" },
-      "return_recorded_failure",
-    ],
-    [
-      { operation: "create_payment_intent", dispatchState: "response_received", providerOutcome: "definitive_failure", journalState: "in_progress" },
-      "manual_review",
-    ],
-  ])("classifies failure recovery without authorizing blind retry %#", (input, nextStep) => {
-    const authority = createFlightConsumerProductionStripeTestWorkflowAuthority(
-      authorityInput(),
-    );
+  it("classifies a never-started attempt as same-key retry evidence only", () => {
+    const { authority, foundation } = buildFoundation();
     expect(classifyFlightConsumerProductionStripeTestFailureRecovery(
       authority,
-      input,
+      foundation,
+      recoveryInput(foundation),
     )).toMatchObject({
-      nextStep,
+      version: "flight-consumer-production-stripe-test-failure-recovery-v2",
+      nextStep: "retry_same_idempotency_key",
       sameIdempotencyKeyRequired: true,
       blindRetryAuthorized: false,
       providerDispatchAuthorized: false,
+      classificationOnly: true,
+      persistenceAvailable: false,
+      paymentAttemptReferenceSha256: foundation.paymentAttemptReferenceSha256,
+      plannedIdempotencyRequestSha256:
+        foundation.plannedIdempotencyRequestSha256,
+      plannedIdempotencyKeySha256: foundation.plannedIdempotencyKeySha256,
       evidenceSha256: expect.stringMatching(/^[0-9a-f]{64}$/),
     });
   });
 
-  it("refuses inconsistent recovery evidence and forged authority", () => {
-    const authority = createFlightConsumerProductionStripeTestWorkflowAuthority(
-      authorityInput(),
+  it("never retries an in-progress attempt without expired-lease and absence evidence", () => {
+    const { authority, foundation } = buildFoundation();
+    const active = classifyFlightConsumerProductionStripeTestFailureRecovery(
+      authority,
+      foundation,
+      recoveryInput(foundation, {
+        journalState: "in_progress",
+        leaseState: "active",
+      }),
     );
-    const forged = { ...authority } as typeof authority;
-    const valid = {
-      operation: "create_payment_intent",
-      dispatchState: "not_started",
-      providerOutcome: "not_observed",
-      journalState: "absent",
-    };
-    expect(() => classifyFlightConsumerProductionStripeTestFailureRecovery(
-      forged,
-      valid,
-    )).toThrow(FlightConsumerProductionStripeTestWorkflowError);
-    expect(() => classifyFlightConsumerProductionStripeTestFailureRecovery(
-      authority,
+    const expiredUnreconciled =
+      classifyFlightConsumerProductionStripeTestFailureRecovery(
+        authority,
+        foundation,
+        recoveryInput(foundation, {
+          journalState: "in_progress",
+          leaseState: "expired_attested",
+        }),
+      );
+    const expiredAndAbsent =
+      classifyFlightConsumerProductionStripeTestFailureRecovery(
+        authority,
+        foundation,
+        recoveryInput(foundation, {
+          journalState: "in_progress",
+          leaseState: "expired_attested",
+          reconciliationState: "provider_absence_attested",
+          reconciliationEvidenceSha256: digest("a"),
+        }),
+      );
+
+    expect(active.nextStep).toBe("reconcile_before_retry");
+    expect(expiredUnreconciled.nextStep).toBe("reconcile_before_retry");
+    expect(expiredAndAbsent.nextStep).toBe("retry_same_idempotency_key");
+    for (const result of [active, expiredUnreconciled, expiredAndAbsent]) {
+      expect(result.providerDispatchAuthorized).toBe(false);
+      expect(result.blindRetryAuthorized).toBe(false);
+      expect(result.persistenceAvailable).toBe(false);
+    }
+  });
+
+  it.each([
+    [
       {
-        operation: "create_payment_intent",
-        dispatchState: "not_started",
-        providerOutcome: "success",
-        journalState: "absent",
+        dispatchState: "started",
+        journalState: "ambiguous",
       },
-    )).toThrow(FlightConsumerProductionStripeTestWorkflowError);
-    expect(() => classifyFlightConsumerProductionStripeTestFailureRecovery(
+      "reconcile_before_retry",
+    ],
+    [
+      {
+        dispatchState: "response_received",
+        providerOutcome: "pending",
+        journalState: "ambiguous",
+      },
+      "reconcile_before_retry",
+    ],
+    [
+      {
+        dispatchState: "response_received",
+        providerOutcome: "success",
+        journalState: "succeeded",
+      },
+      "return_recorded_success",
+    ],
+    [
+      {
+        dispatchState: "response_received",
+        providerOutcome: "definitive_failure",
+        journalState: "failed",
+      },
+      "return_recorded_failure",
+    ],
+    [
+      {
+        dispatchState: "response_received",
+        providerOutcome: "definitive_failure",
+        journalState: "in_progress",
+        leaseState: "active",
+      },
+      "manual_review",
+    ],
+  ])("classifies bound recovery evidence %#", (change, nextStep) => {
+    const { authority, foundation } = buildFoundation();
+    expect(classifyFlightConsumerProductionStripeTestFailureRecovery(
       authority,
-      { ...valid, retryWithNewKey: true },
+      foundation,
+      recoveryInput(foundation, change),
+    ).nextStep).toBe(nextStep);
+  });
+
+  it("rejects wrong attempt/idempotency/foundation bindings", () => {
+    const first = buildFoundation();
+    const second = buildFoundation({
+      ...foundationInput(),
+      orderId: "00000000-0000-4000-8000-000000000011",
+    });
+    const refused = [
+      recoveryInput(first.foundation, {
+        paymentAttemptReferenceSha256: digest("a"),
+      }),
+      recoveryInput(first.foundation, {
+        plannedIdempotencyRequestSha256: digest("b"),
+      }),
+      recoveryInput(first.foundation, {
+        plannedIdempotencyKeySha256: digest("c"),
+      }),
+    ];
+    for (const input of refused) {
+      expect(() => classifyFlightConsumerProductionStripeTestFailureRecovery(
+        first.authority,
+        first.foundation,
+        input,
+      )).toThrow(FlightConsumerProductionStripeTestWorkflowError);
+    }
+    expect(() => classifyFlightConsumerProductionStripeTestFailureRecovery(
+      second.authority,
+      second.foundation,
+      recoveryInput(first.foundation),
     )).toThrow(FlightConsumerProductionStripeTestWorkflowError);
   });
 
-  it("keeps all outputs digest-only and free of raw identities, references, and secrets", () => {
+  it.each([
+    { dispatchState: "not_started", providerOutcome: "success" },
+    { dispatchState: "started", providerOutcome: "pending" },
+    { dispatchState: "response_received", providerOutcome: "not_observed" },
+    { journalState: "succeeded", providerOutcome: "pending" },
+    { journalState: "failed", providerOutcome: "success" },
+    { journalState: "in_progress", leaseState: "not_applicable" },
+    { journalState: "absent", leaseState: "active" },
+    { reconciliationState: "not_run", reconciliationEvidenceSha256: digest("a") },
+    {
+      providerOutcome: "success",
+      dispatchState: "response_received",
+      reconciliationState: "provider_absence_attested",
+      reconciliationEvidenceSha256: digest("b"),
+    },
+    { extraRetryFlag: true },
+  ])("rejects impossible or over-specified recovery evidence %#", (change) => {
     const { authority, foundation } = buildFoundation();
-    const captured = evaluateFlightConsumerProductionStripeTestObservation(
+    expect(() => classifyFlightConsumerProductionStripeTestFailureRecovery(
       authority,
       foundation,
-      {
-        ...retrieveObservation(foundation),
-        amountCapturableCents: 0,
-        amountReceivedCents: foundation.amountCents,
-        status: "succeeded",
-        latestChargeMatches: true,
-      },
+      recoveryInput(foundation, change),
+    )).toThrow(FlightConsumerProductionStripeTestWorkflowError);
+  });
+
+  it("keeps every output digest-only", () => {
+    const { authority, foundation } = buildFoundation();
+    const candidate = evaluateFlightConsumerProductionStripeTestObservation(
+      authority,
+      foundation,
+      retrieveCandidate(foundation, "succeeded"),
     );
-    const serialized = JSON.stringify({ authority, foundation, captured });
+    const recovery = classifyFlightConsumerProductionStripeTestFailureRecovery(
+      authority,
+      foundation,
+      recoveryInput(foundation),
+    );
+    const serialized = JSON.stringify({
+      authority,
+      foundation,
+      candidate,
+      recovery,
+    });
     for (const raw of [
       restrictedTestKey,
       stripeAccountId,
       webhookTestSecret,
-      ...Object.values(foundationInput()).filter((value) =>
-        typeof value === "string" && value.includes("-")),
+      foundationInput().orderId,
+      foundationInput().customerId,
+      foundationInput().paymentAttemptId,
     ]) expect(serialized).not.toContain(raw);
-    expect(serialized).not.toMatch(/(?:pi|pm|ch|re|evt)_[A-Za-z0-9_]+/);
+    expect(serialized).not.toMatch(/:"(?:pi|pm|ch|re|evt)_[A-Za-z0-9_]+/);
     expect(serialized).not.toMatch(/(?:sk|rk)_(?:live|test)_/);
     expect(serialized).not.toMatch(/whsec_|_secret_/);
     expect(serialized).not.toContain("4242424242424242");
   });
 
-  it("has no Stripe SDK, transport, env, route, persistence, or release path", () => {
+  it("has no SDK, transport, env, route, persistence, refund plan, or release path", () => {
     const source = readFileSync(
       new URL(
         "../lib/flights/consumer-production/stripe-test-payment-intent-workflow.server.ts",
@@ -723,9 +816,11 @@ describe("Flight Consumer Production Stripe TEST PaymentIntent workflow foundati
     expect(source).not.toMatch(/\bpaymentIntents\.(?:create|capture|cancel|retrieve)\b/);
     expect(source).not.toMatch(/\brefunds\.create\b|\bcreateAdminClient\b/);
     expect(source).not.toMatch(/NextResponse|NextRequest|redirect\s*\(/);
+    expect(source).not.toContain("buildFlightConsumerProductionStripeTestRefundPlan");
+    expect(source).not.toContain('path: "/v1/refunds"');
     expect(source).toContain('path: "/v1/payment_intents"');
-    expect(source).toContain('path: "/v1/refunds"');
     expect(source).toContain('capture_method: "manual"');
-    expect(source).toContain('expectedLivemode: false');
+    expect(source).toContain('migration103CompatibilityImplemented: false');
+    expect(source).toContain('target: "none"');
   });
 });
