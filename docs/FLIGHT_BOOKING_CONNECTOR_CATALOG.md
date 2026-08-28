@@ -142,6 +142,15 @@ blocked by controlled Preview acceptance. It cannot deploy, alias, activate a
 live credential, or authorize consumer booking, ticketing, payment, or
 Production traffic.
 
+The final consumer activation boundary is represented by
+`lib/flights/rollout-consumer-launch-activation.ts`. It defines eight
+action-time checkpoints for verified release evidence, deployment and alias,
+primary-route activation, booking guards, payment/ticketing caps, monitoring,
+customer disclosures, and launch approval. It starts at **0 of 8 for both route
+packets** and is blocked by Production-release readiness. It cannot deploy,
+promote, enable live traffic, create a booking, issue a ticket, or collect a
+payment.
+
 Adding a catalog entry does not complete provider onboarding. Each connector
 still needs a commercial agreement, approved credentials, airline coverage and
 ticketing authority, sandbox certification, servicing/support evidence, payment
