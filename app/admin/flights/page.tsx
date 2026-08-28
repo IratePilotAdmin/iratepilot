@@ -26,6 +26,7 @@ import { buildFlightConnectorCredentialIntake } from "@/lib/flights/connector-cr
 import { buildFlightConnectorSandboxCertification } from "@/lib/flights/connector-sandbox-certification";
 import { buildFlightConnectorRoutingReadiness } from "@/lib/flights/connector-routing-readiness";
 import { buildFlightRolloutRouteDecision } from "@/lib/flights/rollout-route-decision";
+import { buildFlightRolloutContractAuthority } from "@/lib/flights/rollout-contract-authority";
 import { buildFlightSupplierDueDiligence, flightSupplierContractLanes, flightSupplierEvidenceWorkstreams } from "@/lib/flights/supplier-due-diligence";
 import { buildFlightSupplierReadiness, flightCapabilityGroups, flightSupplierPaths } from "@/lib/flights/supplier-readiness";
 import { buildFlightSupplierSelectionPlan, flightSandboxAdapterOperations, flightSupplierSelectionCriteria } from "@/lib/flights/supplier-selection";
@@ -43,6 +44,7 @@ export default function Page() {
   const connectorSandboxCertification = buildFlightConnectorSandboxCertification();
   const connectorRouting = buildFlightConnectorRoutingReadiness();
   const connectorRouteDecision = buildFlightRolloutRouteDecision();
+  const rolloutContractAuthority = buildFlightRolloutContractAuthority();
   const selection = buildFlightSupplierSelectionPlan();
   const diligence = buildFlightSupplierDueDiligence();
   const governance = buildFlightEvaluationGovernance();
@@ -595,6 +597,20 @@ export default function Page() {
               <strong className="mt-4 block">{label}</strong>
               <span className={`mt-1 block text-sm font-medium ${status === "Accepted in Preview" ? "text-emerald-700" : "text-rose-700"}`}>{status}</span>
             </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Next gate · contract and authority</p><h2 className="mt-2 text-2xl font-bold">Duffel-primary and Sabre-secondary contract review</h2></div><Scale className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">The authorized route preference is bound to two separate contract-review packets. Current state is {rolloutContractAuthority.completeRouteCount}/{rolloutContractAuthority.totalRoutes} route packets complete; no contract is accepted and no ticketing, payment, credential, network, booking, or Production authority exists.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          {rolloutContractAuthority.records.map((record) => (
+            <article key={record.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold">{record.connectorId}</h3><p className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500">{record.routeRole} route · {record.reviewState === "next_gate" ? "next gate" : "deferred"}</p></div><span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-700">Pending · {record.completedCount}/{record.totalCount}</span></div>
+              <p className="mt-3 text-sm leading-6 text-slate-600">{record.reviewState === "next_gate" ? "Contract, ticketing authority, settlement, security, servicing, and execution approvals remain pending." : "Secondary review is held until the primary Duffel path is independently validated; no parallel launch is authorized."}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500"><strong className="text-slate-700">Controls:</strong> contract not accepted, credentials not configured, route disabled</p>
+            </article>
           ))}
         </div>
       </section>

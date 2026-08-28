@@ -69,6 +69,14 @@ candidates remain alternatives. This is a route preference only; it does not
 approve contracts, credentials, sandbox traffic, ticketing, payment, or
 Production traffic. The next gate is contract and authority approval.
 
+The next-gate packet is represented by
+`lib/flights/rollout-contract-authority.ts`. It opens an eight-checkpoint
+contract and authority review for Duffel and keeps the Sabre secondary packet
+deferred until the primary path is independently validated. The packet is
+plan-only: it cannot sign or accept terms, create an account, receive a
+credential, authorize ticketing or payment, enable network traffic, or release
+consumer bookings.
+
 Adding a catalog entry does not complete provider onboarding. Each connector
 still needs a commercial agreement, approved credentials, airline coverage and
 ticketing authority, sandbox certification, servicing/support evidence, payment

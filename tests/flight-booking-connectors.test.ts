@@ -43,6 +43,11 @@ import {
   FLIGHT_ROLLOUT_SECONDARY_CONNECTOR_ID,
   FLIGHT_ROLLOUT_ROUTE_DECISION_MODE,
 } from "../lib/flights/rollout-route-decision";
+import {
+  buildFlightRolloutContractAuthority,
+  flightRolloutContractAuthorityStages,
+  FLIGHT_ROLLOUT_CONTRACT_AUTHORITY_MODE,
+} from "../lib/flights/rollout-contract-authority";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -284,5 +289,33 @@ describe("flight booking connector catalog", () => {
     expect(decision.paymentAuthorized).toBe(false);
     expect(decision.productionTrafficAuthorized).toBe(false);
     expect(decision.nextGate).toBe("contract_authority");
+  });
+
+  it("opens only the primary contract gate and defers the secondary path", () => {
+    const authority = buildFlightRolloutContractAuthority();
+    expect(FLIGHT_ROLLOUT_CONTRACT_AUTHORITY_MODE).toBe("route_bound_contract_authority_plan_only");
+    expect(flightRolloutContractAuthorityStages).toHaveLength(8);
+    expect(authority.routePreference.primaryConnectorId).toBe("duffel");
+    expect(authority.routePreference.secondaryConnectorId).toBe("sabre");
+    expect(authority.totalRoutes).toBe(2);
+    expect(authority.completeRouteCount).toBe(0);
+    expect(authority.records[0].connectorId).toBe("duffel");
+    expect(authority.records[0].routeRole).toBe("primary");
+    expect(authority.records[0].reviewState).toBe("next_gate");
+    expect(authority.records[0].completedCount).toBe(0);
+    expect(authority.records[1].connectorId).toBe("sabre");
+    expect(authority.records[1].routeRole).toBe("secondary");
+    expect(authority.records[1].reviewState).toBe("deferred_until_primary_validated");
+    expect(authority.records[1].completedCount).toBe(0);
+    expect(authority.contractAuthorityApproved).toBe(false);
+    expect(authority.credentialsConfigured).toBe(false);
+    expect(authority.sandboxTrafficAuthorized).toBe(false);
+    expect(authority.routeEnabled).toBe(false);
+    expect(authority.bookingAuthorized).toBe(false);
+    expect(authority.ticketingAuthorized).toBe(false);
+    expect(authority.paymentAuthorized).toBe(false);
+    expect(authority.externalNetworkAccess).toBe(false);
+    expect(authority.productionTrafficAuthorized).toBe(false);
+    expect(authority.nextGate).toBe("contract_authority");
   });
 });
