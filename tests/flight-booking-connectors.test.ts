@@ -53,6 +53,11 @@ import {
   flightRolloutContractEvidenceStages,
   FLIGHT_ROLLOUT_CONTRACT_EVIDENCE_MODE,
 } from "../lib/flights/rollout-contract-evidence-intake";
+import {
+  buildFlightRolloutSandboxCredentialReadiness,
+  flightRolloutSandboxCredentialStages,
+  FLIGHT_ROLLOUT_SANDBOX_CREDENTIAL_MODE,
+} from "../lib/flights/rollout-sandbox-credential-readiness";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -156,6 +161,8 @@ describe("flight booking connector catalog", () => {
     expect(page).toContain("buildFlightConnectorRoutingReadiness");
     expect(page).toContain("The authorized route preference is");
     expect(page).toContain("buildFlightRolloutRouteDecision");
+    expect(page).toContain("Scoped sandbox credential readiness");
+    expect(page).toContain("buildFlightRolloutSandboxCredentialReadiness");
     expect(page).not.toContain("connector.externalNetworkAccess = true");
   });
 
@@ -343,6 +350,30 @@ describe("flight booking connector catalog", () => {
       && !record.evidenceComplete
       && !record.contractAccepted
       && !record.credentialsAccepted
+      && !record.externalNetworkAccess)).toBe(true);
+  });
+
+  it("keeps sandbox credential readiness blocked behind contract evidence", () => {
+    const readiness = buildFlightRolloutSandboxCredentialReadiness();
+    expect(FLIGHT_ROLLOUT_SANDBOX_CREDENTIAL_MODE).toBe("sandbox_credential_readiness_plan_only");
+    expect(flightRolloutSandboxCredentialStages).toHaveLength(7);
+    expect(readiness.routePreference.primaryConnectorId).toBe("duffel");
+    expect(readiness.routePreference.secondaryConnectorId).toBe("sabre");
+    expect(readiness.totalRoutes).toBe(2);
+    expect(readiness.completeRouteCount).toBe(0);
+    expect(readiness.blockedBy).toBe("contract_authority_evidence");
+    expect(readiness.credentialStored).toBe(false);
+    expect(readiness.credentialTested).toBe(false);
+    expect(readiness.sandboxTrafficAuthorized).toBe(false);
+    expect(readiness.externalNetworkAccess).toBe(false);
+    expect(readiness.nextGate).toBe("sandbox_credential_intake");
+    expect(readiness.records.every((record) => record.intakeState === "blocked_by_contract_evidence"
+      && record.completedCount === 0
+      && record.totalCount === 7
+      && !record.readinessComplete
+      && !record.credentialStored
+      && !record.credentialTested
+      && !record.sandboxTrafficAuthorized
       && !record.externalNetworkAccess)).toBe(true);
   });
 });

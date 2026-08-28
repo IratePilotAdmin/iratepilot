@@ -85,6 +85,13 @@ process supplies and reviews the evidence. The intake stores no raw contract,
 credential, passenger data, or provider response and cannot accept terms or
 authorize any external capability.
 
+The following credential gate is represented by
+`lib/flights/rollout-sandbox-credential-readiness.ts`. It defines seven
+secret-handling checkpoints, but is explicitly blocked by the contract-evidence
+gate and starts at **0 of 7 for both route packets**. It stores no secret,
+performs no credential test, and cannot authorize sandbox, ticketing, payment,
+or Production traffic.
+
 Adding a catalog entry does not complete provider onboarding. Each connector
 still needs a commercial agreement, approved credentials, airline coverage and
 ticketing authority, sandbox certification, servicing/support evidence, payment
