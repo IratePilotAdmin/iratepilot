@@ -25,6 +25,7 @@ import { flightConnectorPublicEvidenceRecords } from "@/lib/flights/connector-pu
 import { buildFlightConnectorCredentialIntake } from "@/lib/flights/connector-credential-intake";
 import { buildFlightConnectorSandboxCertification } from "@/lib/flights/connector-sandbox-certification";
 import { buildFlightConnectorRoutingReadiness } from "@/lib/flights/connector-routing-readiness";
+import { buildFlightRolloutRouteDecision } from "@/lib/flights/rollout-route-decision";
 import { buildFlightSupplierDueDiligence, flightSupplierContractLanes, flightSupplierEvidenceWorkstreams } from "@/lib/flights/supplier-due-diligence";
 import { buildFlightSupplierReadiness, flightCapabilityGroups, flightSupplierPaths } from "@/lib/flights/supplier-readiness";
 import { buildFlightSupplierSelectionPlan, flightSandboxAdapterOperations, flightSupplierSelectionCriteria } from "@/lib/flights/supplier-selection";
@@ -41,6 +42,7 @@ export default function Page() {
   const connectorCredentialIntake = buildFlightConnectorCredentialIntake();
   const connectorSandboxCertification = buildFlightConnectorSandboxCertification();
   const connectorRouting = buildFlightConnectorRoutingReadiness();
+  const connectorRouteDecision = buildFlightRolloutRouteDecision();
   const selection = buildFlightSupplierSelectionPlan();
   const diligence = buildFlightSupplierDueDiligence();
   const governance = buildFlightEvaluationGovernance();
@@ -657,7 +659,7 @@ export default function Page() {
 
       <section className="mt-10">
         <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Routing and fallback policy</p><h2 className="mt-2 text-2xl font-bold">Multi-connector route readiness</h2></div><Route className="h-7 w-7 text-slate-400" /></div>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">No primary or fallback route is configured. All {connectorRouting.totalCandidates} candidates remain unassigned; current route-planning state is {connectorRouting.completeRoutingCount}/{connectorRouting.totalCandidates} complete and route enablement is off.</p>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">The authorized route preference is {connectorRouteDecision.primaryConnectorId} primary and {connectorRouteDecision.secondaryConnectorId} secondary. All {connectorRouting.totalCandidates} catalogued candidates remain operationally unassigned; current route-planning state is {connectorRouting.completeRoutingCount}/{connectorRouting.totalCandidates} complete and route enablement is off.</p>
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {connectorRouting.records.map((record) => (
             <article key={record.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">

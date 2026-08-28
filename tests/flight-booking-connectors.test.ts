@@ -37,6 +37,12 @@ import {
   flightConnectorRoutingStages,
   FLIGHT_CONNECTOR_ROUTING_READINESS_MODE,
 } from "../lib/flights/connector-routing-readiness";
+import {
+  buildFlightRolloutRouteDecision,
+  FLIGHT_ROLLOUT_PRIMARY_CONNECTOR_ID,
+  FLIGHT_ROLLOUT_SECONDARY_CONNECTOR_ID,
+  FLIGHT_ROLLOUT_ROUTE_DECISION_MODE,
+} from "../lib/flights/rollout-route-decision";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -138,6 +144,8 @@ describe("flight booking connector catalog", () => {
     expect(page).toContain("buildFlightConnectorSandboxCertification");
     expect(page).toContain("Multi-connector route readiness");
     expect(page).toContain("buildFlightConnectorRoutingReadiness");
+    expect(page).toContain("The authorized route preference is");
+    expect(page).toContain("buildFlightRolloutRouteDecision");
     expect(page).not.toContain("connector.externalNetworkAccess = true");
   });
 
@@ -246,5 +254,35 @@ describe("flight booking connector catalog", () => {
       && record.totalCount === 6
       && !record.externalNetworkAccess
       && !record.productionTrafficAuthorized)).toBe(true);
+  });
+
+  it("records the authorized route preference without enabling operations", () => {
+    const decision = buildFlightRolloutRouteDecision();
+    expect(FLIGHT_ROLLOUT_ROUTE_DECISION_MODE).toBe("authorized_route_preference_only");
+    expect(decision.decisionState).toBe("authorized_route_preference");
+    expect(decision.primaryConnectorId).toBe(FLIGHT_ROLLOUT_PRIMARY_CONNECTOR_ID);
+    expect(decision.secondaryConnectorId).toBe(FLIGHT_ROLLOUT_SECONDARY_CONNECTOR_ID);
+    expect(decision.primaryConnectorId).toBe("duffel");
+    expect(decision.secondaryConnectorId).toBe("sabre");
+    expect(decision.alternativeConnectorIds).toEqual([
+      "amadeus",
+      "travelport",
+      "worldspan",
+      "abacus",
+      "galileo",
+      "airgateway",
+      "verteil",
+      "travelfusion",
+    ]);
+    expect(decision.parallelLaunchAuthorized).toBe(false);
+    expect(decision.contractAuthorityApproved).toBe(false);
+    expect(decision.credentialsConfigured).toBe(false);
+    expect(decision.sandboxTrafficAuthorized).toBe(false);
+    expect(decision.routeEnabled).toBe(false);
+    expect(decision.bookingAuthorized).toBe(false);
+    expect(decision.ticketingAuthorized).toBe(false);
+    expect(decision.paymentAuthorized).toBe(false);
+    expect(decision.productionTrafficAuthorized).toBe(false);
+    expect(decision.nextGate).toBe("contract_authority");
   });
 });

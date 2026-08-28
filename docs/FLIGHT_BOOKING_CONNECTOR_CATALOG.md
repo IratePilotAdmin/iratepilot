@@ -60,7 +60,14 @@ state is **0 of 6 for all 9 connectors**; sandbox traffic remains disabled.
 `lib/flights/connector-routing-readiness.ts` defines six route-planning gates:
 candidate scope, coverage matrix, primary route, fallback order, failover
 policy, and route release. The current state is **0 of 6 for all 9 connectors**;
-no primary, fallback order, or enabled route is configured.
+the authorized Duffel-primary/Sabre-secondary preference is recorded, but no
+operational route is enabled and no fallback order is active.
+
+The route preference is represented by `lib/flights/rollout-route-decision.ts`:
+Duffel is primary, Sabre is secondary, and the other eight catalogued
+candidates remain alternatives. This is a route preference only; it does not
+approve contracts, credentials, sandbox traffic, ticketing, payment, or
+Production traffic. The next gate is contract and authority approval.
 
 Adding a catalog entry does not complete provider onboarding. Each connector
 still needs a commercial agreement, approved credentials, airline coverage and
