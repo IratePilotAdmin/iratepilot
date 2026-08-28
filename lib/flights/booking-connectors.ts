@@ -1,4 +1,5 @@
 import {
+  createDisabledFlightProviderAdapter,
   createGuardedFlightProviderAdapter,
   type FlightProviderAdapter,
   type FlightProviderAdapterConfiguration,
@@ -214,3 +215,18 @@ export function createFlightBookingConnectorAdapter(
     providerId: expectedProviderId,
   });
 }
+
+/** Returns the dark-by-default runtime shell for a catalogued connector. */
+export function createDisabledFlightBookingConnectorAdapter(
+  id: FlightBookingConnectorId,
+): FlightProviderAdapter {
+  return createDisabledFlightProviderAdapter(`${id}_flight_adapter`);
+}
+
+export const disabledFlightBookingConnectorAdapters: Readonly<
+  Record<FlightBookingConnectorId, FlightProviderAdapter>
+> = Object.freeze(
+  Object.fromEntries(
+    flightBookingConnectorIds.map((id) => [id, createDisabledFlightBookingConnectorAdapter(id)]),
+  ) as Record<FlightBookingConnectorId, FlightProviderAdapter>,
+);

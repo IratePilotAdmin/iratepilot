@@ -402,8 +402,8 @@ export interface FlightProviderAdapter {
 }
 
 export class FlightProviderAdapterDisabledError extends Error {
-  constructor() {
-    super("Synthetic flight adapter is disabled at construction time.");
+  constructor(message = "Synthetic flight adapter is disabled at construction time.") {
+    super(message);
     this.name = "FlightProviderAdapterDisabledError";
   }
 }
@@ -1519,6 +1519,106 @@ export function createGuardedFlightProviderAdapter(config: FlightProviderAdapter
   };
   guardedFlightProviderAdapters.add(adapter);
   return Object.freeze(adapter);
+}
+
+/**
+ * Creates an identity-bearing adapter shell that can never contact a provider.
+ * This is used for catalogued connector candidates before contract, credentials,
+ * certification, and release approval exist.
+ */
+export class DisabledFlightProviderAdapter implements FlightProviderAdapter {
+  readonly [flightProviderAdapterGuard] = true as const;
+  readonly mode = "provider_sandbox" as const;
+  readonly externalNetworkAccess = false;
+  readonly supportsLiveTraffic = false;
+  readonly executionBinding = null;
+  readonly paymentExecutionBinding = null;
+  readonly settlementExecutionBinding = null;
+
+  constructor(readonly providerId: string) {
+    if (new.target !== DisabledFlightProviderAdapter) {
+      throw new FlightProviderAdapterDisabledError("Disabled flight provider adapter cannot be subclassed.");
+    }
+    if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/.test(providerId)) {
+      throw new FlightProviderRequestBindingError("Disabled flight provider ID is malformed.");
+    }
+    guardedFlightProviderAdapters.add(this);
+    Object.freeze(this);
+  }
+
+  #disabled(): never {
+    throw new FlightProviderAdapterDisabledError(
+      `Flight provider adapter ${this.providerId} is disabled; no provider request was made.`,
+    );
+  }
+
+  async search() {
+    return this.#disabled();
+  }
+
+  async reprice() {
+    return this.#disabled();
+  }
+
+  async createOrder() {
+    return this.#disabled();
+  }
+
+  async changeOrder() {
+    return this.#disabled();
+  }
+
+  async authorizePayment() {
+    return this.#disabled();
+  }
+
+  async capturePayment() {
+    return this.#disabled();
+  }
+
+  async refundPayment() {
+    return this.#disabled();
+  }
+
+  async voidPayment() {
+    return this.#disabled();
+  }
+
+  async issueTickets() {
+    return this.#disabled();
+  }
+
+  async voidTickets() {
+    return this.#disabled();
+  }
+
+  async exchangeTickets() {
+    return this.#disabled();
+  }
+
+  async cancelOrder() {
+    return this.#disabled();
+  }
+
+  async processWebhook() {
+    return this.#disabled();
+  }
+
+  async reconcileOrder() {
+    return this.#disabled();
+  }
+
+  async reconcilePayment() {
+    return this.#disabled();
+  }
+
+  async reconcileTickets() {
+    return this.#disabled();
+  }
+}
+
+export function createDisabledFlightProviderAdapter(providerId: string): FlightProviderAdapter {
+  return new DisabledFlightProviderAdapter(providerId);
 }
 
 function deepFreezeFixture<T>(value: T): T {

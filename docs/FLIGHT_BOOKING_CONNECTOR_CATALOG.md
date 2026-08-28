@@ -18,9 +18,10 @@ entitlement, credential, or production approval. All nine entries are dark by de
 
 The code registry is `lib/flights/booking-connectors.ts`. Each entry has no
 configured credentials, no network capability, and no live-traffic support.
-The guarded factory accepts an explicit provider executor and exact runtime
-bindings only; authorization, payment, settlement, ticketing, and result
-validation remain enforced by the existing flight runtime safety boundary.
+The registry also exposes a disabled runtime shell for every entry. The guarded
+factory accepts an explicit provider executor and exact runtime bindings only;
+authorization, payment, settlement, ticketing, and result validation remain
+enforced by the existing flight runtime safety boundary.
 
 ## Next activation gate
 

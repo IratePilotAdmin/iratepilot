@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   createFlightBookingConnectorAdapter,
+  createDisabledFlightBookingConnectorAdapter,
+  disabledFlightBookingConnectorAdapters,
   flightBookingConnectorDefinitions,
   flightBookingConnectorIds,
   getFlightBookingConnectorDefinition,
@@ -84,6 +86,26 @@ describe("flight booking connector catalog", () => {
       execute,
       providerId: "wrong_provider_id",
     })).toThrow("requires provider ID sabre_flight_adapter");
+  });
+
+  it("provides a disabled runtime shell for every approved candidate", async () => {
+    expect(Object.keys(disabledFlightBookingConnectorAdapters)).toEqual([...flightBookingConnectorIds]);
+    for (const id of flightBookingConnectorIds) {
+      const adapter = disabledFlightBookingConnectorAdapters[id];
+      expect(adapter.providerId).toBe(`${id}_flight_adapter`);
+      expect(adapter.mode).toBe("provider_sandbox");
+      expect(adapter.externalNetworkAccess).toBe(false);
+      expect(adapter.supportsLiveTraffic).toBe(false);
+      await expect(adapter.search({
+        origin: "ORD",
+        destination: "LAX",
+        departureDate: "2027-02-10",
+        returnDate: null,
+        cabin: "economy",
+        passengers: { adults: 1, children: 0, infantsInSeat: 0, infantsOnLap: 0 },
+      }, {} as never, {} as never)).rejects.toThrow("no provider request was made");
+      expect(createDisabledFlightBookingConnectorAdapter(id)).not.toBe(adapter);
+    }
   });
 
   it("surfaces the catalog in the protected administrator workspace", () => {
