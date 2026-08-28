@@ -30,6 +30,7 @@ import { buildFlightRolloutContractAuthority } from "@/lib/flights/rollout-contr
 import { buildFlightRolloutContractEvidenceIntake } from "@/lib/flights/rollout-contract-evidence-intake";
 import { buildFlightRolloutSandboxCredentialReadiness } from "@/lib/flights/rollout-sandbox-credential-readiness";
 import { buildFlightRolloutSandboxCertification } from "@/lib/flights/rollout-sandbox-certification";
+import { buildFlightRolloutPaymentSettlementReadiness } from "@/lib/flights/rollout-payment-settlement-readiness";
 import { buildFlightSupplierDueDiligence, flightSupplierContractLanes, flightSupplierEvidenceWorkstreams } from "@/lib/flights/supplier-due-diligence";
 import { buildFlightSupplierReadiness, flightCapabilityGroups, flightSupplierPaths } from "@/lib/flights/supplier-readiness";
 import { buildFlightSupplierSelectionPlan, flightSandboxAdapterOperations, flightSupplierSelectionCriteria } from "@/lib/flights/supplier-selection";
@@ -51,6 +52,7 @@ export default function Page() {
   const rolloutContractEvidence = buildFlightRolloutContractEvidenceIntake();
   const rolloutSandboxCredentials = buildFlightRolloutSandboxCredentialReadiness();
   const rolloutSandboxCertification = buildFlightRolloutSandboxCertification();
+  const rolloutPaymentSettlement = buildFlightRolloutPaymentSettlementReadiness();
   const selection = buildFlightSupplierSelectionPlan();
   const diligence = buildFlightSupplierDueDiligence();
   const governance = buildFlightEvaluationGovernance();
@@ -658,6 +660,20 @@ export default function Page() {
               <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold">{record.connectorId}</h3><p className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500">{record.routeRole} route</p></div><span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-700">Blocked · {record.completedCount}/{record.totalCount}</span></div>
               <p className="mt-3 text-sm leading-6 text-slate-600">{record.routeRole === "primary" ? "Duffel sandbox certification can begin only after contract evidence and scoped credentials are independently approved." : "Sabre certification remains deferred until the primary Duffel path is independently validated."}</p>
               <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500"><strong className="text-slate-700">Controls:</strong> test traffic disabled, ticketing disabled, payment disabled</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Following gate · payment and settlement</p><h2 className="mt-2 text-2xl font-bold">Flight payment and settlement readiness</h2></div><Scale className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Payment readiness is blocked by sandbox certification. Current state is {rolloutPaymentSettlement.completeRouteCount}/{rolloutPaymentSettlement.totalRoutes} route packets; no Stripe object, charge, provider settlement, refund, or money movement has occurred.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          {rolloutPaymentSettlement.records.map((record) => (
+            <article key={record.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold">{record.connectorId}</h3><p className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500">{record.routeRole} route</p></div><span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-700">Blocked · {record.completedCount}/{record.totalCount}</span></div>
+              <p className="mt-3 text-sm leading-6 text-slate-600">{record.routeRole === "primary" ? "Duffel payment and settlement controls await contract, credential, and sandbox certification evidence." : "Sabre payment and settlement controls remain deferred until the primary Duffel path is independently validated."}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500"><strong className="text-slate-700">Controls:</strong> payment disabled, settlement disabled, charge creation disabled</p>
             </article>
           ))}
         </div>

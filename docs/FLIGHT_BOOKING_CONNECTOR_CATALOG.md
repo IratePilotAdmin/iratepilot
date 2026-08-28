@@ -100,6 +100,14 @@ route packets** and is blocked by scoped credential readiness. No sandbox
 request, order, ticket, payment, or provider traffic is performed by this
 plan.
 
+The following payment gate is represented by
+`lib/flights/rollout-payment-settlement-readiness.ts`. It defines nine
+checkpoints for customer collection, provider settlement, pricing, binding,
+refunds, reconciliation, fraud, PCI, privacy, and payment release. It starts
+at **0 of 9 for both route packets** and is blocked by sandbox certification.
+It cannot create a Stripe object or charge, move provider funds, issue a
+refund, or authorize a consumer booking.
+
 Adding a catalog entry does not complete provider onboarding. Each connector
 still needs a commercial agreement, approved credentials, airline coverage and
 ticketing authority, sandbox certification, servicing/support evidence, payment

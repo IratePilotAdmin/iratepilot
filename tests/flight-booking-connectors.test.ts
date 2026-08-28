@@ -63,6 +63,11 @@ import {
   flightRolloutSandboxCertificationStages,
   FLIGHT_ROLLOUT_SANDBOX_CERTIFICATION_MODE,
 } from "../lib/flights/rollout-sandbox-certification";
+import {
+  buildFlightRolloutPaymentSettlementReadiness,
+  flightRolloutPaymentSettlementStages,
+  FLIGHT_ROLLOUT_PAYMENT_SETTLEMENT_MODE,
+} from "../lib/flights/rollout-payment-settlement-readiness";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -170,6 +175,8 @@ describe("flight booking connector catalog", () => {
     expect(page).toContain("buildFlightRolloutSandboxCredentialReadiness");
     expect(page).toContain("Route-bound sandbox certification");
     expect(page).toContain("buildFlightRolloutSandboxCertification");
+    expect(page).toContain("Flight payment and settlement readiness");
+    expect(page).toContain("buildFlightRolloutPaymentSettlementReadiness");
     expect(page).not.toContain("connector.externalNetworkAccess = true");
   });
 
@@ -405,6 +412,30 @@ describe("flight booking connector catalog", () => {
       && !record.testTrafficAuthorized
       && !record.ticketingAuthorized
       && !record.paymentAuthorized
+      && !record.externalNetworkAccess)).toBe(true);
+  });
+
+  it("keeps payment and settlement readiness blocked behind sandbox certification", () => {
+    const readiness = buildFlightRolloutPaymentSettlementReadiness();
+    expect(FLIGHT_ROLLOUT_PAYMENT_SETTLEMENT_MODE).toBe("payment_settlement_readiness_plan_only");
+    expect(flightRolloutPaymentSettlementStages).toHaveLength(9);
+    expect(readiness.routePreference.primaryConnectorId).toBe("duffel");
+    expect(readiness.routePreference.secondaryConnectorId).toBe("sabre");
+    expect(readiness.totalRoutes).toBe(2);
+    expect(readiness.completeRouteCount).toBe(0);
+    expect(readiness.paymentAuthorized).toBe(false);
+    expect(readiness.settlementAuthorized).toBe(false);
+    expect(readiness.chargeCreated).toBe(false);
+    expect(readiness.externalNetworkAccess).toBe(false);
+    expect(readiness.blockedBy).toBe("sandbox_certification");
+    expect(readiness.nextGate).toBe("payment_settlement_readiness");
+    expect(readiness.records.every((record) => record.paymentState === "blocked_by_sandbox_certification"
+      && record.completedCount === 0
+      && record.totalCount === 9
+      && !record.readinessComplete
+      && !record.paymentAuthorized
+      && !record.settlementAuthorized
+      && !record.chargeCreated
       && !record.externalNetworkAccess)).toBe(true);
   });
 });
