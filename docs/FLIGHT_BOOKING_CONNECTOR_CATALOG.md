@@ -92,6 +92,14 @@ gate and starts at **0 of 7 for both route packets**. It stores no secret,
 performs no credential test, and cannot authorize sandbox, ticketing, payment,
 or Production traffic.
 
+The following certification gate is represented by
+`lib/flights/rollout-sandbox-certification.ts`. It defines eight route-bound
+checkpoints for endpoint, shopping, repricing, order/ticketing, payment and
+settlement, servicing, and rollback evidence. It starts at **0 of 8 for both
+route packets** and is blocked by scoped credential readiness. No sandbox
+request, order, ticket, payment, or provider traffic is performed by this
+plan.
+
 Adding a catalog entry does not complete provider onboarding. Each connector
 still needs a commercial agreement, approved credentials, airline coverage and
 ticketing authority, sandbox certification, servicing/support evidence, payment

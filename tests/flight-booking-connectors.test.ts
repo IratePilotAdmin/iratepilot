@@ -58,6 +58,11 @@ import {
   flightRolloutSandboxCredentialStages,
   FLIGHT_ROLLOUT_SANDBOX_CREDENTIAL_MODE,
 } from "../lib/flights/rollout-sandbox-credential-readiness";
+import {
+  buildFlightRolloutSandboxCertification,
+  flightRolloutSandboxCertificationStages,
+  FLIGHT_ROLLOUT_SANDBOX_CERTIFICATION_MODE,
+} from "../lib/flights/rollout-sandbox-certification";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -163,6 +168,8 @@ describe("flight booking connector catalog", () => {
     expect(page).toContain("buildFlightRolloutRouteDecision");
     expect(page).toContain("Scoped sandbox credential readiness");
     expect(page).toContain("buildFlightRolloutSandboxCredentialReadiness");
+    expect(page).toContain("Route-bound sandbox certification");
+    expect(page).toContain("buildFlightRolloutSandboxCertification");
     expect(page).not.toContain("connector.externalNetworkAccess = true");
   });
 
@@ -374,6 +381,30 @@ describe("flight booking connector catalog", () => {
       && !record.credentialStored
       && !record.credentialTested
       && !record.sandboxTrafficAuthorized
+      && !record.externalNetworkAccess)).toBe(true);
+  });
+
+  it("keeps route-bound sandbox certification blocked behind credential readiness", () => {
+    const certification = buildFlightRolloutSandboxCertification();
+    expect(FLIGHT_ROLLOUT_SANDBOX_CERTIFICATION_MODE).toBe("sandbox_certification_plan_only");
+    expect(flightRolloutSandboxCertificationStages).toHaveLength(8);
+    expect(certification.routePreference.primaryConnectorId).toBe("duffel");
+    expect(certification.routePreference.secondaryConnectorId).toBe("sabre");
+    expect(certification.totalRoutes).toBe(2);
+    expect(certification.completeRouteCount).toBe(0);
+    expect(certification.testTrafficAuthorized).toBe(false);
+    expect(certification.ticketingAuthorized).toBe(false);
+    expect(certification.paymentAuthorized).toBe(false);
+    expect(certification.externalNetworkAccess).toBe(false);
+    expect(certification.blockedBy).toBe("sandbox_credential_intake");
+    expect(certification.nextGate).toBe("sandbox_certification");
+    expect(certification.records.every((record) => record.certificationState === "blocked_by_sandbox_credential"
+      && record.completedCount === 0
+      && record.totalCount === 8
+      && !record.certificationComplete
+      && !record.testTrafficAuthorized
+      && !record.ticketingAuthorized
+      && !record.paymentAuthorized
       && !record.externalNetworkAccess)).toBe(true);
   });
 });
