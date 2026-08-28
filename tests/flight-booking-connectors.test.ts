@@ -15,6 +15,11 @@ import {
   buildFlightConnectorCandidateReviews,
   FLIGHT_CONNECTOR_CANDIDATE_REVIEW_MODE,
 } from "../lib/flights/connector-candidate-review";
+import {
+  flightConnectorPublicEvidenceRecords,
+  FLIGHT_CONNECTOR_PUBLIC_EVIDENCE_MODE,
+  getFlightConnectorPublicEvidence,
+} from "../lib/flights/connector-public-evidence";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -88,6 +93,8 @@ describe("flight booking connector catalog", () => {
     expect(page).toContain("Approved candidate · {connector.completedCount}/{connector.totalCount} gates");
     expect(page).toContain("Seven-workstream diligence checklist");
     expect(page).toContain("buildFlightConnectorCandidateReviews");
+    expect(page).toContain("Official-source research record");
+    expect(page).toContain("flightConnectorPublicEvidenceRecords.map");
     expect(page).not.toContain("connector.externalNetworkAccess = true");
   });
 
@@ -132,5 +139,21 @@ describe("flight booking connector catalog", () => {
       && !candidate.contractApproved
       && !candidate.credentialsAccepted
       && !candidate.externalNetworkAccess)).toBe(true);
+  });
+
+  it("records official public research without treating it as entitlement", () => {
+    expect(FLIGHT_CONNECTOR_PUBLIC_EVIDENCE_MODE).toBe("official_public_research_only");
+    expect(flightConnectorPublicEvidenceRecords).toHaveLength(9);
+    expect(flightConnectorPublicEvidenceRecords.map(({ connectorId }) => connectorId)).toEqual(flightBookingConnectorIds);
+    for (const record of flightConnectorPublicEvidenceRecords) {
+      expect(record.evidenceState).toBe("public_research_recorded");
+      expect(record.sourceUrls.length).toBeGreaterThan(0);
+      expect(record.findings.length).toBeGreaterThan(0);
+      expect(record.providerVerified).toBe(false);
+      expect(record.contractVerified).toBe(false);
+      expect(record.credentialsConfigured).toBe(false);
+      expect(record.externalNetworkAccess).toBe(false);
+    }
+    expect(getFlightConnectorPublicEvidence("travelport").sourceUrls.length).toBeGreaterThan(0);
   });
 });

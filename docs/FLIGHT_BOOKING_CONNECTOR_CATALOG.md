@@ -40,6 +40,12 @@ economics, ticketing/settlement, servicing/support, security/privacy, and
 technical sandbox readiness). The current state is **0 of 7 evidence workstreams
 for all 9 approved candidates**, with no shortlist or provider selection.
 
+`lib/flights/connector-public-evidence.ts` records an official-source research
+entry for each candidate. These are public capability references only; they do
+not verify iRatePilot access, current coverage, contracts, credentials,
+ticketing authority, settlement, or Production eligibility. Public research is
+not a substitute for provider-supplied or independently reviewed evidence.
+
 Adding a catalog entry does not complete provider onboarding. Each connector
 still needs a commercial agreement, approved credentials, airline coverage and
 ticketing authority, sandbox certification, servicing/support evidence, payment
