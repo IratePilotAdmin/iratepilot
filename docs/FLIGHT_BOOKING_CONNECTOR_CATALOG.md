@@ -133,6 +133,15 @@ action-time approval. It starts at **0 of 8 for both route packets** and is
 blocked by support and release readiness. It cannot promote an environment or
 authorize consumer booking, ticketing, payment, or Production traffic.
 
+The final Production gate is represented by
+`lib/flights/rollout-production-release-readiness.ts`. It defines nine
+checkpoints for Preview acceptance, provider and payment evidence, security,
+support, credential separation, scope and caps, rollback, and action-time
+Production approval. It starts at **0 of 9 for both route packets** and is
+blocked by controlled Preview acceptance. It cannot deploy, alias, activate a
+live credential, or authorize consumer booking, ticketing, payment, or
+Production traffic.
+
 Adding a catalog entry does not complete provider onboarding. Each connector
 still needs a commercial agreement, approved credentials, airline coverage and
 ticketing authority, sandbox certification, servicing/support evidence, payment

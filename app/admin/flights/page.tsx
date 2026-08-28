@@ -34,6 +34,7 @@ import { buildFlightRolloutPaymentSettlementReadiness } from "@/lib/flights/roll
 import { buildFlightRolloutSecurityPrivacyReadiness } from "@/lib/flights/rollout-security-privacy-readiness";
 import { buildFlightRolloutSupportReleaseReadiness } from "@/lib/flights/rollout-support-release-readiness";
 import { buildFlightRolloutPreviewReleaseReadiness } from "@/lib/flights/rollout-preview-release-readiness";
+import { buildFlightRolloutProductionReleaseReadiness } from "@/lib/flights/rollout-production-release-readiness";
 import { buildFlightSupplierDueDiligence, flightSupplierContractLanes, flightSupplierEvidenceWorkstreams } from "@/lib/flights/supplier-due-diligence";
 import { buildFlightSupplierReadiness, flightCapabilityGroups, flightSupplierPaths } from "@/lib/flights/supplier-readiness";
 import { buildFlightSupplierSelectionPlan, flightSandboxAdapterOperations, flightSupplierSelectionCriteria } from "@/lib/flights/supplier-selection";
@@ -59,6 +60,7 @@ export default function Page() {
   const rolloutSecurityPrivacy = buildFlightRolloutSecurityPrivacyReadiness();
   const rolloutSupportRelease = buildFlightRolloutSupportReleaseReadiness();
   const rolloutPreviewRelease = buildFlightRolloutPreviewReleaseReadiness();
+  const rolloutProductionRelease = buildFlightRolloutProductionReleaseReadiness();
   const selection = buildFlightSupplierSelectionPlan();
   const diligence = buildFlightSupplierDueDiligence();
   const governance = buildFlightEvaluationGovernance();
@@ -722,6 +724,20 @@ export default function Page() {
               <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold">{record.connectorId}</h3><p className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500">{record.routeRole} route</p></div><span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-700">Blocked · {record.completedCount}/{record.totalCount}</span></div>
               <p className="mt-3 text-sm leading-6 text-slate-600">{record.routeRole === "primary" ? "Duffel Preview release requires reconciled provider, sandbox, payment, security, support, and rollback evidence." : "Sabre Preview release remains deferred until the primary Duffel path is independently validated."}</p>
               <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500"><strong className="text-slate-700">Controls:</strong> Preview disabled, consumer booking disabled, Production disabled</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Final gate · Production release</p><h2 className="mt-2 text-2xl font-bold">Consumer flight launch readiness</h2></div><Plane className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Production readiness is blocked by controlled Preview acceptance. Current state is {rolloutProductionRelease.completeRouteCount}/{rolloutProductionRelease.totalRoutes} route packets; no production credential, deployment, alias, live traffic, consumer booking, ticketing, or payment is authorized.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          {rolloutProductionRelease.records.map((record) => (
+            <article key={record.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold">{record.connectorId}</h3><p className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500">{record.routeRole} route</p></div><span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-700">Blocked · {record.completedCount}/{record.totalCount}</span></div>
+              <p className="mt-3 text-sm leading-6 text-slate-600">{record.routeRole === "primary" ? "Duffel consumer launch requires a verified Preview receipt plus all production-release evidence and approvals." : "Sabre consumer launch remains deferred until the primary Duffel path is independently validated."}</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500"><strong className="text-slate-700">Controls:</strong> Production disabled, live traffic disabled, consumer booking disabled</p>
             </article>
           ))}
         </div>
