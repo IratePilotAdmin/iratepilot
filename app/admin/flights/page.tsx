@@ -20,6 +20,7 @@ import { buildFlightRehearsalCloseoutDesign, flightRehearsalCloseoutArtifacts, f
 import { buildFlightRehearsalExecutionControlDesign, flightRehearsalExecutionSafeguards, flightRehearsalExecutionStages } from "@/lib/flights/rehearsal-execution-control";
 import { buildFlightRehearsalPreflightDesign, flightRehearsalPreflightControls, flightRehearsalPreflightSafeguards } from "@/lib/flights/rehearsal-preflight";
 import { buildFlightConnectorActivationReadiness } from "@/lib/flights/connector-activation-readiness";
+import { buildFlightConnectorCandidateReviews } from "@/lib/flights/connector-candidate-review";
 import { buildFlightSupplierDueDiligence, flightSupplierContractLanes, flightSupplierEvidenceWorkstreams } from "@/lib/flights/supplier-due-diligence";
 import { buildFlightSupplierReadiness, flightCapabilityGroups, flightSupplierPaths } from "@/lib/flights/supplier-readiness";
 import { buildFlightSupplierSelectionPlan, flightSandboxAdapterOperations, flightSupplierSelectionCriteria } from "@/lib/flights/supplier-selection";
@@ -32,6 +33,7 @@ export const metadata: Metadata = {
 export default function Page() {
   const readiness = buildFlightSupplierReadiness();
   const connectorReadiness = buildFlightConnectorActivationReadiness();
+  const connectorReviews = buildFlightConnectorCandidateReviews();
   const selection = buildFlightSupplierSelectionPlan();
   const diligence = buildFlightSupplierDueDiligence();
   const governance = buildFlightEvaluationGovernance();
@@ -584,6 +586,20 @@ export default function Page() {
               <strong className="mt-4 block">{label}</strong>
               <span className={`mt-1 block text-sm font-medium ${status === "Accepted in Preview" ? "text-emerald-700" : "text-rose-700"}`}>{status}</span>
             </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Candidate evidence review</p><h2 className="mt-2 text-2xl font-bold">Seven-workstream diligence checklist</h2></div><ClipboardCheck className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Approved-candidate status does not select a supplier. Each connector requires attributable evidence across seven workstreams before a shortlist or contract decision can be considered. Current state: {connectorReviews.completeReviewCount}/{connectorReviews.totalCandidates} reviews complete.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {connectorReviews.reviews.map((review) => (
+            <article key={review.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <div className="flex items-start justify-between gap-3"><h3 className="font-bold">{review.label}</h3><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-slate-600">Evidence {review.completedCount}/{review.totalCount}</span></div>
+              <p className="mt-3 text-sm leading-6 text-slate-600">Review pending; no shortlist, selection, contract, credential, or provider contact is recorded.</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500"><strong className="text-slate-700">Workstreams:</strong> {review.workstreams.map((workstream) => workstream.label).join(", ")}</p>
+            </article>
           ))}
         </div>
       </section>

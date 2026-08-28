@@ -33,6 +33,13 @@ Even complete checklist evidence does not authorize external traffic, ticketing,
 payment, or Production; those capabilities remain explicit runtime and release
 decisions.
 
+The candidate-evidence gate is represented by
+`lib/flights/connector-candidate-review.ts`: seven attributable evidence
+workstreams per connector (corporate authority, content coverage, commercial
+economics, ticketing/settlement, servicing/support, security/privacy, and
+technical sandbox readiness). The current state is **0 of 7 evidence workstreams
+for all 9 approved candidates**, with no shortlist or provider selection.
+
 Adding a catalog entry does not complete provider onboarding. Each connector
 still needs a commercial agreement, approved credentials, airline coverage and
 ticketing authority, sandbox certification, servicing/support evidence, payment

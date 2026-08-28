@@ -11,6 +11,10 @@ import {
   flightConnectorActivationStages,
   FLIGHT_CONNECTOR_ACTIVATION_MODE,
 } from "../lib/flights/connector-activation-readiness";
+import {
+  buildFlightConnectorCandidateReviews,
+  FLIGHT_CONNECTOR_CANDIDATE_REVIEW_MODE,
+} from "../lib/flights/connector-candidate-review";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -82,6 +86,8 @@ describe("flight booking connector catalog", () => {
     expect(page).toContain("GDS and airline adapter surfaces");
     expect(page).toContain("buildFlightConnectorActivationReadiness");
     expect(page).toContain("Approved candidate · {connector.completedCount}/{connector.totalCount} gates");
+    expect(page).toContain("Seven-workstream diligence checklist");
+    expect(page).toContain("buildFlightConnectorCandidateReviews");
     expect(page).not.toContain("connector.externalNetworkAccess = true");
   });
 
@@ -108,5 +114,23 @@ describe("flight booking connector catalog", () => {
     expect(readiness.productionTrafficAuthorized).toBe(false);
     expect(readiness.ticketingAuthorized).toBe(false);
     expect(readiness.paymentAuthorized).toBe(false);
+  });
+
+  it("starts candidate evidence review at zero of seven for every connector", () => {
+    const review = buildFlightConnectorCandidateReviews();
+    expect(FLIGHT_CONNECTOR_CANDIDATE_REVIEW_MODE).toBe("candidate_evidence_pending");
+    expect(review.totalCandidates).toBe(9);
+    expect(review.completeReviewCount).toBe(0);
+    expect(review.shortlistedCount).toBe(0);
+    expect(review.selectedCount).toBe(0);
+    expect(review.reviews.every((candidate) => candidate.candidateState === "approved_candidate"
+      && candidate.reviewState === "evidence_pending"
+      && candidate.completedCount === 0
+      && candidate.totalCount === 7
+      && !candidate.shortlisted
+      && !candidate.selected
+      && !candidate.contractApproved
+      && !candidate.credentialsAccepted
+      && !candidate.externalNetworkAccess)).toBe(true);
   });
 });
