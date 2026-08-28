@@ -48,6 +48,7 @@ export type FlightConnectorActivationEvidenceByConnector = Partial<
 export type FlightConnectorActivationTrack = Readonly<{
   connectorId: FlightBookingConnectorId;
   label: string;
+  candidateState: "approved_candidate";
   category: string;
   notes: string;
   plannedOperations: readonly string[];
@@ -76,6 +77,7 @@ export function buildFlightConnectorActivationReadiness(
     return {
       connectorId: connector.id,
       label: connector.label,
+      candidateState: connector.candidateState,
       category: connector.category,
       notes: connector.notes,
       plannedOperations: connector.plannedOperations,

@@ -26,6 +26,7 @@ export type FlightBookingConnectorId = (typeof flightBookingConnectorIds)[number
 export type FlightBookingConnectorDefinition = Readonly<{
   id: FlightBookingConnectorId;
   label: string;
+  candidateState: "approved_candidate";
   integrationFamily: "sabre" | "amadeus" | "travelport" | "ndc_aggregator";
   category: "gds" | "ndc_aggregator" | "lcc_aggregator";
   plannedOperations: readonly string[];
@@ -41,6 +42,7 @@ const connectorDefinitions = [
   {
     id: "sabre",
     label: "Sabre Offers and Orders",
+    candidateState: "approved_candidate",
     integrationFamily: "sabre",
     category: "gds",
     plannedOperations: ["shopping", "pricing", "orders", "ticketing", "servicing"],
@@ -54,6 +56,7 @@ const connectorDefinitions = [
   {
     id: "amadeus",
     label: "Amadeus Self-Service Flight APIs",
+    candidateState: "approved_candidate",
     integrationFamily: "amadeus",
     category: "gds",
     plannedOperations: ["shopping", "pricing", "create_orders", "order_management"],
@@ -67,6 +70,7 @@ const connectorDefinitions = [
   {
     id: "travelport",
     label: "Travelport+ TripServices",
+    candidateState: "approved_candidate",
     integrationFamily: "travelport",
     category: "gds",
     plannedOperations: ["shopping", "pricing", "booking", "ticketing", "exchanges", "refunds"],
@@ -80,6 +84,7 @@ const connectorDefinitions = [
   {
     id: "worldspan",
     label: "Worldspan (Travelport host)",
+    candidateState: "approved_candidate",
     integrationFamily: "travelport",
     category: "gds",
     plannedOperations: ["shopping", "pricing", "booking", "ticketing", "servicing"],
@@ -93,6 +98,7 @@ const connectorDefinitions = [
   {
     id: "abacus",
     label: "Abacus (Sabre regional host)",
+    candidateState: "approved_candidate",
     integrationFamily: "sabre",
     category: "gds",
     plannedOperations: ["shopping", "pricing", "reservation", "ticketing"],
@@ -106,6 +112,7 @@ const connectorDefinitions = [
   {
     id: "galileo",
     label: "Galileo (Travelport host)",
+    candidateState: "approved_candidate",
     integrationFamily: "travelport",
     category: "gds",
     plannedOperations: ["shopping", "pricing", "booking", "ticketing", "servicing"],
@@ -119,6 +126,7 @@ const connectorDefinitions = [
   {
     id: "airgateway",
     label: "AirGateway NDC API",
+    candidateState: "approved_candidate",
     integrationFamily: "ndc_aggregator",
     category: "ndc_aggregator",
     plannedOperations: ["shopping", "booking", "issuing", "servicing"],
@@ -132,6 +140,7 @@ const connectorDefinitions = [
   {
     id: "verteil",
     label: "Verteil NDC API",
+    candidateState: "approved_candidate",
     integrationFamily: "ndc_aggregator",
     category: "ndc_aggregator",
     plannedOperations: ["shopping", "booking", "ticketing", "ancillaries", "servicing"],
@@ -145,6 +154,7 @@ const connectorDefinitions = [
   {
     id: "travelfusion",
     label: "TravelFusion Airline NDC API",
+    candidateState: "approved_candidate",
     integrationFamily: "ndc_aggregator",
     category: "lcc_aggregator",
     plannedOperations: ["shopping", "booking", "ticketing", "servicing"],

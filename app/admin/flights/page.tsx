@@ -1757,7 +1757,7 @@ export default function Page() {
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {connectorReadiness.tracks.map((connector) => (
             <article key={connector.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">
-              <div className="flex items-start justify-between gap-3"><h3 className="font-bold">{connector.label}</h3><span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-700">{connector.completedCount}/{connector.totalCount} gates</span></div>
+              <div className="flex items-start justify-between gap-3"><h3 className="font-bold">{connector.label}</h3><span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-700">Approved candidate · {connector.completedCount}/{connector.totalCount} gates</span></div>
               <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500">{connector.category.replaceAll("_", " ")}</p>
               <p className="mt-3 text-sm leading-6 text-slate-600">{connector.notes}</p>
               <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500"><strong className="text-slate-700">Planned scope:</strong> {connector.plannedOperations.join(", ")}</p>

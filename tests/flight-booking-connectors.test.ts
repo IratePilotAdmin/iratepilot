@@ -35,6 +35,7 @@ describe("flight booking connector catalog", () => {
 
   it("keeps every catalog entry dark until separate activation evidence exists", () => {
     for (const definition of flightBookingConnectorDefinitions) {
+      expect(definition.candidateState).toBe("approved_candidate");
       expect(definition.lifecycle).toBe("catalogued_not_activated");
       expect(definition.externalNetworkAccess).toBe(false);
       expect(definition.supportsLiveTraffic).toBe(false);
@@ -80,7 +81,7 @@ describe("flight booking connector catalog", () => {
     const page = read("app/admin/flights/page.tsx");
     expect(page).toContain("GDS and airline adapter surfaces");
     expect(page).toContain("buildFlightConnectorActivationReadiness");
-    expect(page).toContain("{connector.completedCount}/{connector.totalCount} gates");
+    expect(page).toContain("Approved candidate · {connector.completedCount}/{connector.totalCount} gates");
     expect(page).not.toContain("connector.externalNetworkAccess = true");
   });
 
@@ -91,7 +92,7 @@ describe("flight booking connector catalog", () => {
     expect(readiness.totalConnectors).toBe(9);
     expect(readiness.readyConnectorCount).toBe(0);
     expect(readiness.liveConnectorCount).toBe(0);
-    expect(readiness.tracks.every((track) => track.completedCount === 0 && track.totalCount === 10)).toBe(true);
+    expect(readiness.tracks.every((track) => track.candidateState === "approved_candidate" && track.completedCount === 0 && track.totalCount === 10)).toBe(true);
     expect(readiness.tracks.every((track) => !track.externalNetworkAccess && !track.productionTrafficAuthorized)).toBe(true);
   });
 
