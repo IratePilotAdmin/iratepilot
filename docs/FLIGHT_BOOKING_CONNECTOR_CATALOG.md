@@ -77,6 +77,14 @@ plan-only: it cannot sign or accept terms, create an account, receive a
 credential, authorize ticketing or payment, enable network traffic, or release
 consumer bookings.
 
+The external evidence gate is represented by
+`lib/flights/rollout-contract-evidence-intake.ts`. It requires seven
+independently attributable evidence items per route packet, starts at **0 of 7
+for Duffel and 0 of 7 for Sabre**, and remains blocked until an approved secure
+process supplies and reviews the evidence. The intake stores no raw contract,
+credential, passenger data, or provider response and cannot accept terms or
+authorize any external capability.
+
 Adding a catalog entry does not complete provider onboarding. Each connector
 still needs a commercial agreement, approved credentials, airline coverage and
 ticketing authority, sandbox certification, servicing/support evidence, payment

@@ -48,6 +48,11 @@ import {
   flightRolloutContractAuthorityStages,
   FLIGHT_ROLLOUT_CONTRACT_AUTHORITY_MODE,
 } from "../lib/flights/rollout-contract-authority";
+import {
+  buildFlightRolloutContractEvidenceIntake,
+  flightRolloutContractEvidenceStages,
+  FLIGHT_ROLLOUT_CONTRACT_EVIDENCE_MODE,
+} from "../lib/flights/rollout-contract-evidence-intake";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -317,5 +322,27 @@ describe("flight booking connector catalog", () => {
     expect(authority.externalNetworkAccess).toBe(false);
     expect(authority.productionTrafficAuthorized).toBe(false);
     expect(authority.nextGate).toBe("contract_authority");
+  });
+
+  it("keeps the real contract gate blocked until external evidence is supplied", () => {
+    const intake = buildFlightRolloutContractEvidenceIntake();
+    expect(FLIGHT_ROLLOUT_CONTRACT_EVIDENCE_MODE).toBe("external_contract_evidence_required");
+    expect(flightRolloutContractEvidenceStages).toHaveLength(7);
+    expect(intake.routePreference.primaryConnectorId).toBe("duffel");
+    expect(intake.routePreference.secondaryConnectorId).toBe("sabre");
+    expect(intake.totalRoutes).toBe(2);
+    expect(intake.completeRouteCount).toBe(0);
+    expect(intake.evidenceReceived).toBe(false);
+    expect(intake.contractAccepted).toBe(false);
+    expect(intake.credentialsAccepted).toBe(false);
+    expect(intake.externalNetworkAccess).toBe(false);
+    expect(intake.nextGate).toBe("contract_authority_evidence");
+    expect(intake.records.every((record) => record.intakeState === "blocked"
+      && record.completedCount === 0
+      && record.totalCount === 7
+      && !record.evidenceComplete
+      && !record.contractAccepted
+      && !record.credentialsAccepted
+      && !record.externalNetworkAccess)).toBe(true);
   });
 });
