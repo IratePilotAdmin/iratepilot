@@ -32,6 +32,11 @@ import {
   flightConnectorSandboxCertificationStages,
   FLIGHT_CONNECTOR_SANDBOX_CERTIFICATION_MODE,
 } from "../lib/flights/connector-sandbox-certification";
+import {
+  buildFlightConnectorRoutingReadiness,
+  flightConnectorRoutingStages,
+  FLIGHT_CONNECTOR_ROUTING_READINESS_MODE,
+} from "../lib/flights/connector-routing-readiness";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -131,6 +136,8 @@ describe("flight booking connector catalog", () => {
     expect(page).toContain("buildFlightConnectorCredentialIntake");
     expect(page).toContain("Provider test-plan readiness");
     expect(page).toContain("buildFlightConnectorSandboxCertification");
+    expect(page).toContain("Multi-connector route readiness");
+    expect(page).toContain("buildFlightConnectorRoutingReadiness");
     expect(page).not.toContain("connector.externalNetworkAccess = true");
   });
 
@@ -222,5 +229,22 @@ describe("flight booking connector catalog", () => {
       && !record.externalNetworkAccess
       && !record.ticketingAuthorized
       && !record.paymentAuthorized)).toBe(true);
+  });
+
+  it("keeps routing unassigned and disabled for every connector", () => {
+    const routing = buildFlightConnectorRoutingReadiness();
+    expect(FLIGHT_CONNECTOR_ROUTING_READINESS_MODE).toBe("routing_plan_only");
+    expect(flightConnectorRoutingStages).toHaveLength(6);
+    expect(routing.totalCandidates).toBe(9);
+    expect(routing.completeRoutingCount).toBe(0);
+    expect(routing.selectedPrimary).toBeNull();
+    expect(routing.fallbackOrder).toEqual([]);
+    expect(routing.routeEnabled).toBe(false);
+    expect(routing.records.every((record) => record.routeRole === "unassigned"
+      && !record.active
+      && record.completedCount === 0
+      && record.totalCount === 6
+      && !record.externalNetworkAccess
+      && !record.productionTrafficAuthorized)).toBe(true);
   });
 });
