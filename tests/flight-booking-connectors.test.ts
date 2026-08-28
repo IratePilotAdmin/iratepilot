@@ -78,6 +78,11 @@ import {
   flightRolloutSupportReleaseStages,
   FLIGHT_ROLLOUT_SUPPORT_RELEASE_MODE,
 } from "../lib/flights/rollout-support-release-readiness";
+import {
+  buildFlightRolloutPreviewReleaseReadiness,
+  flightRolloutPreviewReleaseStages,
+  FLIGHT_ROLLOUT_PREVIEW_RELEASE_MODE,
+} from "../lib/flights/rollout-preview-release-readiness";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -191,6 +196,8 @@ describe("flight booking connector catalog", () => {
     expect(page).toContain("buildFlightRolloutSecurityPrivacyReadiness");
     expect(page).toContain("Controlled Preview and consumer-release readiness");
     expect(page).toContain("buildFlightRolloutSupportReleaseReadiness");
+    expect(page).toContain("Controlled Preview release approval");
+    expect(page).toContain("buildFlightRolloutPreviewReleaseReadiness");
     expect(page).not.toContain("connector.externalNetworkAccess = true");
   });
 
@@ -500,6 +507,32 @@ describe("flight booking connector catalog", () => {
       && !record.previewReleaseAuthorized
       && !record.consumerReleaseAuthorized
       && !record.productionTrafficAuthorized
+      && !record.externalNetworkAccess)).toBe(true);
+  });
+
+  it("keeps controlled Preview release blocked behind support readiness", () => {
+    const readiness = buildFlightRolloutPreviewReleaseReadiness();
+    expect(FLIGHT_ROLLOUT_PREVIEW_RELEASE_MODE).toBe("controlled_preview_release_plan_only");
+    expect(flightRolloutPreviewReleaseStages).toHaveLength(8);
+    expect(readiness.routePreference.primaryConnectorId).toBe("duffel");
+    expect(readiness.routePreference.secondaryConnectorId).toBe("sabre");
+    expect(readiness.totalRoutes).toBe(2);
+    expect(readiness.completeRouteCount).toBe(0);
+    expect(readiness.previewReleaseAuthorized).toBe(false);
+    expect(readiness.consumerBookingAuthorized).toBe(false);
+    expect(readiness.paymentAuthorized).toBe(false);
+    expect(readiness.ticketingAuthorized).toBe(false);
+    expect(readiness.externalNetworkAccess).toBe(false);
+    expect(readiness.blockedBy).toBe("support_release_readiness");
+    expect(readiness.nextGate).toBe("controlled_preview_release");
+    expect(readiness.records.every((record) => record.releaseState === "blocked_by_support_release_readiness"
+      && record.completedCount === 0
+      && record.totalCount === 8
+      && !record.readinessComplete
+      && !record.previewReleaseAuthorized
+      && !record.consumerBookingAuthorized
+      && !record.paymentAuthorized
+      && !record.ticketingAuthorized
       && !record.externalNetworkAccess)).toBe(true);
   });
 });

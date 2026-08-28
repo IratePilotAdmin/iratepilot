@@ -125,6 +125,14 @@ is blocked by security and privacy readiness. It cannot open support channels,
 promote Preview or Production, or authorize consumer booking, ticketing, or
 payment.
 
+The following controlled Preview gate is represented by
+`lib/flights/rollout-preview-release-readiness.ts`. It defines eight
+checkpoints for prerequisite reconciliation, audience and inventory scope,
+booking and payment caps, monitoring, on-call coverage, rollback, expiry, and
+action-time approval. It starts at **0 of 8 for both route packets** and is
+blocked by support and release readiness. It cannot promote an environment or
+authorize consumer booking, ticketing, payment, or Production traffic.
+
 Adding a catalog entry does not complete provider onboarding. Each connector
 still needs a commercial agreement, approved credentials, airline coverage and
 ticketing authority, sandbox certification, servicing/support evidence, payment
