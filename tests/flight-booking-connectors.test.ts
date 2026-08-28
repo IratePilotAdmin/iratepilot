@@ -27,6 +27,11 @@ import {
   flightConnectorCredentialIntakeStages,
   FLIGHT_CONNECTOR_CREDENTIAL_INTAKE_MODE,
 } from "../lib/flights/connector-credential-intake";
+import {
+  buildFlightConnectorSandboxCertification,
+  flightConnectorSandboxCertificationStages,
+  FLIGHT_CONNECTOR_SANDBOX_CERTIFICATION_MODE,
+} from "../lib/flights/connector-sandbox-certification";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -124,6 +129,8 @@ describe("flight booking connector catalog", () => {
     expect(page).toContain("flightConnectorPublicEvidenceRecords.map");
     expect(page).toContain("Sandbox secret-readiness checklist");
     expect(page).toContain("buildFlightConnectorCredentialIntake");
+    expect(page).toContain("Provider test-plan readiness");
+    expect(page).toContain("buildFlightConnectorSandboxCertification");
     expect(page).not.toContain("connector.externalNetworkAccess = true");
   });
 
@@ -200,5 +207,20 @@ describe("flight booking connector catalog", () => {
       && !record.credentialStored
       && !record.credentialTested
       && !record.externalNetworkAccess)).toBe(true);
+  });
+
+  it("keeps sandbox certification at zero of six for every connector", () => {
+    const certification = buildFlightConnectorSandboxCertification();
+    expect(FLIGHT_CONNECTOR_SANDBOX_CERTIFICATION_MODE).toBe("sandbox_certification_plan_only");
+    expect(flightConnectorSandboxCertificationStages).toHaveLength(6);
+    expect(certification.totalConnectors).toBe(9);
+    expect(certification.completeCertificationCount).toBe(0);
+    expect(certification.records.every((record) => record.certificationState === "not_started"
+      && record.completedCount === 0
+      && record.totalCount === 6
+      && !record.sandboxTrafficAuthorized
+      && !record.externalNetworkAccess
+      && !record.ticketingAuthorized
+      && !record.paymentAuthorized)).toBe(true);
   });
 });

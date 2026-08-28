@@ -52,6 +52,11 @@ for each connector: provider selection, contract authority, secret channel,
 sandbox credential receipt, and credential-scope verification. The current
 state is **0 of 5 for all 9 connectors**; no secret is stored or tested.
 
+`lib/flights/connector-sandbox-certification.ts` defines six certification
+checkpoints per connector: contract mapping, sandbox scope, shopping,
+order/ticketing, servicing/reconciliation, and rollback evidence. The current
+state is **0 of 6 for all 9 connectors**; sandbox traffic remains disabled.
+
 Adding a catalog entry does not complete provider onboarding. Each connector
 still needs a commercial agreement, approved credentials, airline coverage and
 ticketing authority, sandbox certification, servicing/support evidence, payment

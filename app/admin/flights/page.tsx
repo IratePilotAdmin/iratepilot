@@ -23,6 +23,7 @@ import { buildFlightConnectorActivationReadiness } from "@/lib/flights/connector
 import { buildFlightConnectorCandidateReviews } from "@/lib/flights/connector-candidate-review";
 import { flightConnectorPublicEvidenceRecords } from "@/lib/flights/connector-public-evidence";
 import { buildFlightConnectorCredentialIntake } from "@/lib/flights/connector-credential-intake";
+import { buildFlightConnectorSandboxCertification } from "@/lib/flights/connector-sandbox-certification";
 import { buildFlightSupplierDueDiligence, flightSupplierContractLanes, flightSupplierEvidenceWorkstreams } from "@/lib/flights/supplier-due-diligence";
 import { buildFlightSupplierReadiness, flightCapabilityGroups, flightSupplierPaths } from "@/lib/flights/supplier-readiness";
 import { buildFlightSupplierSelectionPlan, flightSandboxAdapterOperations, flightSupplierSelectionCriteria } from "@/lib/flights/supplier-selection";
@@ -37,6 +38,7 @@ export default function Page() {
   const connectorReadiness = buildFlightConnectorActivationReadiness();
   const connectorReviews = buildFlightConnectorCandidateReviews();
   const connectorCredentialIntake = buildFlightConnectorCredentialIntake();
+  const connectorSandboxCertification = buildFlightConnectorSandboxCertification();
   const selection = buildFlightSupplierSelectionPlan();
   const diligence = buildFlightSupplierDueDiligence();
   const governance = buildFlightEvaluationGovernance();
@@ -632,6 +634,20 @@ export default function Page() {
               <div className="flex items-start justify-between gap-3"><h3 className="font-bold">{record.label}</h3><span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-700">Blocked · {record.completedCount}/{record.totalCount}</span></div>
               <p className="mt-3 text-sm leading-6 text-slate-600">Provider selection, contract authority, and approved secret handling remain unresolved.</p>
               <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500"><strong className="text-slate-700">Controls:</strong> no credential stored, no credential test, no network access</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Sandbox certification</p><h2 className="mt-2 text-2xl font-bold">Provider test-plan readiness</h2></div><TicketCheck className="h-7 w-7 text-slate-400" /></div>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Each approved candidate has a six-checkpoint sandbox certification plan. Current state is {connectorSandboxCertification.completeCertificationCount}/{connectorSandboxCertification.totalConnectors} complete; no sandbox request, ticket, payment, or provider traffic has occurred.</p>
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {connectorSandboxCertification.records.map((record) => (
+            <article key={record.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">
+              <div className="flex items-start justify-between gap-3"><h3 className="font-bold">{record.label}</h3><span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-700">Not started · {record.completedCount}/{record.totalCount}</span></div>
+              <p className="mt-3 text-sm leading-6 text-slate-600">Certification is blocked pending provider selection, authority, scoped credentials, and a separately approved sandbox test window.</p>
+              <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500"><strong className="text-slate-700">Controls:</strong> sandbox traffic disabled, ticketing disabled, payment disabled</p>
             </article>
           ))}
         </div>
