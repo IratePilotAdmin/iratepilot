@@ -22,6 +22,11 @@ import {
   FLIGHT_CONNECTOR_PUBLIC_EVIDENCE_MODE,
   getFlightConnectorPublicEvidence,
 } from "../lib/flights/connector-public-evidence";
+import {
+  buildFlightConnectorCredentialIntake,
+  flightConnectorCredentialIntakeStages,
+  FLIGHT_CONNECTOR_CREDENTIAL_INTAKE_MODE,
+} from "../lib/flights/connector-credential-intake";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -117,6 +122,8 @@ describe("flight booking connector catalog", () => {
     expect(page).toContain("buildFlightConnectorCandidateReviews");
     expect(page).toContain("Official-source research record");
     expect(page).toContain("flightConnectorPublicEvidenceRecords.map");
+    expect(page).toContain("Sandbox secret-readiness checklist");
+    expect(page).toContain("buildFlightConnectorCredentialIntake");
     expect(page).not.toContain("connector.externalNetworkAccess = true");
   });
 
@@ -177,5 +184,21 @@ describe("flight booking connector catalog", () => {
       expect(record.externalNetworkAccess).toBe(false);
     }
     expect(getFlightConnectorPublicEvidence("travelport").sourceUrls.length).toBeGreaterThan(0);
+  });
+
+  it("keeps credential intake blocked at zero of five for every connector", () => {
+    const intake = buildFlightConnectorCredentialIntake();
+    expect(FLIGHT_CONNECTOR_CREDENTIAL_INTAKE_MODE).toBe("credential_intake_blocked");
+    expect(flightConnectorCredentialIntakeStages).toHaveLength(5);
+    expect(intake.totalConnectors).toBe(9);
+    expect(intake.intakeCompleteCount).toBe(0);
+    expect(intake.credentialsStoredCount).toBe(0);
+    expect(intake.credentialsTestedCount).toBe(0);
+    expect(intake.records.every((record) => record.intakeState === "blocked"
+      && record.completedCount === 0
+      && record.totalCount === 5
+      && !record.credentialStored
+      && !record.credentialTested
+      && !record.externalNetworkAccess)).toBe(true);
   });
 });

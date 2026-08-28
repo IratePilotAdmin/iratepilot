@@ -47,6 +47,11 @@ not verify iRatePilot access, current coverage, contracts, credentials,
 ticketing authority, settlement, or Production eligibility. Public research is
 not a substitute for provider-supplied or independently reviewed evidence.
 
+`lib/flights/connector-credential-intake.ts` defines five secret-handling gates
+for each connector: provider selection, contract authority, secret channel,
+sandbox credential receipt, and credential-scope verification. The current
+state is **0 of 5 for all 9 connectors**; no secret is stored or tested.
+
 Adding a catalog entry does not complete provider onboarding. Each connector
 still needs a commercial agreement, approved credentials, airline coverage and
 ticketing authority, sandbox certification, servicing/support evidence, payment
