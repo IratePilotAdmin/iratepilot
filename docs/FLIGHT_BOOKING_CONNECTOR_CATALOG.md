@@ -108,6 +108,14 @@ at **0 of 9 for both route packets** and is blocked by sandbox certification.
 It cannot create a Stripe object or charge, move provider funds, issue a
 refund, or authorize a consumer booking.
 
+The following security gate is represented by
+`lib/flights/rollout-security-privacy-readiness.ts`. It defines eight
+checkpoints for data roles, passenger-data minimization, secrets and access,
+webhooks, logging, retention, incidents, and security release. It starts at
+**0 of 8 for both route packets** and is blocked by payment and settlement
+readiness. It cannot authorize passenger data, credential access, webhook
+processing, provider traffic, or Production release.
+
 Adding a catalog entry does not complete provider onboarding. Each connector
 still needs a commercial agreement, approved credentials, airline coverage and
 ticketing authority, sandbox certification, servicing/support evidence, payment

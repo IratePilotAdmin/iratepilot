@@ -68,6 +68,11 @@ import {
   flightRolloutPaymentSettlementStages,
   FLIGHT_ROLLOUT_PAYMENT_SETTLEMENT_MODE,
 } from "../lib/flights/rollout-payment-settlement-readiness";
+import {
+  buildFlightRolloutSecurityPrivacyReadiness,
+  flightRolloutSecurityPrivacyStages,
+  FLIGHT_ROLLOUT_SECURITY_PRIVACY_MODE,
+} from "../lib/flights/rollout-security-privacy-readiness";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -177,6 +182,8 @@ describe("flight booking connector catalog", () => {
     expect(page).toContain("buildFlightRolloutSandboxCertification");
     expect(page).toContain("Flight payment and settlement readiness");
     expect(page).toContain("buildFlightRolloutPaymentSettlementReadiness");
+    expect(page).toContain("Flight security and privacy readiness");
+    expect(page).toContain("buildFlightRolloutSecurityPrivacyReadiness");
     expect(page).not.toContain("connector.externalNetworkAccess = true");
   });
 
@@ -436,6 +443,30 @@ describe("flight booking connector catalog", () => {
       && !record.paymentAuthorized
       && !record.settlementAuthorized
       && !record.chargeCreated
+      && !record.externalNetworkAccess)).toBe(true);
+  });
+
+  it("keeps security and privacy readiness blocked behind payment settlement", () => {
+    const readiness = buildFlightRolloutSecurityPrivacyReadiness();
+    expect(FLIGHT_ROLLOUT_SECURITY_PRIVACY_MODE).toBe("security_privacy_readiness_plan_only");
+    expect(flightRolloutSecurityPrivacyStages).toHaveLength(8);
+    expect(readiness.routePreference.primaryConnectorId).toBe("duffel");
+    expect(readiness.routePreference.secondaryConnectorId).toBe("sabre");
+    expect(readiness.totalRoutes).toBe(2);
+    expect(readiness.completeRouteCount).toBe(0);
+    expect(readiness.passengerDataAuthorized).toBe(false);
+    expect(readiness.credentialAccessAuthorized).toBe(false);
+    expect(readiness.webhookProcessingAuthorized).toBe(false);
+    expect(readiness.externalNetworkAccess).toBe(false);
+    expect(readiness.blockedBy).toBe("payment_settlement_readiness");
+    expect(readiness.nextGate).toBe("security_privacy_readiness");
+    expect(readiness.records.every((record) => record.securityState === "blocked_by_payment_settlement"
+      && record.completedCount === 0
+      && record.totalCount === 8
+      && !record.readinessComplete
+      && !record.passengerDataAuthorized
+      && !record.credentialAccessAuthorized
+      && !record.webhookProcessingAuthorized
       && !record.externalNetworkAccess)).toBe(true);
   });
 });
