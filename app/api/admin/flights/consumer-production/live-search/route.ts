@@ -5,6 +5,7 @@ import {
   createFlightConsumerProductionDarkDuffelShoppingWorkflow,
   FlightConsumerProductionDuffelShoppingError,
 } from "@/lib/flights/consumer-production/duffel-shopping.server";
+import { resolveFlightConsumerProductionShoppingDarkRuntime } from "@/lib/flights/consumer-production/shopping-runtime.server";
 import { FLIGHT_CONSUMER_PRODUCTION_ORIGIN } from "@/lib/flights/consumer-production/runtime.server";
 
 export const runtime = "nodejs";
@@ -78,6 +79,10 @@ export async function POST(request: Request) {
         ? error.diagnostic
         : "unexpected_error",
       status,
+      runtimeReasons: error instanceof FlightConsumerProductionDuffelShoppingError
+        && error.diagnostic === "workflow_unavailable"
+        ? resolveFlightConsumerProductionShoppingDarkRuntime(process.env).reasons
+        : undefined,
     });
     return noStoreJson({ error: "Live-shopping diagnostic could not be completed." }, status);
   } finally {
