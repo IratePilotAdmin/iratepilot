@@ -1,0 +1,60 @@
+{
+  "evidence": {
+    "version": "flight-engineering-verification-v1",
+    "checkedAt": "2026-09-03T00:00:00-05:00",
+    "scope": "verified-flight-branch-engineering-and-preview-deployment",
+    "sanitized": true,
+    "secretValuesRead": false,
+    "secretValuesIncluded": false,
+    "providerMutationPerformed": false,
+    "bookingPerformed": false,
+    "paymentPerformed": false,
+    "ticketingPerformed": false,
+    "productionPromotionPerformed": false,
+    "source": {
+      "repository": "IratePilotAdmin/iratepilot",
+      "branch": "agent/flight-live-foundation-20260823",
+      "commit": "ec8b8db31e8157d9e38771be54a73d9e11b3bcff",
+      "commitMessage": "chore(flights): close engineering verification gaps"
+    },
+    "localVerification": {
+      "eslint": "passed",
+      "typescript": "passed",
+      "vitestFilesPassed": 458,
+      "vitestTestsPassed": 2965,
+      "nextProductionBuild": "passed_with_webpack",
+      "staticPagesGenerated": 121,
+      "turbopackSymlinkNote": "not used; workspace node_modules junction is outside the Vercel project root"
+    },
+    "vercelPreview": {
+      "project": "iratepilotadmin",
+      "deploymentId": "9DVjLKq5Mu8Y6964ccQ9Uy8kmUjx",
+      "target": "preview",
+      "readyState": "READY",
+      "sourceCommit": "ec8b8db31e8157d9e38771be54a73d9e11b3bcff",
+      "deploymentUrl": "https://iratepilotadmin-4rsg9npdw-irate-pilot.vercel.app",
+      "branchAlias": "https://iratepilotadmin-git-agent-flight-live-founda-0333c5-irate-pilot.vercel.app"
+    },
+    "browserAcceptance": {
+      "flightPath": "/flights",
+      "httpStatus": 200,
+      "observedMode": "supplier-offline planning preview",
+      "liveAirlineInventoryDisplayed": false,
+      "liveSearchDispatched": false,
+      "bookingAccepted": false,
+      "paymentAccepted": false,
+      "adminPath": "/admin/flights",
+      "adminUnauthenticatedBehavior": "redirects to sign-in"
+    },
+    "remainingReleaseGates": [
+      "Duffel contract, Managed Content, US point-of-sale, carrier scope, ticketing authority, settlement, and support approval",
+      "Provider credential and account-scope acceptance through an approved secret process",
+      "Sandbox certification and managed-UAT evidence for shopping, repricing, orders, ticketing, and servicing",
+      "Production data-plane, durable receipts, webhook, monitoring, support, and incident acceptance",
+      "Stripe flight-payment and reconciliation approval",
+      "Explicitly approved live canary booking, ticketing, payment, and servicing evidence",
+      "Separate consumer-release decision and public rollout"
+    ],
+    "disposition": "Engineering foundation is verified and the default-off Preview deployment is ready. External approvals and transaction authority remain blocked; no live booking or payment is enabled."
+  }
+}
