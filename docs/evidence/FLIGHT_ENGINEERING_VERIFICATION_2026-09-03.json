@@ -1,7 +1,7 @@
 {
   "evidence": {
     "version": "flight-engineering-verification-v1",
-    "checkedAt": "2026-09-03T00:00:00-05:00",
+    "checkedAt": "2026-09-03T11:13:40-05:00",
     "scope": "verified-flight-branch-engineering-and-preview-deployment",
     "sanitized": true,
     "secretValuesRead": false,
