@@ -31,6 +31,7 @@ const sourceId = "22222222-2222-4222-8222-222222222222";
 const sourceShoppingAttemptId = "33333333-3333-4333-8333-333333333333";
 const sourceResponseSha256 = "a".repeat(64);
 const sourceOfferEvidenceSha256 = "b".repeat(64);
+const futureOfferExpiresAt = "2099-09-01T00:00:00.000Z";
 const offerIdSha256 =
   deriveFlightConsumerProductionDuffelLiveOfferIdSha256(offerId);
 const offerBindingSha256 = sha256FlightEvidence({
@@ -97,7 +98,7 @@ function sourcePort(overrides: Record<string, unknown> = {}) {
       source_response_sha256: sourceResponseSha256,
       offer_id_sha256: offerIdSha256,
       source_offer_evidence_sha256: sourceOfferEvidenceSha256,
-      expires_at: "2026-09-01T00:00:00.000Z",
+      expires_at: futureOfferExpiresAt,
       ...overrides,
     }]),
   };
@@ -162,7 +163,7 @@ function providerBody() {
       partial: false,
       total_amount: "249.50",
       total_currency: "USD",
-      expires_at: "2026-09-01T00:00:00.000Z",
+      expires_at: futureOfferExpiresAt,
       passenger_identity_documents_required: false,
       payment_requirements: { requires_instant_payment: true },
       owner: { name: "Example Air", iata_code: "EA" },
@@ -264,7 +265,7 @@ describe("Flight Consumer Production Duffel live-offer refresh workflow", () => 
       normalized_offer_sha256: "e".repeat(64),
       price_amount_minor: "24950",
       price_currency: "USD",
-      offer_expires_at: "2026-09-01T00:00:00.000Z",
+      offer_expires_at: futureOfferExpiresAt,
       observed_at: "2026-08-27T08:00:00.000Z",
       owner_name: "Example Air",
       owner_iata_code: "EA",

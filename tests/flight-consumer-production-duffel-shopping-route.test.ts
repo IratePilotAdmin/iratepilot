@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => {
   };
 });
 
+vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth/require-role", () => ({
   requireRole: mocks.requireRole,
 }));
