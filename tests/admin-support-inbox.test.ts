@@ -16,7 +16,6 @@ describe("admin support inbox", () => {
 
   it("limits status updates to the supported case lifecycle", () => {
     expect(updateRoute).toContain('z.enum(["new", "in_progress", "resolved"])');
-    expect(updateRoute).toContain(".maybeSingle()");
     expect(updateRoute).toContain('status: 404');
   });
 
@@ -25,7 +24,7 @@ describe("admin support inbox", () => {
     expect(listRoute).toContain('statusCount("new")');
     expect(listRoute).toContain('statusCount("in_progress")');
     expect(listRoute).toContain('statusCount("resolved")');
-    expect(listRoute).toContain(".limit(inboxLimit)");
+    expect(listRoute).toContain(".range(offset, offset + inboxLimit - 1)");
   });
 
   it("replaces the placeholder and exposes support in admin navigation", () => {

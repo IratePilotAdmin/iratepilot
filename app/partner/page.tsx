@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ArrowRight, BarChart3, Building2, Check, Headphones, Sparkles } from "lucide-react";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
-import { PartnerApplicationForm } from "@/components/forms/partner-application-form";
 import { RevenueAiMarketing } from "@/components/partner/revenue-ai-marketing";
 import { partnerEnterprisePlan, partnerPlans, type PartnerPlan } from "@/config/partner-plans";
 
@@ -26,7 +25,13 @@ export default function PartnerPage() {
               </div>
               <a href="#join" className="revenue-primary mt-9">Join as a partner <ArrowRight /></a>
             </div>
-            <div id="application" className="scroll-mt-8"><PartnerApplicationForm /></div>
+            <section id="application" aria-labelledby="private-hotel-interest" className="card scroll-mt-8 p-6 sm:p-8">
+              <span className="section-kicker">Private hotel onboarding</span>
+              <h2 id="private-hotel-interest" className="mt-4 text-3xl">Start with a private conversation.</h2>
+              <p className="mt-4 leading-7 text-neutral-600">Check whether the short hotel interest form is open. An interest request starts private follow-up only. Full hotel applications are currently paused.</p>
+              <p className="mt-3 text-sm leading-6 text-neutral-600">This step creates no listing, booking, payment, or hotel-system connection.</p>
+              <Link href="/hotel-intake" className="btn-primary mt-6 inline-flex min-h-12 items-center">View hotel intake <ArrowRight /></Link>
+            </section>
           </div>
         </section>
 
@@ -80,8 +85,8 @@ export default function PartnerPage() {
 
         <section id="join" className="container-page py-24">
           <div className="partner-join">
-            <div><span className="section-kicker text-neutral-400">Partner with us</span><h2 className="mt-4 text-5xl text-white">Ready to grow with iRatePilot?</h2><p className="mt-5 max-w-2xl text-neutral-300">Start your partner application. Approved pilot partners can test subscription and marketplace workflows; live billing and commercial activation still require completed agreements and launch approval.</p></div>
-            <Link href="#application" className="revenue-primary">Start partner application <ArrowRight /></Link>
+            <div><span className="section-kicker text-neutral-400">Partner with us</span><h2 className="mt-4 text-5xl text-white">Ready to grow with iRatePilot?</h2><p className="mt-5 max-w-2xl text-neutral-300">Start with a private hotel onboarding conversation when interest intake is open. Full applications are paused; live billing and commercial activation still require completed agreements and launch approval.</p></div>
+            <Link href="/hotel-intake" className="revenue-primary">View hotel intake <ArrowRight /></Link>
           </div>
         </section>
       </main>

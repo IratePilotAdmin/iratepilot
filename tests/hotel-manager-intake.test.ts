@@ -58,10 +58,12 @@ describe("hotel manager intake", () => {
     expect(hotelManagerIntakeSchema.safeParse({ ...validIntake, companyFax: "bot" }).success).toBe(false);
   });
 
-  it("provides a dedicated shareable form without requesting sensitive hotel data", () => {
-    expect(intakePage).toContain("Private hotel onboarding");
+  it("provides a shareable interest page while retaining the inactive legacy form", () => {
+    expect(intakePage).toContain("Private hotel manager intake");
     expect(intakePage).toContain("Before you begin");
-    expect(intakePage).toContain("Allow about 10 minutes");
+    expect(intakePage).toContain("Allow about 3 minutes");
+    expect(intakePage).toContain("HotelManagerInterestForm");
+    expect(intakePage).not.toContain("PartnerApplicationForm");
     expect(form).toContain("Submit hotel for verification");
     expect(form).toContain("submission does not publish the property");
     expect(form).toContain("Do not enter passwords");
@@ -70,9 +72,10 @@ describe("hotel manager intake", () => {
     expect(footer).toContain('["Hotel manager intake", "/hotel-intake"]');
   });
 
-  it("stores only pending intake data and keeps approval behind an explicit admin verification", () => {
-    expect(submissionRoute).toContain('status: "pending"');
-    expect(submissionRoute).toContain("hotel_authorized: parsed.data.hotelAuthorized");
+  it("pauses legacy submission and preserves admin verification for existing applications", () => {
+    expect(submissionRoute).toContain('status: 503');
+    expect(submissionRoute).toContain('"Cache-Control": "no-store"');
+    expect(submissionRoute).not.toContain("createAdminClient");
     expect(adminReview).toContain("verificationConfirmed");
     expect(adminReview).toContain("Create an inactive draft only");
   });
