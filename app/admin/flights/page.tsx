@@ -620,13 +620,13 @@ export default function Page() {
       </section>
 
       <section className="mt-10">
-        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Next gate · contract and authority</p><h2 className="mt-2 text-2xl font-bold">Duffel-primary and Sabre-secondary contract review</h2></div><Scale className="h-7 w-7 text-slate-400" /></div>
+        <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Next gate · contract and authority</p><h2 className="mt-2 text-2xl font-bold">Sabre-primary and Duffel-secondary contract review</h2></div><Scale className="h-7 w-7 text-slate-400" /></div>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">The authorized route preference is bound to two separate contract-review packets. Current state is {rolloutContractAuthority.completeRouteCount}/{rolloutContractAuthority.totalRoutes} route packets complete; no contract is accepted and no ticketing, payment, credential, network, booking, or Production authority exists.</p>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           {rolloutContractAuthority.records.map((record) => (
             <article key={record.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">
               <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold">{record.connectorId}</h3><p className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500">{record.routeRole} route · {record.reviewState === "next_gate" ? "next gate" : "deferred"}</p></div><span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-700">Pending · {record.completedCount}/{record.totalCount}</span></div>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{record.reviewState === "next_gate" ? "Contract, ticketing authority, settlement, security, servicing, and execution approvals remain pending." : "Secondary review is held until the primary Duffel path is independently validated; no parallel launch is authorized."}</p>
+              <p className="mt-3 text-sm leading-6 text-slate-600">{record.reviewState === "next_gate" ? "Contract, ticketing authority, settlement, security, servicing, and execution approvals remain pending." : "Secondary review is held until the primary Sabre path is independently validated; no parallel launch is authorized."}</p>
               <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500"><strong className="text-slate-700">Controls:</strong> contract not accepted, credentials not configured, route disabled</p>
             </article>
           ))}
@@ -640,7 +640,7 @@ export default function Page() {
           {rolloutContractEvidence.records.map((record) => (
             <article key={record.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">
               <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold">{record.connectorId}</h3><p className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500">{record.routeRole} route</p></div><span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-700">Blocked · {record.completedCount}/{record.totalCount}</span></div>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{record.routeRole === "primary" ? "Duffel evidence must be supplied through an approved secure process and independently reviewed before any contract decision." : "Sabre evidence remains deferred until the primary Duffel path is independently validated."}</p>
+              <p className="mt-3 text-sm leading-6 text-slate-600">{record.routeRole === "primary" ? "Sabre evidence must be supplied through an approved secure process and independently reviewed before any contract decision." : "Duffel evidence remains deferred until the primary Sabre path is independently validated."}</p>
               <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500"><strong className="text-slate-700">Controls:</strong> no raw document retention, no contract acceptance, no credentials, no network</p>
             </article>
           ))}
@@ -654,7 +654,7 @@ export default function Page() {
           {rolloutSandboxCredentials.records.map((record) => (
             <article key={record.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">
               <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold">{record.connectorId}</h3><p className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500">{record.routeRole} route</p></div><span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-700">Blocked · {record.completedCount}/{record.totalCount}</span></div>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{record.routeRole === "primary" ? "Sandbox secret handling can begin only after Duffel contract evidence and independent approvals are complete." : "Secondary credential handling is deferred until the primary Duffel path is independently validated."}</p>
+              <p className="mt-3 text-sm leading-6 text-slate-600">{record.routeRole === "primary" ? "Sandbox secret handling can begin only after Sabre contract evidence and independent approvals are complete." : "Secondary credential handling is deferred until the primary Sabre path is independently validated."}</p>
               <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500"><strong className="text-slate-700">Controls:</strong> credential not stored, credential not tested, sandbox traffic disabled</p>
             </article>
           ))}
@@ -668,7 +668,7 @@ export default function Page() {
           {rolloutSandboxCertification.records.map((record) => (
             <article key={record.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">
               <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold">{record.connectorId}</h3><p className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500">{record.routeRole} route</p></div><span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-700">Blocked · {record.completedCount}/{record.totalCount}</span></div>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{record.routeRole === "primary" ? "Duffel sandbox certification can begin only after contract evidence and scoped credentials are independently approved." : "Sabre certification remains deferred until the primary Duffel path is independently validated."}</p>
+              <p className="mt-3 text-sm leading-6 text-slate-600">{record.routeRole === "primary" ? "Sabre sandbox certification can begin only after contract evidence and scoped credentials are independently approved." : "Duffel certification remains deferred until the primary Sabre path is independently validated."}</p>
               <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500"><strong className="text-slate-700">Controls:</strong> test traffic disabled, ticketing disabled, payment disabled</p>
             </article>
           ))}
@@ -682,7 +682,7 @@ export default function Page() {
           {rolloutPaymentSettlement.records.map((record) => (
             <article key={record.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">
               <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold">{record.connectorId}</h3><p className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500">{record.routeRole} route</p></div><span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-700">Blocked · {record.completedCount}/{record.totalCount}</span></div>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{record.routeRole === "primary" ? "Duffel payment and settlement controls await contract, credential, and sandbox certification evidence." : "Sabre payment and settlement controls remain deferred until the primary Duffel path is independently validated."}</p>
+              <p className="mt-3 text-sm leading-6 text-slate-600">{record.routeRole === "primary" ? "Sabre payment and settlement controls await contract, credential, and sandbox certification evidence." : "Duffel payment and settlement controls remain deferred until the primary Sabre path is independently validated."}</p>
               <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500"><strong className="text-slate-700">Controls:</strong> payment disabled, settlement disabled, charge creation disabled</p>
             </article>
           ))}
@@ -696,7 +696,7 @@ export default function Page() {
           {rolloutSecurityPrivacy.records.map((record) => (
             <article key={record.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">
               <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold">{record.connectorId}</h3><p className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500">{record.routeRole} route</p></div><span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-700">Blocked · {record.completedCount}/{record.totalCount}</span></div>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{record.routeRole === "primary" ? "Duffel security and privacy controls await contract, credential, sandbox, and payment evidence." : "Sabre security and privacy controls remain deferred until the primary Duffel path is independently validated."}</p>
+              <p className="mt-3 text-sm leading-6 text-slate-600">{record.routeRole === "primary" ? "Sabre security and privacy controls await contract, credential, sandbox, and payment evidence." : "Duffel security and privacy controls remain deferred until the primary Sabre path is independently validated."}</p>
               <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500"><strong className="text-slate-700">Controls:</strong> passenger data disabled, webhook processing disabled, Production disabled</p>
             </article>
           ))}
@@ -710,7 +710,7 @@ export default function Page() {
           {rolloutSupportRelease.records.map((record) => (
             <article key={record.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">
               <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold">{record.connectorId}</h3><p className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500">{record.routeRole} route</p></div><span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-700">Blocked · {record.completedCount}/{record.totalCount}</span></div>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{record.routeRole === "primary" ? "Duffel support and release controls await contract, sandbox, payment, and security evidence." : "Sabre support and release controls remain deferred until the primary Duffel path is independently validated."}</p>
+              <p className="mt-3 text-sm leading-6 text-slate-600">{record.routeRole === "primary" ? "Sabre support and release controls await contract, sandbox, payment, and security evidence." : "Duffel support and release controls remain deferred until the primary Sabre path is independently validated."}</p>
               <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500"><strong className="text-slate-700">Controls:</strong> support disabled, Preview release disabled, Production disabled</p>
             </article>
           ))}
@@ -724,7 +724,7 @@ export default function Page() {
           {rolloutPreviewRelease.records.map((record) => (
             <article key={record.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">
               <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold">{record.connectorId}</h3><p className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500">{record.routeRole} route</p></div><span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-700">Blocked · {record.completedCount}/{record.totalCount}</span></div>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{record.routeRole === "primary" ? "Duffel Preview release requires reconciled provider, sandbox, payment, security, support, and rollback evidence." : "Sabre Preview release remains deferred until the primary Duffel path is independently validated."}</p>
+              <p className="mt-3 text-sm leading-6 text-slate-600">{record.routeRole === "primary" ? "Sabre Preview release requires reconciled provider, sandbox, payment, security, support, and rollback evidence." : "Duffel Preview release remains deferred until the primary Sabre path is independently validated."}</p>
               <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500"><strong className="text-slate-700">Controls:</strong> Preview disabled, consumer booking disabled, Production disabled</p>
             </article>
           ))}
@@ -738,7 +738,7 @@ export default function Page() {
           {rolloutProductionRelease.records.map((record) => (
             <article key={record.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">
               <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold">{record.connectorId}</h3><p className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500">{record.routeRole} route</p></div><span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-700">Blocked · {record.completedCount}/{record.totalCount}</span></div>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{record.routeRole === "primary" ? "Duffel consumer launch requires a verified Preview receipt plus all production-release evidence and approvals." : "Sabre consumer launch remains deferred until the primary Duffel path is independently validated."}</p>
+              <p className="mt-3 text-sm leading-6 text-slate-600">{record.routeRole === "primary" ? "Sabre consumer launch requires a verified Preview receipt plus all production-release evidence and approvals." : "Duffel consumer launch remains deferred until the primary Sabre path is independently validated."}</p>
               <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500"><strong className="text-slate-700">Controls:</strong> Production disabled, live traffic disabled, consumer booking disabled</p>
             </article>
           ))}
@@ -752,7 +752,7 @@ export default function Page() {
           {rolloutConsumerLaunch.records.map((record) => (
             <article key={record.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">
               <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold">{record.connectorId}</h3><p className="mt-1 text-xs font-semibold uppercase tracking-wider text-slate-500">{record.routeRole} route</p></div><span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-rose-700">Blocked · {record.completedCount}/{record.totalCount}</span></div>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{record.routeRole === "primary" ? "Duffel consumer booking activation requires a separately approved, current launch decision after all Production evidence is verified." : "Sabre consumer booking remains deferred until the primary Duffel path is independently validated."}</p>
+              <p className="mt-3 text-sm leading-6 text-slate-600">{record.routeRole === "primary" ? "Sabre consumer booking activation requires a separately approved, current launch decision after all Production evidence is verified." : "Duffel consumer booking remains deferred until the primary Sabre path is independently validated."}</p>
               <p className="mt-4 border-t border-slate-100 pt-4 text-xs leading-5 text-slate-500"><strong className="text-slate-700">Controls:</strong> booking disabled, ticketing disabled, payment disabled</p>
             </article>
           ))}
@@ -1024,7 +1024,7 @@ export default function Page() {
 
       <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 18 · Duffel contact-authorization design only</p>
       <h1 className="mt-2 text-3xl font-bold">Duffel provider-contact authorization plan</h1>
-      <p className="mt-2 max-w-3xl text-slate-600">Define the narrow purpose, accountable sender, independent approvals, immutable message, truthful disclosures, official channel, recipient-role validation, data-minimization, one-contact limit, expiry, revocation, stop, incident, receipt, closeout, and no-commitment controls that would be required before a future Duffel diligence contact could be considered. The recorded Duffel-primary and Sabre-secondary preference is documentation only. This page cannot identify or contact a recipient, draft or send a message, submit a form, place a call, create an account or case, receive evidence, accept terms, recommend or select a supplier, enable traffic, issue tickets, collect payment, or change Production.</p>
+      <p className="mt-2 max-w-3xl text-slate-600">Define the narrow purpose, accountable sender, independent approvals, immutable message, truthful disclosures, official channel, recipient-role validation, data-minimization, one-contact limit, expiry, revocation, stop, incident, receipt, closeout, and no-commitment controls that would be required before a future Duffel diligence contact could be considered. The recorded Sabre-primary and Duffel-secondary preference is documentation only. This page cannot identify or contact a recipient, draft or send a message, submit a form, place a call, create an account or case, receive evidence, accept terms, recommend or select a supplier, enable traffic, issue tickets, collect payment, or change Production.</p>
 
       <section className="mt-8 grid gap-4 lg:grid-cols-[1fr_1.6fr]">
         <div className="rounded-2xl bg-slate-950 p-6 text-white">
