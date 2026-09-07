@@ -1,0 +1,58 @@
+import {readFile,writeFile} from 'node:fs/promises';
+import {pathToFileURL} from 'node:url';
+import {randomBytes} from 'node:crypto';
+import assert from 'node:assert/strict';
+import {runPostgresPmsOutboxOnce} from '../services/hotel-suppliers/iratepilot-pms/outbox-worker.mjs';
+if(!process.env.PGLITE_DIST||!process.env.PMS_BRIDGE_DIR)throw Error('Set PGLITE_DIST and PMS_BRIDGE_DIR to local dependency and bridge paths.');
+const {PGlite}=await import(pathToFileURL(process.env.PGLITE_DIST+'/index.js'));
+const {uuid_ossp}=await import(pathToFileURL(process.env.PGLITE_DIST+'/contrib/uuid_ossp.js'));
+const {pgcrypto}=await import(pathToFileURL(process.env.PGLITE_DIST+'/contrib/pgcrypto.js'));
+const {InboxStore,createReceiver,sendEvent}=await import(pathToFileURL(process.env.PMS_BRIDGE_DIR+'/delivery.mjs'));
+const {httpReceiver}=await import(pathToFileURL(process.env.PMS_BRIDGE_DIR+'/http-server.mjs'));
+const root=new URL('../',import.meta.url),db=new PGlite({extensions:{uuid_ossp,pgcrypto}}),inbox=new InboxStore(':memory:');
+let server,checks=0;
+const q=(s,p=[])=>db.query(s,p),v=async(s,p=[])=>Object.values((await q(s,p)).rows[0])[0];
+async function check(name,fn){await fn();checks++;console.log('PASS '+name)}
+try{
+ await db.exec(`CREATE ROLE anon;CREATE ROLE authenticated;CREATE ROLE service_role BYPASSRLS;
+ CREATE SCHEMA extensions;CREATE EXTENSION pgcrypto WITH SCHEMA extensions;
+ CREATE SCHEMA auth;CREATE TABLE auth.users(id uuid PRIMARY KEY,email text,email_confirmed_at timestamptz,raw_user_meta_data jsonb DEFAULT '{}');
+ CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+ CREATE FUNCTION auth.role() RETURNS text LANGUAGE sql STABLE AS $$SELECT current_setting('request.jwt.claim.role',true)$$;
+ CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $$SELECT '{}'::jsonb$$;`);
+ const schema=await readFile(new URL('supabase/schema.sql',root),'utf8');
+ const boundary=schema.indexOf('create unique index one_open_booking_per_stay');assert.ok(boundary>0);
+ // Historical active-property fixture is inserted before installation of publication guards.
+ // Every schema statement is then applied unchanged; all behavioral tests run with guards enabled.
+ await db.exec(schema.slice(0,boundary));
+ const user=await v("INSERT INTO auth.users(id,email,email_confirmed_at) VALUES(gen_random_uuid(),'sandbox@example.test',now()) RETURNING id");
+ await q("INSERT INTO profiles(id,role) VALUES($1,'partner') ON CONFLICT(id) DO NOTHING",[user]);
+ const partner=await v("INSERT INTO partners(owner_id,business_name,status) VALUES($1,'Sandbox hotel','approved') RETURNING id",[user]);
+ const property=await v("INSERT INTO properties(partner_id,name,slug,type,city,country,active) VALUES($1,'Sandbox','pms-sandbox','hotel','Austin','US',true) RETURNING id",[partner]);
+ const room=await v("INSERT INTO rooms(property_id,name,base_rate) VALUES($1,'King',200) RETURNING id",[property]);
+ const booking=await v("INSERT INTO bookings(confirmation_code,customer_id,property_id,room_id,check_in,check_out,guests,subtotal,total) VALUES('SANDBOX-001',$1,$2,$3,'2026-10-01','2026-10-03',2,400,400) RETURNING id",[user,property,room]);
+ await check('complete consolidated schema and new outbox install together',async()=>{await db.exec(schema.slice(boundary));await db.exec(await readFile(new URL('supabase/migrations/202609070139_iratepilot_pms_transactional_outbox.sql',root),'utf8'))});
+ const connection={id:'sandbox',tenantId:'tenant-1',propertyId:'pms-1',otaPropertyId:property,currency:'USD',inventoryAuthority:'iratepilot-pms',roomTypes:{[room]:'king'},secret:randomBytes(32).toString('hex'),endpoint:'https://sandbox.example.test/v1/ota/events'};
+ for(const name of ['202609070140_iratepilot_pms_baseline_activation.sql','202609070141_iratepilot_pms_delivery_control.sql'])await db.exec(await readFile(new URL('supabase/migrations/'+name,root),'utf8'));
+ await q("INSERT INTO irp_pms_outbox_connections(property_id,connection_id,tenant_id,pms_property_id) VALUES($1,'sandbox','tenant-1','pms-1')",[property]);
+ const baseline=await v('SELECT gen_random_uuid()');
+ await q("SELECT irp_pms_prepare_baseline($1,$2,'2026-09-07',1)",[property,baseline]);
+ await check('existing pending booking becomes baseline snapshot',async()=>assert.equal(await v('SELECT count(*)::int FROM irp_pms_outbox'),1));
+ server=httpReceiver(createReceiver({store:inbox,connections:[connection]}));await new Promise(r=>server.listen(0,'127.0.0.1',r));
+ const rpc=async(name,args)=>{try{await db.exec('SET ROLE service_role');const r=name==='irp_pms_claim_event'?await q('SELECT * FROM irp_pms_claim_event()'):await q('SELECT irp_pms_finish_event($1,$2,$3,$4) AS result',[args.p_event,args.p_lease,args.p_outcome,args.p_code]);return {data:name==='irp_pms_claim_event'?r.rows:r.rows[0].result,error:null}}catch(e){return {data:null,error:e.message}}finally{await db.exec('RESET ROLE')}};
+ const send=args=>sendEvent({...args,fetcher:(_url,init)=>fetch(`http://127.0.0.1:${server.address().port}/v1/ota/events`,init)});
+ const worker=()=>runPostgresPmsOutboxOnce({rpc,resolveConnection:async()=>connection,send});
+ await check('worker is idle before baseline release',async()=>{assert.equal((await worker()).outcome,'idle');assert.equal(inbox.count(),0)});
+ await q("SELECT irp_pms_release_baseline($1,$2,'baseline-review-001')",[property,baseline]);
+ await check('baseline arrives through signed HTTP as review-required',async()=>{const result=await worker();assert.equal(result.outcome,'acknowledged');assert.equal(result.receiverOutcome,'review-required');assert.equal(inbox.count(),1)});
+ const pause=await v('SELECT gen_random_uuid()');
+ await q("SELECT irp_pms_set_delivery($1,$2,true,false,'incident-review-001')",[property,pause]);
+ await q("UPDATE bookings SET status='cancelled' WHERE id=$1",[booking]);
+ await check('paused worker holds captured cancellation',async()=>{assert.equal((await worker()).outcome,'idle');assert.equal(await v('SELECT max(source_version)::int FROM irp_pms_outbox'),2);assert.equal(inbox.count(),1)});
+ await q("SELECT irp_pms_set_delivery($1,gen_random_uuid(),false,true,'incident-resolved-001')",[property]);
+ await check('lost acknowledgement retains source event for retry',async()=>{const r=await runPostgresPmsOutboxOnce({rpc,resolveConnection:async()=>connection,send:async args=>{const result=await send(args);assert.equal(result.outcome,'acknowledged');throw Error('simulated lost response')}});assert.equal(r.outcome,'retry');assert.equal(inbox.count(),2);assert.equal(inbox.inspect(connection,booking).status,'cancellation-staged');assert.equal(await v('SELECT state FROM irp_pms_outbox WHERE source_version=2'),'retry')});
+ await check('retry acknowledges same event without duplicate receiver record',async()=>{await db.exec("UPDATE irp_pms_outbox SET due_at=now()-interval '1 second' WHERE state='retry'");assert.equal((await worker()).outcome,'acknowledged');assert.equal(inbox.count(),2);assert.equal(await v("SELECT count(*)::int FROM irp_pms_outbox WHERE state='delivered'"),2)});
+ await check('replayed old pause cannot stop resumed delivery',async()=>{await q("SELECT irp_pms_set_delivery($1,$2,true,false,'incident-review-001')",[property,pause]);assert.equal(await v('SELECT delivery_enabled FROM irp_pms_outbox_connections'),true)});
+ await check('drained worker returns idle',async()=>assert.equal((await worker()).outcome,'idle'));
+ console.log(JSON.stringify({passed:checks,failed:0,baseline:'complete consolidated schema.sql + migrations 139/140/141',scope:'local PGlite and loopback HTTP; Supabase auth stubs; no live activation'}));
+}catch(e){console.error(JSON.stringify({error:e.message,where:e.where}));process.exitCode=1;}finally{if(server)await new Promise(r=>server.close(r));inbox.close();await db.close()}

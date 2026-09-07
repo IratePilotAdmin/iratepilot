@@ -1,0 +1,51 @@
+import {readFile} from 'node:fs/promises';
+import {pathToFileURL} from 'node:url';
+if(!process.env.PGLITE_DIST)throw Error('Set PGLITE_DIST to the installed PGlite dist directory.');
+const {PGlite}=await import(pathToFileURL(process.env.PGLITE_DIST+'/index.js').href);
+import assert from 'node:assert/strict';
+const root=new URL('../',import.meta.url);
+const schema=await readFile(new URL('supabase/schema.sql',root),'utf8');
+const migration=await readFile(new URL('supabase/migrations/202609070139_iratepilot_pms_transactional_outbox.sql',root),'utf8');
+const rollback=await readFile(new URL('supabase/rollbacks/202609070139_iratepilot_pms_transactional_outbox.rollback.sql',root),'utf8');
+const db=new PGlite();let checks=0;
+const query=(s,p=[])=>db.query(s,p);
+const value=async(s,p=[])=>Object.values((await query(s,p)).rows[0])[0];
+async function check(name,fn){await fn();checks++;console.log('PASS '+name)}
+try{
+await db.exec(`CREATE ROLE anon;CREATE ROLE authenticated;CREATE ROLE service_role BYPASSRLS;
+CREATE FUNCTION public.uuid_generate_v4() RETURNS uuid LANGUAGE sql AS 'SELECT gen_random_uuid()';
+CREATE TYPE booking_status AS ENUM ('pending','confirmed','cancelled','refunded');
+CREATE TYPE property_type AS ENUM ('hotel','resort','vacation_home');
+CREATE TABLE profiles(id uuid PRIMARY KEY);CREATE TABLE partners(id uuid PRIMARY KEY,status text NOT NULL DEFAULT 'approved');CREATE SCHEMA auth;CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS 'SELECT NULL::uuid';`);
+for(const table of ['properties','rooms','bookings']){const match=schema.match(new RegExp('create table '+table+' \\([\\s\\S]*?\\n\\);'));assert.ok(match);await db.exec(match[0])}
+await db.exec('CREATE TABLE booking_status_history(booking_id uuid REFERENCES bookings(id),status booking_status,actor_id uuid,note text)');
+await db.exec(await readFile(new URL('tests/fixtures/pms-preview-booking-baseline.sql',root),'utf8'));
+await db.exec(migration);
+const partner=await value('INSERT INTO partners(id) VALUES(gen_random_uuid()) RETURNING id');
+const property=await value("INSERT INTO properties(partner_id,name,slug,type,city,country,active) VALUES($1,'Sandbox','sandbox','hotel','Austin','US',true) RETURNING id",[partner]);
+const room=await value("INSERT INTO rooms(property_id,name,base_rate) VALUES($1,'King',200) RETURNING id",[property]);
+const guest=await value('INSERT INTO profiles VALUES(gen_random_uuid()) RETURNING id');
+const insert=()=>value("INSERT INTO bookings(confirmation_code,customer_id,property_id,room_id,check_in,check_out,guests,subtotal,total) VALUES(gen_random_uuid()::text,$1,$2,$3,'2026-10-01','2026-10-03',2,400,400) RETURNING id",[guest,property,room]);
+await db.exec(await readFile(new URL('supabase/migrations/202609070140_iratepilot_pms_baseline_activation.sql',root),'utf8'));
+const booking=await insert();
+const old=await insert();await query("UPDATE bookings SET check_in='2025-01-01',check_out='2025-01-03' WHERE id=$1",[old]);
+await query("INSERT INTO irp_pms_outbox_connections(property_id,connection_id,tenant_id,pms_property_id) VALUES($1,'sandbox','tenant','pms')",[property]);
+const request=await value('SELECT gen_random_uuid()');
+const prepare=(n=1,id=request)=>query("SELECT * FROM irp_pms_prepare_baseline($1,$2,'2026-09-07',$3)",[property,id,n]);
+await check('count mismatch rolls back baseline and activation',async()=>{await assert.rejects(()=>prepare(2),/count/);assert.equal(await value('SELECT count(*)::int FROM irp_pms_outbox'),0);assert.equal(await value('SELECT enabled FROM irp_pms_outbox_connections'),false)});
+await check('oversize request rejected',async()=>assert.rejects(()=>prepare(1001),/bounded/));
+await check('service role cannot bypass activation gates',async()=>{await db.exec('SET ROLE service_role');await assert.rejects(()=>query('UPDATE irp_pms_outbox_connections SET enabled=true'));await db.exec('RESET ROLE')});
+await check('anonymous cannot prepare baseline',async()=>{await db.exec('SET ROLE anon');await assert.rejects(()=>prepare());await db.exec('RESET ROLE')});
+await check('service role prepares date-bounded baseline',async()=>{await db.exec('SET ROLE service_role');await prepare();await db.exec('RESET ROLE');assert.equal(await value('SELECT count(*)::int FROM irp_pms_outbox'),1);assert.equal(await value('SELECT enabled AND NOT delivery_enabled FROM irp_pms_outbox_connections'),true)});
+const event=await value('SELECT event_id FROM irp_pms_outbox');
+await check('same request retries without duplicate snapshot',async()=>{await prepare();assert.equal(await value('SELECT count(*)::int FROM irp_pms_outbox'),1);assert.equal(await value('SELECT event_id FROM irp_pms_outbox'),event)});
+await check('different request rejected',async()=>assert.rejects(()=>prepare(1,'00000000-0000-0000-0000-000000000001'),/original/));
+await check('delivery held pending review',async()=>assert.equal((await query('SELECT * FROM irp_pms_claim_event()')).rows.length,0));
+await check('changes after baseline produce next version while held',async()=>{await query('UPDATE bookings SET subtotal=450,total=450 WHERE id=$1',[booking]);assert.equal(await value('SELECT max(source_version)::int FROM irp_pms_outbox'),2);assert.equal((await query('SELECT * FROM irp_pms_claim_event()')).rows.length,0)});
+await check('unmatched release rejected',async()=>assert.rejects(()=>query("SELECT irp_pms_release_baseline($1,gen_random_uuid(),'review-123')",[property]),/Matching/));
+await check('authenticated cannot release',async()=>{await db.exec('SET ROLE authenticated');await assert.rejects(()=>query("SELECT irp_pms_release_baseline($1,$2,'review-123')",[property,request]));await db.exec('RESET ROLE')});
+await check('service release enables ordered delivery',async()=>{await db.exec('SET ROLE service_role');await query("SELECT irp_pms_release_baseline($1,$2,'review-123')",[property,request]);await db.exec('RESET ROLE');const first=(await query('SELECT * FROM irp_pms_claim_event()')).rows[0];assert.equal(first.event_id,event);assert.equal((await query('SELECT * FROM irp_pms_claim_event()')).rows.length,0);await query("SELECT irp_pms_finish_event($1,$2,'acknowledged')",[first.event_id,first.lease_token]);assert.equal(Number((await query('SELECT * FROM irp_pms_claim_event()')).rows[0].source_version),2)});
+await check('activation reference cannot be overwritten',async()=>assert.rejects(()=>query("SELECT irp_pms_release_baseline($1,$2,'different-review')",[property,request]),/replaced/));
+await check('rollback remains fail closed and retains evidence',async()=>{await db.exec(await readFile(new URL('supabase/rollbacks/202609070140_iratepilot_pms_baseline_activation.rollback.sql',root),'utf8'));assert.equal(await value('SELECT enabled OR delivery_enabled FROM irp_pms_outbox_connections'),false);assert.equal(await value('SELECT count(*)::int FROM irp_pms_baseline_runs'),1);await db.exec(rollback);assert.equal(await value('SELECT count(*)::int FROM irp_pms_outbox'),2)});
+console.log(JSON.stringify({passed:checks,failed:0,engine:'PGlite PostgreSQL',scope:'Local fixture, not remote or multi-session concurrency'}));
+}finally{await db.close()}

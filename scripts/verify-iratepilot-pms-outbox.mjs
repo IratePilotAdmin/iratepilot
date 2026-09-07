@@ -1,0 +1,50 @@
+import {readFile} from 'node:fs/promises';
+import {pathToFileURL} from 'node:url';
+if(!process.env.PGLITE_DIST)throw Error('Set PGLITE_DIST to the installed PGlite dist directory.');
+const {PGlite}=await import(pathToFileURL(process.env.PGLITE_DIST+'/index.js').href);
+import assert from 'node:assert/strict';
+const root=new URL('../',import.meta.url);
+const schema=await readFile(new URL('supabase/schema.sql',root),'utf8');
+const migration=await readFile(new URL('supabase/migrations/202609070139_iratepilot_pms_transactional_outbox.sql',root),'utf8');
+const rollback=await readFile(new URL('supabase/rollbacks/202609070139_iratepilot_pms_transactional_outbox.rollback.sql',root),'utf8');
+const db=new PGlite();let checks=0;
+const query=(s,p=[])=>db.query(s,p);
+const value=async(s,p=[])=>Object.values((await query(s,p)).rows[0])[0];
+async function check(name,fn){await fn();checks++;console.log('PASS '+name)}
+try{
+await db.exec(`CREATE ROLE anon;CREATE ROLE authenticated;CREATE ROLE service_role BYPASSRLS;
+CREATE FUNCTION public.uuid_generate_v4() RETURNS uuid LANGUAGE sql AS 'SELECT gen_random_uuid()';
+CREATE TYPE booking_status AS ENUM ('pending','confirmed','cancelled','refunded');
+CREATE TYPE property_type AS ENUM ('hotel','resort','vacation_home');
+CREATE TABLE profiles(id uuid PRIMARY KEY);CREATE TABLE partners(id uuid PRIMARY KEY);`);
+for(const table of ['properties','rooms','bookings']){const match=schema.match(new RegExp('create table '+table+' \\([\\s\\S]*?\\n\\);'));assert.ok(match);await db.exec(match[0])}
+await db.exec(migration);
+const partner=await value('INSERT INTO partners VALUES(gen_random_uuid()) RETURNING id');
+const property=await value("INSERT INTO properties(partner_id,name,slug,type,city,country) VALUES($1,'Sandbox','sandbox','hotel','Austin','US') RETURNING id",[partner]);
+const room=await value("INSERT INTO rooms(property_id,name,base_rate) VALUES($1,'King',200) RETURNING id",[property]);
+const guest=await value('INSERT INTO profiles VALUES(gen_random_uuid()) RETURNING id');
+const insert=()=>value("INSERT INTO bookings(confirmation_code,customer_id,property_id,room_id,check_in,check_out,guests,subtotal,total) VALUES(gen_random_uuid()::text,$1,$2,$3,'2026-10-01','2026-10-03',2,400,400) RETURNING id",[guest,property,room]);
+await check('migration installs without activation',async()=>{await insert();assert.equal(await value('SELECT count(*)::int FROM irp_pms_outbox'),0)});
+await query("INSERT INTO irp_pms_outbox_connections(property_id,connection_id,tenant_id,pms_property_id) VALUES($1,'sandbox','tenant-1','pms-1')",[property]);
+await check('disabled connection captures no events',async()=>{await insert();assert.equal(await value('SELECT count(*)::int FROM irp_pms_outbox'),0)});
+await query('UPDATE irp_pms_outbox_connections SET enabled=true WHERE property_id=$1',[property]);
+const booking=await insert();
+await check('booking insert atomically creates pending event',async()=>{assert.equal(await value('SELECT count(*)::int FROM irp_pms_outbox'),1);const p=await value('SELECT event_payload FROM irp_pms_outbox');assert.equal(p.booking.status,'pending');assert.equal(p.sourceVersion,1);assert.equal(p.booking.subtotal,'400.00')});
+await check('confirmed transition creates increasing version',async()=>{await query("UPDATE bookings SET status='confirmed' WHERE id=$1",[booking]);assert.equal(await value('SELECT max(source_version)::int FROM irp_pms_outbox'),2)});
+await check('metadata and payment token changes do not enqueue or leak',async()=>{await query("UPDATE bookings SET updated_at=now(),stripe_payment_intent_id='pi_do_not_export' WHERE id=$1",[booking]);assert.equal(await value('SELECT count(*)::int FROM irp_pms_outbox'),2);assert.equal(await value("SELECT bool_or(event_payload::text LIKE '%pi_do_not_export%') FROM irp_pms_outbox"),false)});
+await check('source transaction rollback also rolls back event and version',async()=>{await db.exec('BEGIN');await query("UPDATE bookings SET status='cancelled' WHERE id=$1",[booking]);await db.exec('ROLLBACK');assert.equal(await value('SELECT count(*)::int FROM irp_pms_outbox'),2);assert.equal(await value('SELECT version::int FROM irp_pms_booking_versions WHERE booking_id=$1',[booking]),2)});
+await check('enqueue failure rolls back source change',async()=>{await db.exec("CREATE FUNCTION reject_test_event() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected failure';END $$;CREATE TRIGGER fail_event BEFORE INSERT ON irp_pms_outbox FOR EACH ROW EXECUTE FUNCTION reject_test_event();");await assert.rejects(()=>query("UPDATE bookings SET status='cancelled' WHERE id=$1",[booking]));assert.equal(await value('SELECT status FROM bookings WHERE id=$1',[booking]),'confirmed');await db.exec('DROP TRIGGER fail_event ON irp_pms_outbox;DROP FUNCTION reject_test_event()')});
+let claimed;
+await check('service worker claims earliest booking version',async()=>{await db.exec('SET ROLE service_role');claimed=(await query('SELECT * FROM public.irp_pms_claim_event()')).rows[0];assert.equal(Number(claimed.source_version),1);await db.exec('RESET ROLE')});
+await check('second worker cannot claim active lease or newer version',async()=>{assert.equal((await query('SELECT * FROM public.irp_pms_claim_event()')).rows.length,0)});
+await check('wrong lease cannot acknowledge',async()=>assert.equal(await value("SELECT irp_pms_finish_event($1,gen_random_uuid(),'acknowledged')",[claimed.event_id]),false));
+await check('lease holder acknowledgement unblocks next version',async()=>{assert.equal(await value("SELECT irp_pms_finish_event($1,$2,'acknowledged')",[claimed.event_id,claimed.lease_token]),true);claimed=(await query('SELECT * FROM irp_pms_claim_event()')).rows[0];assert.equal(Number(claimed.source_version),2)});
+await check('expired worker lease cannot finish',async()=>{await query("UPDATE irp_pms_outbox SET lease_until=now()-interval '1 second' WHERE event_id=$1",[claimed.event_id]);assert.equal(await value("SELECT irp_pms_finish_event($1,$2,'acknowledged')",[claimed.event_id,claimed.lease_token]),false);const retry=(await query('SELECT * FROM irp_pms_claim_event()')).rows[0];assert.notEqual(retry.lease_token,claimed.lease_token);claimed=retry});
+await check('retry persists backoff',async()=>{await value("SELECT irp_pms_finish_event($1,$2,'retry','transport_failure')",[claimed.event_id,claimed.lease_token]);assert.equal(await value('SELECT state FROM irp_pms_outbox WHERE event_id=$1',[claimed.event_id]),'retry');assert.equal((await query('SELECT * FROM irp_pms_claim_event()')).rows.length,0)});
+await check('disabled configuration suspends unsent work',async()=>{await query("UPDATE irp_pms_outbox SET due_at=now()-interval '1 second'");await db.exec('UPDATE irp_pms_outbox_connections SET enabled=false');assert.equal((await query('SELECT * FROM irp_pms_claim_event()')).rows.length,0);await db.exec('UPDATE irp_pms_outbox_connections SET enabled=true')});
+await check('authenticated users cannot inspect or claim outbox',async()=>{await db.exec('SET ROLE authenticated');await assert.rejects(()=>query('SELECT * FROM irp_pms_outbox'));await assert.rejects(()=>query('SELECT * FROM irp_pms_claim_event()'));await db.exec('RESET ROLE')});
+await check('anonymous users cannot activate a connection',async()=>{await db.exec('SET ROLE anon');await assert.rejects(()=>query('UPDATE irp_pms_outbox_connections SET enabled=true'));await db.exec('RESET ROLE')});
+await check('service role cannot edit immutable payload directly',async()=>{await db.exec('SET ROLE service_role');await assert.rejects(()=>query("UPDATE irp_pms_outbox SET event_payload='{}'"));await db.exec('RESET ROLE')});
+await check('safe rollback stops capture and preserves evidence',async()=>{const before=await value('SELECT count(*)::int FROM irp_pms_outbox');await db.exec(rollback);await query("UPDATE bookings SET status='cancelled' WHERE id=$1",[booking]);assert.equal(await value('SELECT count(*)::int FROM irp_pms_outbox'),before)});
+console.log(JSON.stringify({passed:checks,failed:0,engine:'PGlite PostgreSQL',fixture:'Exact properties/rooms/bookings definitions; minimal identity dependencies; not full migration lineage'}));
+}finally{await db.close()}

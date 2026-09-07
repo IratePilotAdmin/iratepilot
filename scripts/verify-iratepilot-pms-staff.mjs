@@ -1,0 +1,53 @@
+import {readFile} from 'node:fs/promises';
+import {pathToFileURL} from 'node:url';
+import {randomUUID} from 'node:crypto';
+import assert from 'node:assert/strict';
+const {PGlite}=await import(pathToFileURL(process.env.PGLITE_DIST+'/index.js'));
+const db=new PGlite();let passed=0;
+const q=(s,p=[])=>db.query(s,p),v=async(s,p=[])=>Object.values((await q(s,p)).rows[0])[0];
+async function check(name,fn){await fn();passed++;console.log('PASS '+name)}
+async function as(user,role='authenticated'){await db.exec('RESET ROLE');await q("SELECT set_config('request.jwt.claim.sub',$1,false)",[user??'']);await db.exec('SET ROLE '+role)}
+const rpc=(name,args=[])=>v('SELECT public.irp_pms_pilot_'+name+'('+args.map((_,i)=>'$'+(i+1)).join(',')+')',args);
+const denied=(fn,pattern)=>assert.rejects(fn,pattern);
+try{
+ await db.exec("CREATE ROLE anon;CREATE ROLE authenticated;CREATE ROLE service_role BYPASSRLS;CREATE SCHEMA auth;CREATE TABLE auth.users(id uuid PRIMARY KEY,email text,email_confirmed_at timestamptz);CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;");
+ for(const name of ['202609070142_iratepilot_pms_tenant_foundation.sql','202609070143_iratepilot_pms_onboarding.sql','202609070144_iratepilot_pms_reservation_application.sql','202609070145_iratepilot_pms_inbound_events.sql','202609070146_iratepilot_pms_pilot_operations.sql','202609070147_iratepilot_pms_staff_management.sql'])await db.exec(await readFile(new URL('../supabase/migrations/'+name,import.meta.url),'utf8'));
+ const owner=randomUUID(),other=randomUUID(),staff=randomUUID(),manager=randomUUID(),unconfirmed=randomUUID();
+ await q("INSERT INTO auth.users VALUES($1,'owner@example.test',now()),($2,'other@example.test',now()),($3,'staff@example.test',now()),($4,'manager@example.test',now()),($5,'pending@example.test',NULL)",[owner,other,staff,manager,unconfirmed]);
+ await as(owner);const a=await rpc('bootstrap',[randomUUID(),'A organization','A hotel']),scope=[a.tenant_id,a.property_id];
+ await as(other);const b=await rpc('bootstrap',[randomUUID(),'B organization','B hotel']);
+ await as(null,'anon');await check('anonymous cannot list or modify organization staff',async()=>{await denied(()=>rpc('staff',scope),/permission denied/);await denied(()=>rpc('save_member',[...scope,randomUUID(),'staff@example.test','staff']),/permission denied/)});
+ await as(other);await check('another owner cannot enumerate this organization',()=>denied(()=>rpc('staff',scope),/access denied/));
+ await check('cross-tenant property scope rejected',()=>denied(()=>rpc('staff',[b.tenant_id,a.property_id]),/access denied/));
+ await as(owner);await check('owner list contains only organization memberships',async()=>{const list=await rpc('staff',scope);assert.equal(list.length,1);assert.deepEqual(list[0],{user_id:owner,email:'owner@example.test',role:'owner',is_self:true})});
+ await check('missing and unconfirmed accounts cannot be linked',async()=>{await denied(()=>rpc('save_member',[...scope,randomUUID(),'unknown@example.test','staff']),/existing confirmed/);await denied(()=>rpc('save_member',[...scope,randomUUID(),'pending@example.test','staff']),/existing confirmed/)});
+ await check('owner role cannot be granted through staff management',()=>denied(()=>rpc('save_member',[...scope,randomUUID(),'staff@example.test','owner']),/staff or manager/));
+ const addRequest=randomUUID();
+ await check('owner links confirmed account using normalized email',async()=>{const result=await rpc('save_member',[...scope,addRequest,'  STAFF@EXAMPLE.TEST  ','staff']);assert.equal(result.user_id,staff);assert.equal(result.role,'staff');assert.equal(result.replayed,false)});
+ await check('same request replays without another audit event',async()=>{const count=(await rpc('workspace',scope)).activity.length;assert.equal((await rpc('save_member',[...scope,addRequest,'staff@example.test','staff'])).replayed,true);assert.equal((await rpc('workspace',scope)).activity.length,count)});
+ await check('same request cannot change role',()=>denied(()=>rpc('save_member',[...scope,addRequest,'staff@example.test','manager']),/identity already used/));
+ await as(staff);await check('linked staff gains workspace access',async()=>assert.equal((await rpc('workspace',scope)).role,'staff'));
+ await check('staff cannot list other members or add accounts',async()=>{await denied(()=>rpc('staff',scope),/owner access/);await denied(()=>rpc('save_member',[...scope,randomUUID(),'manager@example.test','manager']),/owner access/)});
+ await as(owner);await rpc('save_member',[...scope,randomUUID(),'manager@example.test','manager']);await as(manager);
+ await check('manager cannot grant membership or remove owner',async()=>{await denied(()=>rpc('save_member',[...scope,randomUUID(),'other@example.test','staff']),/owner access/);await denied(()=>rpc('remove_member',[...scope,randomUUID(),owner]),/owner access/)});
+ await as(owner);await check('owner cannot downgrade self through member saving',()=>denied(()=>rpc('save_member',[...scope,randomUUID(),'owner@example.test','staff']),/cannot be downgraded/));
+ await check('last owner removal is blocked atomically',async()=>{const count=(await rpc('staff',scope)).length;await denied(()=>rpc('remove_member',[...scope,randomUUID(),owner]),/last organization owner/);assert.equal((await rpc('staff',scope)).length,count)});
+ const roleRequest=randomUUID();
+ await check('owner can change staff to manager',async()=>assert.equal((await rpc('save_member',[...scope,roleRequest,'staff@example.test','manager'])).role,'manager'));
+ await check('delayed add retry cannot undo later role change',async()=>{await rpc('save_member',[...scope,addRequest,'staff@example.test','staff']);assert.equal((await rpc('staff',scope)).find(x=>x.user_id===staff).role,'manager')});
+ const removeRequest=randomUUID();
+ await check('owner removal revokes linked account immediately',async()=>{assert.equal((await rpc('remove_member',[...scope,removeRequest,staff])).removed,true);await as(staff);await denied(()=>rpc('workspace',scope),/access denied/);await as(owner)});
+ await check('delayed role retry cannot re-add removed account',async()=>{await rpc('save_member',[...scope,roleRequest,'staff@example.test','manager']);assert.equal((await rpc('staff',scope)).some(x=>x.user_id===staff),false)});
+ await rpc('save_member',[...scope,randomUUID(),'staff@example.test','staff']);
+ await check('delayed removal retry cannot remove later re-addition',async()=>{assert.equal((await rpc('remove_member',[...scope,removeRequest,staff])).replayed,true);assert.equal((await rpc('staff',scope)).find(x=>x.user_id===staff).role,'staff')});
+ await check('remove request cannot be reused for another target',()=>denied(()=>rpc('remove_member',[...scope,removeRequest,manager]),/identity already used/));
+ await check('removal of absent member is a bounded no-op',async()=>assert.equal((await rpc('remove_member',[...scope,randomUUID(),unconfirmed])).removed,false));
+ await check('authenticated users cannot tamper with membership receipts',()=>denied(()=>q('DELETE FROM irp_pms.membership_requests'),/permission denied/));
+ await as(null,'service_role');await q("INSERT INTO irp_pms.memberships VALUES($1,$2,'owner')",[a.tenant_id,other]);await as(other);
+ await check('another owner cannot reuse first owners request receipt',()=>denied(()=>rpc('save_member',[...scope,addRequest,'staff@example.test','staff']),/identity already used/));
+ await check('one of two owners can be removed while preserving an owner',async()=>{assert.equal((await rpc('remove_member',[...scope,randomUUID(),owner])).removed,true);assert.equal((await rpc('staff',scope)).filter(x=>x.role==='owner').length,1)});
+ await as(owner);await check('removed owner cannot replay privileged requests',()=>denied(()=>rpc('save_member',[...scope,addRequest,'staff@example.test','staff']),/access denied/));
+ await as(other);await check('remaining owner also cannot remove the last owner',()=>denied(()=>rpc('remove_member',[...scope,randomUUID(),other]),/last organization owner/));
+ await db.exec('RESET ROLE');await check('staff migration has no dependency on source outbox tables',async()=>assert.equal(await v("SELECT to_regclass('public.irp_pms_outbox')::text"),null));
+ console.log(JSON.stringify({passed,failed:0,scope:'Local PostgreSQL staff RPCs with auth stubs; no email sent and no remote writes'}));
+}finally{await db.close()}
