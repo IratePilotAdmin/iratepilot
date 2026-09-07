@@ -1,0 +1,55 @@
+{
+  "evidence": {
+    "version": "flight-engineering-verification-v1",
+    "checkedAt": "2026-09-07T10:16:01-05:00",
+    "scope": "verified-flight-branch-engineering-and-route-planning",
+    "sanitized": true,
+    "secretValuesRead": false,
+    "secretValuesIncluded": false,
+    "providerMutationPerformed": false,
+    "bookingPerformed": false,
+    "paymentPerformed": false,
+    "ticketingPerformed": false,
+    "productionPromotionPerformed": false,
+    "source": {
+      "repository": "IratePilotAdmin/iratepilot",
+      "branch": "agent/flight-live-foundation-20260823",
+      "commit": "426b3156cdb5fbed40ea0b1d3d8a70b004163923",
+      "commitMessage": "feat(flights): make Sabre the planned primary route"
+    },
+    "localVerification": {
+      "eslint": "passed",
+      "typescript": "passed",
+      "vitestFilesPassed": 458,
+      "vitestTestsPassed": 2965,
+      "focusedConnectorTestFilesPassed": 1,
+      "focusedConnectorTestsPassed": 24,
+      "nextProductionBuild": "passed_with_webpack",
+      "staticPagesGenerated": 121
+    },
+    "routePlanning": {
+      "decisionState": "authorized_route_preference",
+      "primaryConnector": "sabre",
+      "secondaryConnector": "duffel",
+      "operationalRouteEnabled": false,
+      "consumerBookingEnabled": false,
+      "consumerPaymentEnabled": false
+    },
+    "managedUat": {
+      "gate115Through119": "accepted_for_isolated_uat_only",
+      "providerCalls": false,
+      "stripeCalls": false,
+      "productionAccessed": false
+    },
+    "remainingReleaseGates": [
+      "Sabre contract, content, ticketing, settlement, security, and support approval",
+      "Sabre sandbox credentials through an approved secret process",
+      "Sabre sandbox certification and managed-UAT evidence for shopping, repricing, orders, ticketing, and servicing",
+      "Production data-plane receipts, webhook, monitoring, support, and incident acceptance",
+      "Stripe flight-payment and reconciliation approval",
+      "Explicitly approved live canary booking, ticketing, payment, and servicing evidence",
+      "Separate consumer-release decision and public rollout"
+    ],
+    "disposition": "Engineering and route-planning checkpoint passed; Sabre outreach is pending and all booking, payment, provider traffic, and Production release controls remain disabled."
+  }
+}
