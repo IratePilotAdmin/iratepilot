@@ -1,0 +1,173 @@
+{
+  "source": "Read-only Supabase effective169 inventory; existing grants retained by170",
+  "functions": [
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "anon": false,
+      "owner": "postgres",
+      "signature": "irp_pms_pilot_amend_reservation(uuid,uuid,uuid,uuid,bigint,text,uuid,date,date,integer,bigint,bigint)",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "anon": false,
+      "owner": "postgres",
+      "signature": "irp_pms_pilot_book_quote(uuid,uuid,uuid,uuid,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "anon": false,
+      "owner": "postgres",
+      "signature": "irp_pms_pilot_cancel_reservation(uuid,uuid,uuid,uuid,bigint,date,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "anon": false,
+      "owner": "postgres",
+      "signature": "irp_pms_pilot_commit_import(uuid,uuid,uuid,uuid)",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "anon": false,
+      "owner": "postgres",
+      "signature": "irp_pms_pilot_configure_operating_model(uuid,uuid,uuid,bigint,text,integer)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "anon": false,
+      "owner": "postgres",
+      "signature": "irp_pms_pilot_configure_property(uuid,uuid,text,text)",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "anon": false,
+      "owner": "postgres",
+      "signature": "irp_pms_pilot_create_reservation(uuid,uuid,uuid,uuid,text,date,date,integer,bigint,bigint)",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "anon": false,
+      "owner": "postgres",
+      "signature": "irp_pms_pilot_extend_stay(uuid,uuid,uuid,uuid,bigint,date,bigint,bigint,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "anon": false,
+      "owner": "postgres",
+      "signature": "irp_pms_pilot_move_room(uuid,uuid,uuid,uuid,bigint,uuid,bigint,uuid,bigint,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "anon": false,
+      "owner": "postgres",
+      "signature": "irp_pms_pilot_operational_report(uuid,uuid,date,date)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "anon": false,
+      "owner": "postgres",
+      "signature": "irp_pms_pilot_set_capacity(uuid,uuid,uuid,date,date,integer)",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "anon": false,
+      "owner": "postgres",
+      "signature": "irp_pms_pilot_set_housekeeping(uuid,uuid,uuid,uuid,bigint,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "anon": false,
+      "owner": "postgres",
+      "signature": "irp_pms_pilot_stage_import(uuid,uuid,uuid,text,jsonb)",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "anon": false,
+      "owner": "postgres",
+      "signature": "irp_pms_pilot_stay_action(uuid,uuid,uuid,text,uuid)",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "anon": false,
+      "owner": "postgres",
+      "signature": "irp_pms_pilot_workspace(uuid,uuid)",
+      "service_role": true,
+      "authenticated": true
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "anon": false,
+      "owner": "postgres",
+      "signature": "irp_pms.apply_operating_model(uuid,uuid,text,integer)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "anon": false,
+      "owner": "postgres",
+      "signature": "irp_pms.apply_reservation(uuid,uuid,jsonb)",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "anon": false,
+      "owner": "postgres",
+      "signature": "irp_pms.receive_reservation(uuid,uuid,text,text,bigint,text,jsonb,text)",
+      "service_role": true,
+      "authenticated": false
+    },
+    {
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "anon": false,
+      "owner": "postgres",
+      "signature": "irp_pms.reprocess_reservation(uuid,uuid,text,uuid,text)",
+      "service_role": false,
+      "authenticated": true
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "anon": false,
+      "owner": "postgres",
+      "signature": "irp_pms.room_state_revision()",
+      "service_role": false,
+      "authenticated": false
+    },
+    {
+      "acl": "{postgres=X/postgres}",
+      "anon": false,
+      "owner": "postgres",
+      "signature": "irp_pms.validate_import(uuid,uuid,text,jsonb)",
+      "service_role": false,
+      "authenticated": false
+    }
+  ]
+}
