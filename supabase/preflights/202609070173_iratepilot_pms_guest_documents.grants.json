@@ -1,0 +1,403 @@
+{
+  "source": "Frozen installed172 definitions and exact65-function subset of the observed hosted execution profile. Ten selected service grants are retained; nine differ from local migration defaults, including the existing folio grant. No old ACL change or broadened access.",
+  "observed_capture": {
+    "observed_at": "2026-09-08T04:25:02.915Z",
+    "sha256": "490df5d1a58fcd1459e84dea557f7b245f277a2e3710bbeae9c8843a18a7c677",
+    "scoped_functions": 153,
+    "scoped_service_grants": 30
+  },
+  "selected_service_grants": 10,
+  "local_service_grants_to_mirror": 9,
+  "functions": [
+    {
+      "signature": "irp_pms.apply_operating_model(uuid, uuid, text, integer)",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.apply_reservation(uuid, uuid, jsonb)",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.effective_capacity(uuid, uuid, uuid, date)",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.enqueue_turnover(uuid, uuid, uuid, text, text, uuid, bigint, uuid, timestamp with time zone, text, date, uuid)",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.maintenance_capacity(uuid, uuid, uuid, date)",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.normalize_cleaning_fee(jsonb)",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.normalize_guest_data(jsonb, text)",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.normalize_security_deposit_command(jsonb)",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.pilot_require(uuid, uuid, boolean)",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.pilot_require_owner(uuid, uuid, boolean)",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.property_fee_guard()",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.receive_reservation(uuid, uuid, text, text, bigint, text, jsonb, text)",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true
+    },
+    {
+      "signature": "irp_pms.reprocess_reservation(uuid, uuid, text, uuid, text)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.room_is_closed(uuid, uuid, uuid, date, date)",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.room_occupancy_revision()",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.room_state_revision()",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.security_deposit_book_json(uuid, uuid, uuid, bigint)",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.security_deposit_consistency()",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.security_deposit_event_json(irp_pms.security_deposit_events)",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.security_deposit_history_guard()",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.security_deposit_insert_guard()",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.security_deposit_reservation_json(uuid, uuid, uuid)",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.security_deposit_result_json(uuid, uuid, uuid)",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.security_deposit_retired_json(irp_pms.security_deposit_requests)",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.turnover_checklist(text)",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.turnover_history_guard()",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.turnover_property_guard()",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.turnover_snapshot_guard()",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.turnover_task_json(uuid, uuid, uuid, date)",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "irp_pms.validate_import(uuid, uuid, text, jsonb)",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_amend_reservation(uuid, uuid, uuid, uuid, bigint, text, uuid, date, date, integer, bigint, bigint)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true
+    },
+    {
+      "signature": "public.irp_pms_pilot_book_quote(uuid, uuid, uuid, uuid, text)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_cancel_reservation(uuid, uuid, uuid, uuid, bigint, date, text)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_commit_import(uuid, uuid, uuid, uuid)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true
+    },
+    {
+      "signature": "public.irp_pms_pilot_configure_operating_model(uuid, uuid, uuid, bigint, text, integer)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_configure_property(uuid, uuid, text, text)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true
+    },
+    {
+      "signature": "public.irp_pms_pilot_create_reservation(uuid, uuid, uuid, uuid, text, date, date, integer, bigint, bigint)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true
+    },
+    {
+      "signature": "public.irp_pms_pilot_create_room_closure(uuid, uuid, uuid, uuid, bigint, date, date, date, text)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_create_turnover(uuid, uuid, uuid, uuid, bigint, date, date, uuid, text)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_extend_stay(uuid, uuid, uuid, uuid, bigint, date, bigint, bigint, text)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_folio(uuid, uuid, uuid)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true
+    },
+    {
+      "signature": "public.irp_pms_pilot_guest_profile(uuid, uuid, uuid)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_housekeeping(uuid, uuid, uuid, text)",
+      "anon": false,
+      "authenticated": false,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_maintenance(uuid, uuid, date, date)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_maintenance_request_status(uuid, uuid, uuid)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_move_room(uuid, uuid, uuid, uuid, bigint, uuid, bigint, uuid, bigint, text)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_operational_report(uuid, uuid, date, date)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_record_security_deposit(uuid, uuid, uuid, uuid, bigint, text, date, text, bigint, text, text, text, uuid, boolean)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_release_room_closure(uuid, uuid, uuid, uuid, bigint, date, text)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_reservation_guest(uuid, uuid, uuid)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_retire_security_deposit_request(uuid, uuid, uuid, uuid, jsonb, text)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_save_guest_profile(uuid, uuid, uuid, uuid, bigint, jsonb)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_save_reservation_guest(uuid, uuid, uuid, uuid, bigint, uuid, bigint, jsonb, jsonb, boolean)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_security_deposit(uuid, uuid, uuid)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_security_deposit_activity(uuid, uuid, date, date)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_security_deposit_register(uuid, uuid)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_security_deposit_request_status(uuid, uuid, uuid)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_set_capacity(uuid, uuid, uuid, date, date, integer)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true
+    },
+    {
+      "signature": "public.irp_pms_pilot_set_housekeeping(uuid, uuid, uuid, uuid, bigint, text)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_stage_import(uuid, uuid, uuid, text, jsonb)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true
+    },
+    {
+      "signature": "public.irp_pms_pilot_stay_action(uuid, uuid, uuid, text, uuid)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true
+    },
+    {
+      "signature": "public.irp_pms_pilot_turnover_request_status(uuid, uuid, uuid)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_turnovers(uuid, uuid, date, date)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_update_turnover(uuid, uuid, uuid, uuid, bigint, bigint, date, text, jsonb)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": false
+    },
+    {
+      "signature": "public.irp_pms_pilot_workspace(uuid, uuid)",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true
+    }
+  ]
+}
