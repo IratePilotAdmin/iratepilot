@@ -1,0 +1,11 @@
+{
+  "migration_sha256": "548fb9cf85894f5daf2d65d0b77cb67a02cb138728b76d2cb6984b425546892a",
+  "install_sha256": "cee58541c68d88e3053a299adaaae54a8957f1dd57e19a67fe41b7a47805e20e",
+  "preflight_sha256": "753b36c41069d5e2f8a9c47548dfb7426bdb0eefe13d5a7d0e9aa6fb9d455d6a",
+  "preflight_definitions": 181,
+  "preflight_table_shapes": 56,
+  "prerequisite_receipts": 31,
+  "local_release_gates_passed": true,
+  "hosted_installation_verified": false,
+  "source_freeze_sha256": "b1f2f1a32a919dd77934565238df24d055ba258b62cd2c167bd5cd8932af7caf"
+}
