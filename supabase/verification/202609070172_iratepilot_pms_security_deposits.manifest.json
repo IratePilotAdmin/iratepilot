@@ -1,0 +1,8 @@
+{
+  "migration_sha256": "74cf023e597c8db3f3e8a482436a216aa1cee5f4a4b0fc28af38a087bc30e4b5",
+  "install_sha256": "3ba711f53bdd9831a478aced0ce73128502f91ecf9090110d3fa930db9a7fe42",
+  "preflight_sha256": "124950e727702de7a721452d4dca8eaddbc22ec32a1c60425c0f353737f42f58",
+  "preflight_definitions": 44,
+  "preflight_table_shapes": 50,
+  "prerequisite_receipts": 28
+}
