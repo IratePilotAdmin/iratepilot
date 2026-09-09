@@ -1,7 +1,7 @@
 BEGIN;
 CREATE FUNCTION public.irp_pms_pilot_bank_ledger_balance(p_tenant uuid,p_property uuid,p_bank uuid,p_start date,p_end date) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE balances jsonb;shared boolean;
+DECLARE balances jsonb;shared boolean;source_fingerprint text;source_count bigint;
 BEGIN
  PERFORM irp_pms.pilot_require(p_tenant,p_property,true);
  PERFORM 1 FROM irp_pms.tenants WHERE id=p_tenant FOR SHARE;
@@ -13,7 +13,10 @@ BEGIN
  JOIN irp_pms.gl_accounts a ON a.tenant_id=p_tenant AND a.property_id=p_property AND a.id=t.account_id
  WHERE EXISTS(SELECT 1 FROM irp_pms.cashier_bank_ledger_mappings m WHERE m.tenant_id=p_tenant AND m.property_id=p_property AND m.bank_id=p_bank AND m.bank_account=t.account_id);
  SELECT EXISTS(SELECT 1 FROM irp_pms.cashier_bank_ledger_mappings m JOIN irp_pms.cashier_bank_ledger_mappings other ON other.tenant_id=m.tenant_id AND other.property_id=m.property_id AND other.bank_account=m.bank_account AND other.bank_id<>m.bank_id WHERE m.tenant_id=p_tenant AND m.property_id=p_property AND m.bank_id=p_bank) INTO shared;
- RETURN jsonb_build_object('schema_version',1,'tenant_id',p_tenant,'property_id',p_property,'actor_id',auth.uid(),'bank_id',p_bank,'start_date',p_start,'end_date_exclusive',p_end,'currency','USD','accounts',balances,'shared_with_other_banks',shared,'basis','recorded_general_ledger_journals','bank_verified',false,'close_supported',false);
+ SELECT count(*),md5(coalesce(string_agg(jsonb_build_array(j.id,j.posting_date,j.reversal_of,l.line_no,l.account_id,l.side,l.amount_minor)::text,'|' ORDER BY j.id,l.line_no),'')) INTO source_count,source_fingerprint
+ FROM irp_pms.gl_journals j JOIN irp_pms.gl_lines l ON (l.tenant_id,l.property_id,l.journal_id)=(j.tenant_id,j.property_id,j.id)
+ WHERE j.tenant_id=p_tenant AND j.property_id=p_property AND j.posting_date<p_end AND EXISTS(SELECT 1 FROM irp_pms.cashier_bank_ledger_mappings m WHERE m.tenant_id=p_tenant AND m.property_id=p_property AND m.bank_id=p_bank AND m.bank_account=l.account_id);
+ RETURN jsonb_build_object('schema_version',1,'tenant_id',p_tenant,'property_id',p_property,'actor_id',auth.uid(),'bank_id',p_bank,'start_date',p_start,'end_date_exclusive',p_end,'currency','USD','accounts',balances,'source_line_count',source_count,'source_fingerprint',source_fingerprint,'shared_with_other_banks',shared,'basis','recorded_general_ledger_journals','bank_verified',false,'close_supported',false);
 END $$;
 REVOKE ALL ON FUNCTION public.irp_pms_pilot_bank_ledger_balance(uuid,uuid,uuid,date,date) FROM PUBLIC,anon,authenticated,service_role;
 GRANT EXECUTE ON FUNCTION public.irp_pms_pilot_bank_ledger_balance(uuid,uuid,uuid,date,date) TO authenticated;
