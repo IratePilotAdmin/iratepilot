@@ -11,7 +11,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "node --test scripts/verify-iratepilot-pms-onboarding-handler.test.mjs tests/pms-journal.test.mjs tests/pms-service-components.test.mjs && vitest run",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build",
     "commercial:sandbox-preflight": "node scripts/commercial-sandbox-preflight.mjs",
     "flight:managed-104": "node scripts/manage-flight-consumer-stripe-test-journal-104.mjs",
