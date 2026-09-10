@@ -12,11 +12,11 @@ const migration = readFileSync(
 );
 
 describe("partner application security", () => {
-  it("removes anonymous database inserts and fixes API-created applications as pending", () => {
+  it("removes anonymous database inserts and leaves full application intake disabled", () => {
     expect(migration).toContain('drop policy if exists "Public can submit partner applications"');
-    expect(route).toContain('import { createAdminClient } from "@/lib/supabase/admin"');
-    expect(route).toContain('admin.from("partner_applications").insert');
-    expect(route).toContain('status: "pending"');
+    expect(route).not.toContain('createAdminClient');
+    expect(route).not.toContain('.insert(');
+    expect(route).toContain('status: 503');
     expect(route).not.toContain('createClient');
   });
 

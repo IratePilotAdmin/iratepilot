@@ -1,10 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { POST } from "../app/api/partners/apply/route";
 
-const route = readFileSync(
-  new URL("../app/api/partners/apply/route.ts", import.meta.url),
-  "utf8",
-);
 const migration = readFileSync(
   new URL("../supabase/migrations/202608020010_partner_application_deduplication.sql", import.meta.url),
   "utf8",
@@ -18,9 +15,14 @@ describe("partner application deduplication", () => {
     expect(migration).toContain("where status = 'pending'");
   });
 
-  it("returns the same accepted response for a repeated application", () => {
-    expect(route).toContain('error?.code === "23505"');
-    expect(route.match(/NextResponse\.json\(\{ status: "received" \}, \{ status: 201 \}\)/g))
-      .toHaveLength(2);
+  it("does not falsely accept initial or repeated applications while intake is unavailable", async () => {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const response = await POST();
+      expect(response.status).toBe(503);
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      expect(await response.json()).toEqual({
+        error: "Full hotel manager applications are not available yet.",
+      });
+    }
   });
 });
