@@ -33,6 +33,12 @@ vi.mock("@/lib/flights/consumer-production/duffel-shopping.server", () => ({
 vi.mock("@/lib/flights/consumer-production/runtime.server", () => ({
   FLIGHT_CONSUMER_PRODUCTION_ORIGIN: "https://www.iratepilot.com",
 }));
+vi.mock("@/lib/flights/consumer-production/shopping-runtime.server", () => ({
+  resolveFlightConsumerProductionShoppingDarkRuntime: () => ({
+    authorized: false,
+    reasons: ["test_runtime_unavailable"],
+  }),
+}));
 
 import {
   POST,

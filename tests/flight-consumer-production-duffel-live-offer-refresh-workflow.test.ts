@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
@@ -189,6 +189,27 @@ function transport() {
 }
 
 describe("Flight Consumer Production Duffel live-offer refresh workflow", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-08-31T12:00:00.000Z"));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("rejects an expired provider offer and records the failed observation", async () => {
+    vi.setSystemTime(new Date("2026-09-02T12:00:00.000Z"));
+    const store = journal();
+    const provider = transport();
+    await expect(createFlightConsumerProductionDarkDuffelOfferRefreshWorkflow(
+      env,
+      { offerSources: sourcePort(), journal: store, transport: provider },
+    ).execute(request)).rejects.toMatchObject({ diagnostic: "offer_expired" });
+    expect(provider.retrieveBoundOffer).toHaveBeenCalledTimes(1);
+    expect(store.complete).toHaveBeenCalledWith(expect.objectContaining({
+      p_terminal_state: "failed",
+      p_terminal_error_code: "offer_expired",
+    }));
+  });
+
   it("resolves a digest-bound source, CAS-claims, and performs one GET only", async () => {
     const sources = sourcePort();
     const store = journal();
