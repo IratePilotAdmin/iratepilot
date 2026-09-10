@@ -1,5 +1,34 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// Exercise the historical flight-only deployment directory without removing
+// newer PMS migrations from the repository or widening the production gate.
+vi.mock("node:fs", async (importOriginal) => {
+  const fs = await importOriginal<typeof import("node:fs")>();
+  return {
+    ...fs,
+    readdirSync: (...args: Parameters<typeof fs.readdirSync>) => {
+      const entries = fs.readdirSync(...args);
+      if (!String(args[0]).replaceAll("\\", "/").endsWith("/supabase/migrations/")) {
+        return entries;
+      }
+      return entries.filter((entry) => String(entry).slice(0, 12) <= "202608260138");
+    },
+  };
+});
+
+const actualFs = await vi.importActual<typeof import("node:fs")>("node:fs");
+
+it("refuses the current mixed migration directory before any flight deployment", () => {
+  const repositoryMigrations = actualFs.readdirSync(
+    new URL("../supabase/migrations/", import.meta.url),
+  ).filter((filename) => filename.endsWith(".sql")).sort().map((filename) => ({
+    version: filename.slice(0, 12), filename,
+  }));
+  expect(repositoryMigrations.some(({ version }) => version > "202608260138")).toBe(true);
+  expect(() => assertPinnedFlightMigrations({ repositoryMigrations }))
+    .toThrow("Only pinned flight migrations");
+});
 import {
   APPLY_CONFIRMATION_FLAG,
   applyFlightPreviewMigrations,
