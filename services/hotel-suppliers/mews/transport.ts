@@ -90,6 +90,8 @@ export class MewsHttpTransport implements MewsTransport {
     try {
       const response = await this.fetcher(endpoint, {
         method: "POST",
+        // Never forward the credential-bearing body to a redirected endpoint.
+        redirect: "manual",
         headers: {
           "content-type": "application/json",
           "x-iratepilot-request-id": request.requestId,

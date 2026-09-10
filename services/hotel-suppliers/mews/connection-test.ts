@@ -52,6 +52,8 @@ export async function testMewsSandboxConnection(
   try {
     const response = await fetcher(endpoint, {
       method: "POST",
+      // Connection probes carry the same secrets as booking requests.
+      redirect: "manual",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         ClientToken: config.clientToken,
