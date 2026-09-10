@@ -97,12 +97,13 @@ export class MewsHttpTransport implements MewsTransport {
           "x-iratepilot-request-id": request.requestId,
         },
         body: JSON.stringify({
-          ClientToken: this.config.clientToken,
-          AccessToken: this.config.accessToken,
-          Client: this.config.client,
           ...(request.payload && typeof request.payload === "object"
             ? request.payload as Record<string, unknown>
             : { Payload: request.payload }),
+          // The configured connection owns authentication, never mapped guest data.
+          ClientToken: this.config.clientToken,
+          AccessToken: this.config.accessToken,
+          Client: this.config.client,
         }),
         signal: controller.signal,
       });

@@ -22,6 +22,17 @@ function request(operation: "availability" | "add_customer" | "create_reservatio
 }
 
 describe("MewsHttpTransport", () => {
+  it("keeps connection credentials authoritative over payload fields", async () => {
+    const fetcher = vi.fn<MewsFetch>(async () => new Response("{}"));
+    await new MewsHttpTransport(config, fetcher).execute({
+      ...request("create_reservation"),
+      payload: {ServiceId: "service-1", ClientToken: "replacement", AccessToken: null, Client: "replacement"},
+    });
+    expect(JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body))).toEqual({
+      ServiceId: "service-1", ClientToken: config.clientToken,
+      AccessToken: config.accessToken, Client: config.client,
+    });
+  });
   it("adds Mews authentication to availability requests", async () => {
     const fetcher = vi.fn<MewsFetch>(async () => new Response(
       JSON.stringify({ TimeUnitStartsUtc: [] }),
