@@ -30,24 +30,54 @@ try{
  const partner=await v("INSERT INTO partners(owner_id,business_name,status) VALUES($1,'Sandbox hotel','approved') RETURNING id",[user]);
  const property=await v("INSERT INTO properties(partner_id,name,slug,type,city,country,active) VALUES($1,'Sandbox','pms-sandbox','hotel','Austin','US',true) RETURNING id",[partner]);
  const room=await v("INSERT INTO rooms(property_id,name,base_rate) VALUES($1,'King',200) RETURNING id",[property]);
- const booking=await v("INSERT INTO bookings(confirmation_code,customer_id,property_id,room_id,check_in,check_out,guests,subtotal,total) VALUES('SANDBOX-001',$1,$2,$3,'2026-10-01','2026-10-03',2,400,400) RETURNING id",[user,property,room]);
+ const guest=await v("INSERT INTO auth.users(id,email,email_confirmed_at) VALUES(gen_random_uuid(),'guest@example.test',now()) RETURNING id");
+ await q("INSERT INTO profiles(id,role) VALUES($1,'customer') ON CONFLICT(id) DO NOTHING",[guest]);
+ const booking=await v("INSERT INTO bookings(confirmation_code,customer_id,property_id,room_id,check_in,check_out,guests,subtotal,total) VALUES('SANDBOX-001',$1,$2,$3,'2026-10-01','2026-10-03',2,400,400) RETURNING id",[guest,property,room]);
  await check('complete consolidated schema and new outbox install together',async()=>{await db.exec(schema.slice(boundary));await db.exec(await readFile(new URL('supabase/migrations/202609070139_iratepilot_pms_transactional_outbox.sql',root),'utf8'))});
  await check('booking messaging and security correction install on consolidated baseline',async()=>{
   for(const file of ['202608020024_booking_messages.sql','202609120220_booking_message_authorization.sql'])await db.exec(await readFile(new URL('supabase/migrations/'+file,root),'utf8'));
   await db.exec(await readFile(new URL('supabase/verify/20260912_guest_api_security.sql',root),'utf8'));
  });
  await check('authenticated guest messaging works and unrelated user is denied on real schema',async()=>{
+  // Hosted catalog verified these SELECT grants on September 12. The snapshot
+  // omits platform grants; retain its row policies while reproducing access.
+  await db.exec('GRANT SELECT ON public.profiles,public.bookings,public.properties,public.partners TO authenticated');
   const outsider=await v("INSERT INTO auth.users(id,email,email_confirmed_at) VALUES(gen_random_uuid(),'outsider@example.test',now()) RETURNING id");
+  await q("SELECT set_config('request.jwt.claim.sub',$1,false)",[guest]);
+  await db.exec('SET ROLE authenticated');
+  try {
+   assert.equal(await v("SELECT (public.send_booking_message($1,'Schema rehearsal')).body",[booking]),'Schema rehearsal');
+   assert.equal(await v('SELECT count(*)::int FROM public.booking_messages WHERE booking_id=$1',[booking]),1);
+  }
+  finally {await db.exec('RESET ROLE');}
   await q("SELECT set_config('request.jwt.claim.sub',$1,false)",[user]);
   await db.exec('SET ROLE authenticated');
-  try {assert.equal(await v("SELECT (public.send_booking_message($1,'Schema rehearsal')).body",[booking]),'Schema rehearsal');}
-  finally {await db.exec('RESET ROLE');}
+  try {
+   assert.equal(await v('SELECT count(*)::int FROM public.booking_messages WHERE booking_id=$1',[booking]),1);
+   assert.equal(await v("SELECT (public.send_booking_message($1,'Owner reply')).body",[booking]),'Owner reply');
+  } finally {await db.exec('RESET ROLE');}
   const count=await v('SELECT count(*)::int FROM booking_messages');
   await q("SELECT set_config('request.jwt.claim.sub',$1,false)",[outsider]);
   await db.exec('SET ROLE authenticated');
-  try {await assert.rejects(()=>q("SELECT public.send_booking_message($1,'Denied rehearsal')",[booking]),/Not authorized/);}
+  try {
+   await assert.rejects(()=>q("SELECT public.send_booking_message($1,'Denied rehearsal')",[booking]),/Not authorized/);
+   assert.equal(await v('SELECT count(*)::int FROM public.booking_messages WHERE booking_id=$1',[booking]),0);
+   await assert.rejects(()=>q("INSERT INTO public.booking_messages(booking_id,sender_id,body) VALUES($1,$2,'Direct bypass')",[booking,outsider]),/permission denied/);
+  }
   finally {await db.exec('RESET ROLE');}
   assert.equal(await v('SELECT count(*)::int FROM booking_messages'),count);
+  await db.exec('BEGIN');
+  try {
+   await q("UPDATE public.partners SET status='pending' WHERE id=$1",[partner]);
+   await q("SELECT set_config('request.jwt.claim.sub',$1,true)",[user]);
+   await db.exec('SET LOCAL ROLE authenticated');
+   assert.equal(await v('SELECT count(*)::int FROM public.booking_messages WHERE booking_id=$1',[booking]),0);
+   await db.exec('SAVEPOINT withdrawn');
+   await assert.rejects(()=>q("SELECT public.send_booking_message($1,'Withdrawn owner')",[booking]),/Not authorized/);
+   await db.exec('ROLLBACK TO SAVEPOINT withdrawn');
+   await q("SELECT set_config('request.jwt.claim.sub',$1,true)",[guest]);
+   assert.equal(await v('SELECT count(*)::int FROM public.booking_messages WHERE booking_id=$1',[booking]),count);
+  } finally {await db.exec('ROLLBACK');}
   await q("SELECT set_config('request.jwt.claim.sub','',false)");
  });
  const connection={id:'sandbox',tenantId:'tenant-1',propertyId:'pms-1',otaPropertyId:property,currency:'USD',inventoryAuthority:'iratepilot-pms',roomTypes:{[room]:'king'},secret:randomBytes(32).toString('hex'),endpoint:'https://sandbox.example.test/v1/ota/events'};
