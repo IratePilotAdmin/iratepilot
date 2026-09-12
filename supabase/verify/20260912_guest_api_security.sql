@@ -3,6 +3,16 @@ do $verify$
 declare
   message_source text;
 begin
+  if not (select relrowsecurity from pg_class where oid='public.booking_messages'::regclass) then
+    raise exception 'Booking message row security must be enabled';
+  end if;
+  if exists (
+    select 1 from (values ('anon'),('authenticated')) as browser(role_name)
+    where has_table_privilege(role_name,'public.booking_messages','INSERT,UPDATE,DELETE,TRUNCATE')
+       or has_any_column_privilege(role_name,'public.booking_messages','INSERT,UPDATE')
+  ) then
+    raise exception 'Booking message direct browser writes must be denied';
+  end if;
   if has_function_privilege('anon','public.claim_transactional_email_job()','EXECUTE')
      or has_function_privilege('authenticated','public.claim_transactional_email_job()','EXECUTE')
      or not has_function_privilege('service_role','public.claim_transactional_email_job()','EXECUTE') then
