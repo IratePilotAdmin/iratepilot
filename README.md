@@ -37,7 +37,9 @@ npm run dev
 
 Open `http://localhost:3000`. Configure only the values needed for the flow you are developing, using test credentials and non-production data. The available settings and safe defaults are documented in [`.env.example`](.env.example).
 
-Database-backed development requires a Supabase project with [`supabase/schema.sql`](supabase/schema.sql) applied.
+Database-backed development requires a reviewed Supabase schema and migration baseline. [`supabase/schema.sql`](supabase/schema.sql) is an incomplete snapshot: it does not include the booking-message function or all later migrations. Applying it alone does not produce the current application database. Reconcile the target's installed migrations and definitions before applying pending files from [`supabase/migrations`](supabase/migrations); do not blindly replay the full directory over an existing project. Fresh-install verification remains outstanding.
+
+For the September 12 guest API security corrections, see the [release record](docs/guest-api-security-release-220.md) and run the [read-only permission check](supabase/verify/20260912_guest_api_security.sql) after applying the relevant migrations. A passing check covers those two protections, not complete database readiness.
 
 ## Validation
 
