@@ -25,6 +25,7 @@ const registration = {
   propertyName: "Example Hotel", firstName: "Hiren", lastName: "Patel",
   phone: "+16144396660", countryCode: "US", region: "FL", propertyType: "hotel",
   roomCount: 30, continueOnboarding: true,
+  attribution: { source: "facebook", medium: "paid-social", campaign: "hotel-partners" },
 };
 const registrationBody = { registrationKey, registration };
 const user = { id: ownerId, email: "OWNER@EXAMPLE.TEST", email_confirmed_at: "2026-09-01T00:00:00Z" };

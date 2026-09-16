@@ -28,6 +28,12 @@ type Application = {
   content_rights_confirmed: boolean;
   information_accurate: boolean;
   property_id: string | null;
+  acquisition_attribution: {
+    source?: string;
+    medium?: string;
+    campaign?: string;
+    content?: string;
+  } | null;
 };
 
 function formatLabel(value: string | null) {
@@ -161,6 +167,18 @@ export function AdminPartnerApplications() {
                   </dl>
                 </div>
               </div>
+
+              {application.acquisition_attribution && (
+                <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 text-sm">
+                  <h3 className="font-semibold text-violet-950">Acquisition campaign</h3>
+                  <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-violet-900">
+                    {application.acquisition_attribution.source && <div><dt className="inline font-medium">Source: </dt><dd className="inline">{application.acquisition_attribution.source}</dd></div>}
+                    {application.acquisition_attribution.medium && <div><dt className="inline font-medium">Medium: </dt><dd className="inline">{application.acquisition_attribution.medium}</dd></div>}
+                    {application.acquisition_attribution.campaign && <div><dt className="inline font-medium">Campaign: </dt><dd className="inline">{application.acquisition_attribution.campaign}</dd></div>}
+                    {application.acquisition_attribution.content && <div><dt className="inline font-medium">Content: </dt><dd className="inline">{application.acquisition_attribution.content}</dd></div>}
+                  </dl>
+                </div>
+              )}
 
               <details className="rounded-xl border border-slate-200 p-4">
                 <summary className="cursor-pointer font-semibold">Review listing content</summary>

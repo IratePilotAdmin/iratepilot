@@ -37675,11 +37675,11 @@ begin
 end;
 $$;
 
-create function public.validate_partner_onboarding_json(p_value jsonb, p_registration boolean, p_complete boolean default false)
+create or replace function public.validate_partner_onboarding_json(p_value jsonb, p_registration boolean, p_complete boolean default false)
 returns void language plpgsql immutable set search_path = '' as $$
 declare
-  v_key text; v_value jsonb; v_text text; v_max integer;
-  v_registration_keys text[] := array['propertyName','firstName','lastName','phone','countryCode','region','propertyType','roomCount','continueOnboarding'];
+  v_key text; v_value jsonb; v_text text; v_max integer; v_attribution_key text; v_attribution_value jsonb;
+  v_registration_keys text[] := array['propertyName','firstName','lastName','phone','countryCode','region','propertyType','roomCount','continueOnboarding','attribution'];
   v_detail_keys text[] := array['legalBusinessName','starRating','contactRole','websiteUrl','addressLine1','city','postalCode','description','amenities','primaryImageUrl','supportContactEmail','representativeAuthorityConfirmed','contentRightsConfirmed','informationAccurate','commercialTermsAcknowledged'];
 begin
   if p_value is null or jsonb_typeof(p_value) <> 'object'
@@ -37691,7 +37691,21 @@ begin
     if not (v_key = any(case when p_registration then v_registration_keys else v_detail_keys end)) then
       raise exception 'Unexpected onboarding field: %', v_key using errcode = '22023';
     end if;
-    if v_key in ('continueOnboarding','representativeAuthorityConfirmed','contentRightsConfirmed','informationAccurate','commercialTermsAcknowledged') then
+    if v_key = 'attribution' then
+      if not p_registration or jsonb_typeof(v_value) <> 'object' or v_value = '{}'::jsonb then
+        raise exception 'Invalid acquisition attribution' using errcode = '22023';
+      end if;
+      for v_attribution_key, v_attribution_value in select * from jsonb_each(v_value)
+      loop
+        if v_attribution_key not in ('source','medium','campaign','content')
+          or jsonb_typeof(v_attribution_value) <> 'string'
+          or length(trim(v_attribution_value #>> '{}')) < 1
+          or length(trim(v_attribution_value #>> '{}')) > (case when v_attribution_key in ('source','medium') then 64 else 128 end)
+          or (v_attribution_value #>> '{}') ~ '[[:cntrl:]]' then
+          raise exception 'Invalid acquisition attribution' using errcode = '22023';
+        end if;
+      end loop;
+    elsif v_key in ('continueOnboarding','representativeAuthorityConfirmed','contentRightsConfirmed','informationAccurate','commercialTermsAcknowledged') then
       if jsonb_typeof(v_value) <> 'boolean' then raise exception 'Invalid acknowledgement' using errcode = '22023'; end if;
     elsif v_key in ('roomCount','starRating') then
       if jsonb_typeof(v_value) <> 'number' or v_value::text !~ '^[0-9]{1,5}$' then
@@ -37731,7 +37745,7 @@ begin
     end if;
   end loop;
   if p_registration then
-    if not p_value ?& v_registration_keys
+    if not p_value ?& array['propertyName','firstName','lastName','phone','countryCode','region','propertyType','roomCount','continueOnboarding']::text[]
       or length(trim(p_value->>'propertyName')) not between 2 and 160
       or length(trim(p_value->>'firstName')) not between 2 and 50
       or length(trim(p_value->>'lastName')) not between 2 and 50

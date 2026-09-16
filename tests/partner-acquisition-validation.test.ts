@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { isPartnerSelfServiceEnabled } from "../config/partner-acquisition";
 import {
   getPartnerDraftProgress, partnerDraftDetailsSchema, partnerDraftSubmissionSchema,
-  partnerRegistrationRequestSchema, partnerRegistrationSchema,
+  partnerRegistrationNextPath, partnerRegistrationRequestSchema, partnerRegistrationSchema,
+  readPartnerAcquisitionAttribution,
 } from "../lib/partner/acquisition";
 
 const registration = {
@@ -31,6 +32,22 @@ describe("partner acquisition registration and initial application", () => {
     expect(partnerRegistrationRequestSchema.safeParse({
       registrationKey: "30000000-0000-4000-8000-000000000001", registration,
     }).success).toBe(true);
+  });
+
+  it("keeps only bounded campaign labels and preserves them through the account callback", () => {
+    const attribution = readPartnerAcquisitionAttribution(
+      "?utm_source=facebook&utm_medium=paid-social&utm_campaign=hotel-partners&utm_content=owners-a&ignored=private",
+    );
+    expect(attribution).toEqual({
+      source: "facebook", medium: "paid-social", campaign: "hotel-partners", content: "owners-a",
+    });
+    expect(partnerRegistrationSchema.safeParse({ ...registration, attribution }).success).toBe(true);
+    expect(partnerRegistrationNextPath(attribution)).toBe(
+      "/partner/dashboard?setup=1&utm_source=facebook&utm_medium=paid-social&utm_campaign=hotel-partners&utm_content=owners-a",
+    );
+    expect(readPartnerAcquisitionAttribution(`?utm_source=${"x".repeat(65)}`)).toBeUndefined();
+    expect(partnerRegistrationSchema.safeParse({ ...registration, attribution: { source: "facebook", clickId: "secret" } }).success).toBe(false);
+    expect(partnerRegistrationSchema.safeParse({ ...registration, attribution: { source: "facebook\nadmin" } }).success).toBe(false);
   });
 
   it("rejects passwords, email copies, ownership and privileged state in saved registration", () => {

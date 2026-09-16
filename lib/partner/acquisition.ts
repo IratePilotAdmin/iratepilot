@@ -3,6 +3,37 @@ import { isSafePropertyImageUrl } from "../property-image";
 
 export const HOTEL_PARTNER_DISCLOSURE_VERSION = "hotel_partner_fee_disclosure_13_3_2026-08-22_v1";
 
+const campaignLabel = (max: number) => z.string().trim().min(1).max(max)
+  .regex(/^[^\u0000-\u001f\u007f]*$/, "Campaign labels cannot contain control characters.");
+
+export const partnerAcquisitionAttributionSchema = z.object({
+  source: campaignLabel(64).optional(),
+  medium: campaignLabel(64).optional(),
+  campaign: campaignLabel(128).optional(),
+  content: campaignLabel(128).optional(),
+}).strict().refine((value) => Object.keys(value).length > 0, "At least one campaign label is required.");
+
+export function readPartnerAcquisitionAttribution(search: string) {
+  const query = new URLSearchParams(search);
+  const candidate = Object.fromEntries([
+    ["source", query.get("utm_source")],
+    ["medium", query.get("utm_medium")],
+    ["campaign", query.get("utm_campaign")],
+    ["content", query.get("utm_content")],
+  ].filter((entry): entry is [string, string] => Boolean(entry[1])));
+  const parsed = partnerAcquisitionAttributionSchema.safeParse(candidate);
+  return parsed.success ? parsed.data : undefined;
+}
+
+export function partnerRegistrationNextPath(attribution?: PartnerAcquisitionAttribution) {
+  const query = new URLSearchParams({ setup: "1" });
+  if (attribution?.source) query.set("utm_source", attribution.source);
+  if (attribution?.medium) query.set("utm_medium", attribution.medium);
+  if (attribution?.campaign) query.set("utm_campaign", attribution.campaign);
+  if (attribution?.content) query.set("utm_content", attribution.content);
+  return `/partner/dashboard?${query.toString()}`;
+}
+
 // Authentication owns email and passwords. Neither belongs in the saved setup.
 export const partnerRegistrationSchema = z.object({
   propertyName: z.string().trim().min(2).max(160),
@@ -14,6 +45,7 @@ export const partnerRegistrationSchema = z.object({
   propertyType: z.enum(["hotel", "resort", "vacation_home"]),
   roomCount: z.number().int().min(1).max(10_000),
   continueOnboarding: z.literal(true),
+  attribution: partnerAcquisitionAttributionSchema.optional(),
 }).strict();
 
 const contactRole = z.enum([
@@ -86,6 +118,7 @@ export const partnerOnboardingDraftSchema = z.object({
 });
 
 export type PartnerRegistration = z.infer<typeof partnerRegistrationSchema>;
+export type PartnerAcquisitionAttribution = z.infer<typeof partnerAcquisitionAttributionSchema>;
 export type PartnerDraftDetails = z.infer<typeof partnerDraftDetailsSchema>;
 export type PartnerOnboardingDraft = z.infer<typeof partnerOnboardingDraftSchema>;
 

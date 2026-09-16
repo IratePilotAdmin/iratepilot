@@ -4,12 +4,15 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { partnerRegistrationSchema } from "@/lib/partner/acquisition";
+import {
+  partnerRegistrationNextPath, partnerRegistrationSchema,
+  type PartnerAcquisitionAttribution,
+} from "@/lib/partner/acquisition";
 
-const nextPath = "/partner/dashboard?setup=1";
-const loginHref = `/login?next=${encodeURIComponent(nextPath)}`;
-
-export function PartnerRegistrationForm({ configured }: { configured: boolean }) {
+export function PartnerRegistrationForm({ configured, attribution }: {
+  configured: boolean;
+  attribution?: PartnerAcquisitionAttribution;
+}) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [checkingAccount, setCheckingAccount] = useState(configured);
@@ -17,6 +20,9 @@ export function PartnerRegistrationForm({ configured }: { configured: boolean })
   const [message, setMessage] = useState("");
   const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
   const registrationKey = useRef<string | null>(null);
+
+  const nextPath = partnerRegistrationNextPath(attribution);
+  const loginHref = `/login?next=${encodeURIComponent(nextPath)}`;
 
   useEffect(() => {
     if (!configured) return;
@@ -45,6 +51,7 @@ export function PartnerRegistrationForm({ configured }: { configured: boolean })
       phone: form.get("phone"), countryCode: String(form.get("countryCode") || "").trim().toUpperCase(),
       region: form.get("region"), propertyType: form.get("propertyType"), roomCount: Number(form.get("roomCount")),
       continueOnboarding: form.get("continueOnboarding") === "on",
+      ...(attribution ? { attribution } : {}),
     });
     if (!parsed.success) {
       setMessage(parsed.error.issues[0]?.message || "Complete the required registration details.");
