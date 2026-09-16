@@ -5,8 +5,13 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { PartnerApplicationForm } from "@/components/forms/partner-application-form";
 import { RevenueAiMarketing } from "@/components/partner/revenue-ai-marketing";
 import { publicPartnerEnterprisePlan, publicPartnerPlans, type PublicPartnerPlan } from "@/config/public-partner-plans";
+import { isPartnerSelfServiceEnabled } from "@/config/partner-acquisition";
+import PartnersPage from "@/app/partners/page";
+
+export const dynamic = "force-dynamic";
 
 export default function PartnerPage() {
+  if (isPartnerSelfServiceEnabled()) return <PartnersPage />;
   return (
     <>
       <SiteHeader />

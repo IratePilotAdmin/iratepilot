@@ -87,7 +87,7 @@ System names are sufficient during intake. Do not record usernames, passwords, A
 ## F. Commercial and payout readiness
 
 - Marketplace agreement status: not started / under review / approved
-- Commission acknowledgement status: not started / under review / approved
+- Hotel fee acknowledgement status: not started / under review / approved (13% marketplace commission + separate mandatory 3% iRatePilot Rewards Program fee = 16% total hotel deduction; management software subscriptions are separate)
 - Seller-of-travel or other legal review status:
 - Payout country:
 - Payout legal-entity name:

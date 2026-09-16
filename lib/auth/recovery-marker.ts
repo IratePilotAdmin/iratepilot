@@ -15,7 +15,13 @@ type RecoveryMarkerPayload = {
   sub: string;
 };
 
-const getSigningSecret = () => process.env.SUPABASE_SERVICE_ROLE_KEY || null;
+const getSigningSecret = () => {
+  const dedicatedSecret = process.env.AUTH_RECOVERY_SIGNING_SECRET;
+  // An explicitly configured dedicated key must be strong; never downgrade it
+  // to the legacy credential when its configuration is invalid.
+  if (dedicatedSecret) return dedicatedSecret.length >= 32 ? dedicatedSecret : null;
+  return process.env.SUPABASE_SERVICE_ROLE_KEY || null;
+};
 
 export function isPasswordRecoveryExchange(data: unknown) {
   if (!data || typeof data !== "object" || !("redirectType" in data)) return false;

@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
@@ -189,6 +189,13 @@ function transport() {
 }
 
 describe("Flight Consumer Production Duffel live-offer refresh workflow", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-08-27T08:00:00.000Z"));
+  });
+
+  afterEach(() => vi.useRealTimers());
+
   it("resolves a digest-bound source, CAS-claims, and performs one GET only", async () => {
     const sources = sourcePort();
     const store = journal();
@@ -250,6 +257,24 @@ describe("Flight Consumer Production Duffel live-offer refresh workflow", () => 
       p_terminal_state: "succeeded",
       p_provider_dispatch_count: 1,
       p_terminal_http_status: 200,
+    }));
+  });
+
+  it("rejects a provider offer at its expiry without recording a successful price", async () => {
+    vi.setSystemTime(new Date("2026-09-01T00:00:00.000Z"));
+    const store = journal();
+    const provider = transport();
+
+    await expect(createFlightConsumerProductionDarkDuffelOfferRefreshWorkflow(
+      env,
+      { offerSources: sourcePort(), journal: store, transport: provider },
+    ).execute(request)).rejects.toMatchObject({ status: 502, diagnostic: "offer_expired" });
+
+    expect(provider.retrieveBoundOffer).toHaveBeenCalledTimes(1);
+    expect(store.complete).toHaveBeenCalledWith(expect.objectContaining({
+      p_terminal_state: "failed",
+      p_terminal_error_code: "offer_expired",
+      p_price_amount_minor: null,
     }));
   });
 

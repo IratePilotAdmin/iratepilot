@@ -24,7 +24,7 @@ Collect and independently verify:
 3. Intended manager role: general manager, revenue manager, or sales manager.
 4. Property type, star rating, public description, HTTPS primary-photo URL, and at least one amenity.
 5. Room-type name, maximum occupancy, base rate, dated availability, taxes, fees, and cancellation terms.
-6. Commercial agreement status, marketplace commission acknowledgement, support contact, and escalation contact.
+6. Commercial agreement status, acknowledgement of the 13% marketplace commission plus the separate mandatory 3% iRatePilot Rewards Program fee (16% total hotel deduction), support contact, and escalation contact. Management software subscriptions remain separate.
 7. Payout-country and legal-entity details for later Stripe Connect test onboarding. Do not collect card details or bank credentials in iRatePilot evidence.
 
 Stop if the supplier identity, authority, content rights, rate ownership, or payout entity cannot be verified. Never invent missing hotel information.

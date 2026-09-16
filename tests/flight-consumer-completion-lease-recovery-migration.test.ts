@@ -65,9 +65,12 @@ describe("Flight Consumer Preview completion-lease recovery migration", () => {
   it("is the exact canonical schema segment immediately before migrations 097 and 098", () => {
     const markerIndex = schema.lastIndexOf(schemaMarker);
     expect(markerIndex).toBeGreaterThan(0);
-    expect(schema.slice(markerIndex + schemaMarker.length + 1)).toBe(
-      migration + successorMigration + secondSuccessorMigration,
-    );
+    const blockStart = markerIndex + schemaMarker.length + 1;
+    const expectedBlock = migration + successorMigration + secondSuccessorMigration;
+    const blockEnd = blockStart + expectedBlock.length;
+    expect(schema.slice(blockStart, blockEnd)).toBe(expectedBlock);
+    const successor = schema.slice(blockEnd).trimStart();
+    expect(successor === "" || /^-- Mirrored from [a-z/-]+\/\d{12}_[a-z0-9_]+\.sql\.\r?\n/.test(successor)).toBe(true);
   });
 
   it("is forward-only, relocked, and pinned to the reviewed completion predecessor", () => {

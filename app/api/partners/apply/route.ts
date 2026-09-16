@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { hotelManagerIntakeSchema } from "@/lib/validation";
+import { isPartnerSelfServiceEnabled } from "@/config/partner-acquisition";
 
 export async function POST(request: Request) {
+  if (isPartnerSelfServiceEnabled()) {
+    return NextResponse.json({
+      error: "Sign in to save and submit your hotel application.",
+      registrationPath: "/partners/register",
+    }, { status: 410, headers: { "Cache-Control": "no-store" } });
+  }
   const contentLength = Number(request.headers.get("content-length") || 0);
   if (contentLength > 25_000) {
     return NextResponse.json({ error: "The intake submission is too large." }, { status: 413 });
@@ -23,7 +30,7 @@ export async function POST(request: Request) {
       email: parsed.data.email,
       property_type: parsed.data.propertyType,
       star_rating: parsed.data.starRating,
-      contact_role: parsed.data.contactRole,
+      contact_role: parsed.data.contactRole === "hotel_owner" ? "owner" : parsed.data.contactRole,
       phone: parsed.data.phone,
       website_url: parsed.data.websiteUrl,
       address_line1: parsed.data.addressLine1,

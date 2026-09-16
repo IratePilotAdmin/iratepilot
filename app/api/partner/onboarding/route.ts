@@ -10,15 +10,17 @@ export async function GET(request: Request) {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
     let partnerId: string | null = null;
+    let approvedOwnerId: string | null = null;
     let accessRole: PartnerHotelRole = "owner";
     let hotelAccess: PartnerHotelAccessResult | null = null;
     if (auth.profile.role === "admin") {
       const owner = await auth.supabase.from("partners")
-        .select("id")
+        .select("id,status")
         .eq("owner_id", auth.user.id)
         .maybeSingle();
       if (owner.error) throw owner.error;
       partnerId = owner.data?.id ?? null;
+      approvedOwnerId = owner.data?.status === "approved" ? owner.data.id : null;
     } else {
       const requestedPartnerId = new URL(request.url).searchParams.get("partnerId");
       const owner = await auth.supabase.from("partners")
@@ -26,6 +28,7 @@ export async function GET(request: Request) {
         .eq("owner_id", auth.user.id)
         .maybeSingle();
       if (owner.error) throw owner.error;
+      approvedOwnerId = owner.data?.status === "approved" ? owner.data.id : null;
       const pendingOwnerAccess: PartnerHotelAccess | null = owner.data && owner.data.status !== "approved"
         ? { partnerId: owner.data.id, partnerName: owner.data.business_name, role: "owner" }
         : null;
@@ -49,15 +52,18 @@ export async function GET(request: Request) {
     }
     if (!partnerId) return NextResponse.json({ error: "A partner account is required to view onboarding." }, { status: 403 });
 
-    const admin = createAdminClient();
-    const { data: partner, error: partnerError } = await admin.from("partners")
+    // Approved owners can read their records through RLS. Pending owners and
+    // delegated managers retain the existing authorized privileged read path.
+    const reader = accessRole === "owner" && partnerId === approvedOwnerId
+      ? auth.supabase : createAdminClient();
+    const { data: partner, error: partnerError } = await reader.from("partners")
       .select("id,business_name,status,stripe_connect_status,software_plan,subscription_status")
       .eq("id", partnerId)
       .maybeSingle();
     if (partnerError) throw partnerError;
     if (!partner) return NextResponse.json({ error: "A partner account is required to view onboarding." }, { status: 403 });
 
-    const { data: properties, error: propertyError } = await admin.from("properties")
+    const { data: properties, error: propertyError } = await reader.from("properties")
       .select("id,name,active,image_url,amenities,rooms(active,inventory(stay_date,available_units))")
       .eq("partner_id", partner.id)
       .order("created_at", { ascending: true });

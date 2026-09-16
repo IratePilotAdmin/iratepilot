@@ -6,7 +6,8 @@ import { calculateRewardPoints } from "../lib/rewards";
 describe("booking safeguards", () => {
   it("uses the approved customer and partner rates", () => {
     expect(fees.serviceFeeRate).toBe(0);
-    expect(fees.defaultCommissionRate).toBe(0.14);
+    expect(fees.defaultCommissionRate).toBe(0.13);
+    expect(fees.rewardProgramFeeRate).toBe(0.03);
   });
 
   it("accepts a valid booking but rejects client totals and excessive stays", () => {

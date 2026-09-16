@@ -329,7 +329,11 @@ describe("Flight Consumer Preview terminal offer local-identity migration", () =
 
     expect(markerIndex).toBeGreaterThanOrEqual(0);
     expect(blockStart).toBeGreaterThanOrEqual(0);
-    expect(normalizedSchema.slice(blockStart)).toBe(normalizeNewlines(migration));
+    const expectedBlock = normalizeNewlines(migration);
+    const blockEnd = blockStart + expectedBlock.length;
+    expect(normalizedSchema.slice(blockStart, blockEnd)).toBe(expectedBlock);
+    const successor = normalizedSchema.slice(blockEnd).trimStart();
+    expect(successor === "" || /^-- Mirrored from [a-z/-]+\/\d{12}_[a-z0-9_]+\.sql\.\n/.test(successor)).toBe(true);
   });
 
   it("uses a fail-closed forward-only rollback", () => {

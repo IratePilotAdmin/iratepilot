@@ -25,7 +25,7 @@ describe("traveler membership value migration", () => {
     expect(migration).toContain("to service_role");
   });
 
-  it("keeps the configured 14% partner commission unchanged", () => {
+  it("preserves the historical migration's original 14% insert values", () => {
     expect(migration.match(/round\(v_(?:booking\.)?subtotal \* 0\.14, 2\)/g)).toHaveLength(2);
   });
 });

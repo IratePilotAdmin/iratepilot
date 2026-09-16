@@ -4,6 +4,14 @@ iRatePilot uses Stripe PaymentIntents for reservation payments, Stripe Checkout 
 
 Payment code being present does not authorize a charge, refund, transfer, payout, subscription, or production activation.
 
+## Hotel partner fees
+
+The current schedule for new hotel marketplace bookings is a 13% partner commission plus a separate mandatory 3% iRatePilot Rewards Program fee, for a 16% total hotel deduction. Both fees use the recorded room revenue after any booking discount. Management software subscriptions remain separate from these booking fees.
+
+For $100.00 of room revenue, the commission is $13.00, the Rewards Program fee is $3.00, total hotel deductions are $16.00, and partner net is $84.00. Taxes and payment-processing terms are separate from this example. Record the commission, Rewards Program fee, rates, and schedule version separately so finance screens and payout calculations use the stored booking amounts.
+
+Historical bookings retain their recorded fee schedules and amounts. Do not recompute existing accounting or payouts from today's default rates. Migration and release evidence describing earlier schedules remains historical evidence. Deploying current copy does not apply a database migration or enable payments or payouts.
+
 ## Operating modes
 
 The reservation payment gate fails closed unless exactly one approved mode resolves:

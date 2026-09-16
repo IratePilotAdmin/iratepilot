@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => {
     execute: vi.fn(),
     factory: vi.fn(),
     requireRole: vi.fn(),
+    resolveRuntime: vi.fn(),
   };
 });
 
@@ -32,6 +33,9 @@ vi.mock("@/lib/flights/consumer-production/duffel-shopping.server", () => ({
 }));
 vi.mock("@/lib/flights/consumer-production/runtime.server", () => ({
   FLIGHT_CONSUMER_PRODUCTION_ORIGIN: "https://www.iratepilot.com",
+}));
+vi.mock("@/lib/flights/consumer-production/shopping-runtime.server", () => ({
+  resolveFlightConsumerProductionShoppingDarkRuntime: mocks.resolveRuntime,
 }));
 
 import {
@@ -86,6 +90,7 @@ describe("Flight Consumer Production Duffel shopping dark Route Handler", () => 
       profile: { role: "admin" },
     });
     mocks.factory.mockReturnValue({ execute: mocks.execute });
+    mocks.resolveRuntime.mockReturnValue({ reasons: ["dark_lane_disabled"] });
     mocks.execute.mockResolvedValue({
       attemptId: "22222222-2222-4222-8222-222222222222",
       state: "succeeded",
@@ -169,7 +174,7 @@ describe("Flight Consumer Production Duffel shopping dark Route Handler", () => 
     expect(mocks.execute).not.toHaveBeenCalled();
     expect(warn).toHaveBeenCalledWith(
       "[flight-consumer-production] Duffel live-shopping dark request rejected",
-      { diagnostic: "unexpected_error", status: 503 },
+      { diagnostic: "unexpected_error", status: 503, runtimeReasons: undefined },
     );
     warn.mockRestore();
   });
@@ -227,7 +232,25 @@ describe("Flight Consumer Production Duffel shopping dark Route Handler", () => 
     });
     expect(warn).toHaveBeenCalledWith(
       "[flight-consumer-production] Duffel live-shopping dark request rejected",
-      { diagnostic: "request_contract_refused", status: 409 },
+      { diagnostic: "request_contract_refused", status: 409, runtimeReasons: undefined },
+    );
+    warn.mockRestore();
+  });
+
+  it("keeps unavailable-runtime diagnostics in server logging only", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    mocks.execute.mockRejectedValueOnce(new mocks.MockShoppingError(503));
+
+    const response = await POST(request());
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: "Live-shopping diagnostic could not be completed.",
+    });
+    expect(mocks.resolveRuntime).toHaveBeenCalledWith(process.env);
+    expect(warn).toHaveBeenCalledWith(
+      "[flight-consumer-production] Duffel live-shopping dark request rejected",
+      { diagnostic: "workflow_unavailable", status: 503, runtimeReasons: ["dark_lane_disabled"] },
     );
     warn.mockRestore();
   });
@@ -245,7 +268,7 @@ describe("Flight Consumer Production Duffel shopping dark Route Handler", () => 
     expect(serialized).not.toMatch(/secret|provider|duffel_live_|offer|order/i);
     expect(warn).toHaveBeenCalledWith(
       "[flight-consumer-production] Duffel live-shopping dark request rejected",
-      { diagnostic: "unexpected_error", status: 503 },
+      { diagnostic: "unexpected_error", status: 503, runtimeReasons: undefined },
     );
     warn.mockRestore();
   });
