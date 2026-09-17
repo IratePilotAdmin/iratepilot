@@ -192,6 +192,16 @@ grant execute on function public.review_partner_application(
 revoke all on function public.review_partner_application(uuid, text)
   from public, anon, authenticated, service_role;
 
+do $revoke_prior_evidence_path$
+begin
+  if to_regprocedure(
+    'public.review_partner_application(uuid,text,boolean,boolean,boolean,boolean,text)'
+  ) is not null then
+    execute 'revoke all on function public.review_partner_application(uuid,text,boolean,boolean,boolean,boolean,text) from public, anon, authenticated, service_role';
+  end if;
+end;
+$revoke_prior_evidence_path$;
+
 comment on table public.partner_application_review_evidence is
   'Append-only accountable admin evidence for hotel application decisions; it grants no publication, booking, payment, payout, or supplier authority.';
 comment on function public.review_partner_application(

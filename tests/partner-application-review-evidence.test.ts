@@ -34,6 +34,7 @@ describe("partner application review evidence", () => {
     expect(migration).toContain("p_inactive_draft_scope_confirmed is distinct from true");
     expect(migration).toContain("from public.review_partner_application(p_application_id, p_status)");
     expect(migration).toContain("revoke all on function public.review_partner_application(uuid, text)");
+    expect(migration).toContain("$revoke_prior_evidence_path$");
     expect(migration).toContain("insert into public.partner_application_review_evidence");
   });
 

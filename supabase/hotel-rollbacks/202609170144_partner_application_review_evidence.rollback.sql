@@ -12,6 +12,15 @@ $partner_review_rollback_guard$;
 
 grant execute on function public.review_partner_application(uuid, text)
   to authenticated;
+do $restore_prior_evidence_path$
+begin
+  if to_regprocedure(
+    'public.review_partner_application(uuid,text,boolean,boolean,boolean,boolean,text)'
+  ) is not null then
+    execute 'grant execute on function public.review_partner_application(uuid,text,boolean,boolean,boolean,boolean,text) to authenticated';
+  end if;
+end;
+$restore_prior_evidence_path$;
 drop function if exists public.review_partner_application(
   uuid, text, boolean, boolean, boolean, boolean, boolean, text
 );
