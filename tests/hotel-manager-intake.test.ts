@@ -73,8 +73,10 @@ describe("hotel manager intake", () => {
   it("stores only pending intake data and keeps approval behind an explicit admin verification", () => {
     expect(submissionRoute).toContain('status: "pending"');
     expect(submissionRoute).toContain("hotel_authorized: parsed.data.hotelAuthorized");
-    expect(adminReview).toContain("verificationConfirmed");
-    expect(adminReview).toContain("Create an inactive draft only");
+    expect(adminReview).toContain("verificationChecklist");
+    expect(adminReview).toContain("Required approval checklist");
+    expect(adminReview).toContain("13% commission plus mandatory 3% rewards contribution");
+    expect(adminReview).toContain("approval creates only an inactive private draft");
   });
 
   it("creates one inactive property draft transactionally and leaves publication separate", () => {

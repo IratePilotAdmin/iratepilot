@@ -2,15 +2,23 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/require-role";
 
+const verificationChecklistSchema = z.object({
+  propertyVerified: z.literal(true),
+  contactAuthorityVerified: z.literal(true),
+  contentRightsReviewed: z.literal(true),
+  feeDisclosureAcknowledged: z.literal(true),
+  inactiveDraftScopeConfirmed: z.literal(true),
+}).strict();
+
 const decisionSchema = z.object({
   status: z.enum(["pending", "approved", "declined"]),
-  verificationConfirmed: z.boolean().optional(),
+  verificationChecklist: verificationChecklistSchema.optional(),
 }).superRefine((value, context) => {
-  if (value.status === "approved" && value.verificationConfirmed !== true) {
+  if (value.status === "approved" && !value.verificationChecklist) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
-      path: ["verificationConfirmed"],
-      message: "Administrator verification is required before approval.",
+      path: ["verificationChecklist"],
+      message: "Every administrator verification check is required before approval.",
     });
   }
 });

@@ -27,6 +27,8 @@ type Application = {
   hotel_authorized: boolean;
   content_rights_confirmed: boolean;
   information_accurate: boolean;
+  commercial_terms_acknowledged: boolean;
+  commercial_terms_version_acknowledged: string | null;
   property_id: string | null;
   acquisition_attribution: {
     source?: string;
@@ -35,6 +37,23 @@ type Application = {
     content?: string;
   } | null;
 };
+
+const reviewChecklist = [
+  ["propertyVerified", "I independently verified the property identity, address, official website, and 4- or 5-star eligibility."],
+  ["contactAuthorityVerified", "I verified the contact's authority and business email for this hotel."],
+  ["contentRightsReviewed", "I reviewed the submitted text, amenities, and media source for content rights."],
+  ["feeDisclosureAcknowledged", "I confirmed the applicant acknowledged the 13% commission plus mandatory 3% rewards contribution."],
+  ["inactiveDraftScopeConfirmed", "I understand approval creates only an inactive private draft; publication, bookings, payouts, and connectivity remain separate gates."],
+] as const;
+
+const currentFeeDisclosureVersion = "hotel_partner_fee_disclosure_13_3_2026-08-22_v1";
+
+type ReviewCheck = (typeof reviewChecklist)[number][0];
+type ReviewChecklist = Record<ReviewCheck, boolean>;
+
+function hasCompletedReview(checklist?: Partial<ReviewChecklist>) {
+  return reviewChecklist.every(([key]) => checklist?.[key] === true);
+}
 
 function formatLabel(value: string | null) {
   return value?.replaceAll("_", " ") || "Not provided";
@@ -55,13 +74,15 @@ function hasCompleteIntake(application: Application) {
     && application.photo_source_url
     && application.hotel_authorized
     && application.content_rights_confirmed
-    && application.information_accurate,
+    && application.information_accurate
+    && application.commercial_terms_acknowledged
+    && application.commercial_terms_version_acknowledged === currentFeeDisclosureVersion,
   );
 }
 
 export function AdminPartnerApplications() {
   const [applications, setApplications] = useState<Application[]>([]);
-  const [verified, setVerified] = useState<Record<string, boolean>>({});
+  const [reviewChecks, setReviewChecks] = useState<Record<string, Partial<ReviewChecklist>>>({});
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState("");
 
@@ -87,7 +108,7 @@ export function AdminPartnerApplications() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status,
-          ...(status === "approved" ? { verificationConfirmed: verified[id] === true } : {}),
+          ...(status === "approved" ? { verificationChecklist: reviewChecks[id] } : {}),
         }),
       });
       const body = await response.json();
@@ -126,7 +147,7 @@ export function AdminPartnerApplications() {
         )}
         {applications.map((application) => {
           const complete = hasCompleteIntake(application);
-          const canApprove = complete && verified[application.id] === true && busy !== application.id;
+          const canApprove = complete && hasCompletedReview(reviewChecks[application.id]) && busy !== application.id;
           return (
             <article key={application.id} className="grid gap-6 p-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
@@ -193,19 +214,30 @@ export function AdminPartnerApplications() {
                 <p className={application.hotel_authorized ? "text-emerald-800" : "text-rose-700"}>{application.hotel_authorized ? "✓" : "✕"} Manager attested to hotel authorization: {application.hotel_authorized ? "Yes" : "No"}</p>
                 <p className={application.content_rights_confirmed ? "text-emerald-800" : "text-rose-700"}>{application.content_rights_confirmed ? "✓" : "✕"} Manager attested to content rights: {application.content_rights_confirmed ? "Yes" : "No"}</p>
                 <p className={application.information_accurate ? "text-emerald-800" : "text-rose-700"}>{application.information_accurate ? "✓" : "✕"} Manager attested to information accuracy: {application.information_accurate ? "Yes" : "No"}</p>
+                <p className={application.commercial_terms_acknowledged && application.commercial_terms_version_acknowledged === currentFeeDisclosureVersion ? "text-emerald-800" : "text-rose-700"}>{application.commercial_terms_acknowledged && application.commercial_terms_version_acknowledged === currentFeeDisclosureVersion ? "✓" : "✕"} Applicant acknowledged the current 13% commission + mandatory 3% rewards disclosure: {application.commercial_terms_acknowledged && application.commercial_terms_version_acknowledged === currentFeeDisclosureVersion ? "Yes" : "No"}</p>
               </div>
 
               {application.status !== "approved" && (
-                <label className="flex gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-950">
-                  <input
-                    className="mt-1 h-4 w-4 shrink-0"
-                    type="checkbox"
-                    checked={verified[application.id] === true}
-                    onChange={(event) => setVerified((current) => ({ ...current, [application.id]: event.target.checked }))}
-                    disabled={!complete}
-                  />
-                  <span>I verified the hotel, the contact&apos;s authority, the official website/address, and the submitted content rights. Create an inactive draft only.</span>
-                </label>
+                <fieldset className="grid gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-950" disabled={!complete}>
+                  <legend className="px-1 font-semibold">Required approval checklist</legend>
+                  {reviewChecklist.map(([key, label]) => (
+                    <label className="flex gap-3" key={key}>
+                      <input
+                        className="mt-1 h-4 w-4 shrink-0"
+                        type="checkbox"
+                        checked={reviewChecks[application.id]?.[key] === true}
+                        onChange={(event) => setReviewChecks((current) => ({
+                          ...current,
+                          [application.id]: {
+                            ...current[application.id],
+                            [key]: event.target.checked,
+                          },
+                        }))}
+                      />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                </fieldset>
               )}
 
               <div className="flex flex-wrap gap-2">

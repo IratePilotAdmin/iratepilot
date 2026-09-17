@@ -27,7 +27,12 @@ describe("partner application review transitions", () => {
     expect(reviewRoute).toContain('"review_partner_application"');
     expect(reviewRoute).not.toContain('.from("partner_applications").update');
     expect(listRoute).toContain('.from("partner_applications")');
-    expect(listRoute).toContain('hotel_authorized,content_rights_confirmed,information_accurate,property_id');
-    expect(reviewRoute).toContain("verificationConfirmed");
+    expect(listRoute).toContain('hotel_authorized,content_rights_confirmed,information_accurate,commercial_terms_acknowledged,commercial_terms_version_acknowledged,property_id');
+    expect(reviewRoute).toContain("verificationChecklistSchema");
+    expect(reviewRoute).toContain("propertyVerified: z.literal(true)");
+    expect(reviewRoute).toContain("contactAuthorityVerified: z.literal(true)");
+    expect(reviewRoute).toContain("contentRightsReviewed: z.literal(true)");
+    expect(reviewRoute).toContain("feeDisclosureAcknowledged: z.literal(true)");
+    expect(reviewRoute).toContain("inactiveDraftScopeConfirmed: z.literal(true)");
   });
 });
