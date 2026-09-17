@@ -17,7 +17,7 @@ describe("partner application admin alert", () => {
     expect(migration).toContain("'ceo@iratepilot.com'");
     expect(migration).toContain("'partner_application_admin_alert'");
     expect(migration).toContain("'partner-application-admin-alert:' || new.id::text");
-    expect(migration).toContain("on conflict (logical_dedupe_key)");
+    expect(migration).not.toContain("logical_dedupe_key");
   });
 
   it("keeps the application authoritative if notification queuing fails", () => {

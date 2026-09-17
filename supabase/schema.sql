@@ -37970,10 +37970,7 @@ begin
       ),
       'pending',
       clock_timestamp()
-    )
-    on conflict (logical_dedupe_key)
-      where logical_dedupe_key is not null
-      do nothing;
+    );
   exception when others then
     raise warning 'Partner application admin alert could not be queued (SQLSTATE=%)', sqlstate;
   end;

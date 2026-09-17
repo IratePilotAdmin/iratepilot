@@ -41,10 +41,7 @@ begin
       ),
       'pending',
       clock_timestamp()
-    )
-    on conflict (logical_dedupe_key)
-      where logical_dedupe_key is not null
-      do nothing;
+    );
   exception when others then
     -- Preserve the application when the notification queue is unavailable.
     -- The protected Admin -> Partners queue remains authoritative.
