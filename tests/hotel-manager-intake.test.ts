@@ -77,6 +77,8 @@ describe("hotel manager intake", () => {
     expect(adminReview).toContain("Required approval checklist");
     expect(adminReview).toContain("13% commission plus mandatory 3% rewards contribution");
     expect(adminReview).toContain("approval creates only an inactive private draft");
+    expect(adminReview).toContain("Review evidence note");
+    expect(adminReview).toContain("noteLength >= 20");
   });
 
   it("creates one inactive property draft transactionally and leaves publication separate", () => {

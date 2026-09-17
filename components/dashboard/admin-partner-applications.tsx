@@ -39,7 +39,7 @@ type Application = {
 };
 
 const reviewChecklist = [
-  ["propertyVerified", "I independently verified the property identity, address, official website, and 4- or 5-star eligibility."],
+  ["propertyVerified", "I independently verified the legal business, property identity, address, official website, and 4- or 5-star eligibility."],
   ["contactAuthorityVerified", "I verified the contact's authority and business email for this hotel."],
   ["contentRightsReviewed", "I reviewed the submitted text, amenities, and media source for content rights."],
   ["feeDisclosureAcknowledged", "I confirmed the applicant acknowledged the 13% commission plus mandatory 3% rewards contribution."],
@@ -83,6 +83,7 @@ function hasCompleteIntake(application: Application) {
 export function AdminPartnerApplications() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [reviewChecks, setReviewChecks] = useState<Record<string, Partial<ReviewChecklist>>>({});
+  const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState("");
 
@@ -108,6 +109,7 @@ export function AdminPartnerApplications() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           status,
+          reviewNotes: reviewNotes[id] ?? "",
           ...(status === "approved" ? { verificationChecklist: reviewChecks[id] } : {}),
         }),
       });
@@ -119,7 +121,11 @@ export function AdminPartnerApplications() {
             : `${body.data.property_name} was marked ${status}.`
           : body.error || "The decision could not be saved.",
       );
-      if (response.ok) await load();
+      if (response.ok) {
+        setReviewChecks((current) => ({ ...current, [id]: {} }));
+        setReviewNotes((current) => ({ ...current, [id]: "" }));
+        await load();
+      }
     } catch {
       setMessage("The decision could not be saved.");
     } finally {
@@ -147,7 +153,9 @@ export function AdminPartnerApplications() {
         )}
         {applications.map((application) => {
           const complete = hasCompleteIntake(application);
-          const canApprove = complete && hasCompletedReview(reviewChecks[application.id]) && busy !== application.id;
+          const noteLength = reviewNotes[application.id]?.trim().length ?? 0;
+          const canApprove = complete && hasCompletedReview(reviewChecks[application.id]) && noteLength >= 20 && busy !== application.id;
+          const canRecordOtherDecision = noteLength >= 3 && busy !== application.id;
           return (
             <article key={application.id} className="grid gap-6 p-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
@@ -218,26 +226,38 @@ export function AdminPartnerApplications() {
               </div>
 
               {application.status !== "approved" && (
-                <fieldset className="grid gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-950" disabled={!complete}>
-                  <legend className="px-1 font-semibold">Required approval checklist</legend>
-                  {reviewChecklist.map(([key, label]) => (
-                    <label className="flex gap-3" key={key}>
-                      <input
-                        className="mt-1 h-4 w-4 shrink-0"
-                        type="checkbox"
-                        checked={reviewChecks[application.id]?.[key] === true}
-                        onChange={(event) => setReviewChecks((current) => ({
-                          ...current,
-                          [application.id]: {
-                            ...current[application.id],
-                            [key]: event.target.checked,
-                          },
-                        }))}
-                      />
-                      <span>{label}</span>
-                    </label>
-                  ))}
-                </fieldset>
+                <div className="grid gap-4">
+                  <fieldset className="grid gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm leading-6 text-sky-950" disabled={!complete}>
+                    <legend className="px-1 font-semibold">Required approval checklist</legend>
+                    {reviewChecklist.map(([key, label]) => (
+                      <label className="flex gap-3" key={key}>
+                        <input
+                          className="mt-1 h-4 w-4 shrink-0"
+                          type="checkbox"
+                          checked={reviewChecks[application.id]?.[key] === true}
+                          onChange={(event) => setReviewChecks((current) => ({
+                            ...current,
+                            [application.id]: {
+                              ...current[application.id],
+                              [key]: event.target.checked,
+                            },
+                          }))}
+                        />
+                        <span>{label}</span>
+                      </label>
+                    ))}
+                  </fieldset>
+                  <label className="grid gap-2 text-sm font-medium text-slate-900">
+                    Review evidence note
+                    <textarea
+                      className="min-h-24 rounded-xl border border-slate-300 bg-white p-3 font-normal"
+                      maxLength={2000}
+                      value={reviewNotes[application.id] ?? ""}
+                      onChange={(event) => setReviewNotes((current) => ({ ...current, [application.id]: event.target.value }))}
+                      placeholder="Record the sources checked and the result. Approval requires at least 20 characters."
+                    />
+                  </label>
+                </div>
               )}
 
               <div className="flex flex-wrap gap-2">
@@ -249,10 +269,10 @@ export function AdminPartnerApplications() {
                   </button>
                 )}
                 {application.status === "pending" && (
-                  <button className="btn-secondary" disabled={busy === application.id} onClick={() => decide(application.id, "declined")}>Decline</button>
+                  <button className="btn-secondary" disabled={!canRecordOtherDecision} onClick={() => decide(application.id, "declined")}>Decline</button>
                 )}
                 {application.status === "declined" && (
-                  <button className="btn-secondary" disabled={busy === application.id} onClick={() => decide(application.id, "pending")}>Return to review</button>
+                  <button className="btn-secondary" disabled={!canRecordOtherDecision} onClick={() => decide(application.id, "pending")}>Return to review</button>
                 )}
               </div>
             </article>

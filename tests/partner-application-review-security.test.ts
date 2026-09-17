@@ -34,5 +34,11 @@ describe("partner application review transitions", () => {
     expect(reviewRoute).toContain("contentRightsReviewed: z.literal(true)");
     expect(reviewRoute).toContain("feeDisclosureAcknowledged: z.literal(true)");
     expect(reviewRoute).toContain("inactiveDraftScopeConfirmed: z.literal(true)");
+    expect(reviewRoute).toContain("reviewNotes: z.string().trim().min(3).max(2000)");
+    expect(reviewRoute).toContain("p_legal_business_verified:");
+    expect(reviewRoute).toContain("p_representative_authority_verified:");
+    expect(reviewRoute).toContain("p_content_rights_verified:");
+    expect(reviewRoute).toContain("p_commercial_terms_acknowledgement_verified:");
+    expect(reviewRoute).toContain("p_inactive_draft_scope_confirmed:");
   });
 });

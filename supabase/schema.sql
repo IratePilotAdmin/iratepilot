@@ -20135,6 +20135,7 @@ create table if not exists public.partner_application_review_evidence (
   representative_authority_verified boolean not null default false,
   content_rights_verified boolean not null default false,
   commercial_terms_acknowledgement_verified boolean not null default false,
+  inactive_draft_scope_confirmed boolean not null default false,
   evidence_summary text not null check (length(trim(evidence_summary)) between 3 and 2000),
   created_at timestamptz not null default now(),
   constraint partner_application_approval_evidence_check check (
@@ -20144,6 +20145,7 @@ create table if not exists public.partner_application_review_evidence (
       and representative_authority_verified
       and content_rights_verified
       and commercial_terms_acknowledgement_verified
+      and inactive_draft_scope_confirmed
       and length(trim(evidence_summary)) >= 20
     )
   )
@@ -20627,6 +20629,7 @@ create or replace function public.review_partner_application(
   p_representative_authority_verified boolean,
   p_content_rights_verified boolean,
   p_commercial_terms_acknowledgement_verified boolean,
+  p_inactive_draft_scope_confirmed boolean,
   p_review_notes text
 )
 returns public.partner_applications
@@ -20702,6 +20705,7 @@ begin
       or not p_representative_authority_verified
       or not p_content_rights_verified
       or not p_commercial_terms_acknowledgement_verified
+      or not p_inactive_draft_scope_confirmed
       or length(trim(p_review_notes)) < 20
     then
       raise exception 'Record all internal review evidence before approval'
@@ -20798,6 +20802,7 @@ begin
     representative_authority_verified,
     content_rights_verified,
     commercial_terms_acknowledgement_verified,
+    inactive_draft_scope_confirmed,
     evidence_summary
   ) values (
     p_application_id,
@@ -20807,6 +20812,7 @@ begin
     p_representative_authority_verified,
     p_content_rights_verified,
     p_commercial_terms_acknowledgement_verified,
+    p_inactive_draft_scope_confirmed,
     trim(p_review_notes)
   );
 
@@ -20820,14 +20826,14 @@ end;
 $$;
 
 revoke all on function public.review_partner_application(
-  uuid, text, boolean, boolean, boolean, boolean, text
+  uuid, text, boolean, boolean, boolean, boolean, boolean, text
 ) from public, anon, service_role;
 grant execute on function public.review_partner_application(
-  uuid, text, boolean, boolean, boolean, boolean, text
+  uuid, text, boolean, boolean, boolean, boolean, boolean, text
 ) to authenticated;
 
 comment on function public.review_partner_application(
-  uuid, text, boolean, boolean, boolean, boolean, text
+  uuid, text, boolean, boolean, boolean, boolean, boolean, text
 ) is 'Records internal commercial-intake review evidence and creates only an inactive, legacy-quarantined draft; does not authorize publication, provider traffic, reservations, payments, payouts, or Production.';
 
 -- Canonical bootstrap parity: 202608220071_direct_hotel_request_foundation.sql
