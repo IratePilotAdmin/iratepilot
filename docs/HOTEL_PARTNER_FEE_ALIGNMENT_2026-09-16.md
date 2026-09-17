@@ -100,4 +100,6 @@ guard refuses existing booking tables and other database names/hosts.
 
 These fixtures test the real SQL trigger and constraints with minimal table
 fixtures. They do not claim full-schema/RLS, hosted Supabase, payment-provider,
-or production migration verification. No remote migration was applied.
+or hosted Supabase verification by themselves. The later reviewed Preview and
+Production rollout is recorded separately in
+`HOTEL_PARTNER_RECRUITMENT_RELEASE_2026-09-17.md`.

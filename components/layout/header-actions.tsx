@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { customerNavigation } from "@/data/navigation";
 
@@ -27,6 +28,7 @@ const roleDestination = (role: SessionUser["role"]) => role === "admin"
     : { href: "/account", label: "My Account" };
 
 export function HeaderActions() {
+  const router = useRouter();
   const [user, setUser] = useState<SessionUser | null>(null);
   const [signingOut, setSigningOut] = useState(false);
 
@@ -41,7 +43,10 @@ export function HeaderActions() {
   async function signOut() {
     setSigningOut(true);
     const response = await fetch("/api/auth/session", { method: "POST" });
-    if (response.ok) window.location.assign("/");
+    if (response.ok) {
+      router.replace("/");
+      router.refresh();
+    }
     else setSigningOut(false);
   }
 

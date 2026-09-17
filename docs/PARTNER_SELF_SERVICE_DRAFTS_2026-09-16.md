@@ -104,7 +104,9 @@ These are actual PostgreSQL function/RLS tests on minimal tables; they are not
 full-schema or hosted Supabase acceptance, and the in-memory runner does not
 prove simultaneous connection races. Advisory and row locks implement those
 boundaries; managed Preview concurrency verification remains part of rollout.
-No remote database migration or feature enablement was performed locally.
+That local verifier made no remote change. The later reviewed Preview and
+Production rollout is recorded separately in
+`HOTEL_PARTNER_RECRUITMENT_RELEASE_2026-09-17.md`.
 
 ## Release prerequisites discovered in hosted Preview
 

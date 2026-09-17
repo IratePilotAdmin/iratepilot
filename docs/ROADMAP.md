@@ -1,8 +1,12 @@
 # Roadmap and completion status
 
-Last reviewed: 2026-08-22
+Last reviewed: 2026-09-17
 
-iRatePilot is application-ready for a controlled private-pilot preview. It is not yet commercially complete: real inventory, public booking, live payments, partner payouts, and supplier traffic remain behind explicit release gates.
+iRatePilot's guarded four- and five-star hotel recruitment funnel is live, while
+real inventory, public booking, live payments, partner payouts, and supplier
+traffic remain behind explicit release gates. The current hosted evidence and
+external blockers are recorded in
+`docs/HOTEL_PARTNER_RECRUITMENT_RELEASE_2026-09-17.md`.
 
 Flights Phases 1–21 are repository-verified, Git-published, deployed, and accepted in isolated Preview. No provider contact or Production action is authorized.
 

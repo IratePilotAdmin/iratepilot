@@ -69,6 +69,7 @@ The command runs linting, TypeScript checks, the Vitest suite, and a production 
 - [Compliance considerations](docs/COMPLIANCE.md)
 - [Deployment](docs/DEPLOYMENT.md)
 - [Roadmap](docs/ROADMAP.md)
+- [Hotel partner recruitment release](docs/HOTEL_PARTNER_RECRUITMENT_RELEASE_2026-09-17.md)
 
 ## Before accepting real bookings
 
