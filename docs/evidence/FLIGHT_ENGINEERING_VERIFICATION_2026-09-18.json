@@ -1,0 +1,63 @@
+{
+  "evidence": {
+    "version": "flight-engineering-verification-v1",
+    "checkedAt": "2026-09-18T09:28:00-05:00",
+    "scope": "verified-flight-branch-engineering-and-preview-safety",
+    "sanitized": true,
+    "secretValuesRead": false,
+    "secretValuesIncluded": false,
+    "providerMutationPerformed": false,
+    "bookingPerformed": false,
+    "paymentPerformed": false,
+    "ticketingPerformed": false,
+    "productionPromotionPerformed": false,
+    "source": {
+      "repository": "IratePilotAdmin/iratepilot",
+      "branch": "agent/flight-live-foundation-20260823",
+      "commit": "32aec24d9a88df8e0c7d57684d4e637927da39f0",
+      "commitMessage": "docs(flights): record Sabre route engineering gate"
+    },
+    "localVerification": {
+      "eslint": "passed",
+      "typescript": "passed",
+      "vitestFilesPassed": 458,
+      "vitestTestsPassed": 2965,
+      "focusedFlightGateTests": {
+        "filesPassed": 9,
+        "testsPassed": 77
+      },
+      "nextProductionBuild": "passed_with_webpack",
+      "staticPagesGenerated": 121,
+      "turbopackSymlinkNote": "not used; workspace node_modules junction points outside the Vercel project root"
+    },
+    "previewVerification": {
+      "deploymentAlias": "https://iratepilotadmin-git-agent-flight-live-founda-0333c5-irate-pilot.vercel.app/flights",
+      "httpObserved": 200,
+      "pageTitle": "Flight planning preview | iRatePilot",
+      "observedMode": "supplier-offline planning preview",
+      "liveAirlineInventoryDisplayed": false,
+      "liveSearchDispatched": false,
+      "bookingAccepted": false,
+      "paymentAccepted": false,
+      "privateLiveSearchRouteUnauthenticated": "302 Vercel SSO redirect"
+    },
+    "routePlanning": {
+      "decisionState": "authorized_route_preference",
+      "primaryConnector": "sabre",
+      "secondaryConnector": "duffel",
+      "operationalRouteEnabled": false,
+      "consumerBookingEnabled": false,
+      "consumerPaymentEnabled": false
+    },
+    "remainingReleaseGates": [
+      "Sabre contract, content, ticketing, settlement, security, and support approval",
+      "Sabre sandbox credentials through an approved secret process",
+      "Sandbox certification and managed-UAT evidence for shopping, repricing, orders, ticketing, and servicing",
+      "Production data-plane receipts, webhook, monitoring, support, and incident acceptance",
+      "Stripe flight-payment and reconciliation approval",
+      "Explicitly approved live canary booking, ticketing, payment, and servicing evidence",
+      "Separate consumer-release decision and public rollout"
+    ],
+    "disposition": "Engineering and Preview safety checkpoint passed. Provider traffic, booking, ticketing, payment, and Production release remain fail-closed pending external evidence and explicit authority."
+  }
+}
