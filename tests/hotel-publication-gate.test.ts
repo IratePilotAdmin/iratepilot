@@ -7,6 +7,7 @@ vi.mock("@/lib/auth/require-role", () => ({ requireRole: mocks.auth }));
 vi.mock("@/lib/hotels/publication-gate", () => import("../lib/hotels/publication-gate"));
 vi.mock("@/lib/property-readiness", () => import("../lib/property-readiness"));
 import { PATCH } from "../app/api/admin/properties/[id]/route";
+import { GET } from "../app/api/admin/properties/route";
 
 const listRoute = readFileSync(new URL("../app/api/admin/properties/route.ts", import.meta.url), "utf8");
 const decisionRoute = readFileSync(new URL("../app/api/admin/properties/[id]/route.ts", import.meta.url), "utf8");
@@ -135,6 +136,48 @@ describe("hotel publication release gate", () => {
     expect(response.status).toBe(409);
     expect(await response.json()).toEqual({
       error: "An effective executed hotel commercial agreement and matching commercial review are required before publication",
+    });
+  });
+
+  it("keeps the property queue available when commercial schema checks are unavailable", async () => {
+    const property = {
+      id: propertyId,
+      name: "Pilot Hotel",
+      slug: "pilot-hotel",
+      type: "hotel",
+      star_rating: 4,
+      city: "Navarre",
+      country: "US",
+      active: false,
+      image_url: null,
+      amenities: [],
+      created_at: "2026-09-18T00:00:00.000Z",
+      partners: { business_name: "Pilot Partner", status: "approved" },
+      rooms: [],
+    };
+    const from = vi.fn()
+      .mockImplementationOnce(() => ({
+        select: vi.fn(() => ({ order: vi.fn(async () => ({ data: [property], error: null })) })),
+      }))
+      .mockImplementationOnce(() => ({
+        select: vi.fn(() => ({ in: vi.fn(async () => ({ data: null, error: { message: "missing columns" } })) })),
+      }));
+    const rpc = vi.fn(async () => ({ data: null, error: { message: "missing function" } }));
+    mocks.auth.mockResolvedValue({
+      user: { id: "admin-a" },
+      profile: { role: "admin" },
+      supabase: { from, rpc },
+    });
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].commercialRelease).toEqual({
+      stateAvailable: false,
+      agreementEffective: false,
+      reviewComplete: false,
     });
   });
 

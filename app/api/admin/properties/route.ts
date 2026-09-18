@@ -8,25 +8,43 @@ export async function GET() {
     const auth = await requireRole(["admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
     const { data, error } = await auth.supabase.from("properties")
-      .select("id,name,slug,type,star_rating,city,country,active,image_url,amenities,created_at,listing_scope,direct_request_mode,commercial_terms_version,commercial_verified_at,commercial_verified_by,support_contact_email,partners(business_name,status),rooms(active,inventory(stay_date,available_units))")
+      .select("id,name,slug,type,star_rating,city,country,active,image_url,amenities,created_at,partners(business_name,status),rooms(active,inventory(stay_date,available_units))")
       .order("created_at", { ascending: false });
     if (error) throw error;
 
     const properties = data ?? [];
     const propertyIds = properties.map((property) => property.id);
     const commercialStateByProperty = new Map<string, boolean>();
+    const commercialReviewByProperty = new Map<string, boolean>();
     let commercialStateAvailable = true;
     if (propertyIds.length > 0) {
+      const { data: commercialControls, error: commercialControlsError } = await auth.supabase
+        .from("properties")
+        .select("id,listing_scope,direct_request_mode,commercial_terms_version,commercial_verified_at,commercial_verified_by,support_contact_email")
+        .in("id", propertyIds);
       const { data: commercialStates, error: commercialStateError } = await auth.supabase.rpc(
         "get_hotel_commercial_agreement_admin_state",
         { p_property_ids: propertyIds },
       );
-      if (commercialStateError) commercialStateAvailable = false;
-      else {
+      if (commercialControlsError || commercialStateError) commercialStateAvailable = false;
+      if (!commercialStateError) {
         for (const state of commercialStates ?? []) {
           commercialStateByProperty.set(
             state.property_id,
             state.commercial_agreement_effective === true,
+          );
+        }
+      }
+      if (!commercialControlsError) {
+        for (const control of commercialControls ?? []) {
+          commercialReviewByProperty.set(
+            control.id,
+            control.listing_scope === "commercial"
+              && control.direct_request_mode === "request_only"
+              && control.commercial_terms_version === "hotel_partner_fee_disclosure_13_3_2026-08-22_v1"
+              && Boolean(control.commercial_verified_at)
+              && Boolean(control.commercial_verified_by)
+              && Boolean(control.support_contact_email?.trim()),
           );
         }
       }
@@ -49,12 +67,7 @@ export async function GET() {
         commercialRelease: {
           stateAvailable: commercialStateAvailable,
           agreementEffective: commercialStateByProperty.get(property.id) === true,
-          reviewComplete: property.listing_scope === "commercial"
-            && property.direct_request_mode === "request_only"
-            && property.commercial_terms_version === "hotel_partner_fee_disclosure_13_3_2026-08-22_v1"
-            && Boolean(property.commercial_verified_at)
-            && Boolean(property.commercial_verified_by)
-            && Boolean(property.support_contact_email?.trim()),
+          reviewComplete: commercialReviewByProperty.get(property.id) === true,
         },
       }))
     });
