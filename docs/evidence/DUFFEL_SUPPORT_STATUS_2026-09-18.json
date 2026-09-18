@@ -1,0 +1,29 @@
+{
+  "evidence": {
+    "version": "duffel-support-status-v1",
+    "checkedAt": "2026-09-18T09:50:00-05:00",
+    "sanitized": true,
+    "secretValuesRead": false,
+    "secretValuesIncluded": false,
+    "thread": {
+      "reference": "370MRY-JM5MK",
+      "lastOutgoingMessageDate": "2026-09-10",
+      "incomingProviderResponseVisible": false,
+      "responseState": "awaiting_provider_response"
+    },
+    "officialSupportChannels": {
+      "productSupport": "help@duffel.com",
+      "supportRequestForm": "https://help.duffel.com/hc/en-gb/requests/new",
+      "publicSupportPhonePublished": false,
+      "dedicatedSupportSlack": "available_if_enabled_for_account"
+    },
+    "launchImpact": {
+      "providerContractEvidence": "blocked",
+      "sandboxCredentialIntake": "blocked",
+      "sandboxCertification": "blocked",
+      "consumerProductionRelease": "blocked",
+      "bookingPaymentAndTicketing": "disabled"
+    },
+    "disposition": "No provider approval, credential, booking, ticketing, payment, or Production authority was inferred from the absence of a reply."
+  }
+}
