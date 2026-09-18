@@ -1,0 +1,18 @@
+{
+  "evidence": {
+    "version": "flight-preview-smoke-v1",
+    "checkedAt": "2026-09-18T10:31:00-05:00",
+    "sanitized": true,
+    "branchAlias": "https://iratepilotadmin-git-agent-flight-live-founda-0333c5-irate-pilot.vercel.app/flights",
+    "pageTitle": "Flight planning preview | iRatePilot",
+    "observed": {
+      "supplierOfflinePlanningPreview": true,
+      "liveInventoryDisplayed": false,
+      "liveSearchDispatched": false,
+      "bookingAccepted": false,
+      "paymentAccepted": false,
+      "activationBoundaryVisible": true
+    },
+    "disposition": "Branch Preview is reachable and remains safely non-transactional pending approved provider, payment, and release evidence."
+  }
+}
