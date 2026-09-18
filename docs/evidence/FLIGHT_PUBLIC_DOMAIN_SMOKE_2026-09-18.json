@@ -7,7 +7,9 @@
     "observations": {
       "/flights": {"status": 200, "mode": "supplier_offline_synthetic_preview", "liveInventory": false, "payment": false},
       "/flights/results": {"status": 200, "mode": "synthetic_preview", "liveInventory": false, "booking": false, "payment": false},
-      "/api/flights/search": {"GETStatus": 405, "interpretation": "method_not_allowed; no unauthorised GET data-plane call"}
+      "/api/flights/search": {"GETStatus": 405, "interpretation": "method_not_allowed; no unauthorised GET data-plane call"},
+      "/api/flights/orders": {"GETStatus": 405, "interpretation": "method_not_allowed; no unauthorised order access"},
+      "/api/flights/private-preview/live-search": {"GETStatus": 405, "interpretation": "method_not_allowed; no unauthorised private-search access"}
     },
     "consumerProductionDecision": "blocked",
     "disposition": "The custom domain exposes the flight planning surface, but it is not a live consumer booking surface. Provider traffic, ticketing, and payment remain disabled pending approvals and evidence."
