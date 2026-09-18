@@ -1,0 +1,23 @@
+{
+  "evidence": {
+    "version": "flight-full-suite-v1",
+    "checkedAt": "2026-09-18T09:45:47-05:00",
+    "sanitized": true,
+    "sourceCommit": "8f175ff",
+    "command": "vitest run",
+    "result": {
+      "status": "passed",
+      "testFilesPassed": 458,
+      "testsPassed": 2965,
+      "durationSeconds": 315.68
+    },
+    "releaseBoundary": {
+      "providerTraffic": false,
+      "booking": false,
+      "ticketing": false,
+      "payment": false,
+      "productionPromotion": false
+    },
+    "disposition": "Full repository regression is green; external provider, payment, operational, and release approvals remain separate prerequisites."
+  }
+}
