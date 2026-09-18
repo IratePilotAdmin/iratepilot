@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/require-role";
 import { reservationReviewSchema } from "@/lib/validation";
 import { queueBookingNotification } from "@/lib/email/booking-notifications";
+import { drainNativePmsEvents } from "@/services/hotel-suppliers/iratepilot-pms/native-delivery";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -39,6 +40,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         bookingId: booking.id,
         confirmationCode: booking.confirmation_code,
         customerId: booking.customer_id,
+      });
+    }
+    if (reviewed?.status === "confirmed") {
+      after(async () => {
+        try {
+          await drainNativePmsEvents(10);
+        } catch (deliveryError) {
+          console.error("Approved reservation was queued for later PMS delivery", deliveryError);
+        }
       });
     }
     return NextResponse.json({ data, message }, { headers: { "Cache-Control": "no-store" } });
