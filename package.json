@@ -14,10 +14,6 @@
     "test": "vitest run",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build",
     "commercial:sandbox-preflight": "node scripts/commercial-sandbox-preflight.mjs",
-    "flight:managed-104": "node scripts/manage-flight-consumer-stripe-test-journal-104.mjs",
-    "flight:render-managed-104": "node scripts/render-flight-consumer-stripe-test-journal-104-managed-sql.mjs",
-    "flight:managed-115-119-uat": "node scripts/manage-flight-consumer-public-shopping-115-119-uat.mjs",
-    "flight:render-managed-115-119-uat": "node scripts/render-flight-consumer-public-shopping-115-119-managed-uat-sql.mjs",
     "preview:migrations": "node scripts/reconcile-preview-migrations.mjs"
   },
   "dependencies": {
@@ -30,12 +26,11 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.468.0",
-    "next": "16.3.3",
+    "next": "^16.3.5",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-hook-form": "^7.53.2",
     "resend": "^6.18.1",
-    "server-only": "0.0.1",
     "stripe": "^22.4.0",
     "tailwind-merge": "^2.5.4",
     "zod": "^3.24.1"
@@ -46,18 +41,17 @@
     "@types/react-dom": "^19.0.2",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.16.0",
-    "eslint-config-next": "16.3.3",
+    "eslint-config-next": "^16.3.5",
     "postcss": "^8.5.23",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.2",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.10"
   },
   "overrides": {
-    "js-yaml": "4.3.2",
     "next": {
       "postcss": "8.5.23"
     },
     "nanoid": "3.3.18",
-    "sharp": "0.35.4"
+    "sharp": "^0.35.4"
   }
 }

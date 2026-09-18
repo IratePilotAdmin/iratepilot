@@ -28,9 +28,6 @@ const migrationVersions = [
   "202608150058",
   "202608150059",
   "202608150060",
-  "202608150061",
-  "202608170062",
-  "202608170063",
   ...APPROVED_PREVIEW_PENDING,
 ];
 
@@ -54,19 +51,10 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
     expect(migration).toContain("to service_role");
   });
 
-  it("recognizes later flight migrations without adding them to the legacy Preview apply allowlist", () => {
+  it("recognizes the repository migration chain through the OTA delivery migrations before reconciling Preview", () => {
     const versions = listMigrationVersions();
     expect(versions).toEqual(expect.arrayContaining(REQUIRED_PREVIEW_BASELINE));
-    expect(versions.at(-1)).toBe("202608260138");
-    expect(APPROVED_PREVIEW_PENDING).toEqual([
-      "202608170064",
-      "202608170065",
-      "202608170066",
-      "202608170067",
-    ]);
-    for (const version of versions.filter((version) => version >= "202608230068")) {
-      expect(APPROVED_PREVIEW_PENDING).not.toContain(version);
-    }
+    expect(versions.at(-1)).toBe("202609070157");
     expect(assertPreviewMigrationTarget({
       PREVIEW_SUPABASE_DB_URL: previewUrl,
       PREVIEW_SUPABASE_PROJECT_REF: previewRef,
@@ -85,10 +73,10 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
     })).toThrow("does not match");
   });
 
-  it("accepts only an exact remote ledger with migrations 064–067 pending or already applied", () => {
-    const appliedThrough063 = migrationVersions.slice(0, -4);
+  it("accepts only an exact remote ledger with the approved release pending or already applied", () => {
+    const appliedBeforeApprovedRelease = migrationVersions.slice(0, -APPROVED_PREVIEW_PENDING.length);
     expect(assertPreviewRemoteMigrationState(
-      migrationList(migrationVersions, appliedThrough063),
+      migrationList(migrationVersions, appliedBeforeApprovedRelease),
       migrationVersions,
     ).pendingVersions).toEqual(APPROVED_PREVIEW_PENDING);
     expect(assertPreviewRemoteMigrationState(
@@ -114,7 +102,7 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
 
   it("requires the dry run to name exactly the approved pending migrations", () => {
     expect(assertPreviewDryRun(
-      "Would push migration 202608170064_automation_incident_workflow.sql\nWould push migration 202608170065_automation_retry_authorization.sql\nWould push migration 202608170066_automation_slo_escalations.sql\nWould push migration 202608170067_automation_sandbox_executor.sql",
+      APPROVED_PREVIEW_PENDING.map((version) => `Would push migration ${version}.sql`).join("\n"),
       APPROVED_PREVIEW_PENDING,
       migrationVersions,
     )).toEqual(APPROVED_PREVIEW_PENDING);
@@ -125,27 +113,32 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
     )).toThrow("does not match");
   });
 
-  it("refuses the latest flight migration before push because it is outside the legacy Preview allowlist", () => {
+  it("validates the remote ledger before push and never uses include-all", () => {
     const repoMigrationVersions = listMigrationVersions();
-    const latestVersion = repoMigrationVersions.at(-1);
-    expect(latestVersion).toBeDefined();
     const calls: Array<{ args: string[]; capture?: boolean }> = [];
+    const approvedPending = new Set(APPROVED_PREVIEW_PENDING);
+    const outputs = [
+      migrationList(repoMigrationVersions, repoMigrationVersions.filter((version) => !approvedPending.has(version))),
+      APPROVED_PREVIEW_PENDING.map((version) => `Would push migration ${version}.sql`).join("\n"),
+      "",
+      migrationList(repoMigrationVersions, repoMigrationVersions),
+    ];
     const runner = (_command: string, args: string[], _env: Record<string, string | undefined>, options?: { capture?: boolean }) => {
       calls.push({ args, capture: options?.capture });
-      return migrationList(repoMigrationVersions, repoMigrationVersions.slice(0, -1));
+      return outputs.shift() ?? "";
     };
 
-    expect(() => reconcilePreviewMigrations({
+    expect(reconcilePreviewMigrations({
       PREVIEW_SUPABASE_DB_URL: previewUrl,
       PREVIEW_SUPABASE_PROJECT_REF: previewRef,
-    }, [], runner)).toThrow(
-      `Preview migration ledger has an unapproved pending set: ${latestVersion}.`,
-    );
+    }, [], runner)).toMatchObject({ applied: true, pendingAfter: [] });
     expect(calls.map(({ args }) => args.slice(0, 2))).toEqual([
+      ["migration", "list"],
+      ["db", "push"],
+      ["db", "push"],
       ["migration", "list"],
     ]);
     expect(calls.flatMap(({ args }) => args)).not.toContain("--include-all");
-    expect(calls.flatMap(({ args }) => args)).not.toContain("push");
     expect(calls[0].capture).toBe(true);
   });
 

@@ -49,11 +49,20 @@ describe("secure transactional email worker", () => {
     expect(schema).toContain("function public.claim_transactional_email_job");
   });
 
-  it("preserves the authenticated email schedule", () => {
-    expect(vercel.crons).toContainEqual({
-      path: "/api/email/process",
-      schedule: "0 8 * * *",
-    });
-    expect(vercel.crons.filter((cron) => cron.path === "/api/email/process")).toHaveLength(1);
+  it("schedules only authenticated internal worker endpoints", () => {
+    expect(vercel.crons).toEqual([
+      {
+        path: "/api/email/process",
+        schedule: "0 8 * * *",
+      },
+      {
+        path: "/api/cron/automation-policy-scan",
+        schedule: "15 8 * * *",
+      },
+      {
+        path: "/api/cron/pms-outbox",
+        schedule: "30 8 * * *",
+      },
+    ]);
   });
 });
