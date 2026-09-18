@@ -34,8 +34,8 @@ export async function GET() {
       count("email_delivery_events", "processing_status", ["failed"]),
       count("booking_financials", "stripe_transfer_status", ["pending", "failed"]),
     ]);
-    if (properties.error || applications.error || commercialControls.error) {
-      throw properties.error ?? applications.error ?? commercialControls.error;
+    if (properties.error || applications.error) {
+      throw properties.error ?? applications.error;
     }
 
     const approvedPropertyIds = new Set(
@@ -54,7 +54,7 @@ export async function GET() {
     const commercialStates = propertyIds.length > 0
       ? await admin.rpc("get_hotel_commercial_agreement_admin_state", { p_property_ids: propertyIds })
       : { data: [], error: null };
-    const commercialStateAvailable = !commercialStates.error;
+    const commercialStateAvailable = !commercialControls.error && !commercialStates.error;
     const agreementReadyIds = new Set(
       (commercialStates.data ?? [])
         .filter((state: { commercial_agreement_effective?: boolean }) => state.commercial_agreement_effective === true)

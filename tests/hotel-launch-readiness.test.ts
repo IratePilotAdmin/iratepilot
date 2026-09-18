@@ -68,6 +68,7 @@ describe("hotel launch readiness", () => {
   it("exposes an admin-only read path with no mutation handler", () => {
     expect(routeSource).toContain('requireRole(["admin"])');
     expect(routeSource).toContain("export async function GET()");
+    expect(routeSource).toContain("!commercialControls.error && !commercialStates.error");
     expect(routeSource).not.toContain("export async function POST");
     expect(routeSource).not.toContain("export async function PATCH");
     expect(uiSource).toContain("This page is read-only.");
