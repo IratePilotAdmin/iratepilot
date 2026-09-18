@@ -1,0 +1,40 @@
+{
+  "evidence": {
+    "version": "flight-gate-recheck-v1",
+    "checkedAt": "2026-09-18T09:36:24-05:00",
+    "sanitized": true,
+    "secretValuesRead": false,
+    "secretValuesIncluded": false,
+    "source": {
+      "repository": "IratePilotAdmin/iratepilot",
+      "branch": "agent/flight-live-foundation-20260823",
+      "commit": "d50138f",
+      "commitMessage": "docs(flights): record Duffel support wait status"
+    },
+    "focusedVerification": {
+      "testFilesPassed": 9,
+      "testsPassed": 185,
+      "scope": "flight planning, connector routing, provider adapter, runtime safety, supplier readiness, Preview activation controls, Duffel evidence, Production operational health, and Stripe runtime"
+    },
+    "previewAcceptance": {
+      "deploymentAlias": "https://iratepilotadmin-jd1962t1y-irate-pilot.vercel.app/flights",
+      "observedMode": "supplier-offline planning preview",
+      "liveAirlineInventoryDisplayed": false,
+      "liveSearchDispatched": false,
+      "bookingAccepted": false,
+      "paymentAccepted": false,
+      "activationBoundaryVisible": true
+    },
+    "releaseDecision": {
+      "engineeringAndPreviewSafety": "passed",
+      "consumerProductionRelease": "blocked",
+      "blockingEvidence": [
+        "Provider contract/content/ticketing authority and sandbox credentials",
+        "Sandbox certification and managed-UAT receipts",
+        "Payment, settlement, monitoring, support, and incident acceptance",
+        "Explicit live canary and separate consumer-release approval"
+      ]
+    },
+    "disposition": "No provider traffic, booking, ticketing, payment, money movement, DNS change, or Production promotion was performed."
+  }
+}
