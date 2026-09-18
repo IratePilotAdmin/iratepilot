@@ -40,7 +40,7 @@ describe("live partner overview", () => {
   });
 
   it("shows live onboarding readiness and the next action on the partner dashboard", () => {
-    expect(overview).toContain("<PartnerOnboardingSummary />");
+    expect(overview).toContain("data.businessName ? <PartnerOnboardingSummary /> : null");
     expect(onboardingSummary).toContain('fetch("/api/partner/onboarding"');
     expect(onboardingSummary).toContain("Private-pilot preparation is complete");
     expect(onboardingSummary).toContain("Next: {nextStep.label}");

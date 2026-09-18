@@ -32,7 +32,7 @@ export function PartnerOverview() {
   return <>
     <h1 className="text-3xl font-bold">Welcome, {data.profileName || data.businessName || "Partner"}</h1>
     <p className="mt-2 text-slate-500">{data.businessName ? `${data.businessName} portfolio performance` : "No partner portfolio is connected to this administrator account."}</p>
-    <PartnerOnboardingSummary />
+    {data.businessName ? <PartnerOnboardingSummary /> : null}
     {data.financialsTruncated && <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Financial totals and trend use the 500 most recent accounting records. Use Finance for the detailed ledger.</p>}
     <section className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
       {[
