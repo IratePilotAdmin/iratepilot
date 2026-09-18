@@ -1,0 +1,17 @@
+{
+  "evidence": {
+    "version": "flight-public-security-headers-v1",
+    "checkedAt": "2026-09-18T11:02:00-05:00",
+    "sanitized": true,
+    "url": "https://www.iratepilot.com/flights",
+    "headers": {
+      "contentSecurityPolicy": "present",
+      "strictTransportSecurity": "max-age=63072000",
+      "xFrameOptions": "DENY",
+      "xContentTypeOptions": "nosniff",
+      "referrerPolicy": "strict-origin-when-cross-origin",
+      "permissionsPolicy": "camera=(), microphone=(), geolocation=()"
+    },
+    "disposition": "Current public flight surface has the reviewed security-header baseline. This does not authorize live provider traffic, booking, ticketing, payment, or Production release."
+  }
+}
