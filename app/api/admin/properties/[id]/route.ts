@@ -40,12 +40,26 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         }, { status: 409 });
       }
     }
-    const { data, error } = await auth.supabase.from("properties").update({ active: parsed.data.active }).eq("id", id)
-      .select("id,name,active").single();
-    if (error?.code === "23514") {
-      return NextResponse.json({ error: "Approve the partner account before publishing this property." }, { status: 409 });
+
+    const { data, error } = await auth.supabase.rpc("set_property_publication_state", {
+      p_property_id: id,
+      p_active: parsed.data.active,
+    });
+    if (error) {
+      if (error.message.includes("Property not found")) {
+        return NextResponse.json({ error: "Property not found." }, { status: 404 });
+      }
+      if (
+        error.message.includes("commercial agreement")
+        || error.message.includes("commercial publication guard")
+        || error.message.includes("direct rate and cancellation terms")
+        || error.message.includes("future sellable inventory")
+        || error.message.includes("partner must be approved")
+      ) {
+        return NextResponse.json({ error: error.message }, { status: 409 });
+      }
+      throw error;
     }
-    if (error) throw error;
     return NextResponse.json({ data });
   } catch {
     return NextResponse.json({ error: "The review decision could not be saved." }, { status: 503 });

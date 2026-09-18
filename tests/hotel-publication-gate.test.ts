@@ -32,7 +32,7 @@ describe("hotel publication release gate", () => {
     expect(decisionRoute.indexOf('requireRole(["admin"])'))
       .toBeLessThan(decisionRoute.indexOf("if (!isHotelPublicationEnabled())"));
     expect(decisionRoute.indexOf("if (!isHotelPublicationEnabled())"))
-      .toBeLessThan(decisionRoute.indexOf('.update({ active: parsed.data.active })'));
+      .toBeLessThan(decisionRoute.indexOf('rpc("set_property_publication_state"'));
   });
 
   it("rejects publication before property data is read when the gate is locked", async () => {
@@ -52,11 +52,8 @@ describe("hotel publication release gate", () => {
   });
 
   it("keeps emergency pause available while publication is locked", async () => {
-    const single = vi.fn(async () => ({ data: { id: propertyId, name: "Pilot Hotel", active: false }, error: null }));
-    const select = vi.fn(() => ({ single }));
-    const eq = vi.fn(() => ({ select }));
-    const update = vi.fn(() => ({ eq }));
-    mocks.auth.mockResolvedValue({ user: { id: "admin-a" }, profile: { role: "admin" }, supabase: { from: vi.fn(() => ({ update })) } });
+    const rpc = vi.fn(async () => ({ data: { id: propertyId, name: "Pilot Hotel", active: false }, error: null }));
+    mocks.auth.mockResolvedValue({ user: { id: "admin-a" }, profile: { role: "admin" }, supabase: { rpc } });
     const response = await PATCH(new Request("https://example.test/api/admin/properties/1", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -64,13 +61,90 @@ describe("hotel publication release gate", () => {
     }), { params: Promise.resolve({ id: propertyId }) });
 
     expect(response.status).toBe(200);
-    expect(update).toHaveBeenCalledWith({ active: false });
+    expect(rpc).toHaveBeenCalledWith("set_property_publication_state", {
+      p_property_id: propertyId,
+      p_active: false,
+    });
   });
 
-  it("reports the lock to the admin queue and disables publication", () => {
+  it("uses the database commercial-release procedure when publication is enabled", async () => {
+    process.env.HOTEL_PUBLICATION_ENABLED = "true";
+    const maybeSingle = vi.fn(async () => ({
+      data: {
+        image_url: "https://images.example.test/hotel.jpg",
+        amenities: ["Pool"],
+        partners: { status: "approved" },
+        rooms: [{ active: true, inventory: [{ stay_date: "2099-01-01", available_units: 2 }] }],
+      },
+      error: null,
+    }));
+    const eq = vi.fn(() => ({ maybeSingle }));
+    const select = vi.fn(() => ({ eq }));
+    const rpc = vi.fn(async () => ({
+      data: { id: propertyId, name: "Pilot Hotel", active: true },
+      error: null,
+    }));
+    mocks.auth.mockResolvedValue({
+      user: { id: "admin-a" },
+      profile: { role: "admin" },
+      supabase: { from: vi.fn(() => ({ select })), rpc },
+    });
+
+    const response = await PATCH(new Request("https://example.test/api/admin/properties/1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ active: true }),
+    }), { params: Promise.resolve({ id: propertyId }) });
+
+    expect(response.status).toBe(200);
+    expect(rpc).toHaveBeenCalledWith("set_property_publication_state", {
+      p_property_id: propertyId,
+      p_active: true,
+    });
+  });
+
+  it("returns a conflict when the database rejects missing agreement evidence", async () => {
+    process.env.HOTEL_PUBLICATION_ENABLED = "true";
+    const maybeSingle = vi.fn(async () => ({
+      data: {
+        image_url: "https://images.example.test/hotel.jpg",
+        amenities: ["Pool"],
+        partners: { status: "approved" },
+        rooms: [{ active: true, inventory: [{ stay_date: "2099-01-01", available_units: 2 }] }],
+      },
+      error: null,
+    }));
+    const eq = vi.fn(() => ({ maybeSingle }));
+    const select = vi.fn(() => ({ eq }));
+    const rpc = vi.fn(async () => ({
+      data: null,
+      error: { message: "An effective executed hotel commercial agreement and matching commercial review are required before publication" },
+    }));
+    mocks.auth.mockResolvedValue({
+      user: { id: "admin-a" },
+      profile: { role: "admin" },
+      supabase: { from: vi.fn(() => ({ select })), rpc },
+    });
+
+    const response = await PATCH(new Request("https://example.test/api/admin/properties/1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ active: true }),
+    }), { params: Promise.resolve({ id: propertyId }) });
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error: "An effective executed hotel commercial agreement and matching commercial review are required before publication",
+    });
+  });
+
+  it("reports both global and property-specific release locks", () => {
     expect(listRoute).toContain("publicationEnabled: isHotelPublicationEnabled()");
+    expect(listRoute).toContain('rpc(\n        "get_hotel_commercial_agreement_admin_state"');
     expect(reviewUi).toContain("Production publication is locked.");
     expect(reviewUi).toContain("Release locked");
-    expect(reviewUi).toContain("property.readiness.ready && partnerApproved && publicationEnabled");
+    expect(reviewUi).toContain("commercialReady && publicationEnabled");
+    expect(reviewUi).toContain("a currently effective, executed hotel agreement is required");
+    expect(reviewUi).toContain("complete the accountable commercial review");
   });
 });
