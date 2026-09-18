@@ -9,7 +9,13 @@ export const REQUIRED_PREVIEW_BASELINE = [
   "202608140053",
 ];
 
-export const APPROVED_PREVIEW_PENDING = ["202608150061"];
+export const APPROVED_PREVIEW_PENDING = [
+  "202608150061",
+  "202609070139",
+  "202609070140",
+  "202609070141",
+  "202609070157",
+];
 
 export const PRODUCTION_PROJECT_REF = "allliumarkejinplrggl";
 
