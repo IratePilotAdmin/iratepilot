@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { buildHotelLaunchReadiness } from "@/lib/admin/hotel-launch-readiness";
 import { buildPaymentReadiness } from "@/lib/admin/payment-readiness";
+import type { PaymentLaunchAuthorization } from "@/lib/admin/payment-readiness";
 import { requireRole } from "@/lib/auth/require-role";
 import { isEmailWorkerEnabled } from "@/lib/email/worker-gate";
 import { isHotelPublicationEnabled } from "@/lib/hotels/publication-gate";
@@ -24,7 +25,7 @@ export async function GET() {
       .from(table)
       .select("id", { count: "exact", head: true })
       .in(column, values);
-    const [properties, applications, commercialControls, supplierEvidence, emailBacklog, emailDeadLetters, deliveryFailures, payoutExceptions] = await Promise.all([
+    const [properties, applications, commercialControls, supplierEvidence, emailBacklog, emailDeadLetters, deliveryFailures, payoutExceptions, paymentApprovals, paymentRevocations] = await Promise.all([
       admin.from("properties").select("id,image_url,amenities,rooms(active,inventory(stay_date,available_units))"),
       admin.from("partner_applications").select("id,property_id,status"),
       admin.from("properties").select("id,listing_scope,direct_request_mode,commercial_terms_version,commercial_verified_at,commercial_verified_by,support_contact_email"),
@@ -33,6 +34,11 @@ export async function GET() {
       count("email_outbox", "status", ["dead_letter"]),
       count("email_delivery_events", "processing_status", ["failed"]),
       count("booking_financials", "stripe_transfer_status", ["pending", "failed"]),
+      admin.from("hotel_payment_launch_authorizations")
+        .select("id,approval_reference,stripe_account_reference,approved_at,expires_at")
+        .order("approved_at", { ascending: false }).limit(20),
+      admin.from("hotel_payment_launch_authorization_revocations")
+        .select("authorization_id,revoked_at"),
     ]);
     if (properties.error || applications.error) {
       throw properties.error ?? applications.error;
@@ -101,6 +107,20 @@ export async function GET() {
       && (payoutExceptions.count ?? 0) === 0
       && isEmailWorkerEnabled();
 
+    const paymentAuthorizationStateAvailable = !paymentApprovals.error && !paymentRevocations.error;
+    const revokedPaymentApprovals = new Map((paymentRevocations.data ?? []).map((item) => [item.authorization_id, item.revoked_at]));
+    const currentPaymentAuthorization = paymentAuthorizationStateAvailable
+      ? (paymentApprovals.data ?? []).map((item): PaymentLaunchAuthorization => ({
+        id: item.id,
+        approvalReference: item.approval_reference,
+        stripeAccountReference: item.stripe_account_reference,
+        approvedAt: item.approved_at,
+        expiresAt: item.expires_at,
+        revokedAt: revokedPaymentApprovals.get(item.id) ?? null,
+      })).find((item) => !item.revokedAt && Date.parse(item.approvedAt) <= Date.now() && Date.parse(item.expiresAt) > Date.now()) ?? null
+      : null;
+    const paymentReadiness = buildPaymentReadiness(process.env, currentPaymentAuthorization);
+
     return NextResponse.json(buildHotelLaunchReadiness({
       approvedHotelCount: approvedPropertyIds.size,
       inventoryReadyHotelCount: inventoryReadyPropertyIds.size,
@@ -108,7 +128,9 @@ export async function GET() {
       commercialStateAvailable,
       liveSupplierCount,
       supplierStateAvailable,
-      paymentConfigurationReady: buildPaymentReadiness(process.env).productionConfiguration.ready,
+      paymentConfigurationReady: paymentReadiness.productionConfiguration.ready,
+      paymentAuthorizationValid: paymentReadiness.productionConfiguration.launchAuthorized,
+      paymentAuthorizationStateAvailable,
       operationsReady,
       operationsStateAvailable,
       publicationEnabled: isHotelPublicationEnabled(),

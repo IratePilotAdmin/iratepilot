@@ -10,6 +10,8 @@ const empty: HotelLaunchReadinessInput = {
   liveSupplierCount: 0,
   supplierStateAvailable: true,
   paymentConfigurationReady: false,
+  paymentAuthorizationValid: false,
+  paymentAuthorizationStateAvailable: true,
   operationsReady: false,
   operationsStateAvailable: true,
   publicationEnabled: false,
@@ -46,6 +48,7 @@ describe("hotel launch readiness", () => {
       commerciallyReadyHotelCount: 1,
       liveSupplierCount: 1,
       paymentConfigurationReady: true,
+      paymentAuthorizationValid: true,
       operationsReady: true,
       publicationEnabled: true,
     });
@@ -58,10 +61,11 @@ describe("hotel launch readiness", () => {
       ...empty,
       commercialStateAvailable: false,
       supplierStateAvailable: false,
+      paymentAuthorizationStateAvailable: false,
       operationsStateAvailable: false,
     });
     expect(result.gates.filter(({ status }) => status === "unavailable").map(({ id }) => id)).toEqual([
-      "commercial_release", "supplier_connection", "support_operations",
+      "commercial_release", "supplier_connection", "production_payments", "support_operations",
     ]);
   });
 

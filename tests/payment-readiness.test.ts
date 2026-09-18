@@ -42,9 +42,28 @@ describe("payment readiness audit", () => {
     const readiness = buildPaymentReadiness(productionEnvironment);
     expect(readiness.productionConfiguration.ready).toBe(true);
     expect(readiness.productionConfiguration.launchAuthorized).toBe(false);
+    expect(readiness.productionConfiguration.launchReady).toBe(false);
     expect(readiness.testMode.ready).toBe(false);
     expect(readiness.activePaymentMode).toBe("live");
     expect(readiness.activeWebhookMode).toBe("live");
+  });
+
+  it("requires a current, unrevoked approval receipt in addition to live configuration", () => {
+    const authorization = {
+      id: "approval-1",
+      approvalReference: "PAYMENT-APPROVAL-2026-001",
+      stripeAccountReference: "acct_example",
+      approvedAt: "2026-09-17T12:00:00.000Z",
+      expiresAt: "2026-09-19T12:00:00.000Z",
+      revokedAt: null,
+    };
+    const readiness = buildPaymentReadiness(productionEnvironment, authorization, new Date("2026-09-18T12:00:00.000Z"));
+    expect(readiness.productionConfiguration.launchAuthorized).toBe(true);
+    expect(readiness.productionConfiguration.launchReady).toBe(true);
+
+    const expired = buildPaymentReadiness(productionEnvironment, authorization, new Date("2026-09-20T12:00:00.000Z"));
+    expect(expired.productionConfiguration.launchAuthorized).toBe(false);
+    expect(expired.productionConfiguration.launchReady).toBe(false);
   });
 
   it("fails both modes closed for conflicting payment flags", () => {
@@ -75,5 +94,19 @@ describe("payment readiness audit", () => {
     expect(dashboard).toContain("never creates a PaymentIntent");
     expect(dashboard).toContain("launch remains unauthorized");
     expect(settings).toContain("<PaymentReadiness />");
+  });
+
+  it("records only audited approval evidence and never toggles payment runtime flags", () => {
+    const route = read("app/api/admin/payment-readiness/route.ts");
+    const migration = read("supabase/migrations/202609180159_hotel_payment_launch_authorization.sql");
+
+    expect(route).toContain('action: z.literal("record")');
+    expect(route).toContain('action: z.literal("revoke")');
+    expect(route.indexOf('requireRole(["admin"])')).toBeLessThan(route.indexOf('rpc("record_hotel_payment_launch_authorization"'));
+    expect(migration).toContain("Hotel payment launch evidence is append-only");
+    expect(migration).toContain("A current production payment approval already exists");
+    expect(migration).toContain("profiles.role = 'admin'");
+    expect(migration).not.toContain("ENABLE_LIVE_BOOKING_PAYMENTS");
+    expect(migration).not.toContain("ENABLE_LIVE_PARTNER_PAYOUTS");
   });
 });

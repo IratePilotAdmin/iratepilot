@@ -17,6 +17,8 @@ export type HotelLaunchReadinessInput = {
   liveSupplierCount: number;
   supplierStateAvailable: boolean;
   paymentConfigurationReady: boolean;
+  paymentAuthorizationValid: boolean;
+  paymentAuthorizationStateAvailable: boolean;
   operationsReady: boolean;
   operationsStateAvailable: boolean;
   publicationEnabled: boolean;
@@ -92,10 +94,18 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
     gate(
       "production_payments",
       "Production booking payments",
-      input.paymentConfigurationReady ? "ready" : "blocked",
-      input.paymentConfigurationReady
-        ? "All live Stripe configuration checks pass. Final launch authorization remains controlled by the release gate."
-        : "Live Stripe keys, webhook verification, payment and payout flags, or commercial operating mode are incomplete.",
+      !input.paymentAuthorizationStateAvailable
+        ? "unavailable"
+        : input.paymentConfigurationReady && input.paymentAuthorizationValid
+          ? "ready"
+          : "blocked",
+      !input.paymentAuthorizationStateAvailable
+        ? "Production payment approval evidence could not be verified. This gate fails closed."
+        : input.paymentConfigurationReady && input.paymentAuthorizationValid
+          ? "All live Stripe configuration checks pass and a current production payment approval receipt is recorded."
+          : input.paymentConfigurationReady
+            ? "Live Stripe configuration passes, but a current production payment approval receipt is still required."
+            : "Live Stripe keys, webhook verification, payment and payout flags, or commercial operating mode are incomplete.",
       "/admin/settings",
       "Review payment readiness",
     ),
@@ -122,6 +132,7 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
         && input.commerciallyReadyHotelCount > 0
         && input.liveSupplierCount > 0
         && input.paymentConfigurationReady
+        && input.paymentAuthorizationValid
         && input.operationsReady
         ? "ready"
         : "blocked",

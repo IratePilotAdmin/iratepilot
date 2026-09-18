@@ -5,6 +5,15 @@ import {
 
 type PaymentEnvironment = Record<string, string | undefined>;
 
+export type PaymentLaunchAuthorization = {
+  id: string;
+  approvalReference: string;
+  stripeAccountReference: string;
+  approvedAt: string;
+  expiresAt: string;
+  revokedAt: string | null;
+};
+
 export type PaymentReadinessCheck = {
   id: string;
   label: string;
@@ -25,7 +34,11 @@ function summarize(checks: PaymentReadinessCheck[]) {
   };
 }
 
-export function buildPaymentReadiness(env: PaymentEnvironment = process.env) {
+export function buildPaymentReadiness(
+  env: PaymentEnvironment = process.env,
+  authorization: PaymentLaunchAuthorization | null = null,
+  now = new Date(),
+) {
   const paymentMode = getApprovedBookingPaymentMode(env);
   const webhookMode = getStripeWebhookMode(env);
   const testKeyPair = env.STRIPE_SECRET_KEY?.startsWith("sk_test_") === true
@@ -61,12 +74,23 @@ export function buildPaymentReadiness(env: PaymentEnvironment = process.env) {
     check("live_webhook_mode", "Webhook mode resolves to live", webhookMode === "live", "The fail-closed webhook gate must resolve to live mode."),
   ]);
 
+  const authorizationValid = Boolean(
+    authorization
+      && !authorization.revokedAt
+      && Date.parse(authorization.approvedAt) <= now.getTime()
+      && Date.parse(authorization.expiresAt) > now.getTime(),
+  );
+
   return {
     testMode,
     productionConfiguration: {
       ...productionConfiguration,
-      launchAuthorized: false,
-      authorizationDetail: "Configuration readiness never authorizes production. Hotel, Stripe, legal, support, and deployment approvals remain separate gates.",
+      launchAuthorized: authorizationValid,
+      authorization,
+      launchReady: productionConfiguration.ready && authorizationValid,
+      authorizationDetail: authorizationValid
+        ? `Production payment approval ${authorization!.approvalReference} is current through ${authorization!.expiresAt}. Configuration and the final release gate must also pass.`
+        : "No current production payment approval receipt is recorded. Configuration readiness alone never authorizes production.",
     },
     activePaymentMode: paymentMode,
     activeWebhookMode: webhookMode,
