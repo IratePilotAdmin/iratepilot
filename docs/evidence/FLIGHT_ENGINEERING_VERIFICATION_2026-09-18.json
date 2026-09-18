@@ -1,7 +1,7 @@
 {
   "evidence": {
     "version": "flight-engineering-verification-v1",
-    "checkedAt": "2026-09-18T09:28:00-05:00",
+    "checkedAt": "2026-09-18T09:36:00-05:00",
     "scope": "verified-flight-branch-engineering-and-preview-safety",
     "sanitized": true,
     "secretValuesRead": false,
@@ -14,8 +14,8 @@
     "source": {
       "repository": "IratePilotAdmin/iratepilot",
       "branch": "agent/flight-live-foundation-20260823",
-      "commit": "32aec24d9a88df8e0c7d57684d4e637927da39f0",
-      "commitMessage": "docs(flights): record Sabre route engineering gate"
+      "commit": "abb703a434c9b26193072263b4541f8c1f9c5cbf",
+      "commitMessage": "docs(flights): record September engineering verification"
     },
     "localVerification": {
       "eslint": "passed",
@@ -31,7 +31,9 @@
       "turbopackSymlinkNote": "not used; workspace node_modules junction points outside the Vercel project root"
     },
     "previewVerification": {
-      "deploymentAlias": "https://iratepilotadmin-git-agent-flight-live-founda-0333c5-irate-pilot.vercel.app/flights",
+      "deploymentId": "CGvuc6z7ApDWr1rs5qR5DEjzfKcd",
+      "deploymentAlias": "https://iratepilotadmin-2idv08f8q-irate-pilot.vercel.app/flights",
+      "branchAlias": "https://iratepilotadmin-git-agent-flight-live-founda-0333c5-irate-pilot.vercel.app/flights",
       "httpObserved": 200,
       "pageTitle": "Flight planning preview | iRatePilot",
       "observedMode": "supplier-offline planning preview",
