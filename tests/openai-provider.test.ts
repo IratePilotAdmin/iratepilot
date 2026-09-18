@@ -25,7 +25,13 @@ describe("OpenAI travel-planning provider", () => {
 
   it("uses the Responses API without storing the response", async () => {
     const request = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({
-      output_text: "Consider South Beach and verify live rates before booking.",
+      output: [{
+        type: "message",
+        content: [{
+          type: "output_text",
+          text: "Consider South Beach and verify live rates before booking.",
+        }],
+      }],
     }), { status: 200, headers: { "Content-Type": "application/json" } }));
 
     const result = await createTravelPlan("Plan a weekend in Miami", {

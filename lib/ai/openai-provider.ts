@@ -3,8 +3,27 @@ import "server-only";
 import { z } from "zod";
 
 const responseSchema = z.object({
-  output_text: z.string().trim().min(1),
+  output_text: z.string().trim().min(1).optional(),
+  output: z.array(z.object({
+    content: z.array(z.object({
+      type: z.string(),
+      text: z.string().optional(),
+    }).passthrough()).optional(),
+  }).passthrough()).optional(),
 });
+
+function extractOutputText(payload: z.infer<typeof responseSchema>) {
+  if (payload.output_text) return payload.output_text;
+
+  const text = payload.output
+    ?.flatMap((item) => item.content ?? [])
+    .filter((item) => item.type === "output_text")
+    .map((item) => item.text?.trim())
+    .filter((item): item is string => Boolean(item))
+    .join("\n\n");
+
+  return text || null;
+}
 
 export const travelPlanRequestSchema = z.object({
   message: z.string().trim().min(3).max(2_000),
@@ -67,5 +86,7 @@ export async function createTravelPlan(
 
   const parsed = responseSchema.safeParse(await response.json());
   if (!parsed.success) throw new Error("OPENAI_RESPONSE_INVALID");
-  return { message: parsed.data.output_text, model: configuration.model };
+  const outputText = extractOutputText(parsed.data);
+  if (!outputText) throw new Error("OPENAI_RESPONSE_INVALID");
+  return { message: outputText, model: configuration.model };
 }
