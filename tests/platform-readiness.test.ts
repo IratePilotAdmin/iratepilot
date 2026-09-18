@@ -4,6 +4,7 @@ import { buildPlatformReadiness } from "../lib/admin/platform-readiness";
 
 const route = readFileSync(new URL("../app/api/admin/settings/route.ts", import.meta.url), "utf8");
 const page = readFileSync(new URL("../app/admin/settings/page.tsx", import.meta.url), "utf8");
+const component = readFileSync(new URL("../components/dashboard/admin-settings.tsx", import.meta.url), "utf8");
 
 const configured = {
   NEXT_PUBLIC_APP_URL: "https://www.iratepilot.com",
@@ -80,6 +81,15 @@ describe("platform readiness console", () => {
       status: "ready",
       detail: "Live provider enabled with a server-only credential",
     }));
+  });
+
+  it("reports aggregate AI usage without exposing customer identifiers", () => {
+    expect(route).toContain('.eq("scope", "openai:travel:global")');
+    expect(route).toContain("AI_DAILY_REQUEST_LIMIT = 200");
+    expect(route).toContain("remaining: Math.max(0, AI_DAILY_REQUEST_LIMIT - requestCount)");
+    expect(component).toContain("AI planner usage");
+    expect(component).toContain("Customer identifiers are not shown.");
+    expect(component).not.toContain("openai:travel:user:");
   });
 
   it("replaces the mutable-settings placeholder with a read-only console", () => {

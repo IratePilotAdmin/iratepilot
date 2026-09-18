@@ -16,6 +16,14 @@ type Response = {
   items: ReadinessItem[];
   summary: { ready: number; attention: number; off: number };
   requiredReady: boolean;
+  aiUsage: {
+    available: boolean;
+    requestCount: number;
+    limit: number;
+    remaining: number;
+    windowStartedAt: string | null;
+    updatedAt: string | null;
+  };
 };
 
 type PmsConnection = {
@@ -259,6 +267,19 @@ export function AdminSettings() {
         <p className="mt-2 text-sm text-slate-600">Send one operational test message to the signed-in administrator. This creates no booking, payment, refund, or partner transfer.</p>
         <button className="btn-primary mt-4" disabled={emailTestBusy} onClick={sendEmailTest}>{emailTestBusy ? "Sending…" : "Send test email"}</button>
         {emailTestMessage && <p className="mt-3 text-sm" role="status">{emailTestMessage}</p>}
+      </section>
+
+      <section className="card mt-6 p-6">
+        <span className="text-xs uppercase tracking-wider text-slate-500">Read-only cost control</span>
+        <h2 className="mt-2 text-xl font-semibold">AI planner usage</h2>
+        {data.aiUsage.available ? <>
+          <p className="mt-2 text-sm text-slate-600">Production requests recorded in the current UTC day. Customer identifiers are not shown.</p>
+          <div className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
+            <div className="rounded-lg bg-slate-50 p-3"><strong>{data.aiUsage.requestCount}</strong><span className="mt-1 block text-xs text-slate-500">requests used</span></div>
+            <div className="rounded-lg bg-slate-50 p-3"><strong>{data.aiUsage.remaining}</strong><span className="mt-1 block text-xs text-slate-500">requests remaining</span></div>
+            <div className="rounded-lg bg-slate-50 p-3"><strong>{data.aiUsage.limit}</strong><span className="mt-1 block text-xs text-slate-500">daily ceiling</span></div>
+          </div>
+        </> : <p className="mt-2 text-sm text-amber-700">AI usage counters are unavailable. The planner fails closed when its quota cannot be verified.</p>}
       </section>
 
       <PaymentReadiness />
