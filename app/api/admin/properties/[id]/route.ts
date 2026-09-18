@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/require-role";
+import { isHotelPublicationEnabled } from "@/lib/hotels/publication-gate";
 import { getPropertyReadiness, type PropertyReadinessInput } from "@/lib/property-readiness";
 
 const decisionSchema = z.object({ active: z.boolean() });
@@ -15,6 +16,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const auth = await requireRole(["admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
     if (parsed.data.active) {
+      if (!isHotelPublicationEnabled()) {
+        return NextResponse.json({
+          error: "Hotel publication is locked until the production release gate is approved."
+        }, { status: 409 });
+      }
       const { data: property, error: propertyError } = await auth.supabase.from("properties")
         .select("image_url,amenities,partners!inner(status),rooms(active,inventory(stay_date,available_units))")
         .eq("id", id).maybeSingle();

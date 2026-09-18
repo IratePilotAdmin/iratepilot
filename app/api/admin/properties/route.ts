@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/require-role";
+import { isHotelPublicationEnabled } from "@/lib/hotels/publication-gate";
 import { getPropertyReadiness, type PropertyReadinessInput } from "@/lib/property-readiness";
 
 export async function GET() {
@@ -11,6 +12,7 @@ export async function GET() {
       .order("created_at", { ascending: false });
     if (error) throw error;
     return NextResponse.json({
+      publicationEnabled: isHotelPublicationEnabled(),
       data: (data ?? []).map((property) => ({
         id: property.id,
         name: property.name,
