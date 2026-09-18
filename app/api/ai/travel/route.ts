@@ -20,6 +20,36 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Enter a travel-planning request between 3 and 2,000 characters." }, { status: 400 });
   }
 
+  const { data: admission, error: admissionError } = await auth.supabase.rpc(
+    "reserve_ai_travel_request_slot",
+    { p_user_id: auth.user.id },
+  );
+  if (
+    admissionError
+    || !admission
+    || typeof admission !== "object"
+    || typeof admission.allowed !== "boolean"
+    || typeof admission.retry_after_seconds !== "number"
+  ) {
+    console.error("OpenAI travel-plan admission failed", admissionError?.code ?? "invalid_response");
+    return NextResponse.json(
+      { error: "The AI travel planner is temporarily unavailable." },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+  if (!admission.allowed) {
+    return NextResponse.json(
+      { error: "You have reached the travel-planning limit. Please try again later." },
+      {
+        status: 429,
+        headers: {
+          "Cache-Control": "no-store",
+          "Retry-After": String(Math.max(1, Math.ceil(admission.retry_after_seconds))),
+        },
+      },
+    );
+  }
+
   try {
     const result = await createTravelPlan(parsed.data.message);
     return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });
