@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { APPROVED_PREVIEW_PENDING } from "./reconcile-preview-migrations.mjs";
 
 export const PREVIEW_PROJECT_REF = "eiqmdldjnedqgbtoozqa";
 export const PRODUCTION_PROJECT_REF = "allliumarkejinplrggl";
@@ -325,7 +326,12 @@ export function assertPinnedFlightMigrations({
     throw new Error("Required repository migration 067 is missing.");
   }
 
-  const postBaseline = repositoryMigrations.slice(baselineTipIndex + 1);
+  const approvedNonFlightVersions = new Set(
+    APPROVED_PREVIEW_PENDING.filter((version) => version > "202608260138"),
+  );
+  const postBaseline = repositoryMigrations
+    .slice(baselineTipIndex + 1)
+    .filter(({ version }) => !approvedNonFlightVersions.has(version));
   const retiredSet = new Set(RETIRED_FLIGHT_MIGRATION_VERSIONS);
   const sharedHotelRows = postBaseline.filter(
     ({ version, filename }) => version === SHARED_HOTEL_MIGRATION.version
@@ -580,10 +586,15 @@ export function assertPreviewLedger(output, pinnedPlan) {
       "The Preview remote ledger is missing the already-applied external hotel migration 082 predecessor.",
     );
   }
+  const flightRemote = actualRemote.filter(
+    (version) => !(
+      version > "202608260138" && APPROVED_PREVIEW_PENDING.includes(version)
+    ),
+  );
   const prefixLength = Array.from(
     { length: pinnedPlan.flightVersions.length + 1 },
     (_, length) => length,
-  ).find((length) => sameValues(actualRemote, sorted([
+  ).find((length) => sameValues(flightRemote, sorted([
     ...pinnedPlan.baselineVersions,
     SHARED_HOTEL_MIGRATION.version,
     ...pinnedPlan.flightVersions.slice(0, length),

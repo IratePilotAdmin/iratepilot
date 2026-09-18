@@ -20,6 +20,7 @@ import {
   SHARED_HOTEL_MIGRATION,
 // @ts-expect-error -- The production gate is an executable .mjs module without a declaration file.
 } from "../scripts/apply-flight-preview-migrations.mjs";
+import { APPROVED_PREVIEW_PENDING } from "../scripts/reconcile-preview-migrations.mjs";
 
 const previewPassword = "preview-password-never-log";
 const previewUrl =
@@ -34,6 +35,12 @@ const cliPreviewUrl = previewTarget.cliDatabaseUrl;
 const pinnedPlan = assertPinnedFlightMigrations();
 const repositoryVersions: string[] = pinnedPlan.migrations.map(
   ({ version }: { version: string }) => version,
+);
+const approvedPostFlightVersions = new Set(
+  APPROVED_PREVIEW_PENDING.filter((version) => version > "202608260138"),
+);
+const flightRepositoryVersions = repositoryVersions.filter(
+  (version) => !approvedPostFlightVersions.has(version),
 );
 const requiredRemotePredecessorVersions = [
   ...pinnedPlan.baselineVersions,
@@ -1452,7 +1459,7 @@ describe("flight Preview migration gate", () => {
     ]);
     expect(pinnedPlan.flightVersions).toEqual(CANONICAL_FLIGHT_MIGRATION_VERSIONS);
     expect(pinnedPlan.flightVersions).toHaveLength(19);
-    expect(repositoryVersions.slice(-19)).toEqual(pinnedPlan.flightVersions);
+    expect(flightRepositoryVersions.slice(-19)).toEqual(pinnedPlan.flightVersions);
     expect(RETIRED_FLIGHT_MIGRATION_VERSIONS).toHaveLength(18);
     expect(pinnedPlan.sharedHotelMigrationPresent).toBe(true);
   });
@@ -1701,7 +1708,7 @@ describe("flight Preview migration gate", () => {
       pinnedPlan,
     ).pendingVersions).toEqual(pinnedPlan.flightVersions);
     expect(assertPreviewLedger(
-      migrationList(repositoryVersions.slice(0, -1)),
+      migrationList(flightRepositoryVersions.slice(0, -1)),
       pinnedPlan,
     ).pendingVersions).toEqual(["202608260138"]);
     expect(assertPreviewLedger(
