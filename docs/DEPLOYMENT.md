@@ -48,7 +48,11 @@ The following keys from `.env.example` are missing from the Vercel project:
 
 - `NEXT_PUBLIC_APP_URL` — set the production value to the canonical public origin, `https://www.iratepilot.com`.
 - `STRIPE_BASIC_PRICE_ID` — required before offering the Basic traveler membership.
-- `OPENAI_API_KEY` — required before enabling the AI travel planner.
+- `OPENAI_API_KEY` — server-only project credential required before enabling the AI travel planner.
+- `OPENAI_PROVIDER_ENABLED` — keep `false` until the provider credential, API billing, and signed-in planner flow have been verified; set exactly `true` to activate requests.
+- `OPENAI_MODEL` — optional model override; the application defaults to `gpt-5.6-luna`.
+
+The planner sends requests through the server-side `/api/ai/travel` route. It never exposes the API key to the browser, requires an authenticated iRatePilot account, limits prompts to 2,000 characters, sets `store: false`, and keeps the explicit provider flag off until activation is approved.
 
 `NEXT_PUBLIC_SUPABASE_ANON_KEY` is not required because `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is configured.
 

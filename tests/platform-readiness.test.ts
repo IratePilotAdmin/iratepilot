@@ -65,6 +65,23 @@ describe("platform readiness console", () => {
     expect(result.items.find((item) => item.id === "live_stripe_webhooks")?.status).toBe("ready");
   });
 
+  it("reports the OpenAI credential and activation gate separately", () => {
+    const credentialOnly = buildPlatformReadiness({ OPENAI_API_KEY: "server-only-secret" }, false);
+    expect(credentialOnly.items.find((item) => item.id === "openai")).toEqual(expect.objectContaining({
+      status: "off",
+      detail: "Credential configured; provider activation remains disabled",
+    }));
+
+    const enabled = buildPlatformReadiness({
+      OPENAI_API_KEY: "server-only-secret",
+      OPENAI_PROVIDER_ENABLED: "true",
+    }, false);
+    expect(enabled.items.find((item) => item.id === "openai")).toEqual(expect.objectContaining({
+      status: "ready",
+      detail: "Live provider enabled with a server-only credential",
+    }));
+  });
+
   it("replaces the mutable-settings placeholder with a read-only console", () => {
     expect(page).toContain("<AdminSettings />");
     expect(page).not.toContain("Administrative module placeholder");
