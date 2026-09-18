@@ -1,0 +1,27 @@
+{
+  "evidence": {
+    "version": "flight-build-verification-v1",
+    "checkedAt": "2026-09-18T10:14:00-05:00",
+    "sanitized": true,
+    "secretValuesRead": false,
+    "source": {
+      "branch": "agent/flight-live-foundation-20260823",
+      "commit": "07982ed",
+      "buildCommand": "next build --webpack"
+    },
+    "result": {
+      "status": "passed",
+      "typescriptDuringBuild": "passed",
+      "staticPagesGenerated": 121,
+      "routeCollectionCompleted": true
+    },
+    "releaseBoundary": {
+      "providerTraffic": false,
+      "booking": false,
+      "ticketing": false,
+      "payment": false,
+      "productionPromotion": false
+    },
+    "disposition": "Current branch is production-build verified; external provider, payment, and release approvals remain required before consumer activation."
+  }
+}
