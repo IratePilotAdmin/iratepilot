@@ -1,0 +1,15 @@
+{
+  "evidence": {
+    "version": "flight-public-domain-smoke-v1",
+    "checkedAt": "2026-09-18T10:48:00-05:00",
+    "sanitized": true,
+    "domain": "https://www.iratepilot.com",
+    "observations": {
+      "/flights": {"status": 200, "mode": "supplier_offline_synthetic_preview", "liveInventory": false, "payment": false},
+      "/flights/results": {"status": 200, "mode": "synthetic_preview", "liveInventory": false, "booking": false, "payment": false},
+      "/api/flights/search": {"GETStatus": 405, "interpretation": "method_not_allowed; no unauthorised GET data-plane call"}
+    },
+    "consumerProductionDecision": "blocked",
+    "disposition": "The custom domain exposes the flight planning surface, but it is not a live consumer booking surface. Provider traffic, ticketing, and payment remain disabled pending approvals and evidence."
+  }
+}
