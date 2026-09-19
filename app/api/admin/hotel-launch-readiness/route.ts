@@ -28,7 +28,7 @@ export async function GET() {
     const [properties, applications, commercialControls, supplierEvidence, emailBacklog, emailDeadLetters, deliveryFailures, payoutExceptions, paymentApprovals, paymentRevocations] = await Promise.all([
       admin.from("properties").select("id,image_url,amenities,rooms(active,inventory(stay_date,available_units))"),
       admin.from("partner_applications").select("id,property_id,status"),
-      admin.from("properties").select("id,listing_scope,direct_request_mode,commercial_terms_version,commercial_verified_at,commercial_verified_by,support_contact_email"),
+      auth.supabase.from("properties").select("id,listing_scope,direct_request_mode,commercial_terms_version,commercial_verified_at,commercial_verified_by,support_contact_email"),
       admin.from("priority_pms_launch_evidence").select("provider_id,vendor_approved,property_mapped,sandbox_validated,webhook_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact,verification_notes"),
       count("email_outbox", "status", ["pending", "failed", "processing"]),
       count("email_outbox", "status", ["dead_letter"]),
@@ -58,7 +58,7 @@ export async function GET() {
 
     const propertyIds = [...inventoryReadyPropertyIds];
     const commercialStates = propertyIds.length > 0
-      ? await admin.rpc("get_hotel_commercial_agreement_admin_state", { p_property_ids: propertyIds })
+      ? await auth.supabase.rpc("get_hotel_commercial_agreement_admin_state", { p_property_ids: propertyIds })
       : { data: [], error: null };
     const commercialStateAvailable = !commercialControls.error && !commercialStates.error;
     const agreementReadyIds = new Set(
