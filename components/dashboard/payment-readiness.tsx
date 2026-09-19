@@ -69,9 +69,10 @@ export function PaymentReadiness() {
 
   async function recordApproval(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formElement = event.currentTarget;
     setApprovalBusy(true);
     setApprovalMessage("");
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formElement);
     const body = Object.fromEntries(form.entries());
     const payload = {
       ...body,
@@ -95,7 +96,7 @@ export function PaymentReadiness() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Approval evidence could not be recorded.");
       setApprovalMessage(result.message);
-      event.currentTarget.reset();
+      formElement.reset();
       await load();
     } catch (error) {
       setApprovalMessage(error instanceof Error ? error.message : "Approval evidence could not be recorded.");

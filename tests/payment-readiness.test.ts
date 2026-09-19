@@ -98,6 +98,7 @@ describe("payment readiness audit", () => {
 
   it("records only audited approval evidence and never toggles payment runtime flags", () => {
     const route = read("app/api/admin/payment-readiness/route.ts");
+    const dashboard = read("components/dashboard/payment-readiness.tsx");
     const migration = read("supabase/migrations/202609180159_hotel_payment_launch_authorization.sql");
 
     expect(route).toContain('action: z.literal("record")');
@@ -108,5 +109,8 @@ describe("payment readiness audit", () => {
     expect(migration).toContain("profiles.role = 'admin'");
     expect(migration).not.toContain("ENABLE_LIVE_BOOKING_PAYMENTS");
     expect(migration).not.toContain("ENABLE_LIVE_PARTNER_PAYOUTS");
+    expect(dashboard).toContain("const formElement = event.currentTarget;");
+    expect(dashboard).toContain("formElement.reset();");
+    expect(dashboard).not.toContain("event.currentTarget.reset();");
   });
 });
