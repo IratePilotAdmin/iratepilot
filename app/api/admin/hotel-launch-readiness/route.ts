@@ -34,10 +34,10 @@ export async function GET() {
       count("email_outbox", "status", ["dead_letter"]),
       count("email_delivery_events", "processing_status", ["failed"]),
       count("booking_financials", "stripe_transfer_status", ["pending", "failed"]),
-      admin.from("hotel_payment_launch_authorizations")
+      auth.supabase.from("hotel_payment_launch_authorizations")
         .select("id,approval_reference,stripe_account_reference,approved_at,expires_at")
         .order("approved_at", { ascending: false }).limit(20),
-      admin.from("hotel_payment_launch_authorization_revocations")
+      auth.supabase.from("hotel_payment_launch_authorization_revocations")
         .select("authorization_id,revoked_at"),
     ]);
     if (properties.error || applications.error) {
