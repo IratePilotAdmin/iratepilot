@@ -4,6 +4,7 @@ import { buildHotelLaunchReadiness, type HotelLaunchReadinessInput } from "../li
 
 const empty: HotelLaunchReadinessInput = {
   approvedHotelCount: 0,
+  approvedHotelStateAvailable: true,
   inventoryReadyHotelCount: 0,
   commerciallyReadyHotelCount: 0,
   commercialStateAvailable: true,
@@ -59,14 +60,21 @@ describe("hotel launch readiness", () => {
   it("marks unavailable evidence checks as fail-closed", () => {
     const result = buildHotelLaunchReadiness({
       ...empty,
+      approvedHotelStateAvailable: false,
       commercialStateAvailable: false,
       supplierStateAvailable: false,
       paymentAuthorizationStateAvailable: false,
       operationsStateAvailable: false,
     });
     expect(result.gates.filter(({ status }) => status === "unavailable").map(({ id }) => id)).toEqual([
-      "commercial_release", "supplier_connection", "production_payments", "support_operations",
+      "approved_hotel", "commercial_release", "supplier_connection", "production_payments", "support_operations",
     ]);
+  });
+
+  it("requires append-only administrator approval evidence before counting a hotel", () => {
+    expect(routeSource).toContain('from("partner_application_review_evidence")');
+    expect(routeSource).toContain('evidence.decision === "approved"');
+    expect(routeSource).toContain("verifiedApprovalApplicationIds.has(application.id)");
   });
 
   it("exposes an admin-only read path with no mutation handler", () => {

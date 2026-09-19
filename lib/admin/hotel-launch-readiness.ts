@@ -11,6 +11,7 @@ export type HotelLaunchGate = {
 
 export type HotelLaunchReadinessInput = {
   approvedHotelCount: number;
+  approvedHotelStateAvailable: boolean;
   inventoryReadyHotelCount: number;
   commerciallyReadyHotelCount: number;
   commercialStateAvailable: boolean;
@@ -40,8 +41,14 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
     gate(
       "approved_hotel",
       "Approved hotel intake",
-      input.approvedHotelCount > 0 ? "ready" : "waiting_external",
-      input.approvedHotelCount > 0
+      !input.approvedHotelStateAvailable
+        ? "unavailable"
+        : input.approvedHotelCount > 0
+          ? "ready"
+          : "waiting_external",
+      !input.approvedHotelStateAvailable
+        ? "Hotel application approval evidence could not be verified. This gate fails closed."
+        : input.approvedHotelCount > 0
         ? `${input.approvedHotelCount} approved hotel application${input.approvedHotelCount === 1 ? " is" : "s are"} linked to a property.`
         : "Waiting for the first real 4- or 5-star hotel application to be approved and linked to a property.",
       "/admin/partners",

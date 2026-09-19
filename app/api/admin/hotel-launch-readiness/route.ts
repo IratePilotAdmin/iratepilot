@@ -25,9 +25,11 @@ export async function GET() {
       .from(table)
       .select("id", { count: "exact", head: true })
       .in(column, values);
-    const [properties, applications, commercialControls, supplierEvidence, emailBacklog, emailDeadLetters, deliveryFailures, payoutExceptions, paymentApprovals, paymentRevocations] = await Promise.all([
+    const [properties, applications, applicationApprovalEvidence, commercialControls, supplierEvidence, emailBacklog, emailDeadLetters, deliveryFailures, payoutExceptions, paymentApprovals, paymentRevocations] = await Promise.all([
       admin.from("properties").select("id,image_url,amenities,rooms(active,inventory(stay_date,available_units))"),
       admin.from("partner_applications").select("id,property_id,status"),
+      auth.supabase.from("partner_application_review_evidence")
+        .select("application_id,decision,legal_business_verified,representative_authority_verified,content_rights_verified,commercial_terms_acknowledgement_verified,inactive_draft_scope_confirmed"),
       auth.supabase.from("properties").select("id,listing_scope,direct_request_mode,commercial_terms_version,commercial_verified_at,commercial_verified_by,support_contact_email"),
       admin.from("priority_pms_launch_evidence").select("provider_id,vendor_approved,property_mapped,sandbox_validated,webhook_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact,verification_notes"),
       count("email_outbox", "status", ["pending", "failed", "processing"]),
@@ -44,9 +46,22 @@ export async function GET() {
       throw properties.error ?? applications.error;
     }
 
+    const approvedHotelStateAvailable = !applicationApprovalEvidence.error;
+    const verifiedApprovalApplicationIds = new Set(
+      (applicationApprovalEvidence.data ?? [])
+        .filter((evidence) => evidence.decision === "approved"
+          && evidence.legal_business_verified
+          && evidence.representative_authority_verified
+          && evidence.content_rights_verified
+          && evidence.commercial_terms_acknowledgement_verified
+          && evidence.inactive_draft_scope_confirmed)
+        .map((evidence) => evidence.application_id),
+    );
     const approvedPropertyIds = new Set(
       (applications.data ?? [])
-        .filter((application) => application.status === "approved" && application.property_id)
+        .filter((application) => application.status === "approved"
+          && application.property_id
+          && verifiedApprovalApplicationIds.has(application.id))
         .map((application) => application.property_id as string),
     );
     const inventoryReadyPropertyIds = new Set(
@@ -123,6 +138,7 @@ export async function GET() {
 
     return NextResponse.json(buildHotelLaunchReadiness({
       approvedHotelCount: approvedPropertyIds.size,
+      approvedHotelStateAvailable,
       inventoryReadyHotelCount: inventoryReadyPropertyIds.size,
       commerciallyReadyHotelCount,
       commercialStateAvailable,
