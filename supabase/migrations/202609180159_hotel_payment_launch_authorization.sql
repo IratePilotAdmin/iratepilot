@@ -146,13 +146,13 @@ begin
 
   if exists (
     select 1
-    from public.hotel_payment_launch_authorizations as authorization
-    where authorization.approved_at <= now()
-      and authorization.expires_at > now()
+    from public.hotel_payment_launch_authorizations as approval
+    where approval.approved_at <= now()
+      and approval.expires_at > now()
       and not exists (
         select 1
         from public.hotel_payment_launch_authorization_revocations as revocation
-        where revocation.authorization_id = authorization.id
+        where revocation.authorization_id = approval.id
       )
   ) then
     raise exception 'A current production payment approval already exists' using errcode = '23505';
