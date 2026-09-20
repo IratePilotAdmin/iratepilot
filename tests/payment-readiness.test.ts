@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { buildPaymentReadiness } from "../lib/admin/payment-readiness";
+import { hasCurrentLivePaymentAuthorization } from "../lib/stripe/live-payment-authorization";
 
 const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
@@ -112,5 +113,24 @@ describe("payment readiness audit", () => {
     expect(dashboard).toContain("const formElement = event.currentTarget;");
     expect(dashboard).toContain("formElement.reset();");
     expect(dashboard).not.toContain("event.currentTarget.reset();");
+  });
+
+  it("fails live PaymentIntent authorization closed unless the database confirms a current receipt", async () => {
+    const authorized = { rpc: async () => ({ data: true, error: null }) };
+    const revoked = { rpc: async () => ({ data: false, error: null }) };
+    const unavailable = { rpc: async () => ({ data: null, error: new Error("unavailable") }) };
+
+    await expect(hasCurrentLivePaymentAuthorization(authorized)).resolves.toBe(true);
+    await expect(hasCurrentLivePaymentAuthorization(revoked)).resolves.toBe(false);
+    await expect(hasCurrentLivePaymentAuthorization(unavailable)).resolves.toBe(false);
+
+    const paymentIntentRoute = read("app/api/bookings/[id]/payment-intent/route.ts");
+    const runtimeMigration = read("supabase/migrations/202609200160_live_payment_authorization_runtime_gate.sql");
+    expect(paymentIntentRoute).toContain('paymentMode === "live"');
+    expect(paymentIntentRoute.indexOf("hasCurrentLivePaymentAuthorization"))
+      .toBeLessThan(paymentIntentRoute.indexOf("paymentIntents.create"));
+    expect(runtimeMigration).toContain("grant execute on function public.has_current_hotel_payment_launch_authorization()\n  to service_role");
+    expect(runtimeMigration).toContain("approval.expires_at > now()");
+    expect(runtimeMigration).toContain("hotel_payment_launch_authorization_revocations");
   });
 });
