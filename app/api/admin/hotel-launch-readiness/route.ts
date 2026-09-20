@@ -26,7 +26,7 @@ export async function GET() {
       .select("id", { count: "exact", head: true })
       .in(column, values);
     const [properties, applications, applicationApprovalEvidence, commercialControls, supplierEvidence, emailBacklog, emailDeadLetters, deliveryFailures, payoutExceptions, paymentApprovals, paymentRevocations] = await Promise.all([
-      admin.from("properties").select("id,image_url,amenities,rooms(active,inventory(stay_date,available_units))"),
+      admin.from("properties").select("id,image_url,amenities,rooms(active,base_rate,max_guests,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount))"),
       admin.from("partner_applications").select("id,property_id,status"),
       auth.supabase.from("partner_application_review_evidence")
         .select("application_id,decision,legal_business_verified,representative_authority_verified,content_rights_verified,commercial_terms_acknowledgement_verified,inactive_draft_scope_confirmed"),

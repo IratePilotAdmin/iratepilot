@@ -59,9 +59,9 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
       "Listing and sellable inventory",
       input.inventoryReadyHotelCount > 0 ? "ready" : "blocked",
       input.inventoryReadyHotelCount > 0
-        ? `${input.inventoryReadyHotelCount} approved hotel listing${input.inventoryReadyHotelCount === 1 ? " has" : "s have"} complete content, an active room, and future inventory.`
+        ? `${input.inventoryReadyHotelCount} approved hotel listing${input.inventoryReadyHotelCount === 1 ? " has" : "s have"} complete content, booking terms, and priced future inventory with taxes and fees.`
         : input.approvedHotelCount > 0
-          ? "No approved hotel yet has complete content, an active room, and future sellable inventory."
+          ? "No approved hotel yet has complete content, booking terms, and priced future inventory with taxes and fees for every active room."
           : "A linked approved hotel is required before listing and inventory readiness can pass.",
       "/admin/properties",
       "Review properties",

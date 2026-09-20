@@ -50,7 +50,8 @@ export function buildPartnerOnboarding(
     { key: "property", label: "Add your first property", detail: "Create the hotel, resort, or vacation-home listing.", complete: Boolean(primaryProperty), href: "/partner/properties" },
     { key: "content", label: "Complete listing content", detail: "Add a safe primary photo and at least one amenity.", complete: Boolean(requirements?.primaryPhoto && requirements.amenities), href: "/partner/properties" },
     { key: "rooms", label: "Configure a room type", detail: "Add and activate at least one bookable room type.", complete: Boolean(requirements?.activeRoom), href: "/partner/rates" },
-    { key: "inventory", label: "Load future rates and inventory", detail: "Make at least one future night available for booking.", complete: Boolean(requirements?.futureInventory), href: "/partner/rates" },
+    { key: "room_terms", label: "Complete room booking terms", detail: "Add the rate-plan identity and exact cancellation policy for every active room.", complete: Boolean(requirements?.roomTerms), href: "/partner/rates" },
+    { key: "inventory", label: "Load future rates and inventory", detail: "Give every active room a future sellable night with its rate, taxes, and mandatory fees.", complete: Boolean(requirements?.futureInventory), href: "/partner/rates" },
     { key: "published", label: "Pass listing review", detail: "An administrator publishes the listing after all property requirements are complete.", complete: Boolean(primaryProperty?.active), href: "/partner/properties" },
   ];
   const ownerSteps = [

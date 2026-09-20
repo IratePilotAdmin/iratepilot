@@ -190,7 +190,11 @@ export const partnerTeamAccessActionSchema = z.discriminatedUnion("action", [
 const roomFieldsSchema = z.object({
   name: z.string().trim().min(2).max(120),
   maxGuests: z.coerce.number().int().min(inventoryLimits.minGuests).max(inventoryLimits.maxGuests),
-  baseRate: z.coerce.number().min(inventoryLimits.minNightlyRate).max(inventoryLimits.maxNightlyRate)
+  baseRate: z.coerce.number().min(inventoryLimits.minNightlyRate).max(inventoryLimits.maxNightlyRate),
+  ratePlanCode: z.string().trim().min(1).max(80),
+  ratePlanName: z.string().trim().min(1).max(160),
+  cancellationPolicy: z.string().trim().min(10).max(2000),
+  cancellationPolicyVersion: z.string().trim().min(1).max(80),
 });
 
 export const roomSchema = roomFieldsSchema.extend({
@@ -210,6 +214,8 @@ export const inventorySchema = z.object({
   startDate: z.string().date(),
   endDate: z.string().date(),
   availableUnits: z.coerce.number().int().min(inventoryLimits.minAvailableUnits).max(inventoryLimits.maxAvailableUnits),
-  rate: z.coerce.number().min(inventoryLimits.minNightlyRate).max(inventoryLimits.maxNightlyRate)
+  rate: z.coerce.number().min(inventoryLimits.minNightlyRate).max(inventoryLimits.maxNightlyRate),
+  taxAmount: z.coerce.number().min(0).max(inventoryLimits.maxNightlyRate),
+  mandatoryFeeAmount: z.coerce.number().min(0).max(inventoryLimits.maxNightlyRate),
 });
 

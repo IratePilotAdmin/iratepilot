@@ -13,6 +13,23 @@ const listRoute = readFileSync(new URL("../app/api/admin/properties/route.ts", i
 const decisionRoute = readFileSync(new URL("../app/api/admin/properties/[id]/route.ts", import.meta.url), "utf8");
 const reviewUi = readFileSync(new URL("../components/dashboard/admin-properties.tsx", import.meta.url), "utf8");
 const propertyId = "11111111-1111-4111-8111-111111111111";
+const readyRoom = {
+  active: true,
+  base_rate: 200,
+  max_guests: 2,
+  direct_rate_plan_code: "BAR",
+  direct_rate_plan_name: "Best Available Rate",
+  direct_currency_code: "USD",
+  direct_cancellation_policy: "Cancel at least 24 hours before arrival.",
+  direct_cancellation_policy_version: "2026-09-20",
+  inventory: [{
+    stay_date: "2099-01-01",
+    available_units: 2,
+    rate: 200,
+    direct_tax_amount: 20,
+    direct_mandatory_fee_amount: 0,
+  }],
+};
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -75,7 +92,7 @@ describe("hotel publication release gate", () => {
         image_url: "https://images.example.test/hotel.jpg",
         amenities: ["Pool"],
         partners: { status: "approved" },
-        rooms: [{ active: true, inventory: [{ stay_date: "2099-01-01", available_units: 2 }] }],
+        rooms: [readyRoom],
       },
       error: null,
     }));
@@ -111,7 +128,7 @@ describe("hotel publication release gate", () => {
         image_url: "https://images.example.test/hotel.jpg",
         amenities: ["Pool"],
         partners: { status: "approved" },
-        rooms: [{ active: true, inventory: [{ stay_date: "2099-01-01", available_units: 2 }] }],
+        rooms: [readyRoom],
       },
       error: null,
     }));

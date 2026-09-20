@@ -9,7 +9,7 @@ export async function GET() {
     const auth = await requireRole(["admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
     const { data, error, count } = await auth.supabase.from("properties")
-      .select("id,name,slug,type,star_rating,description,image_url,amenities,city,country,active,partners(business_name,status),rooms(active,inventory(stay_date,available_units))", { count: "exact" })
+      .select("id,name,slug,type,star_rating,description,image_url,amenities,city,country,active,partners(business_name,status),rooms(active,base_rate,max_guests,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount))", { count: "exact" })
       .order("created_at", { ascending: false })
       .limit(PROPERTY_LIMIT);
     if (error) throw error;
