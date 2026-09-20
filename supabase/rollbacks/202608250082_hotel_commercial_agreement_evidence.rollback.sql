@@ -29,7 +29,7 @@ revoke all on function public.record_hotel_commercial_agreement_receipt(
 ) from public, anon, authenticated, service_role;
 revoke all on function public.get_hotel_commercial_agreement_admin_state(uuid[])
   from public, anon, authenticated, service_role;
-revoke all on function public.list_available_counsel_approved_hotel_commercial_agreement_versions()
+revoke all on function public.list_available_counsel_approved_hotel_commercial_agreement_vers()
   from public, anon, authenticated, service_role;
 
 create or replace function public.current_hotel_commercial_agreement_evidence_id(

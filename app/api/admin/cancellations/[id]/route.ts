@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -7,6 +7,17 @@ import { cancellationClaimTimeoutMs, isCancellationClaimStale } from "@/lib/book
 import { queueBookingNotification } from "@/lib/email/booking-notifications";
 import { getStripeWebhookMode, type BookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
 import { reconcileStripeBookingRefund } from "@/lib/bookings/stripe-refund-reconciliation";
+import { drainNativePmsEvents } from "@/services/hotel-suppliers/iratepilot-pms/native-delivery";
+
+function deliverCancellationToNativePms() {
+  after(async () => {
+    try {
+      await drainNativePmsEvents(10);
+    } catch (deliveryError) {
+      console.error("Cancelled reservation was queued for later PMS delivery", deliveryError);
+    }
+  });
+}
 
 const schema = z.object({
   decision: z.enum(["approve", "reject"]),
@@ -77,6 +88,7 @@ export async function PATCH(
       );
       if (cancellationError) throw cancellationError;
       await queueBookingNotification({ event: "cancelled", bookingId: booking.id, confirmationCode: booking.confirmation_code, customerId: booking.customer_id });
+      deliverCancellationToNativePms();
       return NextResponse.json({
         data: cancelledBooking,
         message: "Unpaid reservation cancelled, inventory restored, and no refund was required."
@@ -203,6 +215,7 @@ export async function PATCH(
       }, { status: 202 });
     }
     await queueBookingNotification({ event: "refund_completed", bookingId: booking.id, confirmationCode: booking.confirmation_code, customerId: booking.customer_id, paymentMode: refundMode });
+    deliverCancellationToNativePms();
     return NextResponse.json({
       data: reconciliation.booking,
       message: `${refundMode === "test" ? "Test r" : "R"}efund completed, partner transfer reversed, inventory restored, and finance voided.`

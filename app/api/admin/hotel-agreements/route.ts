@@ -49,7 +49,7 @@ export async function GET() {
       auth.supabase.from("hotel_commercial_agreement_versions")
         .select("agreement_version,template_document_sha256,counsel_approval_reference,counsel_approved_at,effective_at,evidence_summary,created_at")
         .order("effective_at", { ascending: false }),
-      auth.supabase.rpc("list_available_counsel_approved_hotel_commercial_agreement_versions"),
+      auth.supabase.rpc("list_available_counsel_approved_hotel_commercial_agreement_vers"),
       auth.supabase.from("hotel_commercial_agreement_evidence")
         .select("id,application_id,property_id,agreement_version,execution_reference,hotel_legal_business_name,hotel_signatory_name,hotel_signatory_title,hotel_signed_at,iratepilot_signed_at,effective_at,expires_at,evidence_summary,created_at")
         .order("created_at", { ascending: false }),

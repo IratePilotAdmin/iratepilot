@@ -65,7 +65,7 @@ describe("hotel agreement administration", () => {
   });
 
   it("keeps receipt recording behind effective-version and dual-verification gates", () => {
-    expect(routeSource).toContain("list_available_counsel_approved_hotel_commercial_agreement_versions");
+    expect(routeSource).toContain("list_available_counsel_approved_hotel_commercial_agreement_vers");
     expect(routeSource).toContain("representativeAuthorityVerified: z.literal(true)");
     expect(routeSource).toContain("executedAgreementVerified: z.literal(true)");
     expect(routeSource).toContain("record_hotel_commercial_agreement_receipt");
