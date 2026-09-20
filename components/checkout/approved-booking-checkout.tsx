@@ -130,14 +130,26 @@ function ApprovedPaymentForm({ bookingId, breakdown, paymentMode }: { bookingId:
 export function ApprovedBookingCheckout({ bookingId, paymentMode, publishableKey }: { bookingId: string; paymentMode: BookingPaymentMode | null; publishableKey?: string }) {
   const stripePromise = useMemo(() => {
     const expectedPrefix = paymentMode === "test" ? "pk_test_" : paymentMode === "live" ? "pk_live_" : "";
-    return expectedPrefix && publishableKey?.startsWith(expectedPrefix) ? loadStripe(publishableKey) : null;
+    return expectedPrefix && publishableKey?.startsWith(expectedPrefix)
+      ? loadStripe(publishableKey).catch(() => null)
+      : null;
   }, [paymentMode, publishableKey]);
+  const [stripeLoadState, setStripeLoadState] = useState<"loading" | "ready" | "failed">("loading");
   const [clientSecret, setClientSecret] = useState("");
   const [breakdown, setBreakdown] = useState<Breakdown | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!paymentMode || !stripePromise) return;
+    let active = true;
+    if (!stripePromise) return () => { active = false; };
+    stripePromise.then((stripe) => {
+      if (active) setStripeLoadState(stripe ? "ready" : "failed");
+    });
+    return () => { active = false; };
+  }, [stripePromise]);
+
+  useEffect(() => {
+    if (!paymentMode || !stripePromise || stripeLoadState !== "ready") return;
     fetch(`/api/bookings/${encodeURIComponent(bookingId)}/payment-intent`, { method: "POST" })
       .then(async (response) => {
         const body = await response.json();
@@ -146,9 +158,11 @@ export function ApprovedBookingCheckout({ bookingId, paymentMode, publishableKey
         setBreakdown(body.breakdown);
       })
       .catch((reason: Error) => setError(reason.message));
-  }, [bookingId, paymentMode, stripePromise]);
+  }, [bookingId, paymentMode, stripeLoadState, stripePromise]);
 
   if (!paymentMode || !stripePromise) return <div className="card p-8"><h2 className="text-xl font-semibold">Payment is unavailable</h2><p className="mt-3 text-slate-600">Secure payment is not currently enabled for this reservation.</p><Link href="/account/trips" className="btn-secondary mt-6">Return to trips</Link></div>;
+  if (stripeLoadState === "failed") return <div className="card p-8"><h2 className="text-xl font-semibold">Secure payment could not load</h2><p className="mt-3 max-w-2xl text-slate-600">Your browser or network blocked Stripe’s secure checkout. Reload this page, allow content from Stripe, or open the reservation in an up-to-date Chrome, Safari, or Edge browser. No payment was submitted.</p><Link href="/account/trips" className="btn-secondary mt-6">Return to trips</Link></div>;
+  if (stripeLoadState === "loading") return <p role="status" className="card p-6">Loading secure payment…</p>;
   if (error) return <div className="card p-8"><p role="alert" className="text-red-700">{error}</p><Link href="/account/trips" className="btn-secondary mt-6">Return to trips</Link></div>;
   if (!clientSecret || !breakdown) return <p role="status" className="card p-6">Preparing secure payment…</p>;
   return <Elements stripe={stripePromise} options={{ clientSecret }}><ApprovedPaymentForm bookingId={bookingId} breakdown={breakdown} paymentMode={paymentMode} /></Elements>;
