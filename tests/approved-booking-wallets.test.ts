@@ -28,4 +28,11 @@ describe("approved booking wallet checkout", () => {
     expect(checkout).toContain('amazonPay: "never"');
     expect(checkout).toContain('klarna: "never"');
   });
+
+  it("explains blocked Stripe checkout and does not prepare payment before Stripe loads", () => {
+    expect(checkout).toContain('loadStripe(publishableKey).catch(() => null)');
+    expect(checkout).toContain('stripeLoadState !== "ready"');
+    expect(checkout).toContain("Secure payment could not load");
+    expect(checkout).toContain("No payment was submitted.");
+  });
 });
