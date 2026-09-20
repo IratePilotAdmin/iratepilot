@@ -64,6 +64,7 @@ describe("live booking payment gates", () => {
     expect(bookingRoute).toContain('process.env.PILOT_MODE === "true"');
     expect(bookingRoute).toContain('approvedPaymentMode === "live"');
     expect(bookingRoute).toContain('"commercial_request"');
+    expect(bookingRoute).toContain('requestMode === "commercial_request" && !await isHotelMarketplaceLaunchAuthorized()');
   });
 
   it("matches refunds to the recorded Stripe environment and uses the generic atomic finalizer", () => {

@@ -9,6 +9,7 @@ import { calculateVerifiedStayPricing } from "@/lib/bookings/stay-pricing";
 import { getActiveMembershipTier } from "@/lib/memberships/eligibility";
 import { queueBookingNotification } from "@/lib/email/booking-notifications";
 import { getApprovedBookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
+import { isHotelMarketplaceLaunchAuthorized } from "@/lib/hotels/marketplace-launch-authorization";
 
 export async function GET(request: Request) {
   try {
@@ -36,6 +37,11 @@ export async function POST(request: Request) {
       ? "commercial_request"
       : null;
   if (!requestMode) return NextResponse.json({ error: "Booking requests are disabled." }, { status: 503 });
+  if (requestMode === "commercial_request" && !await isHotelMarketplaceLaunchAuthorized()) {
+    return NextResponse.json({
+      error: "Commercial booking requests require every production launch gate to pass."
+    }, { status: 503 });
+  }
   const parsed = bookingSchema.safeParse(await request.json());
   if (!parsed.success) return NextResponse.json({ error: "Check the property, room, dates, and guest count." }, { status: 400 });
 
