@@ -23530,7 +23530,7 @@ revoke all on function public.get_hotel_commercial_agreement_admin_state(uuid[])
 grant execute on function public.get_hotel_commercial_agreement_admin_state(uuid[])
   to authenticated;
 
-create function public.list_available_counsel_approved_hotel_commercial_agreement_versions()
+create function public.list_available_counsel_approved_hotel_commercial_agreement_vers()
 returns table (
   agreement_version text,
   effective_at timestamptz
@@ -23564,9 +23564,9 @@ begin
 end;
 $$;
 
-revoke all on function public.list_available_counsel_approved_hotel_commercial_agreement_versions()
+revoke all on function public.list_available_counsel_approved_hotel_commercial_agreement_vers()
   from public, anon, service_role;
-grant execute on function public.list_available_counsel_approved_hotel_commercial_agreement_versions()
+grant execute on function public.list_available_counsel_approved_hotel_commercial_agreement_vers()
   to authenticated;
 
 create function public.record_counsel_approved_hotel_commercial_agreement_version(
