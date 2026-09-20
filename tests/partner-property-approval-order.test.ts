@@ -26,9 +26,9 @@ describe("partner-before-property approval order", () => {
   it("rejects property publication until the partner is approved", () => {
     expect(reviewRoute).toContain("partners!inner(status)");
     expect(reviewRoute).toContain('partner.status !== "approved"');
-    expect(reviewRoute).toContain('error?.code === "23514"');
+    expect(reviewRoute).toContain('rpc("set_property_publication_state"');
     expect(reviewRoute.indexOf('partner.status !== "approved"'))
-      .toBeLessThan(reviewRoute.indexOf('.update({ active: parsed.data.active })'));
+      .toBeLessThan(reviewRoute.indexOf('rpc("set_property_publication_state"'));
   });
 
   it("shows the partner state and disables premature publication in the admin queue", () => {

@@ -4,6 +4,15 @@ import { buildPlatformReadiness } from "../lib/admin/platform-readiness";
 
 const route = readFileSync(new URL("../app/api/admin/settings/route.ts", import.meta.url), "utf8");
 const page = readFileSync(new URL("../app/admin/settings/page.tsx", import.meta.url), "utf8");
+const component = readFileSync(new URL("../components/dashboard/admin-settings.tsx", import.meta.url), "utf8");
+const aiUsageGrant = readFileSync(new URL(
+  "../supabase/hotel-migrations/202609180146_ai_travel_admin_usage_read.sql",
+  import.meta.url,
+), "utf8");
+const aiUsageGrantRollback = readFileSync(new URL(
+  "../supabase/hotel-rollbacks/202609180146_ai_travel_admin_usage_read.rollback.sql",
+  import.meta.url,
+), "utf8");
 
 const configured = {
   NEXT_PUBLIC_APP_URL: "https://www.iratepilot.com",
@@ -63,6 +72,42 @@ describe("platform readiness console", () => {
     expect(result.requiredReady).toBe(true);
     expect(result.items.find((item) => item.id === "live_booking_payments")?.status).toBe("ready");
     expect(result.items.find((item) => item.id === "live_stripe_webhooks")?.status).toBe("ready");
+  });
+
+  it("reports the OpenAI credential and activation gate separately", () => {
+    const credentialOnly = buildPlatformReadiness({ OPENAI_API_KEY: "server-only-secret" }, false);
+    expect(credentialOnly.items.find((item) => item.id === "openai")).toEqual(expect.objectContaining({
+      status: "off",
+      detail: "Credential configured; provider activation remains disabled",
+    }));
+
+    const enabled = buildPlatformReadiness({
+      OPENAI_API_KEY: "server-only-secret",
+      OPENAI_PROVIDER_ENABLED: "true",
+    }, false);
+    expect(enabled.items.find((item) => item.id === "openai")).toEqual(expect.objectContaining({
+      status: "ready",
+      detail: "Live provider enabled with a server-only credential",
+    }));
+  });
+
+  it("reports aggregate AI usage without exposing customer identifiers", () => {
+    expect(route).toContain('.eq("scope", "openai:travel:global")');
+    expect(route).toContain("AI_DAILY_REQUEST_LIMIT = 200");
+    expect(route).toContain("remaining: Math.max(0, AI_DAILY_REQUEST_LIMIT - requestCount)");
+    expect(component).toContain("AI planner usage");
+    expect(component).toContain("Customer identifiers are not shown.");
+    expect(component).not.toContain("openai:travel:user:");
+  });
+
+  it("allows only the server role to read protected AI request counters", () => {
+    expect(aiUsageGrant).toContain(
+      "grant select on table public.ai_travel_request_windows to service_role",
+    );
+    expect(aiUsageGrant).not.toMatch(/\b(?:anon|authenticated)\b/);
+    expect(aiUsageGrantRollback).toContain(
+      "revoke select on table public.ai_travel_request_windows from service_role",
+    );
   });
 
   it("replaces the mutable-settings placeholder with a read-only console", () => {

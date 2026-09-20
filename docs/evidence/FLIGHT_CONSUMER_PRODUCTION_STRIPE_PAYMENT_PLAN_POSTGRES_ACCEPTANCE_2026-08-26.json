@@ -1,0 +1,115 @@
+{
+  "evidence": {
+    "version": "flight-consumer-production-stripe-payment-plan-postgresql-17-acceptance-v1",
+    "checkedAt": "2026-08-27T02:20:01.9748953Z",
+    "environment": "local_disposable_postgresql_17",
+    "scope": "production_migration_103_local_runtime_acceptance_without_managed_database_or_provider_traffic",
+    "result": "PASS",
+    "secretsIncluded": false,
+    "providerReferencesIncluded": false,
+    "postgresql": {
+      "serverVersion": "17.11",
+      "serverVersionNum": 170011,
+      "network": "loopback_only",
+      "listenAddresses": "127.0.0.1",
+      "ssl": "off",
+      "serverProcessAttestedBeforeConnect": true,
+      "loopbackListenerOwnerAttestedBeforeConnect": true,
+      "fixedSqlBytesPipedFromReviewedBuffers": true,
+      "exclusiveClusterRunLockHeldThroughCleanup": true,
+      "distribution": {
+        "landingPage": "https://www.postgresql.org/download/windows/",
+        "archiveUrl": "https://get.enterprisedb.com/postgresql/postgresql-17.11-1-windows-x64-binaries.zip",
+        "archiveSha256": "6eabdf00d2893713b75db4336a23c3fdf505f056e217ec6e2e95d901750cfea3",
+        "archiveBytes": 340719294
+      }
+    },
+    "reviewedArtifacts": {
+      "migration103": {
+        "path": "supabase/production-migrations/202608260103_flight_consumer_live_stripe_payment_intent_plan_journal.sql",
+        "sha256": "c4d5dec63faa07b37a2f57dc26a57faf94d698e09cf7f7e5be55a145a052d2cd"
+      },
+      "rollback103": {
+        "path": "supabase/production-rollbacks/202608260103_flight_consumer_live_stripe_payment_intent_plan_journal.rollback.sql",
+        "sha256": "29f22e4a5d9de9aa767695ede19b0026c03f60e9a2c534ac63768e5026492ed3"
+      },
+      "runner": {
+        "path": "scripts/verify-flight-consumer-live-stripe-payment-plan-postgres.mjs",
+        "sha256": "a19a202f246810d8eb6e10e51bf1b9b422ba83f5ffde1864de9335b1fb71c780"
+      },
+      "runtimeSql": {
+        "path": "tests/postgres/flight-consumer-live-stripe-payment-plan-runtime.sql",
+        "sha256": "a5555a33a350ef9ff27710b3637e0d94c0cf43b94b2094eba468e68f4c50307e"
+      }
+    },
+    "runtimeProof": {
+      "freshDisposableDatabases": 2,
+      "catalogShapeAndConstraintPosture": "passed",
+      "forcedRlsAndExactAclClosure": "passed",
+      "zeroDispatchContract": "passed",
+      "exactReplay": "created_then_replay",
+      "sequentialDriftRefusals": 12,
+      "malformedInputRefusals": 3,
+      "identityAmbiguityRefused": true,
+      "exactConcurrency": {
+        "winner": "created",
+        "loser": "replay",
+        "transactionIdWaitObserved": true
+      },
+      "driftConcurrency": {
+        "winner": "created",
+        "loser": "concurrency_collision_refused",
+        "transactionIdWaitObserved": true
+      },
+      "evidenceRollback": "refused_and_transactionally_preserved",
+      "emptyRollback": "succeeded",
+      "behaviorRowsObservedBeforeCleanup": 4
+    },
+    "disposition": {
+      "localDisposableDatabaseWritesPerformed": true,
+      "disposableDatabasesDropped": true,
+      "disposableRolesDropped": true,
+      "temporaryServerStopped": true,
+      "temporaryRuntimeRootRemoved": false,
+      "temporaryRuntimeRetentionReason": "host_recursive_delete_policy_blocked_removal_after_verified_stop",
+      "managedDatabaseWritesPerformed": false,
+      "previewDatabaseWritesPerformed": false,
+      "productionDatabaseWritesPerformed": false,
+      "providerTraffic": false,
+      "stripeTraffic": false,
+      "duffelTraffic": false,
+      "credentialsRead": false
+    },
+    "authority": {
+      "productionApplyAuthorized": false,
+      "paymentAuthorized": false,
+      "bookingAuthorized": false,
+      "ticketingAuthorized": false,
+      "consumerReleaseAuthorized": false
+    },
+    "migrationState": {
+      "version": "202608260103",
+      "status": "authored_unapplied",
+      "objectVerification": "not_run",
+      "applyAuthority": "not_granted",
+      "canonicalPreviewRange": "202608260120-202608260137",
+      "canonicalPreviewTip": "202608260137",
+      "carReservedRangeUntouched": "202608260200-202608260207"
+    },
+    "verification": {
+      "focusedRuntimeTestFilesPassed": 2,
+      "focusedRuntimeTestsPassed": 18,
+      "runnerStaticTestPath": "tests/flight-consumer-live-stripe-payment-plan-runtime-runner.test.ts",
+      "postgresqlRuntimeGate": "passed",
+      "failureCleanupReceipt": "zero_gate_databases_and_zero_gate_roles",
+      "successCleanupReceipt": "zero_gate_databases_and_zero_gate_roles"
+    },
+    "outcome": "local_postgresql_17_runtime_acceptance_passed_103_remains_unapplied",
+    "remainingLaunchGates": [
+      "Provision a dedicated flight-owned managed UAT target and separately authorize the exact migration-103 apply and object verification.",
+      "Separately authorize and apply migration 103 to Production only after managed-UAT acceptance and a fresh collision preflight.",
+      "Implement and verify the server-only Stripe PaymentIntent, webhook, reconciliation, refund, and failure-recovery workflow in Stripe test mode before any live charge.",
+      "Run separately approved booking, payment, ticketing, servicing, monitoring, and consumer-release canaries before public launch."
+    ]
+  }
+}

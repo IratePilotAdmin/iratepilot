@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/require-role";
+import { isHotelPublicationEnabled } from "@/lib/hotels/publication-gate";
 import { getPropertyReadiness, type PropertyReadinessInput } from "@/lib/property-readiness";
 
 const decisionSchema = z.object({ active: z.boolean() });
@@ -15,8 +16,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const auth = await requireRole(["admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
     if (parsed.data.active) {
+      if (!isHotelPublicationEnabled()) {
+        return NextResponse.json({
+          error: "Hotel publication is locked until the production release gate is approved."
+        }, { status: 409 });
+      }
       const { data: property, error: propertyError } = await auth.supabase.from("properties")
-        .select("image_url,amenities,partners!inner(status),rooms(active,inventory(stay_date,available_units))")
+        .select("image_url,amenities,partners!inner(status),rooms(active,base_rate,max_guests,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount))")
         .eq("id", id).maybeSingle();
       if (propertyError) throw propertyError;
       if (!property) return NextResponse.json({ error: "Property not found." }, { status: 404 });
@@ -34,12 +40,26 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         }, { status: 409 });
       }
     }
-    const { data, error } = await auth.supabase.from("properties").update({ active: parsed.data.active }).eq("id", id)
-      .select("id,name,active").single();
-    if (error?.code === "23514") {
-      return NextResponse.json({ error: "Approve the partner account before publishing this property." }, { status: 409 });
+
+    const { data, error } = await auth.supabase.rpc("set_property_publication_state", {
+      p_property_id: id,
+      p_active: parsed.data.active,
+    });
+    if (error) {
+      if (error.message.includes("Property not found")) {
+        return NextResponse.json({ error: "Property not found." }, { status: 404 });
+      }
+      if (
+        error.message.includes("commercial agreement")
+        || error.message.includes("commercial publication guard")
+        || error.message.includes("direct rate and cancellation terms")
+        || error.message.includes("future sellable inventory")
+        || error.message.includes("partner must be approved")
+      ) {
+        return NextResponse.json({ error: error.message }, { status: 409 });
+      }
+      throw error;
     }
-    if (error) throw error;
     return NextResponse.json({ data });
   } catch {
     return NextResponse.json({ error: "The review decision could not be saved." }, { status: 503 });

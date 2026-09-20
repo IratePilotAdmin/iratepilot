@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { differenceInCalendarDays, parseISO, startOfDay } from "date-fns";
 import { fees } from "@/config/fees";
+import { memberships } from "@/config/memberships";
 import { getStripe } from "@/lib/stripe";
 import { getStripeIdempotencyContext } from "@/lib/stripe-idempotency";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkoutSchema } from "@/lib/validation";
 import { calculateVerifiedStayPricing } from "@/lib/bookings/stay-pricing";
-import { hasActiveMembership } from "@/lib/memberships/eligibility";
+import { getActiveMembershipTier } from "@/lib/memberships/eligibility";
 
 export async function POST(request: Request) {
   if (process.env.ENABLE_TEST_CHECKOUT !== "true") return NextResponse.json({ error: "Test checkout is disabled." }, { status: 503 });
@@ -42,13 +43,14 @@ export async function POST(request: Request) {
     .gte("stay_date", parsed.data.checkIn).lt("stay_date", parsed.data.checkOut).order("stay_date");
   if (inventoryError) return NextResponse.json({ error: "Inventory could not be verified." }, { status: 503 });
   const { data: profile } = await supabase.from("profiles").select("membership_tier,membership_status").eq("id", user.id).single();
-  const memberFeeExempt = hasActiveMembership(profile);
-  const pricing = calculateVerifiedStayPricing(inventory || [], nights, memberFeeExempt ? 0 : fees.serviceFeeRate);
+  const membershipTier = getActiveMembershipTier(profile);
+  const memberDiscountRate = membershipTier === "none" ? 0 : memberships[membershipTier].discountRate;
+  const pricing = calculateVerifiedStayPricing(inventory || [], nights, fees.serviceFeeRate, memberDiscountRate);
   if (!pricing.ok && pricing.reason === "availability") {
     return NextResponse.json({ error: "This room is not available for every selected night." }, { status: 409 });
   }
   if (!pricing.ok) return NextResponse.json({ error: "Pricing could not be verified for this stay." }, { status: 503 });
-  const { subtotal, serviceFee, total } = pricing;
+  const { baseSubtotal, memberDiscount, subtotal, serviceFee, total } = pricing;
   const property = room.properties as unknown as { id: string; name: string };
   const confirmationToken = idempotency.attemptId.replaceAll("-", "").slice(0, 16).toUpperCase();
   const confirmationCode = `IRP-${confirmationToken.slice(0, 8)}-${confirmationToken.slice(8)}`;
@@ -67,7 +69,8 @@ export async function POST(request: Request) {
       checkOut: parsed.data.checkOut,
       nights: String(nights),
       guests: String(parsed.data.guests),
-      confirmationCode
+      confirmationCode,
+      membershipTier,
     }
   }, { idempotencyKey: idempotency.idempotencyKey });
   return NextResponse.json({
@@ -79,6 +82,10 @@ export async function POST(request: Request) {
       checkOut: parsed.data.checkOut,
       nights,
       guests: parsed.data.guests,
+      membershipTier,
+      memberDiscountRate,
+      baseSubtotal,
+      memberDiscount,
       subtotal,
       serviceFee,
       total

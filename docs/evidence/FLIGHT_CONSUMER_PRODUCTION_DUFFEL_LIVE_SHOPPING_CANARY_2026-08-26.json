@@ -1,0 +1,110 @@
+{
+  "evidence": {
+    "version": "flight-consumer-production-duffel-live-shopping-canary-v1",
+    "checkedAt": "2026-08-26T13:40:23.5139254-05:00",
+    "environment": "vercel_production",
+    "canonicalOrigin": "https://www.iratepilot.com",
+    "scope": "one_live_duffel_offer_request_without_booking_payment_or_ticketing",
+    "secretsIncluded": false,
+    "providerReferencesIncluded": false,
+    "consumerReleaseAuthorized": false,
+    "bookingAuthorized": false,
+    "paymentAuthorized": false,
+    "settlementAuthorized": false,
+    "ticketingAuthorized": false,
+    "canaryDeployment": {
+      "id": "dpl_Cnw7ARWkJi9eCpX61j93gsammYqf",
+      "url": "https://iratepilotadmin-8rlwzuk0h-irate-pilot.vercel.app",
+      "readyState": "READY",
+      "target": "production",
+      "runtimeRoute": "/api/admin/flights/consumer-production/live-search",
+      "darkShoppingEnabledDuringCanary": true,
+      "orderCreationEnabledDuringCanary": false
+    },
+    "boundedSearch": {
+      "origin": "ORD",
+      "destination": "MIA",
+      "departureDate": "2026-10-10",
+      "returnDate": null,
+      "cabin": "economy",
+      "adults": 1,
+      "applicationHttpStatus": 200,
+      "providerHttpStatus": 201,
+      "offerCount": 117,
+      "journalReplay": false,
+      "localAttemptId": "8c63a25a-3d88-4a3b-9126-15476072eb4c",
+      "responseSha256": "ddf6fc41a9b9009bcb36548f10736cd88828a1caf88f2aae4b23ebe44a85a160"
+    },
+    "productionJournal": {
+      "projectRef": "allliumarkejinplrggl",
+      "migrations": [
+        "202608260101_flight_consumer_live_duffel_shopping_journal.sql",
+        "202608260102_flight_consumer_live_duffel_shopping_rpc_qualification_repair.sql"
+      ],
+      "migrationSha256": {
+        "202608260101": "c92c6f0de60b14d3aac0c6a9314319e254cb6c6df59e68b53d5e3030dd96b70f",
+        "202608260102": "fe71deff26682e5bd9bd8ae87966bb1c5eb4364e907ce9ea37962756aaf035f6"
+      },
+      "applicationMethod": "guarded_dashboard_sql",
+      "standardMigrationLedgerState": "object_applied_not_ledgered",
+      "standardMigrationLedgerLatestVersion": "202608220063",
+      "standardMigrationLedgerContains101": false,
+      "standardMigrationLedgerContains102": false,
+      "attemptCount": 2,
+      "unclaimedPreparedCount": 1,
+      "succeededCount": 1,
+      "failedCount": 0,
+      "ambiguousCount": 0,
+      "terminalHttp201Count": 1,
+      "totalOfferCount": 117,
+      "rawProviderPayloadStored": false,
+      "rawProviderIdentifiersStored": false,
+      "forcedRls": true,
+      "directApplicationRoleTableAccessDenied": true,
+      "serviceRoleRpcOnly": true
+    },
+    "dispatchAccounting": {
+      "providerRequestsDispatched": 1,
+      "successfulProviderResponses": 1,
+      "preDispatchPreparedRows": 1,
+      "failedOrAmbiguousDispatches": 0,
+      "explanation": "The earlier prepared row remained revision zero with no dispatch start or terminal metadata; the successful row is the only provider dispatch."
+    },
+    "closureDeployment": {
+      "id": "dpl_2Ddx3NLvjXuwDxv3oB1P9iKzKj5q",
+      "url": "https://iratepilotadmin-6cglqnnpl-irate-pilot.vercel.app",
+      "readyState": "READY",
+      "target": "production",
+      "promotedToCanonicalOrigin": true,
+      "darkShoppingEnabledAfterCanary": false,
+      "orderCreationEnabledAfterCanary": false,
+      "authenticatedLiveSearchClosureCheckStatus": 503,
+      "authenticatedLiveSearchClosureDiagnostic": "workflow_unavailable",
+      "publicOrderEndpointStatus": 503,
+      "publicOrderPayloadInspected": false,
+      "journalCountAfterClosureCheck": 2,
+      "runtimeErrorClusters": 0
+    },
+    "verification": {
+      "focusedShoppingTestFilesPassed": 5,
+      "focusedShoppingTestsPassed": 29,
+      "migrationRepairTestFilesPassed": 2,
+      "migrationRepairTestsPassed": 6,
+      "typecheck": "passed",
+      "focusedLint": "passed",
+      "localProductionBuild": "passed_with_next_build_webpack",
+      "vercelCanaryBuild": "passed_with_next_build_turbopack",
+      "vercelClosureBuild": "passed_with_next_build_turbopack",
+      "canaryRuntimeLog": "POST live-search 200 at 2026-08-26T18:29:57Z",
+      "closureRuntimeLog": "POST live-search 503 at 2026-08-26T18:36:11Z"
+    },
+    "outcome": "single_live_duffel_shopping_canary_passed_and_provider_traffic_reclosed",
+    "remainingLaunchGates": [
+      "Bind the approved Duffel account and credential digest into the Production execution scope.",
+      "Add a server-enforced canary budget before any future live-shopping operator rollout.",
+      "Build and verify Production reprice, order, Stripe payment, ticketing, servicing, and reconciliation workflows.",
+      "Complete customer support, disruption, cancellation, refund, notification, monitoring, and incident drills.",
+      "Require separate explicit approval before any live canary order, payment, ticket issuance, or public consumer release."
+    ]
+  }
+}

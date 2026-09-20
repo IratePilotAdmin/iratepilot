@@ -1,0 +1,174 @@
+{
+  "evidence": {
+    "version": "flight-consumer-stripe-payment-plan-production-dark-acceptance-v1",
+    "checkedAt": "2026-08-26T23:08:22-05:00",
+    "environment": "managed_supabase_consumer_production_dark",
+    "scope": "migration_103_production_object_apply_and_zero_dispatch_acceptance",
+    "result": "PASS",
+    "secretsIncluded": false,
+    "providerRequestIdentifiersIncluded": false,
+    "target": {
+      "provider": "Supabase",
+      "projectRef": "allliumarkejinplrggl",
+      "projectName": "iRatePilot Project",
+      "organizationName": "iRatePilot Group, LLC",
+      "intendedPurpose": "consumer_production_dark_payment_journal",
+      "consumerProduction": true,
+      "dashboardBranchLabel": "Production",
+      "region": "us-east-1",
+      "compute": "nano",
+      "postgresServiceVersion": "17.6.1.147",
+      "postgresServerVersionNum": 170006
+    },
+    "preApplyState": {
+      "projectStatus": "Healthy",
+      "signedInDashboardProjectUrlAndHeaderVerified": true,
+      "migrationLedgerPresent": true,
+      "migrationLedgerLatestVersion": "202608220063",
+      "objectOnlyVersionsAbsentFromLedger": [
+        "202608260099",
+        "202608260101",
+        "202608260102",
+        "202608260103"
+      ],
+      "targetObjectsAbsent": true,
+      "migration103LedgerEntryAbsent": true
+    },
+    "reviewedArtifacts": {
+      "preflightSql": {
+        "path": "scripts/flight-consumer-live-stripe-payment-plan-production-preflight.sql",
+        "sha256": "ed4c556e082b86e145d83192c07d40a96da5e75eb3c26f7cd921fa8ad8b1ddaa"
+      },
+      "migration103": {
+        "path": "supabase/production-migrations/202608260103_flight_consumer_live_stripe_payment_intent_plan_journal.sql",
+        "sha256": "c4d5dec63faa07b37a2f57dc26a57faf94d698e09cf7f7e5be55a145a052d2cd"
+      },
+      "verificationSql": {
+        "path": "scripts/flight-consumer-live-stripe-payment-plan-production-verification.sql",
+        "sha256": "6279f1d462130ed8328ae673262a796c5e4ead497a145346c6afb52e65533035"
+      },
+      "rollback103": {
+        "path": "supabase/production-rollbacks/202608260103_flight_consumer_live_stripe_payment_intent_plan_journal.rollback.sql",
+        "sha256": "29f22e4a5d9de9aa767695ede19b0026c03f60e9a2c534ac63768e5026492ed3"
+      }
+    },
+    "authorization": {
+      "productionDarkObjectApplyAuthorizedAtActionTime": true,
+      "syntheticRollbackProbeAuthorizedAtActionTime": true,
+      "retroactiveLedgerRepairAuthorized": false,
+      "rollbackAuthorized": false,
+      "providerTrafficAuthorized": false,
+      "paymentAuthorized": false,
+      "bookingAuthorized": false,
+      "ticketingAuthorized": false,
+      "consumerReleaseAuthorized": false
+    },
+    "application": {
+      "method": "guarded_supabase_dashboard_sql_editor",
+      "collisionAndLedgerPreflight": "passed",
+      "sourceHashVerifiedImmediatelyBeforeEntry": true,
+      "cleanEditorExecutedFromReviewedSource": true,
+      "remoteEditorByteIdentityCryptographicallyAttested": false,
+      "dashboardTargetAttestation": "signed_in_project_url_and_project_header_verified",
+      "runtimeDatabaseProjectRefInvariantAvailable": false,
+      "sqlReceiptProjectRefSemantics": "declared_dashboard_target_label_not_runtime_database_invariant",
+      "sqlReceiptZeroCountSemantics": "synthetic_journal_assertions_not_global_provider_telemetry",
+      "dashboardRlsHeuristicDisposition": "ran_exact_reviewed_source_without_dashboard_rewrite_migration_itself_enabled_and_forced_rls",
+      "transactionOutcome": "committed",
+      "standardMigrationLedgerState": "object_applied_not_ledgered",
+      "standardMigrationLedgerContains103": false,
+      "retroactiveLedgerRepairPerformed": false
+    },
+    "objectVerification": {
+      "status": "passed",
+      "ordinaryPostgresOwnedTable": true,
+      "columnCount": 36,
+      "jsonJsonbOrByteaColumnCount": 0,
+      "exactValidReadyIndexCount": 5,
+      "allConstraintsValidatedImmediate": true,
+      "rowLevelSecurityEnabled": true,
+      "rowLevelSecurityForced": true,
+      "policyCount": 0,
+      "nonInternalTriggerCount": 0,
+      "recorderCount": 1,
+      "recorderOwner": "postgres",
+      "recorderSecurityDefiner": true,
+      "recorderLanguage": "plpgsql",
+      "recorderSearchPath": "pg_catalog, public",
+      "recorderExactTableResult": true,
+      "publicDirectTablePrivileges": false,
+      "anonDirectTablePrivileges": false,
+      "authenticatedDirectTablePrivileges": false,
+      "serviceRoleDirectTablePrivileges": false,
+      "serviceRoleRecorderExecute": true,
+      "anonRecorderExecute": false,
+      "authenticatedRecorderExecute": false,
+      "shadowRecorderPresent": false,
+      "mutationLifecycleRpcPresent": false,
+      "permanentRowCount": 0
+    },
+    "runtimeProof": {
+      "modernRequestJwtClaimsServiceRole": "passed",
+      "serviceRoleDirectTableRead": "refused",
+      "firstPlan": "created",
+      "exactReplay": "replayed_same_plan_id",
+      "oneFieldDrift": "refused",
+      "malformedEvidence": "refused",
+      "ambiguousIdentity": "refused",
+      "syntheticJournalAssertions": {
+        "rowsObservedInsideTransaction": 2,
+        "rowsAfterRollback": 0,
+        "providerRequestCount": 0,
+        "stripeRequestCount": 0,
+        "stripeMutationCount": 0,
+        "paymentIntentCount": 0,
+        "chargeCount": 0,
+        "refundCount": 0,
+        "orderAuthorizedRowCount": 0,
+        "ticketingAuthorizedRowCount": 0
+      }
+    },
+    "disposition": {
+      "activityScope": "production_migration_103_dark_gate_only",
+      "managedUatWritesPerformed": false,
+      "previewDatabaseWritesPerformed": false,
+      "productionDatabaseWritesPerformed": true,
+      "migrationJournalObjectsCreated": true,
+      "syntheticRowsRolledBack": true,
+      "permanentJournalRows": 0,
+      "stripeTraffic": false,
+      "duffelTraffic": false,
+      "providerTraffic": false,
+      "paymentActivity": false,
+      "bookingActivity": false,
+      "ticketingActivity": false,
+      "credentialsRead": false,
+      "rawIdentifiersStored": false,
+      "rawPayloadsStored": false,
+      "paymentDataStored": false
+    },
+    "lineageState": {
+      "productionMigration103Status": "object_applied_via_guarded_dashboard_sql_not_ledgered",
+      "productionMigration103ObjectVerification": "passed",
+      "productionMigration103LedgerEntryPresent": false,
+      "productionLedgerLatestObservedVersion": "202608220063",
+      "retroactiveLedgerRepairAuthorized": false,
+      "intentionalProductionVersionGap": "202608260100",
+      "canonicalPreviewRange": "202608260120-202608260137",
+      "canonicalPreviewTip": "202608260137",
+      "carReservedRangeUntouched": "202608260200-202608260207"
+    },
+    "outcome": "production_dark_payment_plan_journal_applied_verified_zero_dispatch",
+    "remainingLaunchGates": [
+      "Freeze commercial settlement, merchant-of-record, capture, refund, chargeback, and support ownership decisions.",
+      "Implement and verify the server-only Stripe PaymentIntent, webhook, reconciliation, refund, and ambiguity-recovery workflow in Stripe test mode.",
+      "Implement the durable Production flight data plane, traveler and terms records, concrete Duffel reprice, order, ticket, and reconciliation adapters, and atomic finalizer.",
+      "Replace synthetic and disabled consumer surfaces with authenticated checkout, confirmation, and My Trips integration.",
+      "Pass the payment, order, ticket, webhook, cancellation, refund, schedule-change, and servicing failure matrix.",
+      "Add flight-specific monitoring, notifications, staffing, runbooks, retention controls, and disruption drills.",
+      "Provision and verify all live provider, settlement, email, fraud, and support configuration while transactional flags remain disabled.",
+      "Run a separately approved bounded live booking, authorization, ticket, capture, reconciliation, and servicing canary ladder.",
+      "Obtain explicit public-release approval and enable a gradual server-enforced rollout."
+    ]
+  }
+}

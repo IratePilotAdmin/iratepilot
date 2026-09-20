@@ -1,0 +1,67 @@
+{
+  "evidence": {
+    "version": "flight-consumer-production-data-plane-catalog-observation-v1",
+    "observedAt": "2026-08-27T03:21:43-05:00",
+    "environment": "managed_supabase_consumer_production_read_only",
+    "scope": "catalog_and_migration_ledger_observation_only",
+    "result": "PASS",
+    "sanitized": true,
+    "secretsIncluded": false,
+    "target": {
+      "provider": "Supabase",
+      "projectRef": "allliumarkejinplrggl",
+      "projectName": "iRatePilot Project",
+      "dashboardBranchLabel": "Production",
+      "postgresServerVersionNum": 170006
+    },
+    "observationArtifact": {
+      "path": "scripts/flight-consumer-production-data-plane-catalog-observation.sql",
+      "sha256": "0d8ab00042559d47dff6bc2596a38d308bcaeeae597048afdd361378f618a4d6"
+    },
+    "identityObservation": {
+      "observedAt": "2026-08-27T03:37:00-05:00",
+      "artifact": {
+        "path": "scripts/flight-consumer-production-identity-anchor-observation.sql",
+        "sha256": "71631abe70d60597d32c9dbd749af2ac3fa8fc05fc7b0c0d5bcb0c7b1a810bd6"
+      },
+      "profilesRelation": "profiles",
+      "profilesIdType": "uuid",
+      "profilesIdNotNull": true,
+      "profilesIdUniqueConstraint": true,
+      "writesPerformed": false
+    },
+    "observedRelations": [
+      "flight_consumer_live_duffel_shopping_attempts",
+      "flight_consumer_live_duffel_webhook_inbox",
+      "flight_consumer_live_stripe_payment_intent_plans"
+    ],
+    "observedLedgerVersionsBetween202608230068And202608260138": [],
+    "interpretation": {
+      "consumerCheckoutAggregatePresent": false,
+      "travelerDataPlanePresent": false,
+      "durableLiveOfferRefreshPresent": false,
+      "durableLiveStripeExecutionPresent": false,
+      "durableLiveOrderAndTicketFinalizerPresent": false,
+      "productionObjectsAppliedOutsideMigrationLedger": [
+        "202608260099",
+        "202608260101",
+        "202608260102",
+        "202608260103"
+      ],
+      "productionTransactionAcceptanceReady": false
+    },
+    "disposition": {
+      "productionDatabaseReadPerformed": true,
+      "productionDatabaseWritesPerformed": false,
+      "migrationLedgerMutationPerformed": false,
+      "providerRequestPerformed": false,
+      "stripeRequestPerformed": false,
+      "paymentPerformed": false,
+      "bookingPerformed": false,
+      "ticketingPerformed": false,
+      "deploymentChanged": false,
+      "publicReleaseChanged": false
+    },
+    "outcome": "production_flight_consumer_data_plane_is_not_yet_transaction_ready"
+  }
+}

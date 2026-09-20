@@ -1,0 +1,79 @@
+{
+  "evidence": {
+    "version": "flight-consumer-preview-ticketed-booking-evidence-v1",
+    "checkedAt": "2026-08-26T14:37:54.597Z",
+    "environment": "vercel_preview",
+    "executionMode": "test",
+    "productionAuthorized": false,
+    "deploymentId": "dpl_8JVMfkrvnZ89QWRMuncNRpahStFR",
+    "previewAlias": "iratepilot-consumer-flights-preview.vercel.app",
+    "orderIdSha256": "7ccda22ffae7376fc9a431087776bf6a7e6c6be54439f28e09cd89fd666de8d3",
+    "confirmationCodeSha256": "daf509f2b114af1f9a5e802e155eaa22b84d4bb9cca0774fef96dc1de2a9297f",
+    "reconciliationCaseIdSha256": "ea7e93d65c3575638d05e37e7ee79bc3c6a700509e8ecf949b12049520f0ab34",
+    "providerCreateAttemptIdSha256": "b0058672cc0ace691d66d2c4c75cf6b19c803314ece2644950a2645091c38385",
+    "itinerary": {
+      "origin": "ORD",
+      "destination": "MIA",
+      "departureDate": "2026-10-15",
+      "passengerCount": 1,
+      "fictionalTravelersOnly": true
+    },
+    "database": {
+      "orderStatus": "ticketed",
+      "providerCode": "duffel",
+      "providerReferenceBound": true,
+      "providerCreatedAt": "2026-08-26T10:49:48.774Z",
+      "ticketingDeadlineAt": "2026-10-15T15:49:00.000Z",
+      "paymentStatus": "captured",
+      "authorizedCents": 9763,
+      "capturedCents": 9763,
+      "refundedCents": 0,
+      "captureOperationCount": 1,
+      "captureOperationSucceededCount": 1,
+      "refundOperationCount": 0,
+      "providerCreateAttemptCount": 1,
+      "providerCreateAttemptSucceededCount": 1,
+      "providerRetryAuthorizedCount": 0,
+      "passengerCount": 1,
+      "providerBoundPassengerCount": 1,
+      "ticketDocumentCount": 1,
+      "issuedElectronicTicketCount": 1,
+      "documentBoundTicketCount": 1,
+      "passengersWithoutExactlyOneIssuedTicket": 0,
+      "issuingCarriers": [
+        "ZZ"
+      ],
+      "webhookState": "processed",
+      "webhookRevision": 2,
+      "recoveryEvidenceCount": 1,
+      "activeRecoveryEvidenceCount": 1,
+      "reconciliationStatus": "resolved",
+      "reconciliationResolutionCode": "provider_state_confirmed",
+      "reconciliationActorType": "system",
+      "reconciliationResolvedByIsNull": true,
+      "reconciliationSystemReceiptPresent": true
+    },
+    "stripeTest": {
+      "paymentStatus": "succeeded",
+      "amountCents": 9763,
+      "captured": true,
+      "refunded": false,
+      "dashboardMode": "test"
+    },
+    "duffelTest": {
+      "signedRecoveryReplayStatus": 200,
+      "dashboardMode": "test",
+      "liveAccessApplicationStillRequired": true
+    },
+    "runtime": {
+      "health": "reachable",
+      "relocked": true,
+      "runtimePreflightReady": false,
+      "databaseAuthority": false,
+      "runtimeConfiguration": false,
+      "stripeTestAccount": true,
+      "stripeAccountBinding": true
+    },
+    "conclusion": "one_fictional_duffel_test_booking_ticketed_with_one_stripe_test_capture_zero_refunds_and_preview_relocked"
+  }
+}

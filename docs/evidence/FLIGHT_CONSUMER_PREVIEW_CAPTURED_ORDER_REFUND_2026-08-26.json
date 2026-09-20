@@ -1,0 +1,41 @@
+{
+  "evidence": {
+    "version": "flight-consumer-preview-captured-order-refund-evidence-v1",
+    "checkedAt": "2026-08-26T08:56:05.771Z",
+    "environment": "vercel_preview",
+    "executionMode": "test",
+    "orderIdSha256": "14b96004a305253380d6e3ea0c37f7852ba68776ddd05683bf5b19a6274aa964",
+    "reconciliationCaseIdSha256": "10cf4bb66787b8a39b7c99c93711d76cc4c20c3b6ba8873b9fc27fa006a0b2f2",
+    "stripePaymentIntentIdSha256": "ffce65e0c835c75e25a34d863a3f483d2ab4d92022abee4b111046690fc8f097",
+    "database": {
+      "orderStatus": "requires_review",
+      "paymentStatus": "captured",
+      "authorizedCents": 9690,
+      "capturedCents": 9690,
+      "refundedCents": 0,
+      "captureOperationCount": 1,
+      "captureOperationState": "succeeded",
+      "captureOperationRevision": 2,
+      "completionLeaseState": "released",
+      "providerCreateAttemptCount": 0,
+      "providerResponseEvidenceCount": 0,
+      "providerOrderReferenceAbsent": true,
+      "providerCreatedAtAbsent": true,
+      "providerPassengerReferenceCount": 0,
+      "ticketCount": 0
+    },
+    "stripeTest": {
+      "paymentStatus": "succeeded",
+      "amountCents": 9690,
+      "amountCapturedCents": 9690,
+      "amountRefundedCents": 0,
+      "captured": true,
+      "refunded": false,
+      "disputed": false,
+      "refundListCount": 0,
+      "refundListHasMore": false
+    },
+    "conclusion": "captured_test_payment_with_zero_application_provider_dispatch_and_zero_ticket_liability"
+  },
+  "canonicalSha256": "1457a40cfb895073e37dfc0c5a6e12204e72b2c3d46432df335e176e39f51419"
+}

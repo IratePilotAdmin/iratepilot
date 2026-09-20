@@ -1,8 +1,9 @@
 import { hotels as demoHotels, type Hotel } from "@/data/hotels";
 import { fees } from "@/config/fees";
+import { memberships, type MembershipTier } from "@/config/memberships";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { hasActiveMembership } from "@/lib/memberships/eligibility";
+import { getActiveMembershipTier } from "@/lib/memberships/eligibility";
 import { inventoryLimits } from "@/lib/inventory-limits";
 import {
   getAvailableRoomRates,
@@ -118,18 +119,39 @@ export async function getMarketplaceHotel(slug: string, stay: StayCriteria | nul
   return { hotel: marketplace.hotels.find((item) => item.slug === slug), source: marketplace.source, rooms: [] };
 }
 
-export async function getTravelerServiceFeeRate() {
+type TravelerBenefits = {
+  tier: "none" | MembershipTier;
+  serviceFeeRate: number;
+  memberDiscountRate: number;
+  rewardMultiplier: number;
+};
+
+const publicTravelerBenefits: TravelerBenefits = {
+  tier: "none",
+  serviceFeeRate: fees.serviceFeeRate,
+  memberDiscountRate: 0,
+  rewardMultiplier: 0,
+};
+
+export async function getTravelerBenefits(): Promise<TravelerBenefits> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return fees.serviceFeeRate;
+    if (!user) return publicTravelerBenefits;
     const { data, error } = await supabase.from("profiles")
       .select("membership_tier,membership_status")
       .eq("id", user.id)
       .single();
     if (error) throw error;
-    return hasActiveMembership(data) ? 0 : fees.serviceFeeRate;
+    const tier = getActiveMembershipTier(data);
+    if (tier === "none") return publicTravelerBenefits;
+    return {
+      tier,
+      serviceFeeRate: fees.serviceFeeRate,
+      memberDiscountRate: memberships[tier].discountRate,
+      rewardMultiplier: memberships[tier].rewardMultiplier,
+    };
   } catch {
-    return fees.serviceFeeRate;
+    return publicTravelerBenefits;
   }
 }

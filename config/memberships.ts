@@ -4,10 +4,11 @@ export const memberships = {
     annualPrice: 70,
     billingPeriod: "year",
     serviceFeeRate: 0,
-    rewardMultiplier: 1,
+    discountRate: 0.05,
+    rewardMultiplier: 2,
     benefits: [
-      "0% traveler service fees",
-      "1× reward points on eligible confirmed stays",
+      "Extra 5% member discount on eligible stays",
+      "2× iRate Rewards points on eligible confirmed stays",
       "Access to verified future rate offers"
     ]
   },
@@ -16,10 +17,11 @@ export const memberships = {
     annualPrice: 120,
     billingPeriod: "year",
     serviceFeeRate: 0,
-    rewardMultiplier: 2,
+    discountRate: 0.10,
+    rewardMultiplier: 3,
     benefits: [
-      "0% traveler service fees",
-      "2× reward points on eligible confirmed stays",
+      "Extra 10% member discount on eligible stays",
+      "3× iRate Rewards points on eligible confirmed stays",
       "Access to verified future rate offers"
     ]
   }

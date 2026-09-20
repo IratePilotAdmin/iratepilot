@@ -11,3 +11,6 @@ coverage
 *.zip
 iratepilot-partner-admin-review/
 iratepilot-webhook-reliability/
+
+.env*
+!.env.example

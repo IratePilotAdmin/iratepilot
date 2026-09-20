@@ -1,0 +1,163 @@
+{
+  "evidence": {
+    "version": "flight-consumer-stripe-payment-plan-managed-uat-acceptance-v1",
+    "checkedAt": "2026-08-26T22:37:01.8761615-05:00",
+    "environment": "isolated_managed_supabase_uat",
+    "scope": "migration_103_managed_uat_apply_and_zero_dispatch_acceptance",
+    "result": "PASS",
+    "secretsIncluded": false,
+    "providerRequestIdentifiersIncluded": false,
+    "target": {
+      "provider": "Supabase",
+      "projectRef": "exipwtvyjaihsvdhsbbt",
+      "projectName": "iratepilot-flight-payment-uat-20260827",
+      "intendedPurpose": "flight_payment_uat_only",
+      "consumerProduction": false,
+      "dashboardBranchLabel": "Production",
+      "dashboardBranchLabelMeaning": "supabase_primary_branch_label_only_not_iratepilot_consumer_production",
+      "region": "us-east-1",
+      "compute": "micro",
+      "postgresServiceVersion": "17.6.1.165",
+      "postgresServerVersionNum": 170006,
+      "dataApiEnabled": false
+    },
+    "preApplyState": {
+      "projectStatus": "Healthy",
+      "automaticRlsSelectedAtProvisioning": true,
+      "publicApplicationObjects": "no_tables_or_views",
+      "standardMigrationLedger": "no_migrations",
+      "githubRepositoryConnected": false,
+      "databaseBranches": 0,
+      "targetObjectsAbsent": true,
+      "migration103LedgerEntryAbsent": true
+    },
+    "reviewedArtifacts": {
+      "preflightSql": {
+        "path": "scripts/flight-consumer-live-stripe-payment-plan-managed-uat-preflight.sql",
+        "sha256": "e5f6852d1a1a170b69b17d7002800801a9e96a0afa8546797511cbcbcb685bfa"
+      },
+      "migration103": {
+        "path": "supabase/production-migrations/202608260103_flight_consumer_live_stripe_payment_intent_plan_journal.sql",
+        "sha256": "c4d5dec63faa07b37a2f57dc26a57faf94d698e09cf7f7e5be55a145a052d2cd"
+      },
+      "verificationSql": {
+        "path": "scripts/flight-consumer-live-stripe-payment-plan-managed-uat-verification.sql",
+        "sha256": "f0bcd64d8f1c92466ff717c7ec8f3d35f38b12b6cac3b3f7475bc506726b2d0d"
+      },
+      "rollback103": {
+        "path": "supabase/production-rollbacks/202608260103_flight_consumer_live_stripe_payment_intent_plan_journal.rollback.sql",
+        "sha256": "29f22e4a5d9de9aa767695ede19b0026c03f60e9a2c534ac63768e5026492ed3"
+      }
+    },
+    "authorization": {
+      "managedUatApplyAuthorizedAtActionTime": true,
+      "syntheticRollbackProbeAuthorizedAtActionTime": true,
+      "productionApplyAuthorized": false,
+      "providerTrafficAuthorized": false,
+      "paymentAuthorized": false,
+      "bookingAuthorized": false,
+      "ticketingAuthorized": false,
+      "consumerReleaseAuthorized": false
+    },
+    "application": {
+      "method": "guarded_supabase_dashboard_sql_editor",
+      "collisionPreflight": "passed",
+      "sourceHashVerifiedImmediatelyBeforeEntry": true,
+      "cleanEditorExecutedFromReviewedSource": true,
+      "remoteEditorByteIdentityCryptographicallyAttested": false,
+      "dashboardTargetAttestation": "signed_in_project_url_and_project_header_verified",
+      "runtimeDatabaseProjectRefInvariantAvailable": false,
+      "sqlReceiptProjectRefSemantics": "declared_dashboard_target_label_not_runtime_database_invariant",
+      "sqlReceiptZeroCountSemantics": "synthetic_journal_assertions_not_global_provider_telemetry",
+      "transactionOutcome": "committed",
+      "initialMixedBufferAttempt": {
+        "outcome": "parse_rejected_before_migration_application",
+        "followUpCleanPreflight": "passed_with_target_objects_absent"
+      },
+      "standardMigrationLedgerState": "object_applied_not_ledgered",
+      "standardMigrationLedgerContains103": false,
+      "retroactiveLedgerRepairPerformed": false
+    },
+    "objectVerification": {
+      "status": "passed",
+      "ordinaryPostgresOwnedTable": true,
+      "columnCount": 36,
+      "jsonJsonbOrByteaColumnCount": 0,
+      "exactValidReadyIndexCount": 5,
+      "allConstraintsValidatedImmediate": true,
+      "rowLevelSecurityEnabled": true,
+      "rowLevelSecurityForced": true,
+      "policyCount": 0,
+      "nonInternalTriggerCount": 0,
+      "recorderCount": 1,
+      "recorderOwner": "postgres",
+      "recorderSecurityDefiner": true,
+      "recorderLanguage": "plpgsql",
+      "recorderSearchPath": "pg_catalog, public",
+      "recorderExactTableResult": true,
+      "publicDirectTablePrivileges": false,
+      "anonDirectTablePrivileges": false,
+      "authenticatedDirectTablePrivileges": false,
+      "serviceRoleDirectTablePrivileges": false,
+      "serviceRoleRecorderExecute": true,
+      "anonRecorderExecute": false,
+      "authenticatedRecorderExecute": false,
+      "shadowRecorderPresent": false,
+      "mutationLifecycleRpcPresent": false,
+      "permanentRowCount": 0
+    },
+    "runtimeProof": {
+      "modernRequestJwtClaimsServiceRole": "passed",
+      "serviceRoleDirectTableRead": "refused",
+      "firstPlan": "created",
+      "exactReplay": "replayed_same_plan_id",
+      "oneFieldDrift": "refused",
+      "malformedEvidence": "refused",
+      "ambiguousIdentity": "refused",
+      "syntheticJournalAssertions": {
+        "rowsObservedInsideTransaction": 2,
+        "rowsAfterRollback": 0,
+        "providerRequestCount": 0,
+        "stripeRequestCount": 0,
+        "stripeMutationCount": 0,
+        "paymentIntentCount": 0,
+        "chargeCount": 0,
+        "refundCount": 0,
+        "orderAuthorizedRowCount": 0,
+        "ticketingAuthorizedRowCount": 0
+      }
+    },
+    "disposition": {
+      "activityScope": "this_managed_uat_gate_only",
+      "managedUatWritesPerformed": true,
+      "previewDatabaseWritesPerformed": false,
+      "productionDatabaseWritesPerformed": false,
+      "stripeTraffic": false,
+      "duffelTraffic": false,
+      "providerTraffic": false,
+      "paymentActivity": false,
+      "bookingActivity": false,
+      "ticketingActivity": false,
+      "credentialsRead": false,
+      "rawIdentifiersStored": false,
+      "rawPayloadsStored": false,
+      "paymentDataStored": false
+    },
+    "lineageState": {
+      "productionMigration103Status": "authored_unapplied",
+      "productionMigration103ObjectVerification": "not_run",
+      "productionMigration103ApplyAuthority": "not_granted",
+      "uatMigration103ObjectStatus": "object_applied_via_guarded_dashboard_sql_not_ledgered",
+      "uatMigration103ObjectVerification": "passed",
+      "canonicalPreviewRange": "202608260120-202608260137",
+      "canonicalPreviewTip": "202608260137",
+      "carReservedRangeUntouched": "202608260200-202608260207"
+    },
+    "outcome": "isolated_managed_supabase_uat_acceptance_passed_production_103_remains_unapplied",
+    "remainingLaunchGates": [
+      "Separately authorize a fresh collision preflight and migration-103 Production apply only after review of this managed-UAT receipt.",
+      "Implement and verify server-only Stripe PaymentIntent, webhook, reconciliation, refund, and failure-recovery workflows in Stripe test mode before any live charge.",
+      "Run separately approved booking, payment, ticketing, servicing, monitoring, and consumer-release canaries before public launch."
+    ]
+  }
+}

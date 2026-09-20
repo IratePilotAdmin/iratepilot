@@ -4,9 +4,14 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { PartnerApplicationForm } from "@/components/forms/partner-application-form";
 import { RevenueAiMarketing } from "@/components/partner/revenue-ai-marketing";
-import { partnerEnterprisePlan, partnerPlans, type PartnerPlan } from "@/config/partner-plans";
+import { publicPartnerEnterprisePlan, publicPartnerPlans, type PublicPartnerPlan } from "@/config/public-partner-plans";
+import { isPartnerSelfServiceEnabled } from "@/config/partner-acquisition";
+import PartnersPage from "@/app/partners/page";
+
+export const dynamic = "force-dynamic";
 
 export default function PartnerPage() {
+  if (isPartnerSelfServiceEnabled()) return <PartnersPage />;
   return (
     <>
       <SiteHeader />
@@ -36,7 +41,7 @@ export default function PartnerPage() {
               <span className="section-kicker">iRatePilot Management</span>
               <h2 className="mt-5 text-5xl leading-tight">AI tools that scale with your property.</h2>
               <p className="mt-5 max-w-lg text-lg leading-8 text-neutral-600">
-                Monthly software for pricing, operations, and partner support. Marketplace bookings carry a separate 14% partner commission.
+                Monthly software for pricing, operations, and partner support. Marketplace bookings carry a separate 13% distribution commission + mandatory 3% iRatePilot Rewards Program fee (16% total).
               </p>
               <div className="mt-8 grid gap-4">
                 <div className="partner-benefit"><Sparkles /><div><strong>AI-assisted pricing</strong><p>Recommendations, forecasting, and manager-controlled decisions.</p></div></div>
@@ -46,7 +51,7 @@ export default function PartnerPage() {
             </div>
 
             <div className="management-plans">
-              {(Object.entries(partnerPlans) as [PartnerPlan, (typeof partnerPlans)[PartnerPlan]][]).map(([, plan]) => (
+              {(Object.entries(publicPartnerPlans) as [PublicPartnerPlan, (typeof publicPartnerPlans)[PublicPartnerPlan]][]).map(([, plan]) => (
                 <article key={plan.name} className={plan.featured ? "management-plan popular" : "management-plan"}>
                   {plan.featured && <span className="plan-popular">Most popular</span>}
                   <span className="plan-name">{plan.name}</span>
@@ -56,15 +61,15 @@ export default function PartnerPage() {
                 </article>
               ))}
               <article className="management-plan">
-                <span className="plan-name">{partnerEnterprisePlan.name}</span>
-                <strong>{partnerEnterprisePlan.monthlyPriceLabel}<small>/month</small></strong>
-                <p>{partnerEnterprisePlan.audience}</p>
+                <span className="plan-name">{publicPartnerEnterprisePlan.name}</span>
+                <strong>{publicPartnerEnterprisePlan.monthlyPriceLabel}<small>/month</small></strong>
+                <p>{publicPartnerEnterprisePlan.audience}</p>
                 <Link href="#join">Contact sales <ArrowRight /></Link>
               </article>
             </div>
           </div>
           <p className="management-disclosure">
-            Subscriptions cover iRatePilot Management software. The 14% marketplace commission applies only to completed bookings generated through iRatePilot Travel. Taxes and payment-processing terms may also apply.
+            Subscriptions cover iRatePilot Management software. The 13% distribution commission + mandatory 3% iRatePilot Rewards Program fee (16% total) apply only to completed bookings generated through iRatePilot Travel. Taxes and payment-processing terms may also apply.
           </p>
         </section>
 

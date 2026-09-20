@@ -1,0 +1,108 @@
+{
+  "schemaVersion": "flight-consumer-preview-retained-order-terminal-acceptance-v1",
+  "recordedAt": "2026-08-27T07:42:04.479Z",
+  "environment": {
+    "vercelEnvironment": "preview",
+    "supabaseProjectRef": "eiqmdldjnedqgbtoozqa",
+    "deploymentId": "dpl_2EtRHNmEUH3qp9TB3MRkvRMg2S1B",
+    "deploymentUrl": "iratepilotadmin-93mmrlf71-irate-pilot.vercel.app",
+    "branchAlias": "iratepilotadmin-git-agent-flight-live-founda-0333c5-irate-pilot.vercel.app",
+    "sourceCommit": "a37aca7cc4c278aed09351abb81b432ba2984c71"
+  },
+  "booking": {
+    "orderId": "5249a6d4-40b9-4232-8179-b326ecd8c0e4",
+    "confirmationCode": "FLT-0A6873686D60",
+    "executionMode": "test",
+    "provider": "duffel",
+    "providerOrderBound": true,
+    "status": "ticketed",
+    "currency": "USD",
+    "totalMinor": 16914,
+    "passengerCount": 1,
+    "issuedElectronicTicketCount": 1,
+    "testTicketValidForTravel": false
+  },
+  "payment": {
+    "processor": "stripe",
+    "executionMode": "test",
+    "status": "captured",
+    "currency": "USD",
+    "authorizedMinor": 16914,
+    "capturedMinor": 16914,
+    "refundedMinor": 0,
+    "liveMoney": false
+  },
+  "durableJournals": {
+    "duffelCreateOrder": {
+      "state": "succeeded",
+      "revision": 2,
+      "count": 1
+    },
+    "stripeCapture": {
+      "state": "succeeded",
+      "revision": 2,
+      "count": 1
+    },
+    "completionLease": {
+      "state": "completed",
+      "resultOrderStatus": "ticketed",
+      "resultIssuedTicketCount": 1
+    },
+    "reconciliation": {
+      "caseCount": 1,
+      "unresolvedCaseCount": 0,
+      "terminalStatus": "resolved",
+      "resolutionCode": "provider_state_confirmed"
+    },
+    "ticketedNotification": {
+      "durableReceiptCount": 1,
+      "outboxStatus": "pending",
+      "deliveryProven": false
+    }
+  },
+  "terminalReceipt": {
+    "checkedAt": "2026-08-27T07:41:44.960351Z",
+    "allTerminalInvariantsPass": true
+  },
+  "finalReplaySafety": {
+    "duffelRequests": [
+      "GET /air/webhooks",
+      "GET /air/webhook_events?type=order.created&status=failed"
+    ],
+    "duffelProviderWriteSent": false,
+    "stripeNetworkCallSent": false,
+    "providerRedispatchAuthorized": false,
+    "databaseMutation": "idempotent completion-lease durable replay only",
+    "independentSafetyAudit": "no P0 or P1 findings"
+  },
+  "verification": {
+    "focusedTestFiles": 4,
+    "focusedTestsPassed": 31,
+    "typescript": "passed",
+    "eslint": "passed",
+    "nextWebpackProductionBuild": "passed",
+    "deploymentState": "READY"
+  },
+  "finalRelock": {
+    "relocked": true,
+    "preflightReady": false,
+    "databaseAuthority": false,
+    "runtimeConfiguration": false,
+    "stripeTestAccount": true,
+    "stripeAccountBinding": true,
+    "publicPreviewClosed": true
+  },
+  "migrationLineage": {
+    "canonicalFlightRange": "202608260120-202608260138",
+    "canonicalFlightTip": "202608260138",
+    "newMigrationCreatedByThisGate": false,
+    "carReservedRangeUntouched": "202608260200-202608260207"
+  },
+  "releaseDisposition": {
+    "previewTestBookingGate": "passed",
+    "productionReleaseAuthorized": false,
+    "liveConsumerBookingAuthorized": false,
+    "liveConsumerChargingAuthorized": false,
+    "reason": "Production transaction implementation, canonical migration deployment strategy, provider commercial approvals, operations acceptance, and a separately approved live canary remain outstanding."
+  }
+}

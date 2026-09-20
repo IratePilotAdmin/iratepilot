@@ -7,7 +7,7 @@ export default function Page() {
     <DashboardShell title="Admin Console" items={adminNavigation}>
       <h1 className="text-3xl font-bold">Partner management</h1>
       <p className="mt-2 text-slate-600">
-        Review applications before granting partner access or activating a property.
+        Verify manager authority and hotel details before granting access or creating an inactive property draft.
       </p>
       <AdminPartnerApplications />
     </DashboardShell>

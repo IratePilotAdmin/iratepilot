@@ -33,4 +33,12 @@ describe("marketplace presentation", () => {
     });
     expect(getReviewPresentation(9.4, 1).detail).toBe("1 verified guest review");
   });
+
+  it("labels demonstration review data as illustrative", () => {
+    expect(getReviewPresentation(9.2, 1843, "demo")).toEqual({
+      score: "9.2",
+      label: "Illustrative score",
+      detail: "Sample review data for this private demo",
+    });
+  });
 });

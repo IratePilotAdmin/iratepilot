@@ -32,6 +32,8 @@ export function buildPlatformReadiness(
   const liveWebhooksEnabled = env.ENABLE_LIVE_STRIPE_WEBHOOKS === "true";
   const pilotMode = env.PILOT_MODE === "true";
   const commercialModeReady = env.PILOT_MODE === "false" && publicBookingEnabled && liveBookingEnabled && liveWebhooksEnabled && stripeLiveKeysReady;
+  const openAICredentialReady = present(env.OPENAI_API_KEY);
+  const openAIProviderEnabled = env.OPENAI_PROVIDER_ENABLED === "true";
 
   const items: ReadinessItem[] = [
     { id: "app_url", category: "core", label: "Canonical application URL", status: appUrlReady ? "ready" : "attention", required: true, detail: appUrlReady ? "HTTPS application URL configured" : "A production HTTPS URL is required" },
@@ -51,7 +53,7 @@ export function buildPlatformReadiness(
     { id: "live_booking_payments", category: "features", label: "Live booking payments", status: liveBookingEnabled ? commercialModeReady ? "ready" : "attention" : "off", required: false, detail: liveBookingEnabled ? commercialModeReady ? "Enabled with all commercial launch gates" : "Enabled but one or more commercial launch gates are incomplete" : "Disabled" },
     { id: "live_stripe_webhooks", category: "features", label: "Live Stripe webhooks", status: liveWebhooksEnabled ? !pilotMode && stripeLiveKeysReady ? "ready" : "attention" : "off", required: false, detail: liveWebhooksEnabled ? !pilotMode && stripeLiveKeysReady ? "Enabled with live Stripe credentials" : "Enabled but live-mode configuration is incomplete" : "Disabled" },
     { id: "public_booking", category: "features", label: "Public booking flag", status: publicBookingEnabled ? "ready" : "off", required: false, detail: publicBookingEnabled ? "Enabled" : "Disabled for the private pilot" },
-    { id: "openai", category: "features", label: "OpenAI provider", status: present(env.OPENAI_API_KEY) ? "ready" : "off", required: false, detail: present(env.OPENAI_API_KEY) ? "Provider credential configured" : "Live AI provider disabled" },
+    { id: "openai", category: "features", label: "OpenAI provider", status: openAIProviderEnabled ? openAICredentialReady ? "ready" : "attention" : "off", required: false, detail: openAIProviderEnabled ? openAICredentialReady ? "Live provider enabled with a server-only credential" : "Provider enabled but its credential is missing" : openAICredentialReady ? "Credential configured; provider activation remains disabled" : "Live AI provider disabled" },
   ];
   const summary = items.reduce((totals, item) => ({ ...totals, [item.status]: totals[item.status] + 1 }), { ready: 0, attention: 0, off: 0 });
 

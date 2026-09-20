@@ -1,4 +1,13 @@
+export const HOTEL_PARTNER_FEE_SCHEDULE_VERSION = "hotel_partner_commission_13_reward_fee_3_v1";
+
+export const hotelPartnerFeeSchedule = {
+  version: HOTEL_PARTNER_FEE_SCHEDULE_VERSION,
+  partnerCommissionRateBps: 1_300,
+  rewardProgramFeeRateBps: 300,
+} as const;
+
 export const fees = {
-  defaultCommissionRate: 0.14,
-  serviceFeeRate: 0.05
+  defaultCommissionRate: hotelPartnerFeeSchedule.partnerCommissionRateBps / 10_000,
+  rewardProgramFeeRate: hotelPartnerFeeSchedule.rewardProgramFeeRateBps / 10_000,
+  serviceFeeRate: 0
 };

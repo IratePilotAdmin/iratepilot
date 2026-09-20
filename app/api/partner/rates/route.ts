@@ -51,7 +51,7 @@ export async function GET(request: Request) {
     } : null;
     if (!ids.length) return NextResponse.json({ properties: [], rooms: [], hotelAccess: accessPayload });
     const roomsResult = await auth.supabase.from("rooms")
-      .select("id,property_id,name,max_guests,base_rate,active,inventory(stay_date,available_units,rate)")
+      .select("id,property_id,name,max_guests,base_rate,active,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount)")
       .in("property_id", ids).order("name");
     if (roomsResult.error) throw roomsResult.error;
     return NextResponse.json({
@@ -88,7 +88,12 @@ export async function POST(request: Request) {
       if (!property) return NextResponse.json({ error: "Property not found." }, { status: 404 });
       const result = await auth.supabase.from("rooms").insert({
         property_id: parsed.data.propertyId, name: parsed.data.name,
-        max_guests: parsed.data.maxGuests, base_rate: parsed.data.baseRate, active: true
+        max_guests: parsed.data.maxGuests, base_rate: parsed.data.baseRate, active: true,
+        direct_rate_plan_code: parsed.data.ratePlanCode,
+        direct_rate_plan_name: parsed.data.ratePlanName,
+        direct_currency_code: "USD",
+        direct_cancellation_policy: parsed.data.cancellationPolicy,
+        direct_cancellation_policy_version: parsed.data.cancellationPolicyVersion,
       }).select("id,name").single();
       if (result.error) throw result.error;
       return NextResponse.json({ data: result.data, message: "Room type created." }, { status: 201 });
@@ -108,8 +113,13 @@ export async function POST(request: Request) {
         max_guests: parsed.data.maxGuests,
         base_rate: parsed.data.baseRate,
         active: parsed.data.active,
+        direct_rate_plan_code: parsed.data.ratePlanCode,
+        direct_rate_plan_name: parsed.data.ratePlanName,
+        direct_currency_code: "USD",
+        direct_cancellation_policy: parsed.data.cancellationPolicy,
+        direct_cancellation_policy_version: parsed.data.cancellationPolicyVersion,
       }).eq("id", parsed.data.roomId)
-        .select("id,name,max_guests,base_rate,active")
+        .select("id,name,max_guests,base_rate,active,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version")
         .single();
       if (result.error) throw result.error;
       return NextResponse.json({
@@ -130,7 +140,9 @@ export async function POST(request: Request) {
       if (dateError) return NextResponse.json({ error: dateError }, { status: 400 });
       const rows = eachDayOfInterval({ start, end }).map((date) => ({
         room_id: parsed.data.roomId, stay_date: format(date, "yyyy-MM-dd"),
-        available_units: parsed.data.availableUnits, rate: parsed.data.rate
+        available_units: parsed.data.availableUnits, rate: parsed.data.rate,
+        direct_tax_amount: parsed.data.taxAmount,
+        direct_mandatory_fee_amount: parsed.data.mandatoryFeeAmount,
       }));
       const result = await auth.supabase.from("inventory").upsert(rows, { onConflict: "room_id,stay_date" });
       if (result.error) throw result.error;

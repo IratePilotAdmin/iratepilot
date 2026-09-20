@@ -39,4 +39,14 @@ describe("Stripe SDK configuration", () => {
     expect(event.id).toBe("evt_test");
     expect(event.type).toBe("payment_intent.succeeded");
   });
+
+  it("uses an explicit restricted key instead of a broad process key", () => {
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_broad_process_key");
+    const stripe = getStripe("rk_test_explicit_preview_key");
+    const authenticator = (stripe as unknown as {
+      _authenticator: { _apiKey: string };
+    })._authenticator;
+    expect(authenticator._apiKey).toBe("rk_test_explicit_preview_key");
+    expect(authenticator._apiKey).not.toBe(process.env.STRIPE_SECRET_KEY);
+  });
 });

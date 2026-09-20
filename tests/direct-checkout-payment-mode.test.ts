@@ -116,8 +116,9 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
   it("validates the remote ledger before push and never uses include-all", () => {
     const repoMigrationVersions = listMigrationVersions();
     const calls: Array<{ args: string[]; capture?: boolean }> = [];
+    const approvedPending = new Set(APPROVED_PREVIEW_PENDING);
     const outputs = [
-      migrationList(repoMigrationVersions, repoMigrationVersions.slice(0, -APPROVED_PREVIEW_PENDING.length)),
+      migrationList(repoMigrationVersions, repoMigrationVersions.filter((version) => !approvedPending.has(version))),
       APPROVED_PREVIEW_PENDING.map((version) => `Would push migration ${version}.sql`).join("\n"),
       "",
       migrationList(repoMigrationVersions, repoMigrationVersions),
