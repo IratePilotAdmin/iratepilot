@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/require-role";
 import { isHotelPublicationEnabled } from "@/lib/hotels/publication-gate";
+import { isHotelMarketplaceLaunchAuthorized } from "@/lib/hotels/marketplace-launch-authorization";
 import { getPropertyReadiness, type PropertyReadinessInput } from "@/lib/property-readiness";
 
 const decisionSchema = z.object({ active: z.boolean() });
@@ -19,6 +20,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       if (!isHotelPublicationEnabled()) {
         return NextResponse.json({
           error: "Hotel publication is locked until the production release gate is approved."
+        }, { status: 409 });
+      }
+      if (!await isHotelMarketplaceLaunchAuthorized()) {
+        return NextResponse.json({
+          error: "Hotel publication is blocked until every production launch gate passes."
         }, { status: 409 });
       }
       const { data: property, error: propertyError } = await auth.supabase.from("properties")

@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveMembershipTier } from "@/lib/memberships/eligibility";
 import { inventoryLimits } from "@/lib/inventory-limits";
 import { isHotelPublicationEnabled } from "@/lib/hotels/publication-gate";
+import { isHotelMarketplaceLaunchAuthorized } from "@/lib/hotels/marketplace-launch-authorization";
 import {
   getAvailableRoomRates,
   getAvailableRooms,
@@ -35,7 +36,7 @@ const fallbackImage = "https://images.unsplash.com/photo-1566073771259-6a8506099
 export async function getMarketplaceHotels(
   criteria: MarketplaceSearchCriteria | null = null,
 ): Promise<{ hotels: Hotel[]; source: "database" | "demo" }> {
-  if (!isHotelPublicationEnabled()) {
+  if (!isHotelPublicationEnabled() || !await isHotelMarketplaceLaunchAuthorized()) {
     const hotels = criteria
       ? demoHotels.filter((hotel) => matchesMarketplaceDestination(hotel, criteria.destination))
       : demoHotels;

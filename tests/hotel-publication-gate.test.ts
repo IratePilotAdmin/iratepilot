@@ -2,9 +2,12 @@ import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { isHotelPublicationEnabled } from "../lib/hotels/publication-gate";
 
-const mocks = vi.hoisted(() => ({ auth: vi.fn() }));
+const mocks = vi.hoisted(() => ({ auth: vi.fn(), launchAuthorized: vi.fn() }));
 vi.mock("@/lib/auth/require-role", () => ({ requireRole: mocks.auth }));
 vi.mock("@/lib/hotels/publication-gate", () => import("../lib/hotels/publication-gate"));
+vi.mock("@/lib/hotels/marketplace-launch-authorization", () => ({
+  isHotelMarketplaceLaunchAuthorized: mocks.launchAuthorized,
+}));
 vi.mock("@/lib/property-readiness", () => import("../lib/property-readiness"));
 import { PATCH } from "../app/api/admin/properties/[id]/route";
 import { GET } from "../app/api/admin/properties/route";
@@ -34,6 +37,7 @@ const readyRoom = {
 beforeEach(() => {
   vi.resetAllMocks();
   delete process.env.HOTEL_PUBLICATION_ENABLED;
+  mocks.launchAuthorized.mockResolvedValue(true);
 });
 
 describe("hotel publication release gate", () => {
@@ -119,6 +123,25 @@ describe("hotel publication release gate", () => {
       p_property_id: propertyId,
       p_active: true,
     });
+  });
+
+  it("rejects publication when the flag is enabled but another production gate is incomplete", async () => {
+    process.env.HOTEL_PUBLICATION_ENABLED = "true";
+    mocks.launchAuthorized.mockResolvedValue(false);
+    const from = vi.fn();
+    mocks.auth.mockResolvedValue({ user: { id: "admin-a" }, profile: { role: "admin" }, supabase: { from } });
+
+    const response = await PATCH(new Request("https://example.test/api/admin/properties/1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ active: true }),
+    }), { params: Promise.resolve({ id: propertyId }) });
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error: "Hotel publication is blocked until every production launch gate passes.",
+    });
+    expect(from).not.toHaveBeenCalled();
   });
 
   it("returns a conflict when the database rejects missing agreement evidence", async () => {

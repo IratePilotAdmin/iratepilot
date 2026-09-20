@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ createAdminClient: vi.fn() }));
+const mocks = vi.hoisted(() => ({ createAdminClient: vi.fn(), launchAuthorized: vi.fn() }));
 
 vi.mock("@/data/hotels", () => ({ hotels: [{ city: "Miami", country: "US", name: "Demo Hotel" }] }));
 vi.mock("@/config/fees", () => ({ fees: { serviceFeeRate: 0.03 } }));
@@ -16,6 +16,9 @@ vi.mock("@/lib/inventory-limits", () => ({
 vi.mock("@/lib/hotels/publication-gate", () => ({
   isHotelPublicationEnabled: () => process.env.HOTEL_PUBLICATION_ENABLED === "true",
 }));
+vi.mock("@/lib/hotels/marketplace-launch-authorization", () => ({
+  isHotelMarketplaceLaunchAuthorized: mocks.launchAuthorized,
+}));
 vi.mock("@/lib/marketplace-search", () => ({
   getAvailableRoomRates: vi.fn(),
   getAvailableRooms: vi.fn(),
@@ -29,6 +32,7 @@ import { getMarketplaceHotels } from "../lib/data/marketplace";
 beforeEach(() => {
   vi.resetAllMocks();
   delete process.env.HOTEL_PUBLICATION_ENABLED;
+  mocks.launchAuthorized.mockResolvedValue(false);
 });
 
 describe("public marketplace publication gate", () => {
@@ -37,6 +41,15 @@ describe("public marketplace publication gate", () => {
 
     expect(result.source).toBe("demo");
     expect(result.hotels).toEqual([]);
+    expect(mocks.createAdminClient).not.toHaveBeenCalled();
+  });
+
+  it("never reads production hotel records when the flag is on but launch evidence is incomplete", async () => {
+    process.env.HOTEL_PUBLICATION_ENABLED = "true";
+    const result = await getMarketplaceHotels({ destination: "Ridgeland" });
+
+    expect(result.source).toBe("demo");
+    expect(mocks.launchAuthorized).toHaveBeenCalledOnce();
     expect(mocks.createAdminClient).not.toHaveBeenCalled();
   });
 });
