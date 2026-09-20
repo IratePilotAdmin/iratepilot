@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { sha256File } from "@/lib/file-sha256";
 
 type AgreementVersion = {
   agreement_version: string;
@@ -43,11 +44,72 @@ function isoTimestamp(value: string) {
   return value && !Number.isNaN(parsed.getTime()) ? parsed.toISOString() : "";
 }
 
+function DocumentFingerprintField({
+  label,
+  name,
+  value,
+  onChange,
+}: {
+  label: string;
+  name: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [hashing, setHashing] = useState(false);
+  const [error, setError] = useState("");
+
+  async function calculateFingerprint(file: File | undefined) {
+    if (!file) return;
+    setHashing(true);
+    setError("");
+    try {
+      onChange(await sha256File(file));
+    } catch {
+      setError("The fingerprint could not be calculated. Enter it manually or choose the file again.");
+    } finally {
+      setHashing(false);
+    }
+  }
+
+  return (
+    <div className="md:col-span-2">
+      <label className="text-sm font-medium">
+        {label}
+        <input
+          className="input mt-2 font-mono text-xs"
+          name={name}
+          required
+          minLength={64}
+          maxLength={64}
+          pattern="[a-fA-F0-9]{64}"
+          value={value}
+          onChange={(event) => onChange(event.target.value.toLowerCase())}
+        />
+      </label>
+      <label className="mt-3 block text-sm font-medium">
+        Calculate from the final document
+        <input
+          className="mt-2 block w-full text-sm"
+          type="file"
+          disabled={hashing}
+          onChange={(event) => void calculateFingerprint(event.target.files?.[0])}
+        />
+      </label>
+      <p className="mt-2 text-xs text-slate-500">
+        {hashing ? "Calculating fingerprint…" : "Calculated locally in this browser; the file is not uploaded."}
+      </p>
+      {error && <p className="mt-2 text-xs text-red-700" role="alert">{error}</p>}
+    </div>
+  );
+}
+
 export function AdminHotelAgreements() {
   const [data, setData] = useState<AgreementData>({ versions: [], availableVersions: [], agreements: [], eligibleApplications: [] });
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [selectedApplicationId, setSelectedApplicationId] = useState("");
+  const [templateDocumentSha256, setTemplateDocumentSha256] = useState("");
+  const [agreementDocumentSha256, setAgreementDocumentSha256] = useState("");
 
   const load = useCallback(async () => {
     const response = await fetch("/api/admin/hotel-agreements", { cache: "no-store" });
@@ -108,6 +170,8 @@ export function AdminHotelAgreements() {
       if (response.ok) {
         form.reset();
         setSelectedApplicationId("");
+        if (action === "record_version") setTemplateDocumentSha256("");
+        else setAgreementDocumentSha256("");
         await load();
       }
     } catch {
@@ -130,7 +194,7 @@ export function AdminHotelAgreements() {
         </div>
         <form className="grid gap-4 p-6 md:grid-cols-2" onSubmit={(event) => void submit(event, "record_version")}>
           <label className="text-sm font-medium">Agreement version<input className="input mt-2" name="agreementVersion" placeholder="hotel_agreement_2026_v1" required pattern="[a-z0-9][a-z0-9._-]{7,119}" /></label>
-          <label className="text-sm font-medium">Template SHA-256<input className="input mt-2 font-mono text-xs" name="templateDocumentSha256" required minLength={64} maxLength={64} /></label>
+          <DocumentFingerprintField label="Template SHA-256" name="templateDocumentSha256" value={templateDocumentSha256} onChange={setTemplateDocumentSha256} />
           <label className="text-sm font-medium">Counsel approval reference<input className="input mt-2" name="counselApprovalReference" required minLength={8} maxLength={160} /></label>
           <label className="text-sm font-medium">Counsel approved at<input className="input mt-2" name="counselApprovedAt" type="datetime-local" required /></label>
           <label className="text-sm font-medium">Effective at<input className="input mt-2" name="effectiveAt" type="datetime-local" required /></label>
@@ -159,7 +223,7 @@ export function AdminHotelAgreements() {
             <label className="text-sm font-medium md:col-span-2">Approved hotel<select className="input mt-2" required value={selectedApplicationId} onChange={(event) => setSelectedApplicationId(event.target.value)}><option value="">Choose an approved hotel</option>{data.eligibleApplications.map((application) => <option key={application.id} value={application.id}>{application.property_name} — {application.legal_business_name} ({application.email})</option>)}</select></label>
             <label className="text-sm font-medium">Agreement version<select className="input mt-2" name="agreementVersion" required><option value="">Choose a version</option>{data.availableVersions.map((version) => <option key={version.agreement_version} value={version.agreement_version}>{version.agreement_version}</option>)}</select></label>
             <label className="text-sm font-medium">Execution reference<input className="input mt-2" name="executionReference" required minLength={8} maxLength={160} pattern="[A-Za-z0-9][A-Za-z0-9._:-]{7,159}" /></label>
-            <label className="text-sm font-medium md:col-span-2">Signed document SHA-256<input className="input mt-2 font-mono text-xs" name="agreementDocumentSha256" required minLength={64} maxLength={64} /></label>
+            <DocumentFingerprintField label="Signed document SHA-256" name="agreementDocumentSha256" value={agreementDocumentSha256} onChange={setAgreementDocumentSha256} />
             <label className="text-sm font-medium">Hotel signatory name<input className="input mt-2" name="hotelSignatoryName" required minLength={2} maxLength={120} /></label>
             <label className="text-sm font-medium">Hotel signatory title<input className="input mt-2" name="hotelSignatoryTitle" required minLength={2} maxLength={120} /></label>
             <label className="text-sm font-medium">Hotel signed at<input className="input mt-2" name="hotelSignedAt" type="datetime-local" required /></label>
