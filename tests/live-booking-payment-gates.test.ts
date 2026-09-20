@@ -15,6 +15,7 @@ const liveKeys = {
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_live_public",
 };
 const bookingRoute = readFileSync(new URL("../app/api/bookings/route.ts", import.meta.url), "utf8");
+const paymentIntentRoute = readFileSync(new URL("../app/api/bookings/[id]/payment-intent/route.ts", import.meta.url), "utf8");
 const cancellationRoute = readFileSync(new URL("../app/api/admin/cancellations/[id]/route.ts", import.meta.url), "utf8");
 const refundReconciliation = readFileSync(new URL("../lib/bookings/stripe-refund-reconciliation.ts", import.meta.url), "utf8");
 const paymentMigration = readFileSync(new URL("../supabase/migrations/202608060028_live_booking_payment_modes.sql", import.meta.url), "utf8");
@@ -65,6 +66,14 @@ describe("live booking payment gates", () => {
     expect(bookingRoute).toContain('approvedPaymentMode === "live"');
     expect(bookingRoute).toContain('"commercial_request"');
     expect(bookingRoute).toContain('requestMode === "commercial_request" && !await isHotelMarketplaceLaunchAuthorized()');
+  });
+
+  it("requires full hotel launch authorization before creating a live payment intent", () => {
+    expect(paymentIntentRoute).toContain('paymentMode === "live" && !await isHotelMarketplaceLaunchAuthorized()');
+    expect(paymentIntentRoute.indexOf("isHotelMarketplaceLaunchAuthorized()"))
+      .toBeLessThan(paymentIntentRoute.indexOf("createRequestClient(request)"));
+    expect(paymentIntentRoute.indexOf("isHotelMarketplaceLaunchAuthorized()"))
+      .toBeLessThan(paymentIntentRoute.indexOf("paymentIntents.create"));
   });
 
   it("matches refunds to the recorded Stripe environment and uses the generic atomic finalizer", () => {
