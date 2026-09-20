@@ -24,6 +24,9 @@ const schema = readFileSync(
 
 describe("approved partner marketplace bookings", () => {
   it("filters discovery and both booking entry points by approved partner status", () => {
+    expect(marketplace).toContain('isHotelPublicationEnabled()');
+    expect(marketplace.indexOf('if (!isHotelPublicationEnabled())'))
+      .toBeLessThan(marketplace.indexOf("createAdminClient()"));
     expect(marketplace).toContain('partners!inner(status)');
     expect(marketplace.match(/\.eq\("partners\.status", "approved"\)/g)).toHaveLength(2);
     expect(bookingRoute).toContain('.eq("properties.partners.status", "approved")');
