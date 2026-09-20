@@ -77,6 +77,14 @@ describe("hotel launch readiness", () => {
     expect(routeSource).toContain("verifiedApprovalApplicationIds.has(application.id)");
   });
 
+  it("counts SynXis only when its persisted evidence and production configuration are live", () => {
+    expect(routeSource).toContain('from("synxis_crs_launch_evidence")');
+    expect(routeSource).toContain('eq("provider_id", "sabre-synxis")');
+    expect(routeSource).toContain("!supplierEvidence.error && !synxisEvidence.error");
+    expect(routeSource).toContain("buildSynxisReadiness(process.env, synxisActivationEvidence).status === \"live\"");
+    expect(routeSource).toContain("priorityPmsLiveCount + synxisLiveCount");
+  });
+
   it("exposes an admin-only read path with no mutation handler", () => {
     expect(routeSource).toContain('requireRole(["admin"])');
     expect(routeSource).toContain("export async function GET()");
