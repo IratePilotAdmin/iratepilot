@@ -1,23 +1,24 @@
 {
   "evidence": {
     "version": "flight-security-scan-v2",
-    "checkedAt": "2026-09-23T16:27:15-05:00",
+    "checkedAt": "2026-09-23T17:03:12-05:00",
     "sanitized": true,
     "rawCredentialValuesIncluded": false,
     "source": {
       "repository": "IratePilotAdmin/iratepilot",
       "branch": "agent/flight-live-foundation-20260823",
-      "commit": "ee527322cd0d518a25dce4290938ca661cd10786"
+      "commit": "a1ec623"
     },
     "scope": {
-      "trackedFilesScanned": 1164,
+      "trackedFilesScanned": 1168,
       "trackedPaths": ["app", "lib", "components", "docs", "tests"],
-      "newLocalEvidenceFilesScanned": 3,
+      "newLocalEvidenceFilesScanned": 4,
       "patternsAreCaseSensitive": true,
       "patterns": [
         "Observed Duffel live token shape (prefix plus 43 credential characters)",
         "Stripe live and restricted key shapes",
-        "PEM private-key header"
+        "PEM private-key header",
+        "Exact Duffel credential shape: prefix plus exactly 43 credential characters"
       ]
     },
     "results": {
@@ -25,6 +26,8 @@
       "stripeLiveKeyMatches": 0,
       "privateKeyHeaderMatches": 0,
       "newEvidenceCredentialShapeMatches": 0,
+      "exactDuffelCredentialShapeMatches": 0,
+      "scanCommand": "git ls-files app lib components docs tests; exact credential-shape, Stripe live-key, and PEM private-key scans",
       "reviewedStatusLiteral": {
         "file": "docs/evidence/FLIGHT_CONSUMER_PRODUCTION_DUFFEL_DARK_INGRESS_2026-08-26.json",
         "field": "evidence.outcome",
