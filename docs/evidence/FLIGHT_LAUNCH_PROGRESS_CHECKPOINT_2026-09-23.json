@@ -70,7 +70,7 @@
       "flightPromotionPerformed": false,
       "paymentFlagReadOnlyCheck": "FLIGHT_PAYMENT_ENABLED=false",
       "duffelShoppingDarkGate": "closed",
-      "duffelCredentialConfiguration": "needs_repair_masked_placeholder_and_digest",
+      "duffelCredentialConfiguration": "replacement_token_and_matching_digest_saved_in_vercel_production_new_deployment_required",
       "lastAuthorizedLiveSearchAttempt": {
         "result": "rejected_before_provider_dispatch",
         "providerRequestDispatched": false
@@ -152,18 +152,17 @@
     },
     "credentialEntryHandoff": {
       "vercelProductionVariable": "DUFFEL_LIVE_ACCESS_TOKEN",
-      "editFormOpenAndFocused": true,
-      "credentialPasted": false,
-      "savePerformed": false,
+      "editFormOpenAndFocused": false,
+      "credentialPasted": true,
+      "savePerformed": true,
       "replacementDigestPreparedLocally": true,
       "replacementDigestMatchesRuntimeContract": true,
-      "replacementDigestSavedInVercel": false,
-      "reason": "The in-app browser clipboard is isolated from the Windows clipboard; the user must paste directly into the focused Vercel field."
+      "replacementDigestSavedInVercel": true,
+      "reason": "The user pasted the replacement credential into the focused Vercel Production field; the token and matching domain-bound digest were saved without revealing the secret. Vercel reports that a new deployment is required for the values to take effect."
     },
     "remainingExternalGates": [
-      "User must paste and save the live Duffel replacement in Vercel Production, then compute and save its matching SHA-256 digest without disclosing the credential.",
       "Reconcile the recorded Duffel-primary/Sabre-secondary preference with the current Sabre-primary/Duffel-secondary planning code before route-specific activation work.",
-      "Redeploy a flight-enabled Production source only after configuration and release criteria are reviewed; current Production points to a different branch.",
+      "Redeploy a reviewed flight-enabled Production source so the saved Production values take effect; current Production points to a different branch.",
       "Obtain and verify Duffel commercial/content/ticketing authority and sandbox certification evidence.",
       "Complete flight-specific Stripe, settlement, reconciliation, fraud/refund, and legal/compliance approvals before enabling consumer payment or booking.",
       "Complete named support/on-call ownership, alert delivery, monitoring collectors, incident drills, and a separate consumer-release decision.",
@@ -177,6 +176,6 @@
       "orderCreationEnabled": false,
       "ticketingEnabled": false
     },
-    "disposition": "Engineering and the isolated synthetic Preview journey pass current local verification. Consumer Production launch is not ready: Production still serves a different branch, the live Duffel credential configuration needs repair, the dark-search gate remains closed, and external provider, payment, operational, legal, and release evidence is outstanding. No live provider request, order, payment, or ticket occurred in this checkpoint."
+    "disposition": "Engineering and the isolated synthetic Preview journey pass current local verification. The replacement Duffel credential and matching domain-bound digest are now saved in Vercel Production, but a new reviewed flight deployment is required before they take effect. Consumer Production launch is not ready: Production still serves a different branch, the dark-search gate remains closed, and external provider, payment, operational, legal, and release evidence is outstanding. No live provider request, order, payment, or ticket occurred in this checkpoint."
   }
 }
