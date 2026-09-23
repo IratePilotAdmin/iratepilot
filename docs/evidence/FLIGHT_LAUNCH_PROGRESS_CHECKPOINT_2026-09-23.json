@@ -1,7 +1,7 @@
 {
   "evidence": {
     "version": "flight-launch-progress-checkpoint-v1",
-    "checkedAt": "2026-09-23T17:17:25-05:00",
+    "checkedAt": "2026-09-23T18:15:06-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "providerRequestsPerformed": false,
@@ -45,6 +45,19 @@
           "status": "passed",
           "staticPagesGenerated": 121
         }
+      },
+      "latestInternalRecheck": {
+        "checkedAt": "2026-09-23T18:09:36-05:00",
+        "command": "vitest run --reporter=dot",
+        "fullVitestSuite": {
+          "filesPassed": 458,
+          "testsPassed": 2965,
+          "status": "passed"
+        },
+        "providerRequestsPerformed": false,
+        "ordersPerformed": false,
+        "paymentsPerformed": false,
+        "ticketsIssued": false
       },
       "dependencyInstallAttempt": {
         "status": "stopped_by_pnpm_build_script_policy",
