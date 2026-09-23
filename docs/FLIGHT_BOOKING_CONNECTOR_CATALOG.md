@@ -74,6 +74,9 @@ The current sanitized packet receipt is
 It binds the nine-candidate catalog and both selected route packets to the
 readiness builders, records every packet at zero completed gates, and confirms
 that booking, ticketing, payment, and external network access remain disabled.
+The deterministic local audit command is `npm run flight:audit-launch-evidence`;
+it validates these receipts without network access, deployment mutation, or
+secret-value reads.
 
 The next-gate packet is represented by
 `lib/flights/rollout-contract-authority.ts`. It opens an eight-checkpoint

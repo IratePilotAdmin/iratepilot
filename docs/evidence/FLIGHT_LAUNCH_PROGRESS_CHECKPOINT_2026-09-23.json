@@ -103,6 +103,17 @@
         "paymentsPerformed": false,
         "ticketsIssued": false
       },
+      "latestLaunchEvidenceAudit": {
+        "checkedAt": "2026-09-23T18:30:18-05:00",
+        "command": "node scripts/audit-flight-launch-evidence.mjs",
+        "status": "passed",
+        "candidateConnectors": 9,
+        "routePackets": 2,
+        "providerRequestsPerformed": false,
+        "ordersPerformed": false,
+        "paymentsPerformed": false,
+        "ticketsIssued": false
+      },
       "dependencyInstallAttempt": {
         "status": "stopped_by_pnpm_build_script_policy",
         "blockedPackage": "unrs-resolver@1.12.2",

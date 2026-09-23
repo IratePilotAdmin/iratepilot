@@ -1,0 +1,126 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+const root = process.cwd();
+const files = {
+  checkpoint: "docs/evidence/FLIGHT_LAUNCH_PROGRESS_CHECKPOINT_2026-09-23.json",
+  matrix: "docs/evidence/FLIGHT_RELEASE_GATE_MATRIX_2026-09-18.json",
+  manifest: "docs/evidence/FLIGHT_CONNECTOR_ROUTE_PACKET_MANIFEST_2026-09-23.json",
+};
+
+function fail(message) {
+  throw new Error(`FLIGHT_LAUNCH_EVIDENCE_AUDIT_FAIL: ${message}`);
+}
+
+function readJson(name, relativePath) {
+  let raw;
+  try {
+    raw = readFileSync(resolve(root, relativePath), "utf8");
+  } catch (error) {
+    fail(`${name} could not be read: ${error instanceof Error ? error.message : "unknown error"}`);
+  }
+  try {
+    return { raw, value: JSON.parse(raw) };
+  } catch {
+    fail(`${name} is not valid JSON.`);
+  }
+}
+
+function assert(condition, message) {
+  if (!condition) fail(message);
+}
+
+function assertClosed(value, label) {
+  assert(value === false, `${label} must remain false.`);
+}
+
+function assertZeroGate(gate, label) {
+  assert(gate && gate.complete === 0, `${label}.complete must be 0.`);
+  assert(Number.isInteger(gate.total) && gate.total > 0, `${label}.total must be positive.`);
+}
+
+const loaded = Object.fromEntries(
+  Object.entries(files).map(([name, relativePath]) => [name, readJson(name, relativePath)]),
+);
+const checkpoint = loaded.checkpoint.value.evidence;
+const matrix = loaded.matrix.value.evidence;
+const manifest = loaded.manifest.value.evidence;
+
+for (const [name, item] of Object.entries(loaded)) {
+  assert(item.value?.evidence?.sanitized === true, `${name} must be marked sanitized.`);
+  assert(item.value?.evidence?.secretValuesIncluded === false, `${name} must not include secret values.`);
+}
+
+const rawEvidence = Object.values(loaded).map(({ raw }) => raw).join("\n");
+assert(!/(?:duffel_(?:live|test)_[A-Za-z0-9_-]{16,}|(?:sk|rk)_(?:live|test)_[A-Za-z0-9_-]{16,}|whsec_[A-Za-z0-9_-]{16,})/.test(rawEvidence),
+  "secret-shaped credential material is present in evidence.");
+
+const catalog = manifest.candidateCatalog;
+assert(catalog.totalConnectors === 9, "the candidate catalog must contain nine connectors.");
+assert(catalog.connectors.length === catalog.totalConnectors, "candidate connector count is inconsistent.");
+for (const [label, gate] of Object.entries({
+  activationGates: catalog.activationGates,
+  diligenceWorkstreams: catalog.diligenceWorkstreams,
+  credentialGates: catalog.credentialGates,
+  sandboxGates: catalog.sandboxGates,
+  routingGates: catalog.routingGates,
+})) assertZeroGate(gate, `candidateCatalog.${label}`);
+assertClosed(catalog.externalNetworkAccess, "candidateCatalog.externalNetworkAccess");
+assert(catalog.liveConnectorCount === 0, "candidateCatalog.liveConnectorCount must be 0.");
+
+assert(manifest.routeDecision.primary === "duffel", "Duffel must remain the primary route preference.");
+assert(manifest.routeDecision.secondary === "sabre", "Sabre must remain the secondary route preference.");
+for (const [label, value] of Object.entries(manifest.routeDecision)) {
+  if (label.endsWith("Authorized") || label === "operationalRouteEnabled") {
+    assertClosed(value, `routeDecision.${label}`);
+  }
+}
+
+assert(manifest.routePackets.length === 2, "exactly two selected route packets are required.");
+for (const packet of manifest.routePackets) {
+  for (const key of [
+    "contractAuthority",
+    "contractEvidence",
+    "sandboxCredentials",
+    "sandboxCertification",
+    "paymentSettlement",
+    "securityPrivacy",
+    "supportRelease",
+    "previewRelease",
+    "productionRelease",
+    "consumerActivation",
+  ]) assertZeroGate(packet[key], `${packet.connector}.${key}`);
+  for (const key of [
+    "externalNetworkAccess",
+    "bookingAuthorized",
+    "ticketingAuthorized",
+    "paymentAuthorized",
+  ]) assertClosed(packet[key], `${packet.connector}.${key}`);
+}
+
+for (const [label, value] of Object.entries(matrix.boundary)) {
+  assertClosed(value, `matrix.boundary.${label}`);
+}
+assert(matrix.latestReadOnlyVerification.flightBranchIsProductionSource === false,
+  "Production must not currently point at the flight branch.");
+assert(matrix.latestReadOnlyVerification.providerRequestDispatched === false,
+  "the latest read-only check must not dispatch a provider request.");
+assert(matrix.latestReadOnlyVerification.duffelResponseReceived === false,
+  "the audit must not infer a Duffel response.");
+assert(checkpoint.duffelApprovalFollowUp.responseReceived === false,
+  "the checkpoint must not infer a Duffel response.");
+
+const result = {
+  version: "flight-launch-evidence-audit-v1",
+  status: "pass",
+  sanitized: true,
+  candidateConnectors: catalog.totalConnectors,
+  routePackets: manifest.routePackets.length,
+  consumerReleaseAuthorized: false,
+  providerTrafficEnabled: false,
+  bookingEnabled: false,
+  paymentEnabled: false,
+  productionSourceIsFlightBranch: false,
+  duffelResponseReceived: false,
+};
+process.stdout.write(`${JSON.stringify(result)}\n`);
