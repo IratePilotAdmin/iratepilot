@@ -76,7 +76,9 @@ readiness builders, records every packet at zero completed gates, and confirms
 that booking, ticketing, payment, and external network access remain disabled.
 The deterministic local audit command is `npm run flight:audit-launch-evidence`;
 it validates these receipts without network access, deployment mutation, or
-secret-value reads.
+secret-value reads. It is also included in the repository's standard `npm run
+check` sequence so a normal verification run cannot skip the launch-evidence
+consistency check.
 
 The next-gate packet is represented by
 `lib/flights/rollout-contract-authority.ts`. It opens an eight-checkpoint
