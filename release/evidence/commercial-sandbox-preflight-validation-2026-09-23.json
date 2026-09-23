@@ -1,0 +1,52 @@
+{
+  "format": "iratepilot-commercial-sandbox-preflight-validation-v1",
+  "observedAt": "2026-09-23T19:10:13Z",
+  "scope": "Current dirty OTA candidate after sandbox database identity hardening.",
+  "workingTreeDirty": true,
+  "changes": [
+    "Requires SANDBOX_SUPABASE_PROJECT_REF to match a canonical HTTPS Supabase URL and rejects the known OTA production project and any explicitly configured production project ref.",
+    "Requires SANDBOX_SUPABASE_SERVICE_ROLE_KEY to exactly match SUPABASE_SERVICE_ROLE_KEY, making sandbox key selection explicit before use by the app.",
+    "Requires Stripe test secret and publishable-key prefixes and a Stripe webhook signing-secret prefix.",
+    "Documents that the network-free preflight checks operator configuration but does not independently prove credential ownership or provider validity."
+  ],
+  "validation": {
+    "focusedTests": {
+      "command": "pnpm exec vitest run tests/commercial-sandbox-preflight.test.mjs tests/commercial-launch-phase-a.test.ts",
+      "files": 2,
+      "tests": 12,
+      "passed": 12,
+      "failed": 0
+    },
+    "fullTests": {
+      "command": "pnpm exec vitest run --reporter=dot --maxWorkers=2",
+      "files": 223,
+      "tests": 950,
+      "passed": 950,
+      "failed": 0
+    },
+    "typecheck": "passed",
+    "changedFileLint": "passed",
+    "productionBuild": "passed",
+    "environmentPreflight": {
+      "ready": false,
+      "networkRequestsMade": 0,
+      "synxisTraffic": "disabled",
+      "liveTransactions": "disabled",
+      "missing": [
+        "PILOT_MODE=true",
+        "Stripe test secret",
+        "Stripe test publishable key",
+        "Stripe webhook signing secret",
+        "Resend webhook signing secret",
+        "matching sandbox Supabase URL, project reference and service-role key"
+      ]
+    }
+  },
+  "externalChanges": "none",
+  "productionDeployment": "not performed",
+  "hostedDatabaseChanges": "none",
+  "limits": [
+    "The network-free preflight does not contact Supabase or independently validate the identity or ownership of supplied secret values.",
+    "This local validation does not prove a persistent OTA booking round-trip or external provider certification."
+  ]
+}

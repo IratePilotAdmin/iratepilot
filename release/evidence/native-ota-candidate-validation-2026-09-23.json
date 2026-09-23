@@ -1,0 +1,62 @@
+{
+  "format": "iratepilot-native-ota-candidate-validation-v1",
+  "validatedAt": "2026-09-23T20:31:13.5505Z",
+  "repository": "IratePilotAdmin/iratepilot",
+  "branch": "codex/pms-native-ota-connector",
+  "baseCommit": "8e284fc740e75b9c1fe4aa024647367ccd2dd429",
+  "workingTreeDirty": true,
+  "scope": "Current local candidate including native PMS ARI capability discovery, the signed PMS receiver, and admin setup/mapping changes.",
+  "validation": {
+    "tests": {
+      "command": "pnpm exec vitest run --reporter=dot --maxWorkers=2",
+      "testFiles": 223,
+      "passed": 950,
+      "failed": 0
+    },
+    "typecheck": {
+      "command": "pnpm run typecheck",
+      "result": "passed"
+    },
+    "lint": {
+      "command": "pnpm exec eslint app/api/ota app/api/pms app/api/admin/integrations/native-ari components/dashboard/native-ari-setup.tsx lib/iratepilot-pms-ari.ts",
+      "result": "passed"
+    },
+    "productionBuild": {
+      "command": "pnpm run build",
+      "result": "passed",
+      "routes": ["/api/ota/capabilities", "/api/pms/ari", "/api/admin/integrations/native-ari"]
+    }
+  },
+  "deploymentAndData": {
+    "candidatePreview": "https://iratepilotadmin-drnm0bs41-irate-pilot.vercel.app",
+    "previewAccess": "Vercel deployment protection remains enabled; verified through the already signed-in browser without changing deployment protection.",
+    "previewRuntimeCheck": {
+      "observedAt": "2026-09-23T20:33:55.7671Z",
+      "capabilities": {
+        "status": 200,
+        "contractVersion": 1,
+        "nativePmsAriImplementation": "available",
+        "trafficEnabled": false,
+        "authentication": "HMAC-SHA256"
+      },
+      "receiverReadOnlyGet": {
+        "status": 405,
+        "response": {"error": "method_not_allowed"}
+      },
+      "postRequest": "not sent",
+      "databaseWrites": 0
+    },
+    "productionRoutes": "Previous read-only probes returned 404 on www.iratepilot.com; current production deployment is not updated by this evidence.",
+    "hostedMigration": "not applied",
+    "productionDeployment": "not performed",
+    "OTAtraffic": "not enabled",
+    "sandboxReservationRoundTrip": "not performed",
+    "productionDatabaseWrites": "none"
+  },
+  "limitations": [
+    "The read-only browser checks verify preview route presence and safe default-off reporting only; they do not prove signed request acceptance, database persistence, or booking delivery.",
+    "No credentials, guest data, hosted database, or real OTA reservation were used.",
+    "The OTA sandbox preflight remains closed until an isolated project identity and test provider credentials are configured.",
+    "Do not claim iRatePilot.com-to-PMS production connectivity until the secured endpoints, reviewed hosted migration, property mappings, and authorized sandbox round trip are verified."
+  ]
+}

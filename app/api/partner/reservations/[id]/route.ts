@@ -34,14 +34,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       : reviewed?.status === "confirmed"
         ? "Reservation approved and inventory held."
         : "Request expired because check-in has already begun. No inventory was held.";
-    if (booking && (parsed.data.decision === "reject" || reviewed?.status === "confirmed")) {
-      await queueBookingNotification({
-        event: parsed.data.decision === "reject" ? "declined" : "approved",
-        bookingId: booking.id,
-        confirmationCode: booking.confirmation_code,
-        customerId: booking.customer_id,
-      });
-    }
     if (reviewed?.status === "confirmed") {
       after(async () => {
         try {
@@ -49,6 +41,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         } catch (deliveryError) {
           console.error("Approved reservation was queued for later PMS delivery", deliveryError);
         }
+      });
+    }
+    if (booking && (parsed.data.decision === "reject" || reviewed?.status === "confirmed")) {
+      await queueBookingNotification({
+        event: parsed.data.decision === "reject" ? "declined" : "approved",
+        bookingId: booking.id,
+        confirmationCode: booking.confirmation_code,
+        customerId: booking.customer_id,
       });
     }
     return NextResponse.json({ data, message }, { headers: { "Cache-Control": "no-store" } });

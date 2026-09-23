@@ -1,0 +1,60 @@
+{
+  "format": "iratepilot-native-ota-candidate-validation-v2",
+  "validatedAt": "2026-09-23T20:50:40Z",
+  "repository": "IratePilotAdmin/iratepilot",
+  "branch": "codex/pms-native-ota-connector",
+  "baseCommit": "8e284fc740e75b9c1fe4aa024647367ccd2dd429",
+  "workingTreeDirty": true,
+  "scope": "Fresh validation of the local candidate containing the native iRatePilot PMS ARI receiver, signed request verification, encrypted connection setup, room/rate mappings, and atomic OTA inventory application.",
+  "validation": {
+    "tests": {
+      "command": "pnpm run test",
+      "testFiles": 223,
+      "passed": 950,
+      "failed": 0
+    },
+    "typecheck": {
+      "command": "pnpm run typecheck",
+      "result": "passed"
+    },
+    "lint": {
+      "command": "pnpm run lint",
+      "result": "passed_with_existing_warnings",
+      "errors": 0,
+      "warnings": 3,
+      "warningAreas": [
+        "components/checkout/approved-booking-checkout.tsx",
+        "components/checkout/checkout-form.tsx",
+        "components/layout/header-actions.tsx"
+      ]
+    },
+    "productionBuild": {
+      "command": "pnpm run build",
+      "result": "passed",
+      "routes": ["/api/ota/capabilities", "/api/pms/ari", "/api/admin/integrations/native-ari"]
+    }
+  },
+  "deploymentAndData": {
+    "candidatePreview": "https://iratepilotadmin-drnm0bs41-irate-pilot.vercel.app",
+    "previousReadOnlyPreviewCheck": {
+      "capabilitiesStatus": 200,
+      "nativePmsAriImplementation": "available",
+      "trafficEnabled": false,
+      "receiverReadOnlyGetStatus": 405,
+      "postRequest": "not sent"
+    },
+    "previewUpdatedByThisValidation": false,
+    "reason": "This checkout has no Vercel project link, installed CLI, local Vercel auth file, or VERCEL_TOKEN environment variable. The prior preview remains the only remotely verified candidate.",
+    "hostedMigration": "not applied",
+    "productionDeployment": "not performed",
+    "OTAtraffic": "not enabled",
+    "sandboxReservationRoundTrip": "not performed",
+    "productionDatabaseWrites": "none"
+  },
+  "limitations": [
+    "The local build and tests do not prove a signed request is accepted by the deployed route or persisted in the hosted database.",
+    "No hosted database migration, credentials, guest data, real reservation, or production traffic was used.",
+    "A secure preview update requires a linked Vercel project or authenticated deployment channel.",
+    "Do not claim live iRatePilot.com-to-PMS connectivity until hosted migration, authorized property mappings, a signed sandbox round trip, and reservation delivery are verified."
+  ]
+}

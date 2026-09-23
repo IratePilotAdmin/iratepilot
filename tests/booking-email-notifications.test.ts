@@ -27,4 +27,14 @@ describe("booking transactional notifications", () => {
     }
     expect(routes).toContain('? "declined" : "approved"');
   });
+
+  it("schedules the PMS handoff before fallible confirmation email work", () => {
+    const route = read("app/api/partner/reservations/[id]/route.ts");
+    const handoff = route.indexOf('if (reviewed?.status === "confirmed")');
+    const notification = route.indexOf("await queueBookingNotification");
+    expect(handoff).toBeGreaterThanOrEqual(0);
+    expect(notification).toBeGreaterThan(handoff);
+    expect(route.slice(handoff, notification)).toContain("after(async () =>");
+    expect(route.slice(handoff, notification)).toContain("await drainNativePmsEvents(10)");
+  });
 });

@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { ReadinessItem } from "@/lib/admin/platform-readiness";
 import type { PmsProviderReadiness, PriorityPmsLaunchStatus } from "@/services/hotel-suppliers";
 import { SynxisCrsReadiness } from "@/components/dashboard/synxis-crs-readiness";
+import { NativeAriSetup } from "@/components/dashboard/native-ari-setup";
 
 type Response = {
   items: ReadinessItem[];
@@ -350,6 +351,8 @@ export function AdminSettings() {
           </article>)}
         </div>}
       </section>
+
+      <NativeAriSetup />
 
       <section className="card mt-6 p-6">
         <span className="text-xs uppercase tracking-wider text-slate-500">Administrators only</span>

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "executionState": "migrations_001_061_applied_application_deployment_pending_manager_acceptance_incomplete_synxis_traffic_disabled",
+  "executionState": "migrations_001_061_and_ota_connector_base_applied_guest_name_snapshot_pending_native_ari_receiver_pending_application_deployment_pending_manager_acceptance_incomplete_synxis_traffic_disabled",
   "historyRepairCandidates": [
     "202607260001",
     "202607280001",
@@ -82,7 +82,10 @@
     "202609070157",
     "202609070158"
   ],
-  "pendingDeploymentVersions": [],
+  "pendingDeploymentVersions": [
+    "20260923120000",
+    "20260923130000"
+  ],
   "requiredWriteGates": [
     "separate production approval to merge PR #279 and deploy the corresponding application before any manager invitation or manager activation",
     "separate approval to send and accept a verified manager invitation and activate hotel-manager access after the application deployment is verified",
