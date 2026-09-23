@@ -217,8 +217,21 @@
       "replacementDigestSavedInVercel": true,
       "reason": "The user pasted the replacement credential into the focused Vercel Production field; the token and matching domain-bound digest were saved without revealing the secret. Vercel reports that a new deployment is required for the values to take effect."
     },
+    "duffelApprovalFollowUp": {
+      "threadReference": "370MRY-JM5MK",
+      "sentAtLocal": "2026-09-23 17:28",
+      "channel": "existing Duffel Support email thread",
+      "scope": "status and requirements request only",
+      "responseReceived": false,
+      "credentialsIncluded": false,
+      "passengerDataIncluded": false,
+      "bookingRequested": false,
+      "paymentRequested": false,
+      "ticketingRequested": false,
+      "providerApiRequestPerformed": false
+    },
     "remainingExternalGates": [
-      "Obtain and verify Duffel contract, content, ticketing, settlement, security, support, and sandbox evidence before route-specific activation work.",
+      "Receive and verify Duffel contract, content, ticketing, settlement, security, support, and sandbox evidence after the follow-up on reference 370MRY-JM5MK.",
       "Redeploy a reviewed flight-enabled Production source so the saved Production values take effect; current Production points to a different branch.",
       "Obtain and verify Duffel commercial/content/ticketing authority and sandbox certification evidence.",
       "Complete flight-specific Stripe, settlement, reconciliation, fraud/refund, and legal/compliance approvals before enabling consumer payment or booking.",
