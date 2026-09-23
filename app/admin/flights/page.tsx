@@ -41,8 +41,8 @@ import { buildFlightSupplierReadiness, flightCapabilityGroups, flightSupplierPat
 import { buildFlightSupplierSelectionPlan, flightSandboxAdapterOperations, flightSupplierSelectionCriteria } from "@/lib/flights/supplier-selection";
 
 export const metadata: Metadata = {
-  title: "Duffel provider-contact closeout design",
-  description: "Review the blocked, read-only Duffel provider-contact closeout boundary while authorization, preflight, execution, contact, delivery, responses, closeout, replies, intake, commitments, accounts, credentials, traffic, ticketing, payments, and Production remain disabled.",
+  title: "Flight consumer launch readiness",
+  description: "Review the read-only Duffel-primary flight launch gates while provider evidence, deployment, booking, ticketing, payment, and Production activation remain controlled.",
 };
 
 export default function Page() {
@@ -597,14 +597,14 @@ export default function Page() {
 
   return (
     <DashboardShell title="Admin Console" items={adminNavigation}>
-      <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · Phase 21 · Duffel contact closeout design only</p>
-      <h1 className="mt-2 text-3xl font-bold">Duffel provider-contact closeout plan</h1>
-      <p className="mt-2 max-w-3xl text-slate-600">Define the fail-closed reconciliation and closeout boundary for a possible future, separately authorized single Duffel diligence contact: actual Phase 18 authorization, a separately approved Phase 19 preflight receipt, a separately approved Phase 20 execution record, immutable scope and message, accountable roles, authentic channel, attempt and delivery outcome, minimal receipt, responses and quarantine, incidents and stops, access removal, retention and deletion, audit, findings, expiry, no retry, no restart, and no downstream authority. Phase 20 software was accepted in isolated Preview, but no actual authorization, preflight, execution, contact, delivery, receipt, response, or closeout evidence exists. This page has no closeout or reply control and cannot identify or contact a recipient, create or transmit a message, reconcile an attempt, open or inspect a response, admit evidence, accept terms, recommend or select a supplier, create an account, accept credentials, enable traffic, issue tickets, collect payment, or change Production.</p>
+      <p className="text-xs font-semibold uppercase tracking-[.18em] text-brand-700">Flights · consumer launch readiness · Duffel response pending</p>
+      <h1 className="mt-2 text-3xl font-bold">Flight consumer launch readiness</h1>
+      <p className="mt-2 max-w-3xl text-slate-600">Review the fail-closed launch path for the selected Duffel-primary and Sabre-secondary route preference. A separately tracked Duffel follow-up has been sent, but provider response and contract evidence remain pending. This page is read-only: no contract, credential, provider traffic, booking, ticketing, payment, or Production authority is inferred or enabled.</p>
 
       <section className="mt-8 grid gap-4 lg:grid-cols-[1fr_1.6fr]">
         <div className="rounded-2xl bg-slate-950 p-6 text-white">
-          <div className="flex items-center gap-3"><ShieldCheck className="h-6 w-6" /><strong>Duffel provider-contact closeout is blocked</strong></div>
-          <p className="mt-3 text-sm leading-6 text-slate-300">Phase 20 software acceptance is recorded, but no actual Phase 18 authorization, Phase 19 preflight receipt, Phase 20 execution record, message, recipient role, channel, contact window, attempt, delivery, receipt, response, quarantine item, incident, stop, access-removal record, retention or deletion proof, audit record, finding, expiry record, closeout decision, closeout receipt, reply, intake, case, recommendation, selection, contract, account, credential, traffic, ticketing, or payment exists. Completing every Phase 21 design gate cannot prove contact or create closeout.</p>
+          <div className="flex items-center gap-3"><ShieldCheck className="h-6 w-6" /><strong>Duffel provider evidence hold</strong></div>
+          <p className="mt-3 text-sm leading-6 text-slate-300">The read-only Phase 21 closeout design remains blocked. The approved follow-up delivery is recorded outside this page, but no provider response, contract evidence, credentials, ticketing authority, settlement approval, sandbox certification, or downstream release authority has been received. Completing the design gates cannot manufacture provider evidence or authorize activation.</p>
           <div className="mt-6 text-4xl font-bold">{providerContactCloseout.completedCount}/{providerContactCloseout.totalCount}</div>
           <p className="mt-1 text-xs uppercase tracking-wider text-slate-400">Phase 21 gates recorded complete</p>
         </div>

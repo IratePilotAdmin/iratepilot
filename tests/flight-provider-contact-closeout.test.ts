@@ -131,8 +131,8 @@ describe("Flights Phase 21 Duffel provider-contact closeout design", () => {
     const phase = read("docs/FLIGHTS_PHASE_21.md");
     const roadmap = read("docs/ROADMAP.md");
 
-    expect(page).toContain("Flights · Phase 21 · Duffel contact closeout design only");
-    expect(page).toContain("Duffel provider-contact closeout is blocked");
+    expect(page).toContain("Flights · consumer launch readiness · Duffel response pending");
+    expect(page).toContain("Duffel provider evidence hold");
     expect(page).toContain("Seven provider-contact closeout evidence artifacts");
     expect(page).toContain("Five closeout reconciliation safeguards");
     expect(page).toContain("Ten separately owned provider-contact closeout gates");
