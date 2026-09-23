@@ -4,6 +4,8 @@ Push to GitHub, import into Vercel, add environment variables, run database migr
 
 ## Private-pilot release gate
 
+For the native iRatePilot PMS ARI receiver, follow [the connector release runbook](./NATIVE_PMS_ARI_RELEASE_RUNBOOK.md). The public OTA host may serve the connector after the reviewed release; the protected PMS sign-in host is not the partner API. Keep the receiver disabled until the hosted migration, administrator activation workflow, property mappings, and isolated two-way acceptance are complete.
+
 Before merging a release branch into `main`:
 
 1. Confirm the production Vercel environment includes `NEXT_PUBLIC_APP_URL`, the Supabase URL and public key, `SUPABASE_SERVICE_ROLE_KEY`, `PILOT_MODE=true`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL` (or `EMAIL_FROM`), and `CRON_SECRET`.

@@ -16,6 +16,8 @@ export const APPROVED_PREVIEW_PENDING = [
   "202609070141",
   "202609070157",
   "202609070158",
+  "20260923120000",
+  "20260923130000",
 ];
 
 export const PRODUCTION_PROJECT_REF = "allliumarkejinplrggl";

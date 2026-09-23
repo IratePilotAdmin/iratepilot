@@ -61,8 +61,16 @@ describe("iRatePilot PMS native ARI receiver", () => {
     const sql = await readFile(new URL("../supabase/migrations/20260923130000_iratepilot_pms_native_ari_receiver.sql", import.meta.url), "utf8");
     expect(sql).toMatch(/enabled boolean not null default false/);
     expect(sql).toMatch(/alter table public\.irp_pms_native_ari_connections enable row level security/);
+    expect(sql).toMatch(/create table public\.irp_pms_native_ari_audit/);
+    expect(sql).toMatch(/create function public\.irp_pms_set_native_ari_connection_enabled/);
+    expect(sql).toMatch(/from public\.profiles where id=p_actor and role='admin'/);
+    expect(sql).toMatch(/pms_property_id=c\.pms_property_id and s\.enabled/);
+    expect(sql).toMatch(/At least one valid active property room mapping is required/);
     expect(sql).toMatch(/revoke all on function public\.irp_pms_apply_native_ari[\s\S]*?from public, anon, authenticated/);
     expect(sql).toMatch(/grant execute on function public\.irp_pms_apply_native_ari[\s\S]*?to service_role/);
+    expect(sql).toMatch(/revoke all on function public\.irp_pms_set_native_ari_connection_enabled[\s\S]*?from public, anon, authenticated/);
+    expect(sql).toMatch(/grant execute on function public\.irp_pms_set_native_ari_connection_enabled[\s\S]*?to service_role/);
+    expect(sql).toMatch(/insert into public\.irp_pms_native_ari_audit/);
     expect(sql).toMatch(/for update/);
     expect(sql).toMatch(/state <> 'delivered'/);
     expect(sql).toMatch(/on conflict\(room_id, stay_date\) do update/);

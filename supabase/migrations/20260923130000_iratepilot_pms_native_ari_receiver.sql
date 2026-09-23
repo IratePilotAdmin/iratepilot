@@ -39,14 +39,26 @@ create table public.irp_pms_native_ari_events (
   unique (connection_id, source_version)
 );
 
+create table public.irp_pms_native_ari_audit (
+  id bigint generated always as identity primary key,
+  connection_id text not null references public.irp_pms_native_ari_connections(connection_id) on delete cascade,
+  actor_id uuid references public.profiles(id) on delete set null,
+  action text not null check (action in ('configuration_saved','enabled','disabled')),
+  details jsonb not null default '{}'::jsonb check (jsonb_typeof(details) = 'object'),
+  created_at timestamptz not null default now()
+);
+
 alter table public.irp_pms_native_ari_connections enable row level security;
 alter table public.irp_pms_native_ari_mappings enable row level security;
 alter table public.irp_pms_native_ari_events enable row level security;
+alter table public.irp_pms_native_ari_audit enable row level security;
 revoke all on public.irp_pms_native_ari_connections, public.irp_pms_native_ari_mappings,
-  public.irp_pms_native_ari_events from public, anon, authenticated;
+  public.irp_pms_native_ari_events, public.irp_pms_native_ari_audit from public, anon, authenticated;
 grant select, insert, update, delete on public.irp_pms_native_ari_connections,
   public.irp_pms_native_ari_mappings to service_role;
 grant select, insert on public.irp_pms_native_ari_events to service_role;
+grant select, insert on public.irp_pms_native_ari_audit to service_role;
+grant usage, select on sequence public.irp_pms_native_ari_audit_id_seq to service_role;
 
 create function public.irp_pms_apply_native_ari(
   p_connection text,
@@ -176,6 +188,7 @@ end;
 $$;
 
 create function public.irp_pms_save_native_ari_connection(
+  p_actor uuid,
   p_connection text,
   p_property uuid,
   p_pms_property text,
@@ -194,6 +207,9 @@ declare
   item jsonb;
   mapping_count integer;
 begin
+  if p_actor is null or not exists(select 1 from public.profiles where id=p_actor and role='admin') then
+    raise exception 'Administrator required' using errcode = '42501';
+  end if;
   if p_connection is null or p_connection !~ '^[A-Za-z0-9_-]{1,80}$'
      or p_property is null or p_pms_property is null or length(trim(p_pms_property)) not between 1 and 128
      or p_secret_ciphertext is null or length(p_secret_ciphertext) not between 21 and 8192
@@ -260,7 +276,69 @@ begin
   insert into public.irp_pms_native_ari_mappings(connection_id,pms_room_type_id,pms_rate_plan_id,ota_room_id)
     select p_connection, x.value->>'roomTypeId', x.value->>'ratePlanId', (x.value->>'otaRoomId')::uuid
       from jsonb_array_elements(p_mappings) as x(value);
+  insert into public.irp_pms_native_ari_audit(connection_id,actor_id,action,details)
+    values(p_connection,p_actor,'configuration_saved',jsonb_build_object(
+      'property_id',p_property,
+      'pms_property_id',p_pms_property,
+      'mapping_count',mapping_count,
+      'previously_enabled',coalesce(existing.enabled,false),
+      'enabled',false
+    ));
   return jsonb_build_object('connectionId',p_connection,'enabled',false,'mappingCount',mapping_count);
+end;
+$$;
+
+create function public.irp_pms_set_native_ari_connection_enabled(
+  p_actor uuid,
+  p_connection text,
+  p_enabled boolean
+) returns jsonb
+language plpgsql
+security definer
+set search_path = pg_catalog, public
+as $$
+declare
+  c public.irp_pms_native_ari_connections%rowtype;
+  mapping_count integer;
+  invalid_room_count integer;
+begin
+  if p_actor is null or not exists(select 1 from public.profiles where id=p_actor and role='admin') then
+    raise exception 'Administrator required' using errcode = '42501';
+  end if;
+  if p_connection is null or p_connection !~ '^[A-Za-z0-9_-]{1,80}$' or p_enabled is null then
+    raise exception 'Invalid native ARI activation request' using errcode = '22023';
+  end if;
+
+  select * into c from public.irp_pms_native_ari_connections
+   where connection_id=p_connection for update;
+  if not found then raise exception 'Native ARI connection not found' using errcode = 'P0002'; end if;
+
+  if p_enabled then
+    if not exists (
+      select 1 from public.properties p join public.partners h on h.id=p.partner_id
+       where p.id=c.property_id and p.active and h.status='approved'
+    ) then raise exception 'Property is not active and approved' using errcode = '42501'; end if;
+    if not exists (
+      select 1 from public.irp_pms_outbox_connections s
+       where s.connection_id=p_connection and s.property_id=c.property_id
+         and s.pms_property_id=c.pms_property_id and s.enabled
+    ) then raise exception 'Matching PMS reservation connection must be enabled first' using errcode = '42501'; end if;
+    select count(*),count(*) filter(where r.id is null or not r.active or r.property_id<>c.property_id)
+      into mapping_count,invalid_room_count
+      from public.irp_pms_native_ari_mappings m
+      left join public.rooms r on r.id=m.ota_room_id
+     where m.connection_id=p_connection;
+    if mapping_count<1 or invalid_room_count>0 then
+      raise exception 'At least one valid active property room mapping is required' using errcode = '23503';
+    end if;
+  end if;
+
+  update public.irp_pms_native_ari_connections set enabled=p_enabled,updated_at=now()
+   where connection_id=p_connection;
+  insert into public.irp_pms_native_ari_audit(connection_id,actor_id,action,details)
+    values(p_connection,p_actor,case when p_enabled then 'enabled' else 'disabled' end,
+      jsonb_build_object('property_id',c.property_id,'pms_property_id',c.pms_property_id,'enabled',p_enabled));
+  return jsonb_build_object('connectionId',p_connection,'enabled',p_enabled,'updatedAt',now());
 end;
 $$;
 
@@ -268,9 +346,13 @@ revoke all on function public.irp_pms_apply_native_ari(text,text,bigint,text,tim
   from public, anon, authenticated;
 grant execute on function public.irp_pms_apply_native_ari(text,text,bigint,text,timestamptz,jsonb)
   to service_role;
-revoke all on function public.irp_pms_save_native_ari_connection(text,uuid,text,text,text,text,integer,jsonb)
+revoke all on function public.irp_pms_save_native_ari_connection(uuid,text,uuid,text,text,text,text,integer,jsonb)
   from public, anon, authenticated;
-grant execute on function public.irp_pms_save_native_ari_connection(text,uuid,text,text,text,text,integer,jsonb)
+grant execute on function public.irp_pms_save_native_ari_connection(uuid,text,uuid,text,text,text,text,integer,jsonb)
+  to service_role;
+revoke all on function public.irp_pms_set_native_ari_connection_enabled(uuid,text,boolean)
+  from public, anon, authenticated;
+grant execute on function public.irp_pms_set_native_ari_connection_enabled(uuid,text,boolean)
   to service_role;
 
 commit;

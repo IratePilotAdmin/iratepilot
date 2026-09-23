@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import type { ReadinessItem } from "@/lib/admin/platform-readiness";
 import type { PmsProviderReadiness, PriorityPmsLaunchStatus } from "@/services/hotel-suppliers";
 import { SynxisCrsReadiness } from "@/components/dashboard/synxis-crs-readiness";
+import { NativeAriManager } from "@/components/dashboard/native-ari-manager";
 
 type Response = {
   items: ReadinessItem[];
@@ -378,6 +379,8 @@ export function AdminSettings() {
           {credentialMessage && <p className="text-sm" role="status">{credentialMessage}</p>}
         </form>}
       </section>
+
+      <NativeAriManager />
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">{categories.map(([category, label]) => <section className="card overflow-hidden" key={category}>
         <div className="border-b p-5"><h2 className="text-xl font-semibold">{label}</h2></div>
