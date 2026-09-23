@@ -69,6 +69,12 @@ candidates remain alternatives. This is a route preference only; it does not
 approve contracts, credentials, sandbox traffic, ticketing, payment, or
 Production traffic. The next gate is contract and authority approval.
 
+The current sanitized packet receipt is
+`docs/evidence/FLIGHT_CONNECTOR_ROUTE_PACKET_MANIFEST_2026-09-23.json`.
+It binds the nine-candidate catalog and both selected route packets to the
+readiness builders, records every packet at zero completed gates, and confirms
+that booking, ticketing, payment, and external network access remain disabled.
+
 The next-gate packet is represented by
 `lib/flights/rollout-contract-authority.ts`. It opens an eight-checkpoint
 contract and authority review for Duffel and keeps the Sabre secondary packet

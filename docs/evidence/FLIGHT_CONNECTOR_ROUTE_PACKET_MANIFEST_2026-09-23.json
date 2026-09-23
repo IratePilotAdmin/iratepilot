@@ -1,0 +1,99 @@
+{
+  "evidence": {
+    "version": "flight-connector-route-packet-manifest-v1",
+    "checkedAt": "2026-09-23T18:21:00-05:00",
+    "sanitized": true,
+    "secretValuesIncluded": false,
+    "providerRequestsPerformed": false,
+    "ordersPerformed": false,
+    "paymentsPerformed": false,
+    "ticketsIssued": false,
+    "sourceCommit": "80a2c64",
+    "routeDecision": {
+      "primary": "duffel",
+      "secondary": "sabre",
+      "alternativeCatalogEntries": [
+        "sabre",
+        "amadeus",
+        "travelport",
+        "worldspan",
+        "abacus",
+        "galileo",
+        "airgateway",
+        "verteil",
+        "travelfusion"
+      ],
+      "operationalRouteEnabled": false,
+      "bookingAuthorized": false,
+      "ticketingAuthorized": false,
+      "paymentAuthorized": false,
+      "productionTrafficAuthorized": false
+    },
+    "candidateCatalog": {
+      "totalConnectors": 9,
+      "candidateState": "approved_candidate",
+      "activationGates": { "complete": 0, "total": 10 },
+      "diligenceWorkstreams": { "complete": 0, "total": 7 },
+      "credentialGates": { "complete": 0, "total": 5 },
+      "sandboxGates": { "complete": 0, "total": 6 },
+      "routingGates": { "complete": 0, "total": 6 },
+      "externalNetworkAccess": false,
+      "liveConnectorCount": 0,
+      "connectors": [
+        "sabre",
+        "amadeus",
+        "travelport",
+        "worldspan",
+        "abacus",
+        "galileo",
+        "airgateway",
+        "verteil",
+        "travelfusion"
+      ]
+    },
+    "routePackets": [
+      {
+        "connector": "duffel",
+        "role": "primary",
+        "contractAuthority": { "complete": 0, "total": 8, "state": "next_gate" },
+        "contractEvidence": { "complete": 0, "total": 7, "state": "blocked" },
+        "sandboxCredentials": { "complete": 0, "total": 7, "state": "blocked_by_contract_evidence" },
+        "sandboxCertification": { "complete": 0, "total": 8, "state": "blocked_by_sandbox_credential" },
+        "paymentSettlement": { "complete": 0, "total": 9, "state": "blocked_by_sandbox_certification" },
+        "securityPrivacy": { "complete": 0, "total": 8, "state": "blocked_by_payment_settlement" },
+        "supportRelease": { "complete": 0, "total": 8, "state": "blocked_by_security_privacy" },
+        "previewRelease": { "complete": 0, "total": 8, "state": "blocked_by_support_release" },
+        "productionRelease": { "complete": 0, "total": 9, "state": "blocked_by_preview_release" },
+        "consumerActivation": { "complete": 0, "total": 8, "state": "blocked_by_production_release" },
+        "externalNetworkAccess": false,
+        "bookingAuthorized": false,
+        "ticketingAuthorized": false,
+        "paymentAuthorized": false
+      },
+      {
+        "connector": "sabre",
+        "role": "secondary",
+        "contractAuthority": { "complete": 0, "total": 8, "state": "deferred_until_primary_validated" },
+        "contractEvidence": { "complete": 0, "total": 7, "state": "blocked" },
+        "sandboxCredentials": { "complete": 0, "total": 7, "state": "blocked_by_contract_evidence" },
+        "sandboxCertification": { "complete": 0, "total": 8, "state": "blocked_by_sandbox_credential" },
+        "paymentSettlement": { "complete": 0, "total": 9, "state": "blocked_by_sandbox_certification" },
+        "securityPrivacy": { "complete": 0, "total": 8, "state": "blocked_by_payment_settlement" },
+        "supportRelease": { "complete": 0, "total": 8, "state": "blocked_by_security_privacy" },
+        "previewRelease": { "complete": 0, "total": 8, "state": "blocked_by_support_release" },
+        "productionRelease": { "complete": 0, "total": 9, "state": "blocked_by_preview_release" },
+        "consumerActivation": { "complete": 0, "total": 8, "state": "blocked_by_production_release" },
+        "externalNetworkAccess": false,
+        "bookingAuthorized": false,
+        "ticketingAuthorized": false,
+        "paymentAuthorized": false
+      }
+    ],
+    "nextActionableGate": "duffel_contract_authority_evidence",
+    "externalBlockers": [
+      "Duffel response and attributable contract/content/ticketing/settlement/security/support/sandbox evidence",
+      "Reviewed flight deployment authorization; current Production still serves a different branch",
+      "Separate payment, legal, support, monitoring, and consumer-release approvals"
+    ]
+  }
+}
