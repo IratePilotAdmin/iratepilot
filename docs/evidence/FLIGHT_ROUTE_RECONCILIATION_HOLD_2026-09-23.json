@@ -8,8 +8,13 @@
     "branch": "agent/flight-live-foundation-20260823",
     "currentCodeDecision": {
       "source": "426b3156cdb5fbed40ea0b1d3d8a70b004163923",
+      "mode": "authorized_route_preference_only",
       "primary": "sabre",
-      "secondary": "duffel"
+      "secondary": "duffel",
+      "routeEnabled": false,
+      "bookingAuthorized": false,
+      "paymentAuthorized": false,
+      "productionTrafficAuthorized": false
     },
     "historicalDecisionRecord": {
       "source": "docs/FLIGHTS_PROVIDER_PATH_DECISION_2026-08-19.md",
