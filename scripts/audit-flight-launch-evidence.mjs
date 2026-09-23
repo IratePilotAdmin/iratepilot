@@ -46,6 +46,13 @@ const checkpoint = loaded.checkpoint.value.evidence;
 const matrix = loaded.matrix.value.evidence;
 const manifest = loaded.manifest.value.evidence;
 
+assert(checkpoint.source?.branch === "agent/flight-live-foundation-20260823",
+  "the checkpoint must describe the flight foundation branch.");
+assert(checkpoint.routePacketManifest === files.manifest,
+  "the checkpoint must bind the route-packet manifest path.");
+assert(matrix.routePacketManifest === files.manifest,
+  "the release matrix must bind the route-packet manifest path.");
+
 for (const [name, item] of Object.entries(loaded)) {
   assert(item.value?.evidence?.sanitized === true, `${name} must be marked sanitized.`);
   assert(item.value?.evidence?.secretValuesIncluded === false, `${name} must not include secret values.`);
@@ -109,6 +116,40 @@ assert(matrix.latestReadOnlyVerification.duffelResponseReceived === false,
   "the audit must not infer a Duffel response.");
 assert(checkpoint.duffelApprovalFollowUp.responseReceived === false,
   "the checkpoint must not infer a Duffel response.");
+assert(checkpoint.duffelApprovalFollowUp.browserThreadRecheck.replyOrForwardSent === false,
+  "the audit must not infer a follow-up reply or forward.");
+assert(checkpoint.duffelApprovalFollowUp.credentialsIncluded === false,
+  "the follow-up evidence must not include credentials.");
+assert(checkpoint.duffelApprovalFollowUp.passengerDataIncluded === false,
+  "the follow-up evidence must not include passenger data.");
+
+for (const [label, value] of Object.entries(checkpoint.authorityBoundary)) {
+  assertClosed(value, `checkpoint.authorityBoundary.${label}`);
+}
+
+const latestVercelCheck = checkpoint.vercelDeploymentRecheck.latestVercelReadOnlyCheck;
+assert(latestVercelCheck.flightBranchIsProductionSource === false,
+  "the latest Vercel check must keep the flight branch out of Production.");
+assert(latestVercelCheck.credentialDigestVariablePresentInProduction === true,
+  "the latest Vercel check must record the Production digest variable.");
+assert(latestVercelCheck.credentialValueRead === false,
+  "the latest Vercel check must not read the credential value.");
+assert(latestVercelCheck.redeployTriggered === false,
+  "the evidence audit must not record a redeploy.");
+assert(latestVercelCheck.providerTrafficTriggered === false,
+  "the evidence audit must not record provider traffic.");
+
+const latestPreviewCheck = checkpoint.localVerification.latestBrowserReadOnlyCheck;
+assert(latestPreviewCheck.liveInventoryDisplayed === false,
+  "the latest Preview check must not display live inventory.");
+assert(latestPreviewCheck.providerRequestDispatched === false,
+  "the latest Preview check must not dispatch a provider request.");
+assert(latestPreviewCheck.paymentCreated === false,
+  "the latest Preview check must not create payment.");
+assert(latestPreviewCheck.bookingCreated === false,
+  "the latest Preview check must not create booking.");
+assert(latestPreviewCheck.ticketIssued === false,
+  "the latest Preview check must not issue a ticket.");
 
 const result = {
   version: "flight-launch-evidence-audit-v1",
