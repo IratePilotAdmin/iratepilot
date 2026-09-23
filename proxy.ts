@@ -1,11 +1,11 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isProtectedRoute, isPublicPartnerRoute } from "@/lib/auth/route-access";
 import { getSupabasePublicConfig } from "@/lib/supabase/config";
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const protectedRoute = pathname.startsWith("/account") || pathname.startsWith("/partner/") || pathname.startsWith("/admin");
-  if (!protectedRoute) return NextResponse.next();
+  if (!isProtectedRoute(pathname)) return NextResponse.next();
 
   const { url, key } = getSupabasePublicConfig();
   if (!url || !key) return NextResponse.redirect(new URL("/login?reason=configuration", request.url));
@@ -25,7 +25,7 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(pathname)}`, request.url));
 
-  if (pathname.startsWith("/admin") || pathname.startsWith("/partner/")) {
+  if (pathname.startsWith("/admin") || (pathname.startsWith("/partner/") && !isPublicPartnerRoute(pathname))) {
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
     const role = profile?.role;
     if (pathname.startsWith("/admin") && role !== "admin") return NextResponse.redirect(new URL("/account", request.url));
