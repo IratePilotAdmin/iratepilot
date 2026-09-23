@@ -11,8 +11,8 @@
     "source": {
       "repository": "IratePilotAdmin/iratepilot",
       "branch": "agent/flight-live-foundation-20260823",
-      "commit": "ee527322cd0d518a25dce4290938ca661cd10786",
-      "commitMessage": "docs(flights): flag Duffel token rotation requirement",
+      "commit": "e05ccc5",
+      "commitMessage": "fix(flights): label unresolved route as planning only",
       "workingTreeChangeForThisReceipt": true
     },
     "localVerification": {
@@ -168,6 +168,10 @@
         "productionProviderTrafficEnabled": false,
         "bookingEnabled": false,
         "paymentEnabled": false
+      },
+      "routeMessagingSafety": {
+        "status": "passed",
+        "detail": "Admin planning and launch-stage copy now states that the Sabre-primary/Duffel-secondary plan is pending owner reconciliation; it does not present the route as an authorized commercial selection."
       }
     },
     "routePreferenceReconciliation": {
