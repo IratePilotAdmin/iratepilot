@@ -83,6 +83,16 @@
         "paymentsPerformed": false,
         "ticketsIssued": false
       },
+      "latestBrowserReadOnlyCheck": {
+        "checkedAt": "2026-09-23T18:27:15-05:00",
+        "previewUrl": "https://iratepilotadmin-git-agent-flight-live-founda-0333c5-irate-pilot.vercel.app/flights",
+        "previewSurface": "supplier_offline_planning_preview",
+        "liveInventoryDisplayed": false,
+        "providerRequestDispatched": false,
+        "paymentCreated": false,
+        "bookingCreated": false,
+        "ticketIssued": false
+      },
       "dependencyInstallAttempt": {
         "status": "stopped_by_pnpm_build_script_policy",
         "blockedPackage": "unrs-resolver@1.12.2",
