@@ -1,7 +1,7 @@
 {
   "evidence": {
     "version": "flight-launch-progress-checkpoint-v1",
-    "checkedAt": "2026-09-23T18:38:29-05:00",
+    "checkedAt": "2026-09-23T18:40:41-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "providerRequestsPerformed": false,
@@ -11,8 +11,8 @@
     "source": {
       "repository": "IratePilotAdmin/iratepilot",
       "branch": "agent/flight-live-foundation-20260823",
-      "commit": "088b41f9b9a1834b1833b9d0cbccf580c7781270",
-      "commitMessage": "feat(flights): add deterministic launch evidence audit",
+      "commit": "73f727c",
+      "commitMessage": "fix(monitoring): redact nested operational secrets",
       "workingTreeChangeForThisReceipt": false
     },
     "routePacketManifest": "docs/evidence/FLIGHT_CONNECTOR_ROUTE_PACKET_MANIFEST_2026-09-23.json",
@@ -104,11 +104,23 @@
         "ticketsIssued": false
       },
       "latestLaunchEvidenceAudit": {
-        "checkedAt": "2026-09-23T18:38:29-05:00",
+        "checkedAt": "2026-09-23T18:40:41-05:00",
         "command": "node scripts/audit-flight-launch-evidence.mjs",
         "status": "passed",
         "candidateConnectors": 9,
         "routePackets": 2,
+        "providerRequestsPerformed": false,
+        "ordersPerformed": false,
+        "paymentsPerformed": false,
+        "ticketsIssued": false
+      },
+      "latestOperationalLoggingHardening": {
+        "checkedAt": "2026-09-23T18:40:41-05:00",
+        "command": "vitest run tests/flight-consumer-production-operational-health.test.ts tests/resend-webhook-reliability.test.ts --reporter=dot",
+        "testFilesPassed": 2,
+        "testsPassed": 26,
+        "status": "passed",
+        "nestedSecretLogging": "redacted",
         "providerRequestsPerformed": false,
         "ordersPerformed": false,
         "paymentsPerformed": false,
