@@ -1,7 +1,7 @@
 {
   "evidence": {
     "version": "flight-launch-progress-checkpoint-v1",
-    "checkedAt": "2026-09-23T18:18:41-05:00",
+    "checkedAt": "2026-09-23T18:26:17-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "providerRequestsPerformed": false,
@@ -66,6 +66,18 @@
         "testFilesPassed": 2,
         "testsPassed": 27,
         "status": "passed",
+        "providerRequestsPerformed": false,
+        "ordersPerformed": false,
+        "paymentsPerformed": false,
+        "ticketsIssued": false
+      },
+      "latestAdminSurfaceReconciliation": {
+        "checkedAt": "2026-09-23T18:24:51-05:00",
+        "command": "vitest run tests/flight-provider-contact-closeout.test.ts tests/flight-booking-connectors.test.ts --reporter=dot",
+        "testFilesPassed": 2,
+        "testsPassed": 30,
+        "status": "passed",
+        "providerFollowUpStatus": "sent_response_pending",
         "providerRequestsPerformed": false,
         "ordersPerformed": false,
         "paymentsPerformed": false,
