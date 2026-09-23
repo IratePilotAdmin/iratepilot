@@ -1,7 +1,7 @@
 {
   "evidence": {
     "version": "flight-launch-progress-checkpoint-v1",
-    "checkedAt": "2026-09-23T18:26:54-05:00",
+    "checkedAt": "2026-09-23T18:38:29-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "providerRequestsPerformed": false,
@@ -11,9 +11,9 @@
     "source": {
       "repository": "IratePilotAdmin/iratepilot",
       "branch": "agent/flight-live-foundation-20260823",
-      "commit": "5fb51ef",
-      "commitMessage": "feat(flights): select Duffel as primary route",
-      "workingTreeChangeForThisReceipt": true
+      "commit": "088b41f9b9a1834b1833b9d0cbccf580c7781270",
+      "commitMessage": "feat(flights): add deterministic launch evidence audit",
+      "workingTreeChangeForThisReceipt": false
     },
     "routePacketManifest": "docs/evidence/FLIGHT_CONNECTOR_ROUTE_PACKET_MANIFEST_2026-09-23.json",
     "localVerification": {
@@ -104,7 +104,7 @@
         "ticketsIssued": false
       },
       "latestLaunchEvidenceAudit": {
-        "checkedAt": "2026-09-23T18:30:18-05:00",
+        "checkedAt": "2026-09-23T18:38:29-05:00",
         "command": "node scripts/audit-flight-launch-evidence.mjs",
         "status": "passed",
         "candidateConnectors": 9,
