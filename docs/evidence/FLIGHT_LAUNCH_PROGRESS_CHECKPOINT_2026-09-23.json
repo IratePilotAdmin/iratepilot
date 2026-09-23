@@ -1,7 +1,7 @@
 {
   "evidence": {
     "version": "flight-launch-progress-checkpoint-v1",
-    "checkedAt": "2026-09-23T18:49:15-05:00",
+    "checkedAt": "2026-09-23T18:50:36-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "providerRequestsPerformed": false,
@@ -94,9 +94,10 @@
         "ticketIssued": false
       },
       "latestProductionBuildCheck": {
-        "checkedAt": "2026-09-23T18:28:44-05:00",
+        "checkedAt": "2026-09-23T18:50:36-05:00",
         "command": "next build --webpack",
         "status": "passed",
+        "sourceCommit": "73f727c",
         "staticPagesGenerated": 121,
         "providerRequestsPerformed": false,
         "ordersPerformed": false,
