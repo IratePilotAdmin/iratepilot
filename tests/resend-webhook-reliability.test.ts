@@ -120,4 +120,23 @@ describe("Resend webhook reliability", () => {
       && String(payload).includes("HTTP 503")
     ))).toBe(true);
   });
+
+  it("redacts nested secrets and token-shaped error text before logging", async () => {
+    const secret = `duffel_live_${"x".repeat(24)}`;
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    await reportOperationalError(
+      "flight_provider_failure",
+      new Error(`provider rejected Authorization: Bearer ${secret}`),
+      {
+        nested: { accessToken: secret, note: `?token=${secret}` },
+        items: [{ apiKey: secret }],
+      },
+    );
+
+    const output = errorLog.mock.calls.map(([payload]) => String(payload)).join("\n");
+    expect(output).not.toContain(secret);
+    expect(output).toContain("[redacted]");
+    expect(output).toContain("?token=[redacted]");
+  });
 });
