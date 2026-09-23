@@ -1,0 +1,17 @@
+{
+  "evidence": {
+    "version": "duffel-live-token-discovery-v1",
+    "checkedAt": "2026-09-23T00:00:00-05:00",
+    "sanitized": true,
+    "rawSecretRead": false,
+    "rawSecretIncluded": false,
+    "workspace": "Duffel live",
+    "token": {
+      "name": "iRatePilot Consumer Production 2026-08-26",
+      "scope": "Read and Write",
+      "maskedTokenVisible": true,
+      "lastUsedDisplay": "4 weeks ago"
+    },
+    "disposition": "A suitable live token already exists. No duplicate token was created and no token value was copied or transmitted. Remaining work is secure Vercel wiring/digest verification, controlled live-search validation, and separate booking/payment release approval."
+  }
+}
