@@ -26,7 +26,7 @@ export type FlightRolloutContractAuthorityStage = Readonly<{
 }>;
 
 export const flightRolloutContractAuthorityStages: readonly FlightRolloutContractAuthorityStage[] = [
-  { id: "route_scope_bound", label: "Route scope bound", owner: "Product + Architecture", detail: "Bind contract review to the authorized Sabre-primary and Duffel-secondary route preference without enabling either route." },
+  { id: "route_scope_bound", label: "Route scope bound", owner: "Product + Architecture", detail: "Bind contract review to the current Sabre-primary and Duffel-secondary planning preference only after owner reconciliation, without enabling either route." },
   { id: "legal_entity_verified", label: "Legal entity and authority verified", owner: "Legal + Commercial", detail: "Verify the counterparty, contracting authority, agency role, and applicable accreditation without accepting terms or credentials." },
   { id: "content_rights_reviewed", label: "Content rights reviewed", owner: "Commercial + Product", detail: "Review carrier, geography, fare, display, caching, and permitted-use obligations for the defined launch scope." },
   { id: "ticketing_settlement_reviewed", label: "Ticketing and settlement reviewed", owner: "Legal + Finance", detail: "Review issuing, validating-carrier, funding, remittance, debit-memo, refund, and chargeback responsibilities." },

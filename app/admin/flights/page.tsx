@@ -621,7 +621,7 @@ export default function Page() {
 
       <section className="mt-10">
         <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Next gate · contract and authority</p><h2 className="mt-2 text-2xl font-bold">Sabre-primary and Duffel-secondary contract review</h2></div><Scale className="h-7 w-7 text-slate-400" /></div>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">The authorized route preference is bound to two separate contract-review packets. Current state is {rolloutContractAuthority.completeRouteCount}/{rolloutContractAuthority.totalRoutes} route packets complete; no contract is accepted and no ticketing, payment, credential, network, booking, or Production authority exists.</p>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">The current planning route preference is pending owner reconciliation and is bound to two separate contract-review packets. Current state is {rolloutContractAuthority.completeRouteCount}/{rolloutContractAuthority.totalRoutes} route packets complete; no contract is accepted and no ticketing, payment, credential, network, booking, or Production authority exists.</p>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           {rolloutContractAuthority.records.map((record) => (
             <article key={record.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">
@@ -819,7 +819,7 @@ export default function Page() {
 
       <section className="mt-10">
         <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Routing and fallback policy</p><h2 className="mt-2 text-2xl font-bold">Multi-connector route readiness</h2></div><Route className="h-7 w-7 text-slate-400" /></div>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">The authorized route preference is {connectorRouteDecision.primaryConnectorId} primary and {connectorRouteDecision.secondaryConnectorId} secondary. All {connectorRouting.totalCandidates} catalogued candidates remain operationally unassigned; current route-planning state is {connectorRouting.completeRoutingCount}/{connectorRouting.totalCandidates} complete and route enablement is off.</p>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">The current planning route preference is {connectorRouteDecision.primaryConnectorId} primary and {connectorRouteDecision.secondaryConnectorId} secondary, pending owner reconciliation. All {connectorRouting.totalCandidates} catalogued candidates remain operationally unassigned; current route-planning state is {connectorRouting.completeRoutingCount}/{connectorRouting.totalCandidates} complete and route enablement is off.</p>
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {connectorRouting.records.map((record) => (
             <article key={record.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">

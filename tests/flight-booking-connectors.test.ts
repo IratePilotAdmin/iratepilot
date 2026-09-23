@@ -194,7 +194,7 @@ describe("flight booking connector catalog", () => {
     expect(page).toContain("buildFlightConnectorSandboxCertification");
     expect(page).toContain("Multi-connector route readiness");
     expect(page).toContain("buildFlightConnectorRoutingReadiness");
-    expect(page).toContain("The authorized route preference is");
+    expect(page).toContain("The current planning route preference is");
     expect(page).toContain("buildFlightRolloutRouteDecision");
     expect(page).toContain("Scoped sandbox credential readiness");
     expect(page).toContain("buildFlightRolloutSandboxCredentialReadiness");
