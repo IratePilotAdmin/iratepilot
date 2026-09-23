@@ -1,10 +1,11 @@
 {
   "evidence": {
     "version": "flight-release-gate-matrix-v1",
-    "checkedAt": "2026-09-18T10:24:00-05:00",
+    "checkedAt": "2026-09-23T18:16:47-05:00",
     "sanitized": true,
-    "sourceCommit": "fda8e0b",
+    "sourceCommit": "55b9f55",
     "gates": [
+      {"id": "route_preference", "state": "resolved_for_planning", "primary": "duffel", "secondary": "sabre", "operationalRouteEnabled": false},
       {"id": "contract_evidence", "state": "blocked", "blockedBy": "external_provider_contract_authority"},
       {"id": "sandbox_credentials", "state": "blocked_by_contract_evidence"},
       {"id": "sandbox_certification", "state": "blocked_by_sandbox_credential"},
@@ -22,6 +23,6 @@
       "ticketingEnabled": false,
       "paymentEnabled": false
     },
-    "disposition": "The dependency chain is implemented and fail-closed. Remaining transitions require external evidence and explicit authority; no transition was inferred or forced."
+    "disposition": "The Duffel-primary/Sabre-secondary route preference is reconciled for planning and the full regression suite is green. The dependency chain remains fail-closed: remaining transitions require Duffel evidence, explicit release authority, and separately verified deployment/payment/operational controls; no transition was inferred or forced."
   }
 }
