@@ -1,0 +1,48 @@
+{
+  "evidence": {
+    "version": "flight-security-scan-v2",
+    "checkedAt": "2026-09-23T16:27:15-05:00",
+    "sanitized": true,
+    "rawCredentialValuesIncluded": false,
+    "source": {
+      "repository": "IratePilotAdmin/iratepilot",
+      "branch": "agent/flight-live-foundation-20260823",
+      "commit": "ee527322cd0d518a25dce4290938ca661cd10786"
+    },
+    "scope": {
+      "trackedFilesScanned": 1164,
+      "trackedPaths": ["app", "lib", "components", "docs", "tests"],
+      "newLocalEvidenceFilesScanned": 3,
+      "patternsAreCaseSensitive": true,
+      "patterns": [
+        "Observed Duffel live token shape (prefix plus 43 credential characters)",
+        "Stripe live and restricted key shapes",
+        "PEM private-key header"
+      ]
+    },
+    "results": {
+      "actualDuffelCredentialMatches": 0,
+      "stripeLiveKeyMatches": 0,
+      "privateKeyHeaderMatches": 0,
+      "newEvidenceCredentialShapeMatches": 0,
+      "reviewedStatusLiteral": {
+        "file": "docs/evidence/FLIGHT_CONSUMER_PRODUCTION_DUFFEL_DARK_INGRESS_2026-08-26.json",
+        "field": "evidence.outcome",
+        "classification": "non-secret status slug",
+        "reason": "The value is lowercase words separated by underscores, contains no digits or uppercase characters, and ends with a blocked-state phrase; it is not a provider credential."
+      }
+    },
+    "sourceRuntimeRequirements": {
+      "productionProviderTrafficMustBeFalse": true,
+      "bookingMustBeFalse": true,
+      "paymentMustBeFalse": true,
+      "settlementMustBeFalse": true,
+      "ticketingMustBeFalse": true,
+      "servicingMustBeFalse": true,
+      "webhooksMustBeFalse": true,
+      "productionTrafficMustBeFalse": true,
+      "transactionKillSwitchMustBeEngaged": true
+    },
+    "disposition": "No live credential was found in the scanned repository paths. The live-provider, booking, payment, settlement, ticketing, servicing, webhook, and production-traffic runtime gates remain required to stay closed until separately approved. This source scan does not inspect Vercel secret values."
+  }
+}

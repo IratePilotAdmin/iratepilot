@@ -1,0 +1,168 @@
+{
+  "evidence": {
+    "version": "flight-launch-progress-checkpoint-v1",
+    "checkedAt": "2026-09-23T16:30:44-05:00",
+    "sanitized": true,
+    "secretValuesIncluded": false,
+    "providerRequestsPerformed": false,
+    "ordersPerformed": false,
+    "paymentsPerformed": false,
+    "ticketsIssued": false,
+    "source": {
+      "repository": "IratePilotAdmin/iratepilot",
+      "branch": "agent/flight-live-foundation-20260823",
+      "commit": "ee527322cd0d518a25dce4290938ca661cd10786",
+      "commitMessage": "docs(flights): flag Duffel token rotation requirement",
+      "workingTreeChangeForThisReceipt": true
+    },
+    "localVerification": {
+      "eslint": "passed",
+      "typescriptNoEmit": "passed",
+      "focusedFlightSafetyTests": {
+        "filesPassed": 14,
+        "testsPassed": 133
+      },
+      "fullVitestSuite": {
+        "filesPassed": 458,
+        "testsPassed": 2965
+      },
+      "nextProductionBuild": {
+        "command": "next build --webpack",
+        "status": "passed",
+        "staticPagesGenerated": 121
+      },
+      "dependencyInstallAttempt": {
+        "status": "stopped_by_pnpm_build_script_policy",
+        "blockedPackage": "unrs-resolver@1.12.2",
+        "scriptApprovedOrRun": false
+      }
+    },
+    "preview": {
+      "deploymentId": "dpl_5jjpEE8LuAdcuNTo733j1ctcnCKD",
+      "deploymentUrl": "https://iratepilotadmin-5usx1l16y-irate-pilot.vercel.app",
+      "branchAlias": "https://iratepilotadmin-git-agent-flight-live-founda-0333c5-irate-pilot.vercel.app",
+      "branch": "agent/flight-live-foundation-20260823",
+      "sourceCommit": "ee527322cd0d518a25dce4290938ca661cd10786",
+      "state": "READY",
+      "target": "preview",
+      "browserSmoke": {
+        "path": "/flights",
+        "result": "passed_supplier_offline_planning_preview",
+        "liveInventoryDisplayed": false,
+        "liveProviderSearchDispatched": false
+      },
+      "syntheticJourney": {
+        "route": "ORD-MIA",
+        "deterministicOptionsDisplayed": 3,
+        "syntheticCheckout": "passed",
+        "syntheticReceipt": "passed",
+        "paymentCreated": false,
+        "providerOrderCreated": false,
+        "ticketIssued": false
+      }
+    },
+    "production": {
+      "currentDeploymentId": "dpl_ECjpq8jnLPzpFprY993DgcUkCbZy",
+      "state": "READY",
+      "sourceBranch": "agent/hotel-fee-alignment-20260915",
+      "sourceCommit": "a9dbf5f155f5ffc2dfe81da41a3522c69316783d",
+      "flightBranchIsCurrentProductionSource": false,
+      "flightPromotionPerformed": false,
+      "paymentFlagReadOnlyCheck": "FLIGHT_PAYMENT_ENABLED=false",
+      "duffelShoppingDarkGate": "closed",
+      "duffelCredentialConfiguration": "needs_repair_masked_placeholder_and_digest",
+      "lastAuthorizedLiveSearchAttempt": {
+        "result": "rejected_before_provider_dispatch",
+        "providerRequestDispatched": false
+      }
+    },
+    "vercelDeploymentRecheck": {
+      "checkedAt": "2026-09-23T16:21:45-05:00",
+      "preview": {
+        "deploymentId": "dpl_5jjpEE8LuAdcuNTo733j1ctcnCKD",
+        "state": "READY",
+        "target": null,
+        "branch": "agent/flight-live-foundation-20260823",
+        "sourceCommit": "ee527322cd0d518a25dce4290938ca661cd10786",
+        "branchAlias": "https://iratepilotadmin-git-agent-flight-live-founda-0333c5-irate-pilot.vercel.app"
+      },
+      "production": {
+        "deploymentId": "dpl_ECjpq8jnLPzpFprY993DgcUkCbZy",
+        "state": "READY",
+        "target": "production",
+        "branch": "agent/hotel-fee-alignment-20260915",
+        "sourceCommit": "a9dbf5f155f5ffc2dfe81da41a3522c69316783d",
+        "source": "redeploy",
+        "aliases": [
+          "www.iratepilot.com",
+          "iratepilot.com"
+        ]
+      },
+      "flightBranchIsProduction": false,
+      "liveSearchAttemptedDuringRecheck": false
+    },
+    "operationalRechecks": {
+      "checkedAt": "2026-09-23T16:27:15-05:00",
+      "productionFlightRuntimeErrorQuery": {
+        "range": "7d",
+        "routes": [
+          "/api/flights/private-preview/live-search",
+          "/api/flights/search",
+          "/api/flights/orders"
+        ],
+        "runtimeErrorClusters": 0
+      },
+      "repositorySecurityScan": {
+        "evidenceFile": "docs/evidence/FLIGHT_SECURITY_SCAN_2026-09-23.json",
+        "trackedFilesScanned": 1164,
+        "actualCredentialMatches": 0,
+        "privateKeyMatches": 0,
+        "newLocalEvidenceFilesScanned": 3,
+        "newLocalEvidenceCredentialMatches": 0
+      }
+    },
+    "routePreferenceReconciliation": {
+      "historicalDecision": {
+        "record": "docs/FLIGHTS_PROVIDER_PATH_DECISION_2026-08-19.md",
+        "primary": "duffel",
+        "secondary": "sabre"
+      },
+      "currentCodeDecision": {
+        "sourceCommit": "426b3156cdb5fbed40ea0b1d3d8a70b004163923",
+        "primary": "sabre",
+        "secondary": "duffel"
+      },
+      "status": "requires_owner_reconciliation",
+      "interpretation": "The later instruction to skip Duffel for now and move on to Sabre may have superseded the earlier preference, but the intended primary/secondary route is not explicit enough to silently treat the plans as reconciled.",
+      "operationalRouteEnabled": false
+    },
+    "credentialEntryHandoff": {
+      "vercelProductionVariable": "DUFFEL_LIVE_ACCESS_TOKEN",
+      "editFormOpenAndFocused": true,
+      "credentialPasted": false,
+      "savePerformed": false,
+      "replacementDigestPreparedLocally": true,
+      "replacementDigestMatchesRuntimeContract": true,
+      "replacementDigestSavedInVercel": false,
+      "reason": "The in-app browser clipboard is isolated from the Windows clipboard; the user must paste directly into the focused Vercel field."
+    },
+    "remainingExternalGates": [
+      "User must paste and save the live Duffel replacement in Vercel Production, then compute and save its matching SHA-256 digest without disclosing the credential.",
+      "Reconcile the recorded Duffel-primary/Sabre-secondary preference with the current Sabre-primary/Duffel-secondary planning code before route-specific activation work.",
+      "Redeploy a flight-enabled Production source only after configuration and release criteria are reviewed; current Production points to a different branch.",
+      "Obtain and verify Duffel commercial/content/ticketing authority and sandbox certification evidence.",
+      "Complete flight-specific Stripe, settlement, reconciliation, fraud/refund, and legal/compliance approvals before enabling consumer payment or booking.",
+      "Complete named support/on-call ownership, alert delivery, monitoring collectors, incident drills, and a separate consumer-release decision.",
+      "Complete current DNS/email sender authentication and registrar operational checks before a public commercial launch."
+    ],
+    "authorityBoundary": {
+      "consumerReleaseEnabled": false,
+      "productionProviderTrafficEnabled": false,
+      "bookingEnabled": false,
+      "paymentEnabled": false,
+      "orderCreationEnabled": false,
+      "ticketingEnabled": false
+    },
+    "disposition": "Engineering and the isolated synthetic Preview journey pass current local verification. Consumer Production launch is not ready: Production still serves a different branch, the live Duffel credential configuration needs repair, the dark-search gate remains closed, and external provider, payment, operational, legal, and release evidence is outstanding. No live provider request, order, payment, or ticket occurred in this checkpoint."
+  }
+}
