@@ -172,6 +172,11 @@
       "routeMessagingSafety": {
         "status": "passed",
         "detail": "Admin planning and launch-stage copy now states that the Sabre-primary/Duffel-secondary plan is pending owner reconciliation; it does not present the route as an authorized commercial selection."
+      },
+      "postWordingBuild": {
+        "command": "next build --webpack",
+        "status": "passed",
+        "staticPagesGenerated": 121
       }
     },
     "routePreferenceReconciliation": {
