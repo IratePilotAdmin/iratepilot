@@ -1,7 +1,7 @@
 {
   "evidence": {
     "version": "flight-launch-progress-checkpoint-v1",
-    "checkedAt": "2026-09-23T16:30:44-05:00",
+    "checkedAt": "2026-09-23T16:33:40-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "providerRequestsPerformed": false,
@@ -102,7 +102,7 @@
       "liveSearchAttemptedDuringRecheck": false
     },
     "operationalRechecks": {
-      "checkedAt": "2026-09-23T16:27:15-05:00",
+      "checkedAt": "2026-09-23T16:33:40-05:00",
       "productionFlightRuntimeErrorQuery": {
         "range": "7d",
         "routes": [
@@ -119,6 +119,12 @@
         "privateKeyMatches": 0,
         "newLocalEvidenceFilesScanned": 3,
         "newLocalEvidenceCredentialMatches": 0
+      },
+      "focusedRegression": {
+        "command": "vitest run tests/flight-booking-connectors.test.ts tests/flight-consumer-production-order-plan-runtime.test.ts tests/flight-consumer-production-live-shopping-canary-evidence.test.ts tests/flight-runtime-safety.test.ts",
+        "testFilesPassed": 4,
+        "testsPassed": 85,
+        "status": "passed"
       }
     },
     "routePreferenceReconciliation": {
