@@ -7,10 +7,10 @@
     "repository": "IratePilotAdmin/iratepilot",
     "branch": "agent/flight-live-foundation-20260823",
     "currentCodeDecision": {
-      "source": "426b3156cdb5fbed40ea0b1d3d8a70b004163923",
+      "source": "pending-route-decision-commit",
       "mode": "authorized_route_preference_only",
-      "primary": "sabre",
-      "secondary": "duffel",
+      "primary": "duffel",
+      "secondary": "sabre",
       "routeEnabled": false,
       "bookingAuthorized": false,
       "paymentAuthorized": false,
@@ -30,8 +30,13 @@
       "ticketing": "disabled"
     },
     "hold": {
-      "status": "owner_reconciliation_required",
-      "requiredDecision": "Record one current route decision naming the primary and secondary provider, then bind the corresponding contract, ticketing-authority, settlement, security, servicing, sandbox, and release evidence before deployment or activation.",
+      "status": "resolved_for_planning",
+      "decisionRecorded": {
+        "primary": "duffel",
+        "secondary": "sabre",
+        "source": "owner selection in current task turn"
+      },
+      "requiredDecision": "Route planning choice is recorded; bind the corresponding contract, ticketing-authority, settlement, security, servicing, sandbox, and release evidence before deployment or activation.",
       "decisionHandoff": "docs/FLIGHT_ROUTE_DECISION_REQUEST_2026-09-23.md",
       "silentSelectionAllowed": false,
       "productionPromotionAllowed": false

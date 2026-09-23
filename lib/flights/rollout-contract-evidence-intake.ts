@@ -24,7 +24,7 @@ export type FlightRolloutContractEvidenceStage = Readonly<{
 }>;
 
 export const flightRolloutContractEvidenceStages: readonly FlightRolloutContractEvidenceStage[] = [
-  { id: "authority_reference_bound", label: "Authority reference bound", owner: "Executive + Legal", detail: "Bind one immutable, current approval reference to the Sabre-primary route and its narrowly defined diligence scope." },
+  { id: "authority_reference_bound", label: "Authority reference bound", owner: "Executive + Legal", detail: "Bind one immutable, current approval reference to the Duffel-primary route and its narrowly defined diligence scope." },
   { id: "counterparty_identity_verified", label: "Counterparty identity verified", owner: "Legal + Commercial", detail: "Verify the provider legal entity, authorized representative, agency role, and accreditation claims from attributable evidence." },
   { id: "content_and_use_scope_verified", label: "Content and permitted-use scope verified", owner: "Commercial + Product", detail: "Verify carrier, geography, fare, display, caching, data-use, and downstream restrictions for the consumer launch scope." },
   { id: "ticketing_and_settlement_terms_verified", label: "Ticketing and settlement terms verified", owner: "Legal + Finance", detail: "Verify issuing, validating-carrier, funding, remittance, refund, debit-memo, chargeback, and tax responsibilities." },

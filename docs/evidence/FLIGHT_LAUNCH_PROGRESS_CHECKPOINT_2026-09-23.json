@@ -105,7 +105,7 @@
       "previewGateRecheck": {
         "checkedAt": "2026-09-23T16:55:16-05:00",
         "adminFlightsSurface": "loaded",
-        "routePreferenceDisplayed": "sabre_primary_duffel_secondary",
+        "routePreferenceDisplayed": "duffel_primary_sabre_secondary",
         "routePlanningComplete": "0/9",
         "providerTraffic": "disabled",
         "booking": "disabled",
@@ -171,7 +171,7 @@
       },
       "routeMessagingSafety": {
         "status": "passed",
-        "detail": "Admin planning and launch-stage copy now states that the Sabre-primary/Duffel-secondary plan is pending owner reconciliation; it does not present the route as an authorized commercial selection."
+        "detail": "Admin planning and launch-stage copy now states the selected Duffel-primary/Sabre-secondary preference; it does not present the route as an authorized commercial selection."
       },
       "postWordingBuild": {
         "command": "next build --webpack",
@@ -186,12 +186,12 @@
         "secondary": "sabre"
       },
       "currentCodeDecision": {
-        "sourceCommit": "426b3156cdb5fbed40ea0b1d3d8a70b004163923",
-        "primary": "sabre",
-        "secondary": "duffel"
+        "sourceCommit": "pending-route-decision-commit",
+        "primary": "duffel",
+        "secondary": "sabre"
       },
-      "status": "requires_owner_reconciliation",
-      "interpretation": "The later instruction to skip Duffel for now and move on to Sabre may have superseded the earlier preference, but the intended primary/secondary route is not explicit enough to silently treat the plans as reconciled.",
+      "status": "resolved_for_planning",
+      "interpretation": "The owner selected Duffel primary and Sabre secondary, matching the historical provider-path decision; contract, provider-evidence, deployment, and activation gates remain separate.",
       "operationalRouteEnabled": false
     },
     "credentialEntryHandoff": {
@@ -205,7 +205,7 @@
       "reason": "The user pasted the replacement credential into the focused Vercel Production field; the token and matching domain-bound digest were saved without revealing the secret. Vercel reports that a new deployment is required for the values to take effect."
     },
     "remainingExternalGates": [
-      "Reconcile the recorded Duffel-primary/Sabre-secondary preference with the current Sabre-primary/Duffel-secondary planning code before route-specific activation work.",
+      "Obtain and verify Duffel contract, content, ticketing, settlement, security, support, and sandbox evidence before route-specific activation work.",
       "Redeploy a reviewed flight-enabled Production source so the saved Production values take effect; current Production points to a different branch.",
       "Obtain and verify Duffel commercial/content/ticketing authority and sandbox certification evidence.",
       "Complete flight-specific Stripe, settlement, reconciliation, fraud/refund, and legal/compliance approvals before enabling consumer payment or booking.",
@@ -220,6 +220,6 @@
       "orderCreationEnabled": false,
       "ticketingEnabled": false
     },
-    "disposition": "Engineering and the isolated synthetic Preview journey pass current local verification. The replacement Duffel credential and matching domain-bound digest are now saved in Vercel Production, but a new reviewed flight deployment is required before they take effect. Consumer Production launch is not ready: Production still serves a different branch, the dark-search gate remains closed, and external provider, payment, operational, legal, and release evidence is outstanding. No live provider request, order, payment, or ticket occurred in this checkpoint."
+    "disposition": "Engineering and the isolated synthetic Preview journey pass current local verification. Duffel is recorded as primary and Sabre as secondary for planning only. The replacement Duffel credential and matching domain-bound digest are saved in Vercel Production, but a new reviewed flight deployment is required before they take effect. Consumer Production launch is not ready: Production still serves a different branch, the dark-search gate remains closed, and external provider, payment, operational, legal, and release evidence is outstanding. No live provider request, order, payment, or ticket occurred in this checkpoint."
   }
 }

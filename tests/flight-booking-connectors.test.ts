@@ -194,7 +194,7 @@ describe("flight booking connector catalog", () => {
     expect(page).toContain("buildFlightConnectorSandboxCertification");
     expect(page).toContain("Multi-connector route readiness");
     expect(page).toContain("buildFlightConnectorRoutingReadiness");
-    expect(page).toContain("The current planning route preference is");
+    expect(page).toContain("The selected planning route preference is");
     expect(page).toContain("buildFlightRolloutRouteDecision");
     expect(page).toContain("Scoped sandbox credential readiness");
     expect(page).toContain("buildFlightRolloutSandboxCredentialReadiness");
@@ -328,9 +328,10 @@ describe("flight booking connector catalog", () => {
     expect(decision.decisionState).toBe("authorized_route_preference");
     expect(decision.primaryConnectorId).toBe(FLIGHT_ROLLOUT_PRIMARY_CONNECTOR_ID);
     expect(decision.secondaryConnectorId).toBe(FLIGHT_ROLLOUT_SECONDARY_CONNECTOR_ID);
-    expect(decision.primaryConnectorId).toBe("sabre");
-    expect(decision.secondaryConnectorId).toBe("duffel");
+    expect(decision.primaryConnectorId).toBe("duffel");
+    expect(decision.secondaryConnectorId).toBe("sabre");
     expect(decision.alternativeConnectorIds).toEqual([
+      "sabre",
       "amadeus",
       "travelport",
       "worldspan",
@@ -356,15 +357,15 @@ describe("flight booking connector catalog", () => {
     const authority = buildFlightRolloutContractAuthority();
     expect(FLIGHT_ROLLOUT_CONTRACT_AUTHORITY_MODE).toBe("route_bound_contract_authority_plan_only");
     expect(flightRolloutContractAuthorityStages).toHaveLength(8);
-    expect(authority.routePreference.primaryConnectorId).toBe("sabre");
-    expect(authority.routePreference.secondaryConnectorId).toBe("duffel");
+    expect(authority.routePreference.primaryConnectorId).toBe("duffel");
+    expect(authority.routePreference.secondaryConnectorId).toBe("sabre");
     expect(authority.totalRoutes).toBe(2);
     expect(authority.completeRouteCount).toBe(0);
-    expect(authority.records[0].connectorId).toBe("sabre");
+    expect(authority.records[0].connectorId).toBe("duffel");
     expect(authority.records[0].routeRole).toBe("primary");
     expect(authority.records[0].reviewState).toBe("next_gate");
     expect(authority.records[0].completedCount).toBe(0);
-    expect(authority.records[1].connectorId).toBe("duffel");
+    expect(authority.records[1].connectorId).toBe("sabre");
     expect(authority.records[1].routeRole).toBe("secondary");
     expect(authority.records[1].reviewState).toBe("deferred_until_primary_validated");
     expect(authority.records[1].completedCount).toBe(0);
@@ -384,8 +385,8 @@ describe("flight booking connector catalog", () => {
     const intake = buildFlightRolloutContractEvidenceIntake();
     expect(FLIGHT_ROLLOUT_CONTRACT_EVIDENCE_MODE).toBe("external_contract_evidence_required");
     expect(flightRolloutContractEvidenceStages).toHaveLength(7);
-    expect(intake.routePreference.primaryConnectorId).toBe("sabre");
-    expect(intake.routePreference.secondaryConnectorId).toBe("duffel");
+    expect(intake.routePreference.primaryConnectorId).toBe("duffel");
+    expect(intake.routePreference.secondaryConnectorId).toBe("sabre");
     expect(intake.totalRoutes).toBe(2);
     expect(intake.completeRouteCount).toBe(0);
     expect(intake.evidenceReceived).toBe(false);
@@ -406,8 +407,8 @@ describe("flight booking connector catalog", () => {
     const readiness = buildFlightRolloutSandboxCredentialReadiness();
     expect(FLIGHT_ROLLOUT_SANDBOX_CREDENTIAL_MODE).toBe("sandbox_credential_readiness_plan_only");
     expect(flightRolloutSandboxCredentialStages).toHaveLength(7);
-    expect(readiness.routePreference.primaryConnectorId).toBe("sabre");
-    expect(readiness.routePreference.secondaryConnectorId).toBe("duffel");
+    expect(readiness.routePreference.primaryConnectorId).toBe("duffel");
+    expect(readiness.routePreference.secondaryConnectorId).toBe("sabre");
     expect(readiness.totalRoutes).toBe(2);
     expect(readiness.completeRouteCount).toBe(0);
     expect(readiness.blockedBy).toBe("contract_authority_evidence");
@@ -430,8 +431,8 @@ describe("flight booking connector catalog", () => {
     const certification = buildFlightRolloutSandboxCertification();
     expect(FLIGHT_ROLLOUT_SANDBOX_CERTIFICATION_MODE).toBe("sandbox_certification_plan_only");
     expect(flightRolloutSandboxCertificationStages).toHaveLength(8);
-    expect(certification.routePreference.primaryConnectorId).toBe("sabre");
-    expect(certification.routePreference.secondaryConnectorId).toBe("duffel");
+    expect(certification.routePreference.primaryConnectorId).toBe("duffel");
+    expect(certification.routePreference.secondaryConnectorId).toBe("sabre");
     expect(certification.totalRoutes).toBe(2);
     expect(certification.completeRouteCount).toBe(0);
     expect(certification.testTrafficAuthorized).toBe(false);
@@ -454,8 +455,8 @@ describe("flight booking connector catalog", () => {
     const readiness = buildFlightRolloutPaymentSettlementReadiness();
     expect(FLIGHT_ROLLOUT_PAYMENT_SETTLEMENT_MODE).toBe("payment_settlement_readiness_plan_only");
     expect(flightRolloutPaymentSettlementStages).toHaveLength(9);
-    expect(readiness.routePreference.primaryConnectorId).toBe("sabre");
-    expect(readiness.routePreference.secondaryConnectorId).toBe("duffel");
+    expect(readiness.routePreference.primaryConnectorId).toBe("duffel");
+    expect(readiness.routePreference.secondaryConnectorId).toBe("sabre");
     expect(readiness.totalRoutes).toBe(2);
     expect(readiness.completeRouteCount).toBe(0);
     expect(readiness.paymentAuthorized).toBe(false);
@@ -478,8 +479,8 @@ describe("flight booking connector catalog", () => {
     const readiness = buildFlightRolloutSecurityPrivacyReadiness();
     expect(FLIGHT_ROLLOUT_SECURITY_PRIVACY_MODE).toBe("security_privacy_readiness_plan_only");
     expect(flightRolloutSecurityPrivacyStages).toHaveLength(8);
-    expect(readiness.routePreference.primaryConnectorId).toBe("sabre");
-    expect(readiness.routePreference.secondaryConnectorId).toBe("duffel");
+    expect(readiness.routePreference.primaryConnectorId).toBe("duffel");
+    expect(readiness.routePreference.secondaryConnectorId).toBe("sabre");
     expect(readiness.totalRoutes).toBe(2);
     expect(readiness.completeRouteCount).toBe(0);
     expect(readiness.passengerDataAuthorized).toBe(false);
@@ -502,8 +503,8 @@ describe("flight booking connector catalog", () => {
     const readiness = buildFlightRolloutSupportReleaseReadiness();
     expect(FLIGHT_ROLLOUT_SUPPORT_RELEASE_MODE).toBe("support_release_readiness_plan_only");
     expect(flightRolloutSupportReleaseStages).toHaveLength(8);
-    expect(readiness.routePreference.primaryConnectorId).toBe("sabre");
-    expect(readiness.routePreference.secondaryConnectorId).toBe("duffel");
+    expect(readiness.routePreference.primaryConnectorId).toBe("duffel");
+    expect(readiness.routePreference.secondaryConnectorId).toBe("sabre");
     expect(readiness.totalRoutes).toBe(2);
     expect(readiness.completeRouteCount).toBe(0);
     expect(readiness.supportAuthorized).toBe(false);
@@ -528,8 +529,8 @@ describe("flight booking connector catalog", () => {
     const readiness = buildFlightRolloutPreviewReleaseReadiness();
     expect(FLIGHT_ROLLOUT_PREVIEW_RELEASE_MODE).toBe("controlled_preview_release_plan_only");
     expect(flightRolloutPreviewReleaseStages).toHaveLength(8);
-    expect(readiness.routePreference.primaryConnectorId).toBe("sabre");
-    expect(readiness.routePreference.secondaryConnectorId).toBe("duffel");
+    expect(readiness.routePreference.primaryConnectorId).toBe("duffel");
+    expect(readiness.routePreference.secondaryConnectorId).toBe("sabre");
     expect(readiness.totalRoutes).toBe(2);
     expect(readiness.completeRouteCount).toBe(0);
     expect(readiness.previewReleaseAuthorized).toBe(false);
@@ -554,8 +555,8 @@ describe("flight booking connector catalog", () => {
     const readiness = buildFlightRolloutProductionReleaseReadiness();
     expect(FLIGHT_ROLLOUT_PRODUCTION_RELEASE_MODE).toBe("production_release_readiness_plan_only");
     expect(flightRolloutProductionReleaseStages).toHaveLength(9);
-    expect(readiness.routePreference.primaryConnectorId).toBe("sabre");
-    expect(readiness.routePreference.secondaryConnectorId).toBe("duffel");
+    expect(readiness.routePreference.primaryConnectorId).toBe("duffel");
+    expect(readiness.routePreference.secondaryConnectorId).toBe("sabre");
     expect(readiness.totalRoutes).toBe(2);
     expect(readiness.completeRouteCount).toBe(0);
     expect(readiness.productionCredentialsActivated).toBe(false);
@@ -582,8 +583,8 @@ describe("flight booking connector catalog", () => {
     const activation = buildFlightRolloutConsumerLaunchActivation();
     expect(FLIGHT_ROLLOUT_CONSUMER_LAUNCH_MODE).toBe("consumer_booking_activation_plan_only");
     expect(flightRolloutConsumerLaunchStages).toHaveLength(8);
-    expect(activation.routePreference.primaryConnectorId).toBe("sabre");
-    expect(activation.routePreference.secondaryConnectorId).toBe("duffel");
+    expect(activation.routePreference.primaryConnectorId).toBe("duffel");
+    expect(activation.routePreference.secondaryConnectorId).toBe("sabre");
     expect(activation.totalRoutes).toBe(2);
     expect(activation.completeRouteCount).toBe(0);
     expect(activation.consumerBookingAuthorized).toBe(false);
