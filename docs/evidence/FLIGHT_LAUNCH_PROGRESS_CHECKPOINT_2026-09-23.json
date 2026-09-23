@@ -1,7 +1,7 @@
 {
   "evidence": {
     "version": "flight-launch-progress-checkpoint-v1",
-    "checkedAt": "2026-09-23T18:50:36-05:00",
+    "checkedAt": "2026-09-23T18:53:15-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "providerRequestsPerformed": false,
@@ -84,7 +84,7 @@
         "ticketsIssued": false
       },
       "latestBrowserReadOnlyCheck": {
-        "checkedAt": "2026-09-23T18:27:15-05:00",
+        "checkedAt": "2026-09-23T18:53:15-05:00",
         "previewUrl": "https://iratepilotadmin-git-agent-flight-live-founda-0333c5-irate-pilot.vercel.app/flights",
         "previewSurface": "supplier_offline_planning_preview",
         "liveInventoryDisplayed": false,
@@ -173,9 +173,9 @@
       }
     },
     "vercelDeploymentRecheck": {
-      "checkedAt": "2026-09-23T16:21:45-05:00",
+      "checkedAt": "2026-09-23T18:53:15-05:00",
       "latestVercelReadOnlyCheck": {
-        "checkedAt": "2026-09-23T18:18:41-05:00",
+        "checkedAt": "2026-09-23T18:53:15-05:00",
         "productionDeploymentId": "dpl_ECjpq8jnLPzpFprY993DgcUkCbZy",
         "productionState": "READY",
         "productionSourceBranch": "agent/hotel-fee-alignment-20260915",
@@ -187,7 +187,7 @@
         "providerTrafficTriggered": false
       },
       "authoritativeBrowserRecheck": {
-        "checkedAt": "2026-09-23T16:55:16-05:00",
+        "checkedAt": "2026-09-23T18:53:15-05:00",
         "productionDeploymentId": "dpl_ECjpq8jnLPzpFprY993DgcUkCbZy",
         "productionState": "READY",
         "productionSourceBranch": "agent/hotel-fee-alignment-20260915",
@@ -196,7 +196,7 @@
         "flightProductionDeploymentTriggered": false
       },
       "previewGateRecheck": {
-        "checkedAt": "2026-09-23T16:55:16-05:00",
+        "checkedAt": "2026-09-23T18:53:15-05:00",
         "adminFlightsSurface": "loaded",
         "routePreferenceDisplayed": "duffel_primary_sabre_secondary",
         "routePlanningComplete": "0/9",
