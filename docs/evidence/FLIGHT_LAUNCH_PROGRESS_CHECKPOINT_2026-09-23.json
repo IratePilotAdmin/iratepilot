@@ -121,6 +121,7 @@
         "newLocalEvidenceCredentialMatches": 0
       },
       "focusedRegression": {
+        "checkedAt": "2026-09-23T16:47:16-05:00",
         "command": "vitest run tests/flight-booking-connectors.test.ts tests/flight-consumer-production-order-plan-runtime.test.ts tests/flight-consumer-production-live-shopping-canary-evidence.test.ts tests/flight-runtime-safety.test.ts",
         "testFilesPassed": 4,
         "testsPassed": 85,
