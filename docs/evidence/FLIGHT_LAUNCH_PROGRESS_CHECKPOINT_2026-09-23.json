@@ -74,7 +74,7 @@
         "ticketsIssued": false
       },
       "latestRoutePacketManifestCheck": {
-        "checkedAt": "2026-09-23T18:23:06-05:00",
+        "checkedAt": "2026-09-23T23:04:13-05:00",
         "command": "vitest run tests/flight-booking-connectors.test.ts tests/flight-connector-route-packet-manifest.test.ts --reporter=dot",
         "testFilesPassed": 2,
         "testsPassed": 27,
