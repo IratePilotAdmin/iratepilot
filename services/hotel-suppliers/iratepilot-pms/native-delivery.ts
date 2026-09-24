@@ -175,24 +175,33 @@ async function sendEvent(
   if (response.status !== 200) {
     return { outcome: "review-required" as const, reason: `http_${response.status}` };
   }
-  let wrapper: { status?: unknown; body?: Record<string, unknown> };
+  if ((response.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase() !== "application/json") {
+    void response.body?.cancel().catch(() => undefined);
+    return { outcome: "retry" as const, reason: "invalid_acknowledgement" };
+  }
+  let wrapper: { status?: unknown; body?: unknown };
   try {
     const text = await readBoundedResponse(response, MAX_ACKNOWLEDGEMENT_BYTES);
     if (text === null) throw new Error("large response");
-    wrapper = JSON.parse(text) as typeof wrapper;
+    const parsed: unknown = JSON.parse(text);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("invalid acknowledgement object");
+    wrapper = parsed as typeof wrapper;
   } catch {
     return { outcome: "retry" as const, reason: "invalid_acknowledgement" };
   }
   const reply = wrapper.body;
+  const receipt = reply as Record<string, unknown> | null | undefined;
   if (wrapper.status !== 200
     || !reply
-    || reply.eventId !== event.eventId
-    || reply.sourceVersion !== event.sourceVersion
-    || typeof reply.outcome !== "string"
-    || !ACKNOWLEDGEMENTS.has(reply.outcome)) {
+    || typeof reply !== "object"
+    || Array.isArray(reply)
+    || receipt?.eventId !== event.eventId
+    || receipt?.sourceVersion !== event.sourceVersion
+    || typeof receipt?.outcome !== "string"
+    || !ACKNOWLEDGEMENTS.has(receipt.outcome)) {
     return { outcome: "retry" as const, reason: "invalid_acknowledgement" };
   }
-  return { outcome: "acknowledged" as const, receiverOutcome: reply.outcome };
+  return { outcome: "acknowledged" as const, receiverOutcome: receipt.outcome };
 }
 
 async function readBoundedResponse(response: Response, maximumBytes: number): Promise<string | null> {
@@ -219,7 +228,7 @@ async function readBoundedResponse(response: Response, maximumBytes: number): Pr
   } finally {
     reader.releaseLock();
   }
-  return Buffer.concat(chunks.map((chunk) => Buffer.from(chunk)), bytes).toString("utf8");
+  return new TextDecoder("utf-8", { fatal: true }).decode(Buffer.concat(chunks.map((chunk) => Buffer.from(chunk)), bytes));
 }
 
 export async function deliverNativePmsEventOnce({

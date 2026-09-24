@@ -8,7 +8,7 @@ This connector sends booking changes made on iRatePilot.com to the connected iRa
 2. The request schedules a bounded post-response delivery attempt. An authenticated scheduled worker remains the retry and recovery path.
 3. The worker reads the enabled sandbox property registry, claims one event using the configured property scopes, and sends a signed request to the PMS RPC gateway.
 4. The PMS gateway checks the signature, event identity, property mapping, and idempotency state before staging the reservation.
-5. A valid acknowledgement marks the event delivered; transport/server failures retry; invalid or unavailable credentials and mapping problems go to review without crossing property scopes.
+5. A valid acknowledgement marks the event delivered; transport/server failures retry; invalid or unavailable credentials and mapping problems go to review without crossing property scopes. The sender accepts an acknowledgement only when the receiver returns bounded UTF-8 JSON with the exact event id, source version, HTTP result, and recognized outcome. Malformed, non-JSON, non-object, or oversized replies remain retryable and never mark the event delivered.
 
 Booking creation, reservation-field changes, and cancellations are ordered snapshots keyed by booking and source version. A delayed retry blocks later versions for the same booking, so a cancellation cannot overtake an unacknowledged modification. A cancellation snapshot changes reservation state only; it does not authorize a refund, reverse a payment, or settle a folio. Handle any refund through the separate payment-provider review and reconciliation process.
 
