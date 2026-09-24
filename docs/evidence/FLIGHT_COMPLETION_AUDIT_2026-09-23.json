@@ -1,0 +1,109 @@
+{
+  "evidence": {
+    "version": "flight-completion-audit-v1",
+    "checkedAt": "2026-09-23T23:50:00-05:00",
+    "sanitized": true,
+    "secretValuesIncluded": false,
+    "source": {
+      "repository": "IratePilotAdmin/iratepilot",
+      "branch": "agent/flight-live-foundation-20260823",
+      "commit": "0220682"
+    },
+    "requirements": [
+      {
+        "id": "engineering_foundation",
+        "state": "complete",
+        "evidence": [
+          "localVerification.latestStaticChecks",
+          "localVerification.latestInternalRecheck",
+          "operationalRechecks.repositorySecurityScan"
+        ],
+        "authorityEnabled": false
+      },
+      {
+        "id": "preview_verification",
+        "state": "complete",
+        "evidence": [
+          "localVerification.latestBrowserReadOnlyCheck",
+          "latestPreviewRecheck",
+          "localVerification.latestPreviewAuthBoundaryCheck"
+        ],
+        "authorityEnabled": false
+      },
+      {
+        "id": "production_deployment_verification",
+        "state": "complete",
+        "evidence": [
+          "localVerification.latestCanonicalProductionSurfaceCheck",
+          "production.currentDeploymentId",
+          "vercelDeploymentRecheck.authoritativeBrowserRecheck"
+        ],
+        "authorityEnabled": false
+      },
+      {
+        "id": "offline_operational_controls",
+        "state": "complete",
+        "evidence": [
+          "docs/FLIGHT_CONSUMER_PRODUCTION_OPERATIONS_RUNBOOK.md",
+          "latestOperationsCollectorAssemblyTest",
+          "latestOperationsRunbookIntegrityTest"
+        ],
+        "authorityEnabled": false
+      },
+      {
+        "id": "duffel_contract_authority_and_sandbox",
+        "state": "pending_external",
+        "evidence": [
+          "remainingExternalGates[0]",
+          "remainingExternalGates[1]",
+          "duffelApprovalFollowUp"
+        ],
+        "authorityEnabled": false
+      },
+      {
+        "id": "payment_settlement_legal_compliance",
+        "state": "pending_external",
+        "evidence": [
+          "remainingExternalGates[2]"
+        ],
+        "authorityEnabled": false
+      },
+      {
+        "id": "support_on_call_monitoring_release",
+        "state": "pending_external",
+        "evidence": [
+          "remainingExternalGates[3]",
+          "docs/FLIGHT_CONSUMER_PRODUCTION_OPERATIONS_RUNBOOK.md"
+        ],
+        "authorityEnabled": false
+      },
+      {
+        "id": "dns_email_sender_authentication",
+        "state": "pending_external",
+        "evidence": [
+          "remainingExternalGates[4]"
+        ],
+        "authorityEnabled": false
+      },
+      {
+        "id": "consumer_release_activation",
+        "state": "blocked_by_prerequisites",
+        "evidence": [
+          "authorityBoundary",
+          "matrix.boundary",
+          "routePackets[*].consumerActivation"
+        ],
+        "authorityEnabled": false
+      }
+    ],
+    "summary": {
+      "internalRequirementsComplete": 4,
+      "externalGateGroupsRemaining": 5,
+      "consumerReleaseAuthorized": false,
+      "productionProviderTrafficEnabled": false,
+      "bookingEnabled": false,
+      "paymentEnabled": false,
+      "ticketingEnabled": false
+    }
+  }
+}

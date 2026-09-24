@@ -8,6 +8,7 @@ const files = {
   manifest: "docs/evidence/FLIGHT_CONNECTOR_ROUTE_PACKET_MANIFEST_2026-09-23.json",
   securityScan: "docs/evidence/FLIGHT_SECURITY_SCAN_2026-09-23.json",
   previewRecheck: "docs/evidence/FLIGHT_PREVIEW_DEPLOYMENT_RECHECK_2026-09-23.json",
+  completionAudit: "docs/evidence/FLIGHT_COMPLETION_AUDIT_2026-09-23.json",
 };
 
 function fail(message) {
@@ -48,6 +49,7 @@ const checkpoint = loaded.checkpoint.value.evidence;
 const matrix = loaded.matrix.value.evidence;
 const manifest = loaded.manifest.value.evidence;
 const previewRecheck = loaded.previewRecheck.value.evidence;
+const completionAudit = loaded.completionAudit.value.evidence;
 
 assert(checkpoint.source?.branch === "agent/flight-live-foundation-20260823",
   "the checkpoint must describe the flight foundation branch.");
@@ -238,6 +240,43 @@ for (const fragment of requiredExternalGateFragments) {
     `the remaining external-gate list must retain ${fragment}.`);
 }
 
+assert(completionAudit.source?.branch === "agent/flight-live-foundation-20260823"
+  && completionAudit.source?.commit === "0220682",
+"the completion audit must bind the latest verified evidence commit.");
+assert(Array.isArray(completionAudit.requirements)
+  && completionAudit.requirements.length === 9,
+"the completion audit must classify all nine launch requirements.");
+const completeInternalRequirementIds = new Set([
+  "engineering_foundation",
+  "preview_verification",
+  "production_deployment_verification",
+  "offline_operational_controls",
+]);
+for (const requirement of completionAudit.requirements) {
+  assert(requirement.authorityEnabled === false,
+    `completion audit requirement ${requirement.id} cannot enable authority.`);
+  if (completeInternalRequirementIds.has(requirement.id)) {
+    assert(requirement.state === "complete",
+      `internal requirement ${requirement.id} must be complete.`);
+  } else if (requirement.id === "consumer_release_activation") {
+    assert(requirement.state === "blocked_by_prerequisites",
+      "consumer release activation must remain blocked by prerequisites.");
+  } else {
+    assert(requirement.state === "pending_external",
+      `external requirement ${requirement.id} must remain pending external evidence.`);
+  }
+}
+assert(completionAudit.summary?.internalRequirementsComplete === 4
+  && completionAudit.summary?.externalGateGroupsRemaining === 5,
+"the completion audit summary must retain four complete internal requirements and five external gate groups.");
+for (const key of [
+  "consumerReleaseAuthorized",
+  "productionProviderTrafficEnabled",
+  "bookingEnabled",
+  "paymentEnabled",
+  "ticketingEnabled",
+]) assertClosed(completionAudit.summary?.[key], `completionAudit.summary.${key}`);
+
 const latestVercelCheck = checkpoint.vercelDeploymentRecheck.latestVercelReadOnlyCheck;
 assert(latestVercelCheck.flightBranchIsProductionSource === true,
   "the latest Vercel check must bind Production to the reviewed flight branch.");
@@ -364,6 +403,7 @@ const result = {
   monitoringCollectorAssembly: true,
   productionSourceIsFlightBranch: true,
   latestPreviewRecheck: true,
+  completionAudit: true,
   duffelResponseReceived: false,
 };
 process.stdout.write(`${JSON.stringify(result)}\n`);
