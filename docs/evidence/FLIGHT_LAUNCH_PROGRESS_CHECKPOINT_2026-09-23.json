@@ -218,6 +218,21 @@
         "paymentsPerformed": false,
         "ticketsIssued": false
       },
+      "latestPreviewAuthBoundaryCheck": {
+        "checkedAt": "2026-09-23T22:38:11-05:00",
+        "previewUrl": "https://iratepilotadmin-ikn0q7hjw-irate-pilot.vercel.app",
+        "getStatusByPath": {
+          "/admin/flights": 302,
+          "/api/flights/private-preview/live-search": 302,
+          "/api/flights/search": 302,
+          "/api/flights/orders": 302
+        },
+        "interpretation": "Unauthenticated admin and flight data-plane GETs redirect to the sign-in boundary.",
+        "providerRequestsPerformed": false,
+        "ordersPerformed": false,
+        "paymentsPerformed": false,
+        "ticketsIssued": false
+      },
       "latestOperationsRunbookIntegrityTest": {
         "checkedAt": "2026-09-23T19:05:38-05:00",
         "command": "vitest run tests/flight-consumer-production-operations-runbook.test.ts tests/flight-launch-evidence-audit.test.ts --reporter=dot",

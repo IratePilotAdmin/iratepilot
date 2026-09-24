@@ -194,6 +194,19 @@ for (const key of [
   "ticketsIssued",
 ]) assertClosed(latestVercelPreviewEnvironmentCheck[key], `latestVercelPreviewEnvironmentCheck.${key}`);
 
+const latestPreviewAuthBoundaryCheck = checkpoint.localVerification.latestPreviewAuthBoundaryCheck;
+assert(latestPreviewAuthBoundaryCheck.getStatusByPath?.["/admin/flights"] === 302
+  && latestPreviewAuthBoundaryCheck.getStatusByPath?.["/api/flights/private-preview/live-search"] === 302
+  && latestPreviewAuthBoundaryCheck.getStatusByPath?.["/api/flights/search"] === 302
+  && latestPreviewAuthBoundaryCheck.getStatusByPath?.["/api/flights/orders"] === 302,
+"the Preview admin and flight data-plane routes must remain behind the sign-in boundary.");
+for (const key of [
+  "providerRequestsPerformed",
+  "ordersPerformed",
+  "paymentsPerformed",
+  "ticketsIssued",
+]) assertClosed(latestPreviewAuthBoundaryCheck[key], `latestPreviewAuthBoundaryCheck.${key}`);
+
 for (const [label, value] of Object.entries(checkpoint.authorityBoundary)) {
   assertClosed(value, `checkpoint.authorityBoundary.${label}`);
 }
