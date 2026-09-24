@@ -1,7 +1,7 @@
 {
   "evidence": {
     "version": "flight-release-gate-matrix-v1",
-    "checkedAt": "2026-09-23T19:27:07-05:00",
+    "checkedAt": "2026-09-23T19:28:49-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "sourceCommit": "6ddea47",
@@ -26,6 +26,7 @@
       "paymentEnabled": false
     },
     "latestReadOnlyVerification": {
+      "checkedAt": "2026-09-23T19:28:49-05:00",
       "productionDeploymentId": "dpl_ECjpq8jnLPzpFprY993DgcUkCbZy",
       "productionState": "READY",
       "productionSourceBranch": "agent/hotel-fee-alignment-20260915",
