@@ -58,6 +58,8 @@ The command runs linting, TypeScript checks, the Vitest suite, and a production 
 
 ## Project documentation
 
+- [iRatePilot PMS operating manual (pilot draft)](docs/IRATEPILOT_PMS_OPERATING_MANUAL.md)
+- [Native PMS connector and current release limits](docs/IRATEPILOT-NATIVE-PMS-CONNECTOR.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Booking lifecycle](docs/BOOKING-LIFECYCLE.md)
 - [Payments](docs/PAYMENTS.md)
