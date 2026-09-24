@@ -271,7 +271,7 @@ assert(latestPreviewCheck.ticketIssued === false,
 
 assert(previewRecheck.source?.branch === "agent/flight-live-foundation-20260823",
   "the Preview recheck must describe the flight foundation branch.");
-assert(previewRecheck.source?.commit === "d9e1368",
+assert(previewRecheck.source?.commit === "9756fee",
   "the Preview recheck must bind the latest evidence commit.");
 assert(previewRecheck.deployment?.state === "READY"
   && previewRecheck.deployment?.target === "preview"
