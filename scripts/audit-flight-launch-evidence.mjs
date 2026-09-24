@@ -150,6 +150,18 @@ for (const key of [
   "ticketsIssued",
 ]) assertClosed(latestDuffelDashboardCheck[key], `latestDuffelDashboardCheck.${key}`);
 
+const latestControlledLiveSearchSafetyTest = checkpoint.localVerification.latestControlledLiveSearchSafetyTest;
+assert(latestControlledLiveSearchSafetyTest.status === "passed"
+  && latestControlledLiveSearchSafetyTest.testFilesPassed === 7
+  && latestControlledLiveSearchSafetyTest.testsPassed === 75,
+  "the controlled live-search safety test must pass with the recorded scope.");
+for (const key of [
+  "providerRequestsPerformed",
+  "ordersPerformed",
+  "paymentsPerformed",
+  "ticketsIssued",
+]) assertClosed(latestControlledLiveSearchSafetyTest[key], `latestControlledLiveSearchSafetyTest.${key}`);
+
 for (const [label, value] of Object.entries(checkpoint.authorityBoundary)) {
   assertClosed(value, `checkpoint.authorityBoundary.${label}`);
 }

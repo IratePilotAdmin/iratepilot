@@ -1,7 +1,7 @@
 {
   "evidence": {
     "version": "flight-launch-progress-checkpoint-v1",
-    "checkedAt": "2026-09-23T19:55:27-05:00",
+    "checkedAt": "2026-09-23T22:01:32-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "providerRequestsPerformed": false,
@@ -11,8 +11,8 @@
     "source": {
       "repository": "IratePilotAdmin/iratepilot",
       "branch": "agent/flight-live-foundation-20260823",
-      "commit": "4a11b98",
-      "commitMessage": "docs(flights): record Duffel onboarding requirements",
+      "commit": "b81b8ed",
+      "commitMessage": "docs(flights): record Duffel dashboard mode",
       "workingTreeChangeForThisReceipt": false
     },
     "routePacketManifest": "docs/evidence/FLIGHT_CONNECTOR_ROUTE_PACKET_MANIFEST_2026-09-23.json",
@@ -169,6 +169,17 @@
         "observedMode": "test",
         "liveModeSelected": false,
         "accountMutationPerformed": false,
+        "providerRequestsPerformed": false,
+        "ordersPerformed": false,
+        "paymentsPerformed": false,
+        "ticketsIssued": false
+      },
+      "latestControlledLiveSearchSafetyTest": {
+        "checkedAt": "2026-09-23T22:01:32-05:00",
+        "command": "vitest run tests/flight-consumer-production-duffel-shopping.test.ts tests/flight-consumer-production-duffel-shopping-route.test.ts tests/flight-consumer-production-duffel-shopping-page.test.ts tests/flight-consumer-production-private-preview-live-shopping.test.ts tests/flight-consumer-production-private-preview-live-shopping-route.test.ts tests/flight-consumer-production-shopping-runtime.test.ts tests/flight-consumer-production-runtime.test.ts --reporter=dot",
+        "testFilesPassed": 7,
+        "testsPassed": 75,
+        "status": "passed",
         "providerRequestsPerformed": false,
         "ordersPerformed": false,
         "paymentsPerformed": false,
