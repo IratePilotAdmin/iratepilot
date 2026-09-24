@@ -32,6 +32,6 @@ describe("authenticated site navigation", () => {
     expect(actions).toContain('fetch("/api/auth/session", { method: "POST" })');
     expect(sessionRoute).toContain('origin !== new URL(request.url).origin');
     expect(sessionRoute).toContain("supabase.auth.signOut()");
-    expect(actions).toContain('window.location.assign("/")');
+    expect(actions).toContain('router.replace("/")');
   });
 });

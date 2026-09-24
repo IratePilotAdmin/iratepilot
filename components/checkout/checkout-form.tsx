@@ -20,6 +20,7 @@ type Breakdown = {
 };
 
 function PaymentForm({ breakdown }: { breakdown: Breakdown }) {
+  const router = useRouter();
   const stripe = useStripe();
   const elements = useElements();
   const [message, setMessage] = useState("");
@@ -48,7 +49,7 @@ function PaymentForm({ breakdown }: { breakdown: Breakdown }) {
       });
       const body = await response.json();
       if (response.ok) {
-        window.location.assign(`/booking-confirmation?code=${encodeURIComponent(body.data.confirmation_code)}`);
+        router.push(`/booking-confirmation?code=${encodeURIComponent(body.data.confirmation_code)}`);
         return;
       }
       setMessage(body.error || "Payment succeeded, but booking confirmation is still processing.");
