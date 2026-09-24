@@ -170,6 +170,12 @@ assert(latestRunbookIntegrity.status === "passed"
   && latestRunbookIntegrity.testsPassed === 3,
 "the latest operations runbook integrity check must pass.");
 
+const latestCollectorAssembly = checkpoint.localVerification.latestOperationsCollectorAssemblyTest;
+assert(latestCollectorAssembly.status === "passed"
+  && latestCollectorAssembly.testFilesPassed >= 3
+  && latestCollectorAssembly.testsPassed >= 21,
+"the latest operations collector assembly check must pass.");
+
 const result = {
   version: "flight-launch-evidence-audit-v1",
   status: "pass",
