@@ -1,0 +1,48 @@
+{
+  "format": "iratepilot-native-ota-candidate-validation-v1",
+  "validatedAt": "2026-09-24T13:37:59Z",
+  "branch": "codex/pms-native-ota-connector",
+  "workingTreeDirtyBeforeEvidenceUpdate": false,
+  "scope": "Local OTA candidate validation and read-only production HTTP probes. No hosted migration, production deployment, booking operation, guest-data access, or traffic activation.",
+  "checks": {
+    "command": "pnpm run check",
+    "lint": "passed with no warnings",
+    "typecheck": "passed",
+    "tests": {
+      "passed": 981,
+      "failed": 0,
+      "files": 230
+    },
+    "productionBuild": "passed",
+    "includedDynamicRoutes": [
+      "/api/ota/capabilities",
+      "/api/pms/ari"
+    ]
+  },
+  "productionProbes": [
+    {
+      "url": "https://www.iratepilot.com/api/ota/capabilities",
+      "method": "GET",
+      "status": 404,
+      "result": "Connector capability route is not available on the public production host."
+    },
+    {
+      "url": "https://www.iratepilot.com/api/pms/ari",
+      "method": "GET",
+      "status": 404,
+      "result": "ARI receiver route is not available on the public production host."
+    }
+  ],
+  "preview": {
+    "applicationResponse": "not independently verified; Vercel SSO returned HTTP 302",
+    "hostedMigration": "not verified",
+    "reservationRoundTrip": "not verified",
+    "trafficEnabled": false
+  },
+  "limitations": [
+    "A successful local build and test run do not prove production deployment, hosted schema parity, property mapping, or a persisted reservation round trip.",
+    "The production routes remain absent; exposing them requires a separately reviewed production release of the OTA application.",
+    "PMS production activation remains subject to its recovery, maintenance-window, rollback, and hosted payment-evidence gates."
+  ],
+  "productionChanges": "none"
+}
