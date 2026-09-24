@@ -1,0 +1,20 @@
+{
+  "format": "iratepilot-sandbox-preflight-v1",
+  "observedAt": "2026-09-24T06:37:55Z",
+  "result": "not ready",
+  "networkRequestsMade": 0,
+  "synxisTraffic": "disabled",
+  "publicBooking": "disabled",
+  "livePayments": "disabled",
+  "livePayouts": "disabled",
+  "liveWebhooks": "disabled",
+  "missingConfiguration": [
+    "PILOT_MODE=true",
+    "Stripe test secret and publishable keys",
+    "Stripe test webhook secret",
+    "Resend webhook secret",
+    "matching non-production Supabase project ref and service-role key pair"
+  ],
+  "productionChanges": "none",
+  "databaseChanges": "none"
+}

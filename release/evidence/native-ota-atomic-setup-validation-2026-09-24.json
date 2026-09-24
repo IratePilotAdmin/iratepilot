@@ -1,0 +1,27 @@
+{
+  "format": "iratepilot-native-ota-atomic-setup-validation-v1",
+  "observedAt": "2026-09-24T06:54:00Z",
+  "scope": "Local connector candidate; no hosted database or production changes",
+  "change": "Admin saves reservation scope and ARI mapping with one transactional service-role RPC",
+  "verification": {
+    "fullTestFilesPassed": 230,
+    "fullTestsPassed": 979,
+    "focusedAtomicAndMigrationTestsPassed": 22,
+    "typecheck": "passed",
+    "changedFileLint": "passed",
+    "productionBuild": "passed",
+    "rollbackOnAriSetupFailure": "passed in PGlite; reservation scope and setup receipt both rolled back",
+    "schemaVerification": "verify_schema.sql now exposes native_ota_atomic_setup_ready; PGlite confirms the function-present check after migration",
+    "latestSetupErrorRegression": "8 tests passed; missing migration returns a Preview-specific instruction and validation errors avoid database detail leakage"
+  },
+  "notProven": [
+    "Hosted preview migration or schema parity",
+    "Application deployment",
+    "Red Roof Inn marketplace approval, publication, or room/rate mapping",
+    "Persisted iRatePilot.com-to-PMS reservation round trip",
+    "External OTA certification"
+  ],
+  "trafficEnabled": false,
+  "productionChanges": "none",
+  "guestOrPaymentDataChanged": "none"
+}

@@ -1,0 +1,41 @@
+{
+  "format": "iratepilot-native-ota-candidate-validation-v1",
+  "validatedAt": "2026-09-24T11:33:24Z",
+  "branch": "codex/pms-native-ota-connector",
+  "baseCommit": "fe49932e71b3f9146a9199f6311686e90d72c3bb",
+  "workingTreeDirty": true,
+  "scope": "Local iRatePilot.com OTA candidate checks; no hosted migration, production deployment, or live booking operation.",
+  "checks": {
+    "lint": "passed with no warnings",
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "tests": {
+      "failed": 0,
+      "files": 230,
+      "passed": 979
+    }
+  },
+  "previewMigration": {
+    "reason": "PREVIEW_SUPABASE_DB_URL and PREVIEW_SUPABASE_PROJECT_REF are not configured in this environment",
+    "result": "not run"
+  },
+  "production": {
+    "deployment": "not deployed",
+    "hostedMigration": "not applied",
+    "reservationRoundTrip": "not verified",
+    "trafficEnabled": false
+  },
+  "limitations": [
+    "Local checks do not prove hosted schema parity, property mapping, a persisted reservation, or certified external OTA distribution.",
+    "Connector preview traffic remains disabled. The observed public OTA search returned zero matching stays.",
+    "No production deployment or production database changes occurred."
+  ],
+  "productionChanges": "none",
+  "currentVerification": {
+    "tests": "979 passed across 230 files",
+    "lint": "passed",
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "verificationScope": "Current dirty local candidate; hosted preview and production unchanged"
+  }
+}

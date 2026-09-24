@@ -1,0 +1,46 @@
+{
+  "format": "iratepilot-native-ota-deployment-binding-v1",
+  "verifiedAt": "2026-09-24T05:44:52.976Z",
+  "production": {
+    "project": "iratepilotadmin",
+    "projectId": "prj_qFxx3L5PiFgr0S1bNPmzvetGdKRW",
+    "aliases": [
+      "www.iratepilot.com",
+      "iratepilot.com"
+    ],
+    "deploymentId": "dpl_CgLUV9bxXnmnqvVF869nL3iCafR5",
+    "branch": "agent/flight-live-foundation-20260823",
+    "commit": "3d293b9e6a9c25450475e78775ee1c380e92d4aa",
+    "capabilityRoute": "404 in previous read-only public probe",
+    "receiverRoute": "404 in previous read-only public probe"
+  },
+  "connectorPreview": {
+    "alias": "iratepilotadmin-git-codex-pms-native-ota-connector-irate-pilot.vercel.app",
+    "deploymentId": "dpl_Dd461dodRK2sQJS3tAS2RnM4RSHK",
+    "branch": "codex/pms-native-ota-connector",
+    "commit": "fe49932e71b3f9146a9199f6311686e90d72c3bb",
+    "state": "READY",
+    "capability": {
+      "route": "/api/ota/capabilities",
+      "result": "JSON served in signed-in browser",
+      "trafficEnabled": false
+    },
+    "receiver": {
+      "route": "/api/pms/ari",
+      "method": "GET",
+      "result": "405 method_not_allowed, confirming route is deployed"
+    }
+  },
+  "candidate": {
+    "latestLocalValidation": "release/evidence/native-ota-candidate-validation-2026-09-24.json",
+    "workingTreeDirty": true,
+    "hostedMigrations": "not applied",
+    "reservationRoundTrip": "not verified"
+  },
+  "productionChanges": "none",
+  "limitations": [
+    "Production alias points to a different branch and commit than the native OTA connector preview.",
+    "The protected connector preview deployment is at the pre-validation base commit; current dirty local candidate is not deployed.",
+    "Preview database migration and booking round-trip remain unverified."
+  ]
+}

@@ -1,9 +1,8 @@
-import { after, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/require-role";
 import { reservationReviewSchema } from "@/lib/validation";
 import { queueBookingNotification } from "@/lib/email/booking-notifications";
-import { drainNativePmsEvents } from "@/services/hotel-suppliers/iratepilot-pms/native-delivery";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -34,15 +33,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       : reviewed?.status === "confirmed"
         ? "Reservation approved and inventory held."
         : "Request expired because check-in has already begun. No inventory was held.";
-    if (reviewed?.status === "confirmed") {
-      after(async () => {
-        try {
-          await drainNativePmsEvents(10);
-        } catch (deliveryError) {
-          console.error("Approved reservation was queued for later PMS delivery", deliveryError);
-        }
-      });
-    }
     if (booking && (parsed.data.decision === "reject" || reviewed?.status === "confirmed")) {
       await queueBookingNotification({
         event: parsed.data.decision === "reject" ? "declined" : "approved",

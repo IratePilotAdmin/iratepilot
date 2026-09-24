@@ -36,7 +36,7 @@ describe("SynXis production rollout manifest", () => {
     expect(manifest.historyRepairCandidates.at(-1)).toBe("202608130038");
     expect(manifest.appliedDeploymentVersions[0]).toBe("202608130039");
     expect(manifest.appliedDeploymentVersions).toEqual(migrationVersions.slice(49, -manifest.pendingDeploymentVersions.length));
-    expect(manifest.pendingDeploymentVersions).toEqual(["20260923120000", "20260923130000"]);
+    expect(manifest.pendingDeploymentVersions).toEqual(["20260923120000", "20260923130000", "20260923150000", "20260923151000", "20260924100000", "20260924101500"]);
   });
 
   it("records completed database rollout while preserving later launch gates", () => {

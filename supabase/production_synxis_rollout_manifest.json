@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "executionState": "migrations_001_061_and_ota_connector_base_applied_guest_name_snapshot_pending_native_ari_receiver_pending_application_deployment_pending_manager_acceptance_incomplete_synxis_traffic_disabled",
+  "executionState": "migrations_001_061_and_ota_connector_base_applied_guest_name_snapshot_pending_native_ari_receiver_pending_delivery_registry_pending_reservation_connection_setup_pending_baseline_review_control_pending_atomic_connector_setup_pending_application_deployment_pending_manager_acceptance_incomplete_synxis_traffic_disabled",
   "historyRepairCandidates": [
     "202607260001",
     "202607280001",
@@ -84,7 +84,11 @@
   ],
   "pendingDeploymentVersions": [
     "20260923120000",
-    "20260923130000"
+    "20260923130000",
+    "20260923150000",
+    "20260923151000",
+    "20260924100000",
+    "20260924101500"
   ],
   "requiredWriteGates": [
     "separate production approval to merge PR #279 and deploy the corresponding application before any manager invitation or manager activation",

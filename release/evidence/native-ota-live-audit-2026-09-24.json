@@ -1,0 +1,57 @@
+{
+  "format": "iratepilot-native-ota-live-audit-v1",
+  "observedAt": "2026-09-24T06:32:22Z",
+  "environment": "Read-only browser and Vercel connector checks",
+  "production": {
+    "branch": "agent/flight-live-foundation-20260823",
+    "commit": "3d293b9e6a9c25450475e78775ee1c380e92d4aa",
+    "otaCapabilitiesRoute": "HTTP 404",
+    "project": "iratepilotadmin",
+    "deployment": "dpl_CgLUV9bxXnmnqvVF869nL3iCafR5"
+  },
+  "connectorPreview": {
+    "commit": "fe49932e71b3f9146a9199f6311686e90d72c3bb",
+    "publicSearch": "0 stays in observed search; no matching approved inventory",
+    "branch": "codex/pms-native-ota-connector",
+    "externalOtaProviders": "certification_required; no providers configured",
+    "trafficEnabled": false,
+    "state": "READY",
+    "deployment": "dpl_Dd461dodRK2sQJS3tAS2RnM4RSHK"
+  },
+  "publicSearchRecheck": {
+    "observedAt": "2026-09-24T08:12:38Z",
+    "destination": "Ridgeland, Mississippi",
+    "checkIn": "2026-10-01",
+    "checkOut": "2026-10-02",
+    "guests": 2,
+    "result": "0 available stays",
+    "scope": "Unauthenticated OTA preview search only; does not establish whether the property exists in partner admin or why it is unavailable."
+  },
+  "productionSearchRecheck": {
+    "observedAt": "2026-09-24T08:13:21Z",
+    "destination": "Ridgeland, Mississippi",
+    "checkIn": "2026-10-01",
+    "checkOut": "2026-10-02",
+    "guests": 2,
+    "result": "No stays match this search",
+    "scope": "Production public search only; does not establish whether the Red Roof test property exists in partner admin or why it is unavailable."
+  },
+  "productionHomepageInventoryDisclosure": "Sample properties demonstrate the marketplace until direct partner inventory is connected.",
+  "partnerPropertiesRecheck": {
+    "observedAt": "2026-09-24T08:14:09Z",
+    "propertyRecords": "none",
+    "listingVisibility": "Partner Center says listings stay private until administrator approval.",
+    "createAction": "not submitted",
+    "scope": "Read-only inspection of the signed-in account's partner properties page."
+  },
+  "redRoof": {
+    "PMSPropertyMapping": "not verified",
+    "sandboxReservationRoundTrip": "not verified",
+    "activeMarketplacePublication": "not verified"
+  },
+  "changes": {
+    "guestData": "none",
+    "production": "none",
+    "paymentData": "none"
+  }
+}

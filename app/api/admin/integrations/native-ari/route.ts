@@ -7,8 +7,10 @@ export const dynamic = "force-dynamic";
 
 type Mapping = { roomTypeId: string; ratePlanId: string; otaRoomId: string };
 type SetupBody = {
+  requestId?: unknown;
   connectionId?: unknown;
   propertyId?: unknown;
+  tenantId?: unknown;
   pmsPropertyId?: unknown;
   signingSecret?: unknown;
   mappings?: unknown;
@@ -27,6 +29,19 @@ const reply = (body: unknown, status = 200) => NextResponse.json(body, {
 });
 const id = /^[A-Za-z0-9_-]{1,128}$/;
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function setupFailure(error: unknown) {
+  const code = error && typeof error === "object" && "code" in error && typeof error.code === "string"
+    ? error.code
+    : "";
+  if (code === "PGRST202" || code === "42883") {
+    return reply({ error: "The Preview database is missing the native connection setup migration. Apply the approved migrations to the non-production project, then retry." }, 503);
+  }
+  if (["22023", "23503", "23505", "42501"].includes(code)) {
+    return reply({ error: "Connection setup was rejected. Verify the approved property, PMS identifiers, and room/rate mappings, then retry." }, 409);
+  }
+  return reply({ error: "Native PMS configuration is temporarily unavailable. Retry, or check the non-production database migration status." }, 503);
+}
 
 function mappings(value: unknown): Mapping[] | null {
   if (!Array.isArray(value) || value.length < 1 || value.length > 200) return null;
@@ -54,16 +69,18 @@ export async function GET() {
   if ("error" in auth) return reply({ error: auth.error }, auth.status);
   try {
     const admin = createAdminClient();
-    const [result, propertyResult] = await Promise.all([admin.from("irp_pms_native_ari_connections")
+    const [result, propertyResult, reservationResult] = await Promise.all([admin.from("irp_pms_native_ari_connections")
       .select("connection_id,property_id,pms_property_id,enabled,latest_source_version,updated_at,irp_pms_native_ari_mappings(ota_room_id,pms_room_type_id,pms_rate_plan_id)")
       .order("updated_at", { ascending: false }), admin.from("properties")
-      .select("id,name,partners!inner(status),rooms(id,name,active)").eq("active", true).order("name", { ascending: true })]);
-    if (result.error || propertyResult.error) throw result.error ?? propertyResult.error;
+      .select("id,name,partners!inner(status),rooms(id,name,active)").eq("active", true).order("name", { ascending: true }),
+    admin.from("irp_pms_outbox_connections")
+      .select("property_id,connection_id,tenant_id,pms_property_id,enabled,delivery_enabled,environment")]);
+    if (result.error || propertyResult.error || reservationResult.error) throw result.error ?? propertyResult.error ?? reservationResult.error;
     const properties = (propertyResult.data ?? []).filter((property) => {
       const partner = property.partners as unknown as { status?: string } | null;
       return partner?.status === "approved";
     }).map((property) => ({ id: property.id, name: property.name, rooms: property.rooms ?? [] }));
-    return reply({ connections: result.data ?? [], properties });
+    return reply({ connections: result.data ?? [], reservationConnections: reservationResult.data ?? [], properties });
   } catch {
     return reply({ error: "Native ARI configuration is unavailable." }, 503);
   }
@@ -77,13 +94,15 @@ export async function PUT(request: Request) {
   catch { return reply({ error: "Invalid JSON." }, 400); }
 
   const rows = mappings(body.mappings);
-  if (typeof body.connectionId !== "string" || !/^[A-Za-z0-9_-]{1,80}$/.test(body.connectionId)
-    || typeof body.pmsPropertyId !== "string" || !id.test(body.pmsPropertyId)
+  if (typeof body.requestId !== "string" || !uuid.test(body.requestId)
+    || typeof body.connectionId !== "string" || !/^[A-Za-z0-9_-]{1,80}$/.test(body.connectionId)
+    || typeof body.tenantId !== "string" || !uuid.test(body.tenantId)
+    || typeof body.pmsPropertyId !== "string" || !uuid.test(body.pmsPropertyId)
     || typeof body.propertyId !== "string" || !uuid.test(body.propertyId)
     || typeof body.signingSecret !== "string"
     || new TextEncoder().encode(body.signingSecret).byteLength < 32
     || new TextEncoder().encode(body.signingSecret).byteLength > 512
-    || !rows) return reply({ error: "Provide a scoped connection, a 32–512 byte secret, and unique room/rate mappings." }, 400);
+  || !rows) return reply({ error: "Provide the OTA property, PMS tenant/property IDs, a 32–512 byte secret, and unique room/rate mappings." }, 400);
 
   try {
     const admin = createAdminClient();
@@ -100,9 +119,12 @@ export async function PUT(request: Request) {
     }
 
     const encrypted = encryptPmsCredentials({ IRATEPILOT_PMS_ARI_SIGNING_SECRET: body.signingSecret });
-    const saved = await admin.rpc("irp_pms_save_native_ari_connection", {
-      p_connection: body.connectionId,
+    const configured = await admin.rpc("irp_pms_configure_native_connection", {
+      p_request: body.requestId,
+      p_actor: auth.user.id,
       p_property: body.propertyId,
+      p_connection: body.connectionId,
+      p_tenant: body.tenantId,
       p_pms_property: body.pmsPropertyId,
       p_secret_ciphertext: encrypted.ciphertext,
       p_secret_iv: encrypted.initializationVector,
@@ -110,10 +132,11 @@ export async function PUT(request: Request) {
       p_secret_key_version: encrypted.keyVersion,
       p_mappings: rows,
     });
-    if (saved.error) throw saved.error;
-    return reply({ ...saved.data, message: "Connection and mappings saved disabled. Match and enable the PMS booking connector, then complete the isolated ARI test before any activation." });
-  } catch {
-    return reply({ error: "Native ARI configuration could not be saved." }, 503);
+    if (configured.error) throw configured.error;
+    return reply({ ...configured.data,
+      message: "The reservation and rate connections are saved in sandbox with capture and delivery disabled. Review migration baseline and run isolated round-trip tests before activation." });
+  } catch (error) {
+    return setupFailure(error);
   }
 }
 
