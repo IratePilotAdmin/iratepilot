@@ -1,7 +1,7 @@
 {
   "evidence": {
     "version": "flight-release-gate-matrix-v1",
-    "checkedAt": "2026-09-23T19:28:49-05:00",
+    "checkedAt": "2026-09-23T19:30:03-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "sourceCommit": "6ddea47",
@@ -33,10 +33,13 @@
       "productionSourceCommit": "a9dbf5f155f5ffc2dfe81da41a3522c69316783d",
       "flightBranchIsProductionSource": false,
       "previewSurface": "supplier_offline_planning_preview",
+      "canonicalFlightSurface": "supplier_offline_planning_preview",
+      "canonicalFlightSurfaceCheckedAt": "2026-09-23T19:30:03-05:00",
+      "canonicalLiveInventoryDisplayed": false,
       "providerRequestDispatched": false,
       "duffelResponseReceived": false,
       "redeployTriggered": false
     },
-    "disposition": "The Duffel-primary/Sabre-secondary route preference is reconciled for planning and the full regression suite is green. Current Preview remains supplier-offline, while Production is READY on a different hotel branch. The dependency chain remains fail-closed: remaining transitions require Duffel evidence, explicit release authority, and separately verified deployment/payment/operational controls; no transition was inferred or forced."
+    "disposition": "The Duffel-primary/Sabre-secondary route preference is reconciled for planning and the full regression suite is green. The canonical public flight surface is now observed read-only as supplier-offline planning, with no live inventory or provider request; the underlying Production source/deployment mapping still requires independent Vercel verification. The dependency chain remains fail-closed: remaining transitions require Duffel evidence, explicit release authority, and separately verified deployment/payment/operational controls; no transition was inferred or forced."
   }
 }

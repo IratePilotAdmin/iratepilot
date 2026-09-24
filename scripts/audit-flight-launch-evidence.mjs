@@ -151,6 +151,20 @@ assert(latestPreviewCheck.bookingCreated === false,
 assert(latestPreviewCheck.ticketIssued === false,
   "the latest Preview check must not issue a ticket.");
 
+const latestCanonicalSurfaceCheck = checkpoint.localVerification.latestCanonicalProductionSurfaceCheck;
+assert(latestCanonicalSurfaceCheck.surface === "supplier_offline_planning_preview",
+  "the canonical Production flight surface must remain supplier-offline.");
+assert(latestCanonicalSurfaceCheck.liveInventoryDisplayed === false,
+  "the canonical Production flight surface must not display live inventory.");
+assert(latestCanonicalSurfaceCheck.providerRequestDispatched === false,
+  "the canonical Production flight surface must not dispatch a provider request.");
+assert(latestCanonicalSurfaceCheck.paymentCreated === false,
+  "the canonical Production flight surface must not create payment.");
+assert(latestCanonicalSurfaceCheck.bookingCreated === false,
+  "the canonical Production flight surface must not create booking.");
+assert(latestCanonicalSurfaceCheck.ticketIssued === false,
+  "the canonical Production flight surface must not issue a ticket.");
+
 const latestBuildCheck = checkpoint.localVerification.latestProductionBuildCheck;
 assert(latestBuildCheck.status === "passed",
   "the latest local Production build must pass.");
