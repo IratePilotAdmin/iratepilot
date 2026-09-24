@@ -1,7 +1,7 @@
 {
   "evidence": {
     "version": "flight-launch-progress-checkpoint-v1",
-  "checkedAt": "2026-09-23T22:53:33-05:00",
+  "checkedAt": "2026-09-23T23:01:05-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "providerRequestsPerformed": false,
@@ -11,8 +11,8 @@
     "source": {
       "repository": "IratePilotAdmin/iratepilot",
       "branch": "agent/flight-live-foundation-20260823",
-    "commit": "220e8f5",
-    "commitMessage": "docs(flights): bind latest Preview deployment",
+    "commit": "4e56b7c",
+    "commitMessage": "fix(flights): distinguish deployment from release authority",
       "workingTreeChangeForThisReceipt": false
     },
     "routePacketManifest": "docs/evidence/FLIGHT_CONNECTOR_ROUTE_PACKET_MANIFEST_2026-09-23.json",
@@ -97,11 +97,11 @@
         "ticketsIssued": false
       },
       "latestBrowserReadOnlyCheck": {
-        "checkedAt": "2026-09-23T22:47:37-05:00",
-        "previewUrl": "https://iratepilotadmin-1btll92jw-irate-pilot.vercel.app/flights",
-        "previewDeploymentId": "94ZB1fegG4274Do1FctZ7hgjqk7W",
+        "checkedAt": "2026-09-23T22:59:42-05:00",
+        "previewUrl": "https://iratepilotadmin-qwg5k4ndi-irate-pilot.vercel.app/flights",
+        "previewDeploymentId": "G5dJwkCarimX7ZvBENwEcDdFYw7y",
         "previewDeploymentState": "READY",
-        "previewSourceCommit": "220e8f5d53b8f872547fd6c1957025061f99cee0",
+        "previewSourceCommit": "4e56b7c84e6d925f7b3ec13d52885f2089e7d1ac",
         "previewSourceBranch": "agent/flight-live-foundation-20260823",
         "previewSurface": "supplier_offline_planning_preview",
         "liveInventoryDisplayed": false,
@@ -111,7 +111,7 @@
         "ticketIssued": false
       },
       "latestCanonicalProductionSurfaceCheck": {
-        "checkedAt": "2026-09-23T22:53:33-05:00",
+        "checkedAt": "2026-09-23T23:01:05-05:00",
         "url": "https://www.iratepilot.com/flights",
         "pageTitle": "Flight planning preview | iRatePilot",
         "surface": "supplier_offline_planning_preview",
@@ -121,17 +121,17 @@
         "bookingCreated": false,
         "ticketIssued": false,
         "sourceBranchVerified": true,
-        "productionDeploymentId": "dpl_59SiWLADxkJK6jwfFobvVQBUXhwB",
+        "productionDeploymentId": "dpl_14se31VCiwrFq2Wnde74n7yx3Hyx",
         "productionDeploymentState": "READY",
         "productionSourceBranch": "agent/flight-live-foundation-20260823",
-        "productionSourceCommit": "220e8f5d53b8f872547fd6c1957025061f99cee0",
+        "productionSourceCommit": "4e56b7c84e6d925f7b3ec13d52885f2089e7d1ac",
         "note": "Canonical public flight surface was observed read-only after the reviewed flight branch was promoted to Production; the deployment page independently bound the aliases and source commit."
       },
       "latestProductionBuildCheck": {
-        "checkedAt": "2026-09-23T22:47:37-05:00",
+        "checkedAt": "2026-09-23T23:01:05-05:00",
         "command": "next build --webpack",
         "status": "passed",
-        "sourceCommit": "220e8f5",
+        "sourceCommit": "4e56b7c",
         "staticPagesGenerated": 121,
         "providerRequestsPerformed": false,
         "ordersPerformed": false,
@@ -275,11 +275,11 @@
       }
     },
     "preview": {
-      "deploymentId": "dpl_94ZB1fegG4274Do1FctZ7hgjqk7W",
-      "deploymentUrl": "https://iratepilotadmin-1btll92jw-irate-pilot.vercel.app",
+      "deploymentId": "dpl_G5dJwkCarimX7ZvBENwEcDdFYw7y",
+      "deploymentUrl": "https://iratepilotadmin-qwg5k4ndi-irate-pilot.vercel.app",
       "branchAlias": "https://iratepilotadmin-git-agent-flight-live-founda-0333c5-irate-pilot.vercel.app",
       "branch": "agent/flight-live-foundation-20260823",
-      "sourceCommit": "220e8f5d53b8f872547fd6c1957025061f99cee0",
+      "sourceCommit": "4e56b7c84e6d925f7b3ec13d52885f2089e7d1ac",
       "state": "READY",
       "target": "preview",
       "browserSmoke": {
@@ -299,10 +299,10 @@
       }
     },
     "production": {
-      "currentDeploymentId": "dpl_59SiWLADxkJK6jwfFobvVQBUXhwB",
+      "currentDeploymentId": "dpl_14se31VCiwrFq2Wnde74n7yx3Hyx",
       "state": "READY",
       "sourceBranch": "agent/flight-live-foundation-20260823",
-      "sourceCommit": "220e8f5d53b8f872547fd6c1957025061f99cee0",
+      "sourceCommit": "4e56b7c84e6d925f7b3ec13d52885f2089e7d1ac",
       "flightBranchIsCurrentProductionSource": true,
       "flightPromotionPerformed": true,
       "paymentFlagReadOnlyCheck": "FLIGHT_PAYMENT_ENABLED=false",
@@ -314,13 +314,13 @@
       }
     },
     "vercelDeploymentRecheck": {
-      "checkedAt": "2026-09-23T22:53:33-05:00",
+      "checkedAt": "2026-09-23T23:01:05-05:00",
       "latestVercelReadOnlyCheck": {
-        "checkedAt": "2026-09-23T22:53:33-05:00",
-        "productionDeploymentId": "dpl_59SiWLADxkJK6jwfFobvVQBUXhwB",
+        "checkedAt": "2026-09-23T23:01:05-05:00",
+        "productionDeploymentId": "dpl_14se31VCiwrFq2Wnde74n7yx3Hyx",
         "productionState": "READY",
         "productionSourceBranch": "agent/flight-live-foundation-20260823",
-        "productionSourceCommit": "220e8f5d53b8f872547fd6c1957025061f99cee0",
+        "productionSourceCommit": "4e56b7c84e6d925f7b3ec13d52885f2089e7d1ac",
         "flightBranchIsProductionSource": true,
         "credentialDigestVariablePresentInProduction": true,
         "credentialValueRead": false,
@@ -328,11 +328,11 @@
         "providerTrafficTriggered": false
       },
       "authoritativeBrowserRecheck": {
-        "checkedAt": "2026-09-23T22:53:33-05:00",
-        "productionDeploymentId": "dpl_59SiWLADxkJK6jwfFobvVQBUXhwB",
+        "checkedAt": "2026-09-23T23:01:05-05:00",
+        "productionDeploymentId": "dpl_14se31VCiwrFq2Wnde74n7yx3Hyx",
         "productionState": "READY",
         "productionSourceBranch": "agent/flight-live-foundation-20260823",
-        "productionSourceCommit": "220e8f5d53b8f872547fd6c1957025061f99cee0",
+        "productionSourceCommit": "4e56b7c84e6d925f7b3ec13d52885f2089e7d1ac",
         "flightBranchPromoted": true,
         "flightProductionDeploymentTriggered": true
       },
@@ -347,19 +347,19 @@
         "productionOnlyLiveSearchDiagnostic": "not_available_in_preview_by_design"
       },
       "preview": {
-        "deploymentId": "dpl_94ZB1fegG4274Do1FctZ7hgjqk7W",
+        "deploymentId": "dpl_G5dJwkCarimX7ZvBENwEcDdFYw7y",
         "state": "READY",
         "target": null,
         "branch": "agent/flight-live-foundation-20260823",
-        "sourceCommit": "220e8f5d53b8f872547fd6c1957025061f99cee0",
+        "sourceCommit": "4e56b7c84e6d925f7b3ec13d52885f2089e7d1ac",
         "branchAlias": "https://iratepilotadmin-git-agent-flight-live-founda-0333c5-irate-pilot.vercel.app"
       },
       "production": {
-        "deploymentId": "dpl_59SiWLADxkJK6jwfFobvVQBUXhwB",
+        "deploymentId": "dpl_14se31VCiwrFq2Wnde74n7yx3Hyx",
         "state": "READY",
         "target": "production",
         "branch": "agent/flight-live-foundation-20260823",
-        "sourceCommit": "220e8f5d53b8f872547fd6c1957025061f99cee0",
+        "sourceCommit": "4e56b7c84e6d925f7b3ec13d52885f2089e7d1ac",
         "source": "promoted_preview",
         "aliases": [
           "www.iratepilot.com",
@@ -473,6 +473,6 @@
       "orderCreationEnabled": false,
       "ticketingEnabled": false
     },
-    "disposition": "Engineering, the isolated synthetic Preview journey, and the reviewed flight Production deployment pass current verification. Duffel is recorded as primary and Sabre as secondary for planning only. The replacement Duffel credential and matching domain-bound digest are saved in Vercel Production and are now covered by READY deployment dpl_59SiWLADxkJK6jwfFobvVQBUXhwB. Consumer Production launch is not ready: the dark-search gate remains closed, and external provider, payment, operational, legal, and release evidence is outstanding. No live provider request, order, payment, or ticket occurred in this checkpoint."
+    "disposition": "Engineering, the isolated synthetic Preview journey, and the reviewed flight Production deployment pass current verification. Duffel is recorded as primary and Sabre as secondary for planning only. The replacement Duffel credential and matching domain-bound digest are saved in Vercel Production and are now covered by READY deployment dpl_14se31VCiwrFq2Wnde74n7yx3Hyx. Consumer Production launch is not ready: the dark-search gate remains closed, and external provider, payment, operational, legal, and release evidence is outstanding. No live provider request, order, payment, or ticket occurred in this checkpoint."
   }
 }

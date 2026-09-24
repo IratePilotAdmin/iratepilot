@@ -1,10 +1,10 @@
 {
   "evidence": {
     "version": "flight-release-gate-matrix-v1",
-    "checkedAt": "2026-09-23T22:53:33-05:00",
+    "checkedAt": "2026-09-23T23:01:05-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
-    "sourceCommit": "220e8f5",
+    "sourceCommit": "4e56b7c",
     "routePacketManifest": "docs/evidence/FLIGHT_CONNECTOR_ROUTE_PACKET_MANIFEST_2026-09-23.json",
     "gates": [
       {"id": "route_preference", "state": "resolved_for_planning", "primary": "duffel", "secondary": "sabre", "operationalRouteEnabled": false},
@@ -26,16 +26,16 @@
       "paymentEnabled": false
     },
     "latestReadOnlyVerification": {
-      "checkedAt": "2026-09-23T22:53:33-05:00",
-      "productionDeploymentId": "dpl_59SiWLADxkJK6jwfFobvVQBUXhwB",
+      "checkedAt": "2026-09-23T23:01:05-05:00",
+      "productionDeploymentId": "dpl_14se31VCiwrFq2Wnde74n7yx3Hyx",
       "productionState": "READY",
       "productionSourceBranch": "agent/flight-live-foundation-20260823",
-      "productionSourceCommit": "220e8f5d53b8f872547fd6c1957025061f99cee0",
+      "productionSourceCommit": "4e56b7c84e6d925f7b3ec13d52885f2089e7d1ac",
       "flightBranchIsProductionSource": true,
-      "previewDeploymentId": "94ZB1fegG4274Do1FctZ7hgjqk7W",
+      "previewDeploymentId": "G5dJwkCarimX7ZvBENwEcDdFYw7y",
       "previewDeploymentState": "READY",
       "previewSourceBranch": "agent/flight-live-foundation-20260823",
-      "previewSourceCommit": "220e8f5d53b8f872547fd6c1957025061f99cee0",
+      "previewSourceCommit": "4e56b7c84e6d925f7b3ec13d52885f2089e7d1ac",
       "previewSurface": "supplier_offline_planning_preview",
       "canonicalFlightSurface": "supplier_offline_planning_preview",
       "canonicalFlightSurfaceCheckedAt": "2026-09-23T19:55:27-05:00",
