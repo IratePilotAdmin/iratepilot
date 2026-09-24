@@ -32,15 +32,29 @@
     }
   },
   "candidate": {
-    "latestLocalValidation": "release/evidence/native-ota-candidate-validation-2026-09-24.json",
-    "workingTreeDirty": true,
+    "latestLocalValidation": "release/evidence/native-ota-candidate-validation-2026-09-24-v2.json",
+    "workingTreeDirty": false,
     "hostedMigrations": "not applied",
-    "reservationRoundTrip": "not verified"
+    "reservationRoundTrip": "not verified",
+    "baseCommit": "f63eeb19193980e9cb662dea69fa3e04263a4568"
   },
   "productionChanges": "none",
   "limitations": [
-    "Production alias points to a different branch and commit than the native OTA connector preview.",
-    "The protected connector preview deployment is at the pre-validation base commit; current dirty local candidate is not deployed.",
-    "Preview database migration and booking round-trip remain unverified."
-  ]
+    "Preview SSO prevented independent inspection of the application-level capability and receiver responses.",
+    "The candidate database migrations have not been applied to a verified non-production Supabase project.",
+    "The Red Roof Inn reservation round trip remains unverified.",
+    "The production domain still points to a different branch and commit; no production deployment was performed."
+  ],
+  "latestPreview": {
+    "verifiedAt": "2026-09-24T11:38:03Z",
+    "deploymentId": "dpl_6wbmTenve4UwjsXPMgfjdHUMJKB2",
+    "url": "iratepilotadmin-rbwnl13g6-irate-pilot.vercel.app",
+    "branch": "codex/pms-native-ota-connector",
+    "commit": "f63eeb19193980e9cb662dea69fa3e04263a4568",
+    "state": "READY",
+    "capabilityRoute": "Protected by Vercel SSO; unauthenticated check returned 302, response body not inspected",
+    "ariReceiverRoute": "Protected by Vercel SSO; unauthenticated check returned 302, response body not inspected",
+    "hostedPreviewMigration": "not applied",
+    "trafficEnabled": false
+  }
 }
