@@ -1,14 +1,14 @@
 {
   "evidence": {
     "version": "flight-connector-route-packet-manifest-v1",
-    "checkedAt": "2026-09-23T18:21:00-05:00",
+    "checkedAt": "2026-09-23T23:05:12-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "providerRequestsPerformed": false,
     "ordersPerformed": false,
     "paymentsPerformed": false,
     "ticketsIssued": false,
-    "sourceCommit": "80a2c64",
+    "sourceCommit": "4e56b7c",
     "routeDecision": {
       "primary": "duffel",
       "secondary": "sabre",
@@ -92,7 +92,6 @@
     "nextActionableGate": "duffel_contract_authority_evidence",
     "externalBlockers": [
       "Duffel response and attributable contract/content/ticketing/settlement/security/support/sandbox evidence",
-      "Reviewed flight deployment authorization; current Production still serves a different branch",
       "Separate payment, legal, support, monitoring, and consumer-release approvals"
     ]
   }
