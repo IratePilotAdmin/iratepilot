@@ -163,6 +163,17 @@
         "paymentsPerformed": false,
         "ticketsIssued": false
       },
+      "latestDuffelDashboardCheck": {
+        "checkedAt": "2026-09-23T19:56:00-05:00",
+        "url": "https://app.duffel.com/d111b340aac32fc8a5aa178/live",
+        "observedMode": "test",
+        "liveModeSelected": false,
+        "accountMutationPerformed": false,
+        "providerRequestsPerformed": false,
+        "ordersPerformed": false,
+        "paymentsPerformed": false,
+        "ticketsIssued": false
+      },
       "latestOperationsRunbookIntegrityTest": {
         "checkedAt": "2026-09-23T19:05:38-05:00",
         "command": "vitest run tests/flight-consumer-production-operations-runbook.test.ts tests/flight-launch-evidence-audit.test.ts --reporter=dot",

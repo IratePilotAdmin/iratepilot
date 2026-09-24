@@ -136,6 +136,20 @@ for (const key of [
   "ticketsIssued",
 ]) assertClosed(latestDuffelDocumentationCheck[key], `latestDuffelDocumentationCheck.${key}`);
 
+const latestDuffelDashboardCheck = checkpoint.localVerification.latestDuffelDashboardCheck;
+assert(latestDuffelDashboardCheck.url === "https://app.duffel.com/d111b340aac32fc8a5aa178/live",
+  "the latest Duffel dashboard check must bind the live dashboard URL.");
+assert(latestDuffelDashboardCheck.observedMode === "test",
+  "the latest Duffel dashboard check must preserve the observed Test mode state.");
+for (const key of [
+  "liveModeSelected",
+  "accountMutationPerformed",
+  "providerRequestsPerformed",
+  "ordersPerformed",
+  "paymentsPerformed",
+  "ticketsIssued",
+]) assertClosed(latestDuffelDashboardCheck[key], `latestDuffelDashboardCheck.${key}`);
+
 for (const [label, value] of Object.entries(checkpoint.authorityBoundary)) {
   assertClosed(value, `checkpoint.authorityBoundary.${label}`);
 }
