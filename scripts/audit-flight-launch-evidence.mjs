@@ -186,6 +186,7 @@ const result = {
   providerTrafficEnabled: false,
   bookingEnabled: false,
   paymentEnabled: false,
+  monitoringCollectorAssembly: true,
   productionSourceIsFlightBranch: false,
   duffelResponseReceived: false,
 };

@@ -19,6 +19,7 @@ describe("flight launch evidence audit", () => {
       providerTrafficEnabled: false,
       bookingEnabled: false,
       paymentEnabled: false,
+      monitoringCollectorAssembly: true,
       productionSourceIsFlightBranch: false,
       duffelResponseReceived: false,
     });
