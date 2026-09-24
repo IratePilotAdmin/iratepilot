@@ -123,6 +123,19 @@ assert(checkpoint.duffelApprovalFollowUp.credentialsIncluded === false,
 assert(checkpoint.duffelApprovalFollowUp.passengerDataIncluded === false,
   "the follow-up evidence must not include passenger data.");
 
+const latestDuffelDocumentationCheck = checkpoint.localVerification.latestDuffelDocumentationCheck;
+assert(latestDuffelDocumentationCheck.url === "https://duffel.com/guides/getting-started",
+  "the latest Duffel documentation check must bind the getting-started guide.");
+for (const key of [
+  "accountMutationPerformed",
+  "credentialCreated",
+  "balanceTopUpPerformed",
+  "providerRequestsPerformed",
+  "ordersPerformed",
+  "paymentsPerformed",
+  "ticketsIssued",
+]) assertClosed(latestDuffelDocumentationCheck[key], `latestDuffelDocumentationCheck.${key}`);
+
 for (const [label, value] of Object.entries(checkpoint.authorityBoundary)) {
   assertClosed(value, `checkpoint.authorityBoundary.${label}`);
 }

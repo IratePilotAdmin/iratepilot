@@ -1,7 +1,7 @@
 {
   "evidence": {
     "version": "flight-launch-progress-checkpoint-v1",
-    "checkedAt": "2026-09-23T19:30:03-05:00",
+    "checkedAt": "2026-09-23T19:34:12-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "providerRequestsPerformed": false,
@@ -11,8 +11,8 @@
     "source": {
       "repository": "IratePilotAdmin/iratepilot",
       "branch": "agent/flight-live-foundation-20260823",
-      "commit": "6ddea47",
-      "commitMessage": "test(flights): expose monitoring assembly audit",
+      "commit": "4a11b98",
+      "commitMessage": "docs(flights): record Duffel onboarding requirements",
       "workingTreeChangeForThisReceipt": false
     },
     "routePacketManifest": "docs/evidence/FLIGHT_CONNECTOR_ROUTE_PACKET_MANIFEST_2026-09-23.json",
@@ -131,7 +131,7 @@
         "ticketsIssued": false
       },
       "latestLaunchEvidenceAudit": {
-        "checkedAt": "2026-09-23T19:26:46-05:00",
+        "checkedAt": "2026-09-23T19:54:49-05:00",
         "command": "node scripts/audit-flight-launch-evidence.mjs",
         "status": "passed",
         "candidateConnectors": 9,
@@ -142,11 +142,22 @@
         "ticketsIssued": false
       },
       "latestLaunchEvidenceAuditTest": {
-        "checkedAt": "2026-09-23T19:26:46-05:00",
+        "checkedAt": "2026-09-23T19:54:49-05:00",
         "command": "vitest run tests/flight-launch-evidence-audit.test.ts --reporter=dot",
         "testFilesPassed": 1,
         "testsPassed": 1,
         "status": "passed",
+        "providerRequestsPerformed": false,
+        "ordersPerformed": false,
+        "paymentsPerformed": false,
+        "ticketsIssued": false
+      },
+      "latestDuffelDocumentationCheck": {
+        "checkedAt": "2026-09-23T19:34:12-05:00",
+        "url": "https://duffel.com/guides/getting-started",
+        "accountMutationPerformed": false,
+        "credentialCreated": false,
+        "balanceTopUpPerformed": false,
         "providerRequestsPerformed": false,
         "ordersPerformed": false,
         "paymentsPerformed": false,
