@@ -211,6 +211,12 @@ assert(latestVercelCheck.providerTrafficTriggered === false,
   "the evidence audit must not record provider traffic.");
 
 const latestPreviewCheck = checkpoint.localVerification.latestBrowserReadOnlyCheck;
+assert(latestPreviewCheck.previewDeploymentState === "READY",
+  "the latest Preview deployment must be READY.");
+assert(latestPreviewCheck.previewSourceBranch === "agent/flight-live-foundation-20260823",
+  "the latest Preview deployment must come from the flight branch.");
+assert(latestPreviewCheck.previewSourceCommit === "6f2863bfffdea8ab89096ca135c3c4b8592923ae",
+  "the latest Preview deployment must bind the verified flight commit.");
 assert(latestPreviewCheck.liveInventoryDisplayed === false,
   "the latest Preview check must not display live inventory.");
 assert(latestPreviewCheck.providerRequestDispatched === false,

@@ -1,7 +1,7 @@
 {
   "evidence": {
     "version": "flight-launch-progress-checkpoint-v1",
-    "checkedAt": "2026-09-23T22:22:29-05:00",
+    "checkedAt": "2026-09-23T22:25:19-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "providerRequestsPerformed": false,
@@ -11,8 +11,8 @@
     "source": {
       "repository": "IratePilotAdmin/iratepilot",
       "branch": "agent/flight-live-foundation-20260823",
-      "commit": "3a801bd",
-      "commitMessage": "test(flights): record live-search safety gate",
+      "commit": "6f2863b",
+      "commitMessage": "docs(flights): record Preview environment recheck",
       "workingTreeChangeForThisReceipt": false
     },
     "routePacketManifest": "docs/evidence/FLIGHT_CONNECTOR_ROUTE_PACKET_MANIFEST_2026-09-23.json",
@@ -97,8 +97,12 @@
         "ticketsIssued": false
       },
       "latestBrowserReadOnlyCheck": {
-        "checkedAt": "2026-09-23T19:28:49-05:00",
-        "previewUrl": "https://iratepilotadmin-git-agent-flight-live-founda-0333c5-irate-pilot.vercel.app/flights",
+        "checkedAt": "2026-09-23T22:25:19-05:00",
+        "previewUrl": "https://iratepilotadmin-ikn0q7hjw-irate-pilot.vercel.app/flights",
+        "previewDeploymentId": "5L5QRXH1dWnAqZqeumVWeP7sTHtc",
+        "previewDeploymentState": "READY",
+        "previewSourceCommit": "6f2863bfffdea8ab89096ca135c3c4b8592923ae",
+        "previewSourceBranch": "agent/flight-live-foundation-20260823",
         "previewSurface": "supplier_offline_planning_preview",
         "liveInventoryDisplayed": false,
         "providerRequestDispatched": false,
