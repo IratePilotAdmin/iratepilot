@@ -38,6 +38,16 @@ describe("native iRatePilot PMS setup", () => {
     expect(setup).toContain("pms_rate_plan_id");
   });
 
+  it("keeps setup retries bound to unchanged values and freezes edits during save", () => {
+    expect(setup).toContain('<fieldset disabled={busy} className="grid gap-4">');
+    expect(setup).toContain("requestId.current = null; setPropertyId(event.target.value)");
+    expect(setup).toContain("requestId.current = null; setConnectionId(event.target.value)");
+    expect(setup).toContain("requestId.current = null; setTenantId(event.target.value)");
+    expect(setup).toContain("requestId.current = null; setPmsPropertyId(event.target.value)");
+    expect(setup).toContain("requestId.current = null; setSecret(event.target.value)");
+    expect(setup).toContain("requestId.current = null; setMappings((items) => items.map");
+  });
+
   it("requires a selected active marketplace room and does not claim live traffic is enabled", () => {
     expect(setup).toContain("room.active");
     expect(setup).toContain("does not enable reservation capture, delivery, or ARI");

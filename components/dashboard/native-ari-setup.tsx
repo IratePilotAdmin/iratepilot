@@ -241,6 +241,7 @@ export function NativeAriSetup() {
   useEffect(() => { void load(); }, [load]);
 
   function edit(connection: Connection) {
+    requestId.current = null;
     setConnectionId(connection.connection_id);
     setPropertyId(connection.property_id);
     setPmsPropertyId(connection.pms_property_id);
@@ -302,25 +303,27 @@ export function NativeAriSetup() {
         <ReservationBaselinePreview propertyId={connection.property_id} />
       </article>})}</div>}
       <form id="native-ari-setup-form" className="mt-5 grid gap-4" onSubmit={save}>
+        <fieldset disabled={busy} className="grid gap-4">
         <div className="grid gap-4 md:grid-cols-2">
-          <label className="text-sm font-medium">Marketplace property<select className="input mt-2" value={propertyId} onChange={(event) => setPropertyId(event.target.value)} required><option value="">Choose property</option>{properties.map((property) => <option key={property.id} value={property.id}>{property.name}</option>)}</select></label>
-          <label className="text-sm font-medium">PMS connection ID<input className="input mt-2" value={connectionId} onChange={(event) => setConnectionId(event.target.value)} pattern="[A-Za-z0-9_-]{1,80}" maxLength={80} required autoComplete="off" placeholder="Copy from PMS → Connections" /></label>
-          <label className="text-sm font-medium">PMS tenant ID<input className="input mt-2" value={tenantId} onChange={(event) => setTenantId(event.target.value)} pattern="[0-9a-fA-F-]{36}" maxLength={36} required autoComplete="off" placeholder="Tenant ID from PMS → Connections" /></label>
-          <label className="text-sm font-medium">PMS property ID<input className="input mt-2" value={pmsPropertyId} onChange={(event) => setPmsPropertyId(event.target.value)} pattern="[0-9a-fA-F-]{36}" maxLength={36} required autoComplete="off" placeholder="Property ID from PMS → Connections" /></label>
-          <label className="text-sm font-medium">Shared signing secret<input className="input mt-2" type="password" value={secret} onChange={(event) => setSecret(event.target.value)} minLength={32} maxLength={512} required autoComplete="new-password" placeholder="Enter the same secret saved in the PMS" /></label>
+          <label className="text-sm font-medium">Marketplace property<select className="input mt-2" value={propertyId} onChange={(event) => { requestId.current = null; setPropertyId(event.target.value); }} required><option value="">Choose property</option>{properties.map((property) => <option key={property.id} value={property.id}>{property.name}</option>)}</select></label>
+          <label className="text-sm font-medium">PMS connection ID<input className="input mt-2" value={connectionId} onChange={(event) => { requestId.current = null; setConnectionId(event.target.value); }} pattern="[A-Za-z0-9_-]{1,80}" maxLength={80} required autoComplete="off" placeholder="Copy from PMS → Connections" /></label>
+          <label className="text-sm font-medium">PMS tenant ID<input className="input mt-2" value={tenantId} onChange={(event) => { requestId.current = null; setTenantId(event.target.value); }} pattern="[0-9a-fA-F-]{36}" maxLength={36} required autoComplete="off" placeholder="Tenant ID from PMS → Connections" /></label>
+          <label className="text-sm font-medium">PMS property ID<input className="input mt-2" value={pmsPropertyId} onChange={(event) => { requestId.current = null; setPmsPropertyId(event.target.value); }} pattern="[0-9a-fA-F-]{36}" maxLength={36} required autoComplete="off" placeholder="Property ID from PMS → Connections" /></label>
+          <label className="text-sm font-medium">Shared signing secret<input className="input mt-2" type="password" value={secret} onChange={(event) => { requestId.current = null; setSecret(event.target.value); }} minLength={32} maxLength={512} required autoComplete="new-password" placeholder="Enter the same secret saved in the PMS" /></label>
         </div>
         <fieldset className="grid gap-3 rounded-lg border p-4">
           <legend className="px-1 text-sm font-semibold">Room and rate plan mappings</legend>
           <p className="text-xs text-slate-500">Copy the exact room-type ID and rate-plan ID from the PMS. Each pair must point to a different active marketplace room.</p>
           {mappings.map((mapping, index) => <div className="grid items-end gap-3 md:grid-cols-[1fr_1fr_1fr_auto]" key={index}>
-            <label className="text-xs font-medium">PMS room-type ID<input className="input mt-1" value={mapping.roomTypeId} onChange={(event) => setMappings((items) => items.map((item, i) => i === index ? { ...item, roomTypeId: event.target.value } : item))} pattern="[A-Za-z0-9_-]{1,128}" maxLength={128} required autoComplete="off" /></label>
-            <label className="text-xs font-medium">PMS rate-plan ID<input className="input mt-1" value={mapping.ratePlanId} onChange={(event) => setMappings((items) => items.map((item, i) => i === index ? { ...item, ratePlanId: event.target.value } : item))} pattern="[A-Za-z0-9_-]{1,128}" maxLength={128} required autoComplete="off" /></label>
-            <label className="text-xs font-medium">Marketplace room<select className="input mt-1" value={mapping.otaRoomId} onChange={(event) => setMappings((items) => items.map((item, i) => i === index ? { ...item, otaRoomId: event.target.value } : item))} required><option value="">Choose active room</option>{(selectedProperty?.rooms ?? []).filter((room) => room.active).map((room) => <option key={room.id} value={room.id}>{room.name}</option>)}</select></label>
-            <button className="btn-secondary text-xs" type="button" disabled={busy || mappings.length <= 1} onClick={() => setMappings((items) => items.filter((_, i) => i !== index))}>Remove</button>
+            <label className="text-xs font-medium">PMS room-type ID<input className="input mt-1" value={mapping.roomTypeId} onChange={(event) => { requestId.current = null; setMappings((items) => items.map((item, i) => i === index ? { ...item, roomTypeId: event.target.value } : item)); }} pattern="[A-Za-z0-9_-]{1,128}" maxLength={128} required autoComplete="off" /></label>
+            <label className="text-xs font-medium">PMS rate-plan ID<input className="input mt-1" value={mapping.ratePlanId} onChange={(event) => { requestId.current = null; setMappings((items) => items.map((item, i) => i === index ? { ...item, ratePlanId: event.target.value } : item)); }} pattern="[A-Za-z0-9_-]{1,128}" maxLength={128} required autoComplete="off" /></label>
+            <label className="text-xs font-medium">Marketplace room<select className="input mt-1" value={mapping.otaRoomId} onChange={(event) => { requestId.current = null; setMappings((items) => items.map((item, i) => i === index ? { ...item, otaRoomId: event.target.value } : item)); }} required><option value="">Choose active room</option>{(selectedProperty?.rooms ?? []).filter((room) => room.active).map((room) => <option key={room.id} value={room.id}>{room.name}</option>)}</select></label>
+            <button className="btn-secondary text-xs" type="button" disabled={mappings.length <= 1} onClick={() => { requestId.current = null; setMappings((items) => items.filter((_, i) => i !== index)); }}>Remove</button>
           </div>)}
-          <button className="btn-secondary w-fit text-xs" type="button" disabled={busy || mappings.length >= 200} onClick={() => setMappings((items) => [...items, emptyMapping()])}>Add room/rate mapping</button>
+          <button className="btn-secondary w-fit text-xs" type="button" disabled={mappings.length >= 200} onClick={() => { requestId.current = null; setMappings((items) => [...items, emptyMapping()]); }}>Add room/rate mapping</button>
         </fieldset>
         <div className="flex flex-wrap gap-3"><button className="btn-primary" type="submit" disabled={busy || loading}>{busy ? "Saving disabled connection…" : "Save disabled connection"}</button><button className="btn-secondary" type="button" disabled={busy} onClick={() => { requestId.current = null; setConnectionId(""); setTenantId(""); setPmsPropertyId(""); setSecret(""); setMappings([emptyMapping()]); setMessage(""); setError(""); }}>Clear form</button></div>
+        </fieldset>
       </form>
     </>}
   </section>;
