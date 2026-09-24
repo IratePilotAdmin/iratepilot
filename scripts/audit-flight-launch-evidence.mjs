@@ -7,7 +7,7 @@ const files = {
   matrix: "docs/evidence/FLIGHT_RELEASE_GATE_MATRIX_2026-09-18.json",
   manifest: "docs/evidence/FLIGHT_CONNECTOR_ROUTE_PACKET_MANIFEST_2026-09-23.json",
   securityScan: "docs/evidence/FLIGHT_SECURITY_SCAN_2026-09-23.json",
-  previewRecheck: "docs/evidence/FLIGHT_PREVIEW_DEPLOYMENT_RECHECK_2026-09-23.json",
+  previewRecheck: "docs/evidence/FLIGHT_PREVIEW_DEPLOYMENT_RECHECK_2026-09-24.json",
   completionAudit: "docs/evidence/FLIGHT_COMPLETION_AUDIT_2026-09-23.json",
 };
 
@@ -310,7 +310,7 @@ assert(latestPreviewCheck.ticketIssued === false,
 
 assert(previewRecheck.source?.branch === "agent/flight-live-foundation-20260823",
   "the Preview recheck must describe the flight foundation branch.");
-assert(previewRecheck.source?.commit === "4f9f921",
+assert(previewRecheck.source?.commit === "c88029d1a2ff3d76290298d985141aaeae903716",
   "the Preview recheck must bind the latest evidence commit.");
 assert(previewRecheck.deployment?.state === "READY"
   && previewRecheck.deployment?.target === "preview"

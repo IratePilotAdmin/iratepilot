@@ -27,6 +27,7 @@
         "evidence": [
           "localVerification.latestBrowserReadOnlyCheck",
           "latestPreviewRecheck",
+          "docs/evidence/FLIGHT_PREVIEW_DEPLOYMENT_RECHECK_2026-09-24.json",
           "localVerification.latestPreviewAuthBoundaryCheck"
         ],
         "authorityEnabled": false
