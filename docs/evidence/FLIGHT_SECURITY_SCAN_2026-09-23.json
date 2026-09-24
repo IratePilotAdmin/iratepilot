@@ -1,13 +1,13 @@
 {
   "evidence": {
     "version": "flight-security-scan-v2",
-    "checkedAt": "2026-09-23T17:03:12-05:00",
+    "checkedAt": "2026-09-23T23:24:50-05:00",
     "sanitized": true,
     "rawCredentialValuesIncluded": false,
     "source": {
       "repository": "IratePilotAdmin/iratepilot",
       "branch": "agent/flight-live-foundation-20260823",
-      "commit": "a1ec623"
+      "commit": "c7504bf31213c7d1a138f9dcfb11bbeda2e37f10"
     },
     "scope": {
       "trackedFilesScanned": 1168,
@@ -28,6 +28,15 @@
       "newEvidenceCredentialShapeMatches": 0,
       "exactDuffelCredentialShapeMatches": 0,
       "scanCommand": "git ls-files app lib components docs tests; exact credential-shape, Stripe live-key, and PEM private-key scans",
+      "dependencyAudit": {
+        "command": "npm audit --omit=dev --audit-level high --json",
+        "packageManager": "npm 11.6.0",
+        "nextVersion": "16.3.6",
+        "sharpVersion": "0.35.4",
+        "highVulnerabilities": 0,
+        "criticalVulnerabilities": 0,
+        "status": "passed"
+      },
       "reviewedStatusLiteral": {
         "file": "docs/evidence/FLIGHT_CONSUMER_PRODUCTION_DUFFEL_DARK_INGRESS_2026-08-26.json",
         "field": "evidence.outcome",

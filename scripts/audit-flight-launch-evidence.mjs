@@ -6,6 +6,7 @@ const files = {
   checkpoint: "docs/evidence/FLIGHT_LAUNCH_PROGRESS_CHECKPOINT_2026-09-23.json",
   matrix: "docs/evidence/FLIGHT_RELEASE_GATE_MATRIX_2026-09-18.json",
   manifest: "docs/evidence/FLIGHT_CONNECTOR_ROUTE_PACKET_MANIFEST_2026-09-23.json",
+  securityScan: "docs/evidence/FLIGHT_SECURITY_SCAN_2026-09-23.json",
 };
 
 function fail(message) {
@@ -55,7 +56,9 @@ assert(matrix.routePacketManifest === files.manifest,
 
 for (const [name, item] of Object.entries(loaded)) {
   assert(item.value?.evidence?.sanitized === true, `${name} must be marked sanitized.`);
-  assert(item.value?.evidence?.secretValuesIncluded === false, `${name} must not include secret values.`);
+  assert(item.value?.evidence?.secretValuesIncluded === false
+    || item.value?.evidence?.rawCredentialValuesIncluded === false,
+  `${name} must not include secret values.`);
 }
 
 const rawEvidence = Object.values(loaded).map(({ raw }) => raw).join("\n");
@@ -63,6 +66,13 @@ assert(!/(?:duffel_(?:live|test)_[A-Za-z0-9_-]{16,}|(?:sk|rk)_(?:live|test)_[A-Z
   "secret-shaped credential material is present in evidence.");
 
 const catalog = manifest.candidateCatalog;
+const dependencyAudit = loaded.securityScan.value.evidence.results?.dependencyAudit;
+assert(dependencyAudit?.status === "passed"
+  && dependencyAudit.nextVersion === "16.3.6"
+  && dependencyAudit.sharpVersion === "0.35.4"
+  && dependencyAudit.highVulnerabilities === 0
+  && dependencyAudit.criticalVulnerabilities === 0,
+"the dependency security audit must be clean on patched Next.js and Sharp versions.");
 assert(catalog.totalConnectors === 9, "the candidate catalog must contain nine connectors.");
 assert(catalog.connectors.length === catalog.totalConnectors, "candidate connector count is inconsistent.");
 for (const [label, gate] of Object.entries({
