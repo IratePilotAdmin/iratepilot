@@ -1,22 +1,22 @@
 {
   "evidence": {
     "version": "flight-preview-deployment-recheck-v1",
-    "checkedAt": "2026-09-23T23:42:01-05:00",
+    "checkedAt": "2026-09-23T23:54:40-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "source": {
       "repository": "IratePilotAdmin/iratepilot",
       "branch": "agent/flight-live-foundation-20260823",
-      "commit": "9756fee",
-      "commitMessage": "test(flights): bind latest preview recheck"
+      "commit": "4f9f921",
+      "commitMessage": "docs(flights): add completion audit packet"
     },
     "deployment": {
-      "deploymentId": "5AyH8VxxHXnGDtKLdVGnp77keuZJ",
-      "deploymentUrl": "https://iratepilotadmin-5q170tpk9-irate-pilot.vercel.app/flights",
+      "deploymentId": "FYjpgX8fcUioz153nf9k14AMMftp",
+      "deploymentUrl": "https://iratepilotadmin-mhu9fdfer-irate-pilot.vercel.app/flights",
       "state": "READY",
       "target": "preview",
       "sourceBranch": "agent/flight-live-foundation-20260823",
-      "sourceCommit": "9756fee79a9ddfc0cf17361fb8d3921efc138586"
+      "sourceCommit": "4f9f921e2d45d6ed2f9beab7de029a7c4e29ece9"
     },
     "browserSmoke": {
       "pageTitle": "Flight planning preview | iRatePilot",
