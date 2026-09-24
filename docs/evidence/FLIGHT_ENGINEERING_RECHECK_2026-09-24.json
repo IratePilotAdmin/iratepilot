@@ -1,0 +1,39 @@
+{
+  "evidence": {
+    "version": "flight-engineering-recheck-v1",
+    "checkedAt": "2026-09-24T00:03:10-05:00",
+    "sanitized": true,
+    "secretValuesIncluded": false,
+    "source": {
+      "repository": "IratePilotAdmin/iratepilot",
+      "branch": "agent/flight-live-foundation-20260823",
+      "commit": "559dcf7"
+    },
+    "checks": {
+      "eslint": "passed",
+      "typescriptNoEmit": "passed",
+      "fullVitestSuite": {
+        "status": "passed",
+        "filesPassed": 462,
+        "testsPassed": 2974
+      },
+      "productionBuild": {
+        "status": "passed",
+        "nextVersion": "16.3.6",
+        "staticPagesGenerated": 121
+      },
+      "launchEvidenceAudit": {
+        "status": "passed",
+        "consumerReleaseAuthorized": false,
+        "providerTrafficEnabled": false,
+        "bookingEnabled": false,
+        "paymentEnabled": false,
+        "ticketingEnabled": false
+      }
+    },
+    "providerRequestsPerformed": false,
+    "ordersPerformed": false,
+    "paymentsPerformed": false,
+    "ticketsIssued": false
+  }
+}

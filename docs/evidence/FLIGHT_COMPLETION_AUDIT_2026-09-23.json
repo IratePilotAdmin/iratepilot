@@ -16,7 +16,8 @@
         "evidence": [
           "localVerification.latestStaticChecks",
           "localVerification.latestInternalRecheck",
-          "operationalRechecks.repositorySecurityScan"
+          "operationalRechecks.repositorySecurityScan",
+          "docs/evidence/FLIGHT_ENGINEERING_RECHECK_2026-09-24.json"
         ],
         "authorityEnabled": false
       },
