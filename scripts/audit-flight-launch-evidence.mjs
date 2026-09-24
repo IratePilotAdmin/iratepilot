@@ -164,6 +164,12 @@ assert(latestStaticChecks.eslint === "passed",
 assert(latestStaticChecks.typescriptNoEmit === "passed",
   "the latest TypeScript check must pass.");
 
+const latestRunbookIntegrity = checkpoint.localVerification.latestOperationsRunbookIntegrityTest;
+assert(latestRunbookIntegrity.status === "passed"
+  && latestRunbookIntegrity.testFilesPassed === 2
+  && latestRunbookIntegrity.testsPassed === 3,
+"the latest operations runbook integrity check must pass.");
+
 const result = {
   version: "flight-launch-evidence-audit-v1",
   status: "pass",
