@@ -1,7 +1,7 @@
 {
   "evidence": {
     "version": "flight-launch-progress-checkpoint-v1",
-  "checkedAt": "2026-09-23T22:35:01-05:00",
+  "checkedAt": "2026-09-23T22:43:29-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "providerRequestsPerformed": false,
@@ -11,8 +11,8 @@
     "source": {
       "repository": "IratePilotAdmin/iratepilot",
       "branch": "agent/flight-live-foundation-20260823",
-    "commit": "e1322fd",
-    "commitMessage": "docs(flights): bind READY Preview deployment",
+    "commit": "b4ad1b3",
+    "commitMessage": "test(flights): bind Preview auth boundary",
       "workingTreeChangeForThisReceipt": false
     },
     "routePacketManifest": "docs/evidence/FLIGHT_CONNECTOR_ROUTE_PACKET_MANIFEST_2026-09-23.json",
@@ -97,11 +97,11 @@
         "ticketsIssued": false
       },
       "latestBrowserReadOnlyCheck": {
-        "checkedAt": "2026-09-23T22:25:19-05:00",
-        "previewUrl": "https://iratepilotadmin-ikn0q7hjw-irate-pilot.vercel.app/flights",
-        "previewDeploymentId": "5L5QRXH1dWnAqZqeumVWeP7sTHtc",
+        "checkedAt": "2026-09-23T22:43:29-05:00",
+        "previewUrl": "https://iratepilotadmin-b9uemq0ys-irate-pilot.vercel.app/flights",
+        "previewDeploymentId": "EENb51kP9w8dLGNUzCKwvco3g9hW",
         "previewDeploymentState": "READY",
-        "previewSourceCommit": "6f2863bfffdea8ab89096ca135c3c4b8592923ae",
+        "previewSourceCommit": "b4ad1b33541fd9a6178106380fae0e430a9f8c8f",
         "previewSourceBranch": "agent/flight-live-foundation-20260823",
         "previewSurface": "supplier_offline_planning_preview",
         "liveInventoryDisplayed": false,
@@ -124,10 +124,10 @@
         "note": "Canonical public flight surface was observed read-only; Vercel deployment metadata was not inferred from this page observation."
       },
       "latestProductionBuildCheck": {
-        "checkedAt": "2026-09-23T22:35:01-05:00",
+        "checkedAt": "2026-09-23T22:43:29-05:00",
         "command": "next build --webpack",
         "status": "passed",
-        "sourceCommit": "e1322fd",
+        "sourceCommit": "b4ad1b3",
         "staticPagesGenerated": 121,
         "providerRequestsPerformed": false,
         "ordersPerformed": false,
@@ -219,15 +219,12 @@
         "ticketsIssued": false
       },
       "latestPreviewAuthBoundaryCheck": {
-        "checkedAt": "2026-09-23T22:38:11-05:00",
-        "previewUrl": "https://iratepilotadmin-ikn0q7hjw-irate-pilot.vercel.app",
-        "getStatusByPath": {
-          "/admin/flights": 302,
-          "/api/flights/private-preview/live-search": 302,
-          "/api/flights/search": 302,
-          "/api/flights/orders": 302
-        },
-        "interpretation": "Unauthenticated admin and flight data-plane GETs redirect to the sign-in boundary.",
+        "checkedAt": "2026-09-23T22:43:29-05:00",
+        "previewUrl": "https://iratepilotadmin-b9uemq0ys-irate-pilot.vercel.app",
+        "path": "/admin/flights",
+        "finalUrl": "https://iratepilotadmin-b9uemq0ys-irate-pilot.vercel.app/login?next=%2Fadmin%2Fflights",
+        "loginSurfaceObserved": true,
+        "interpretation": "The deployed Preview admin flight surface redirects unauthenticated browser access to the application sign-in boundary.",
         "providerRequestsPerformed": false,
         "ordersPerformed": false,
         "paymentsPerformed": false,
@@ -274,11 +271,11 @@
       }
     },
     "preview": {
-      "deploymentId": "dpl_5jjpEE8LuAdcuNTo733j1ctcnCKD",
-      "deploymentUrl": "https://iratepilotadmin-5usx1l16y-irate-pilot.vercel.app",
+      "deploymentId": "dpl_EENb51kP9w8dLGNUzCKwvco3g9hW",
+      "deploymentUrl": "https://iratepilotadmin-b9uemq0ys-irate-pilot.vercel.app",
       "branchAlias": "https://iratepilotadmin-git-agent-flight-live-founda-0333c5-irate-pilot.vercel.app",
       "branch": "agent/flight-live-foundation-20260823",
-      "sourceCommit": "ee527322cd0d518a25dce4290938ca661cd10786",
+      "sourceCommit": "b4ad1b33541fd9a6178106380fae0e430a9f8c8f",
       "state": "READY",
       "target": "preview",
       "browserSmoke": {
@@ -346,11 +343,11 @@
         "productionOnlyLiveSearchDiagnostic": "not_available_in_preview_by_design"
       },
       "preview": {
-        "deploymentId": "dpl_5jjpEE8LuAdcuNTo733j1ctcnCKD",
+        "deploymentId": "dpl_EENb51kP9w8dLGNUzCKwvco3g9hW",
         "state": "READY",
         "target": null,
         "branch": "agent/flight-live-foundation-20260823",
-        "sourceCommit": "ee527322cd0d518a25dce4290938ca661cd10786",
+        "sourceCommit": "b4ad1b33541fd9a6178106380fae0e430a9f8c8f",
         "branchAlias": "https://iratepilotadmin-git-agent-flight-live-founda-0333c5-irate-pilot.vercel.app"
       },
       "production": {

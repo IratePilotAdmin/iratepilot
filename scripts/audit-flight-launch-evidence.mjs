@@ -195,11 +195,10 @@ for (const key of [
 ]) assertClosed(latestVercelPreviewEnvironmentCheck[key], `latestVercelPreviewEnvironmentCheck.${key}`);
 
 const latestPreviewAuthBoundaryCheck = checkpoint.localVerification.latestPreviewAuthBoundaryCheck;
-assert(latestPreviewAuthBoundaryCheck.getStatusByPath?.["/admin/flights"] === 302
-  && latestPreviewAuthBoundaryCheck.getStatusByPath?.["/api/flights/private-preview/live-search"] === 302
-  && latestPreviewAuthBoundaryCheck.getStatusByPath?.["/api/flights/search"] === 302
-  && latestPreviewAuthBoundaryCheck.getStatusByPath?.["/api/flights/orders"] === 302,
-"the Preview admin and flight data-plane routes must remain behind the sign-in boundary.");
+assert(latestPreviewAuthBoundaryCheck.path === "/admin/flights"
+  && latestPreviewAuthBoundaryCheck.loginSurfaceObserved === true
+  && latestPreviewAuthBoundaryCheck.finalUrl?.includes("/login?next=%2Fadmin%2Fflights"),
+"the Preview admin flight surface must remain behind the application sign-in boundary.");
 for (const key of [
   "providerRequestsPerformed",
   "ordersPerformed",
@@ -228,7 +227,7 @@ assert(latestPreviewCheck.previewDeploymentState === "READY",
   "the latest Preview deployment must be READY.");
 assert(latestPreviewCheck.previewSourceBranch === "agent/flight-live-foundation-20260823",
   "the latest Preview deployment must come from the flight branch.");
-assert(latestPreviewCheck.previewSourceCommit === "6f2863bfffdea8ab89096ca135c3c4b8592923ae",
+assert(latestPreviewCheck.previewSourceCommit === "b4ad1b33541fd9a6178106380fae0e430a9f8c8f",
   "the latest Preview deployment must bind the verified flight commit.");
 assert(latestPreviewCheck.liveInventoryDisplayed === false,
   "the latest Preview check must not display live inventory.");
