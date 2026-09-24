@@ -18,6 +18,7 @@ export const NATIVE_PMS_MIGRATIONS = Object.freeze([
   { version: "202609230142", filename: "202609230142_iratepilot_pms_reservation_connection_setup.sql" },
   { version: "202609240143", filename: "202609240143_iratepilot_pms_baseline_review_control.sql" },
   { version: "202609240144", filename: "202609240144_iratepilot_pms_atomic_connection_setup.sql" },
+  { version: "202609240145", filename: "202609240145_iratepilot_pms_revenue_recommendation_generation.sql" },
 ]);
 export const REQUIRED_REMOTE_FLIGHT_BASELINE_TIP = "202608250080";
 export const APPLY_CONFIRMATION_FLAG =

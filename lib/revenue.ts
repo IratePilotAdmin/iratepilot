@@ -47,7 +47,7 @@ export function buildRateRecommendation(input: RevenueCsvRow) {
   return {
     currentRate: input.current_rate,
     recommendedRate,
-    occupancyForecast: Math.min(100, Math.round((occupancy * 100 + (input.last_year_occupancy || occupancy * 100)) / 2)),
+    occupancyForecast: Math.min(100, Math.round((occupancy * 100 + (input.last_year_occupancy ?? occupancy * 100)) / 2)),
     estimatedRevenueImpact: Math.round((recommendedRate - input.current_rate) * unsold * 100) / 100,
     reason: `Based on ${reasons.join(", ")}. Manager approval is required.`
   };

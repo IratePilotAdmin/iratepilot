@@ -144,7 +144,9 @@ The native iRatePilot.com connector is a separate integration setup from ordinar
 
 This connector does not by itself activate Expedia, Booking.com, Agoda, Airbnb, Google Hotel, or a chain CRS. Those require their own provider authorization, mappings, testing, and certification.
 
-## 12. AI Hotel Assistant and known limitations
+## 12. Revenue recommendations, AI Hotel Assistant, and known limitations
+
+The iRatePilot.com Partner Center includes a pilot revenue recommendation workflow. It reads property-authorized daily input rows for a 90-day window and creates recommendations for manager review. The current recommendation formula is deterministic and uses supplied occupancy, current rate, optional competitor rate, prior-year occupancy, and event notes; it is **not yet a validated machine-learning demand forecast**. Automatic price changes are disabled. Review the reason and rate before approving any recommendation. Approval may update iRatePilot.com inventory and does not by itself prove that a rate was synchronized to the PMS or another channel. A new atomic generation and tenant-scope database migration is currently on the protected Preview branch only; it has not been applied to a hosted database, so its release still requires isolated staging verification.
 
 The product goal includes an AI Hotel Assistant that answers questions from the signed-in user's authorized property data. **A production-ready assistant connected to live PMS data has not been verified in this pilot.** Until the assistant is visible and its property scoping is tested, use the dashboard and reports as the source of operational counts. Never rely on an AI response to approve a payment, refund, room safety decision, or destructive change without checking the PMS record and required manager authorization.
 

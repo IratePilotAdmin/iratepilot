@@ -11,7 +11,7 @@ export const REQUIRED_PREVIEW_BASELINE = [
 
 export const APPROVED_PREVIEW_PENDING = ["202608170064", "202608170065", "202608170066", "202608170067"];
 // Tracked for candidate status; deliberately not included in the auto-apply allowlist.
-export const NATIVE_PMS_CONNECTOR_SCHEMA_HEAD = "202609240144";
+export const NATIVE_PMS_CONNECTOR_SCHEMA_HEAD = "202609240145";
 
 export const PRODUCTION_PROJECT_REF = "allliumarkejinplrggl";
 
