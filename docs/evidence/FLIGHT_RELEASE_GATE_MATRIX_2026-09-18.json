@@ -1,10 +1,10 @@
 {
   "evidence": {
     "version": "flight-release-gate-matrix-v1",
-    "checkedAt": "2026-09-23T19:23:58-05:00",
+    "checkedAt": "2026-09-23T19:27:07-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
-    "sourceCommit": "a0b9dc0",
+    "sourceCommit": "6ddea47",
     "routePacketManifest": "docs/evidence/FLIGHT_CONNECTOR_ROUTE_PACKET_MANIFEST_2026-09-23.json",
     "gates": [
       {"id": "route_preference", "state": "resolved_for_planning", "primary": "duffel", "secondary": "sabre", "operationalRouteEnabled": false},
