@@ -6,7 +6,7 @@ const setup = readFileSync(new URL("../components/dashboard/native-ari-setup.tsx
 const settings = readFileSync(new URL("../components/dashboard/admin-settings.tsx", import.meta.url), "utf8");
 const migration = readFileSync(new URL("../supabase/migrations/202609230140_iratepilot_pms_native_ari_receiver.sql", import.meta.url), "utf8");
 const atomicMigration = readFileSync(new URL("../supabase/migrations/202609240144_iratepilot_pms_atomic_connection_setup.sql", import.meta.url), "utf8");
-const migrationVersions = readFileSync(new URL("../scripts/reconcile-preview-migrations.mjs", import.meta.url), "utf8");
+const migrationGate = readFileSync(new URL("../scripts/apply-flight-preview-migrations.mjs", import.meta.url), "utf8");
 
 describe("native iRatePilot PMS setup", () => {
   it("places the setup form in admin settings and restricts its API to admins", () => {
@@ -26,7 +26,7 @@ describe("native iRatePilot PMS setup", () => {
     expect(atomicMigration).toContain("public.irp_pms_configure_reservation_connection(");
     expect(atomicMigration).toContain("public.irp_pms_save_native_ari_connection(");
     expect(atomicMigration.toLowerCase()).toContain("grant execute on function public.irp_pms_configure_native_connection");
-    expect(migrationVersions).toContain('"202609240144"');
+    expect(migrationGate).toContain('version: "202609240144"');
     expect(route).toContain("p_mappings: rows");
     expect(route).not.toContain("signingSecret: encrypted");
     expect(setup).toContain('type="password"');

@@ -1,0 +1,41 @@
+{
+  "format": "iratepilot-native-ota-current-validation-v1",
+  "validatedAt": "2026-09-24T18:18:18Z",
+  "branch": "codex/native-ota-production-port",
+  "commitUnderTest": "62e1c41",
+  "workingTreeChangesIncluded": [
+    "tests/native-ari-admin-setup.test.ts"
+  ],
+  "checks": {
+    "eslint": "passed",
+    "typescript": "passed",
+    "vitest": {
+      "passed": 3047,
+      "failed": 0,
+      "filesPassed": 479
+    },
+    "nextProductionBuild": "passed",
+    "flightLaunchEvidenceAudit": "passed"
+  },
+  "flightLaunchEvidenceAuditResult": {
+    "status": "pass",
+    "sanitized": true,
+    "candidateConnectors": 9,
+    "routePackets": 2,
+    "consumerReleaseAuthorized": false,
+    "providerTrafficEnabled": false,
+    "bookingEnabled": false,
+    "paymentEnabled": false,
+    "productionSourceIsFlightBranch": true
+  },
+  "notProven": [
+    "Hosted PMS migrations or Preview schema parity",
+    "Production deployment of the OTA connector routes",
+    "Red Roof property mapping or approved marketplace publication",
+    "Persisted reservation round trip from iratepilot.com to the PMS",
+    "External OTA certification or live traffic"
+  ],
+  "productionChanges": "none",
+  "databaseChanges": "none",
+  "guestOrPaymentDataChanged": "none"
+}
