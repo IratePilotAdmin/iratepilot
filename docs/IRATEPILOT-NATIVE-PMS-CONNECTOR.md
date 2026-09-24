@@ -63,7 +63,7 @@ At 08:14 UTC, the signed-in production Partner Center → Properties showed no p
 
 ## Focused connector regression (September 24, 2026)
 
-Re-ran the local ARI migration behavior, outbox lifecycle, connection registry, baseline review, reservation setup, and delivery worker suites. All 22 tests across six files passed using isolated test fixtures/PGlite. This verifies local connector behaviors only; it does not replace the missing hosted preview migration or an observed Red Roof reservation round trip. Receipt: `release/evidence/native-ota-focused-validation-2026-09-24.json`.
+Re-ran the focused ARI receiver, HTTP route, migration behavior, delivery connection registry, and worker regression suites against the production-based branch on September 24, 2026. All 28 tests across five files passed in 5.15 seconds using local test fixtures/PGlite. This verifies local connector behaviors only; it does not replace the missing hosted preview migration or an observed Red Roof reservation round trip. The earlier six-file, 22-test run remains recorded in `release/evidence/native-ota-focused-validation-2026-09-24.json`; the 28-test run was executed directly with the existing local Vitest runtime.
 
 ## Atomic connection setup validation (September 24, 2026)
 
