@@ -248,6 +248,23 @@ assert(latestBuildCheck.status === "passed",
 assert(Number.isInteger(latestBuildCheck.staticPagesGenerated)
   && latestBuildCheck.staticPagesGenerated > 0,
 "the latest local Production build must record generated pages.");
+assert(latestBuildCheck.sourceCommit === checkpoint.source.commit,
+  "the latest local Production build must bind the checkpoint source commit.");
+
+const latestInternalRecheck = checkpoint.localVerification.latestInternalRecheck;
+assert(latestInternalRecheck.command === "vitest run --reporter=dot"
+  && latestInternalRecheck.fullVitestSuite?.status === "passed"
+  && Number.isInteger(latestInternalRecheck.fullVitestSuite.filesPassed)
+  && latestInternalRecheck.fullVitestSuite.filesPassed >= 462
+  && Number.isInteger(latestInternalRecheck.fullVitestSuite.testsPassed)
+  && latestInternalRecheck.fullVitestSuite.testsPassed >= 2974,
+"the latest full regression checkpoint must record the current passing suite.");
+for (const key of [
+  "providerRequestsPerformed",
+  "ordersPerformed",
+  "paymentsPerformed",
+  "ticketsIssued",
+]) assertClosed(latestInternalRecheck[key], `latestInternalRecheck.${key}`);
 
 const latestStaticChecks = checkpoint.localVerification.latestStaticChecks;
 assert(latestStaticChecks.eslint === "passed",
