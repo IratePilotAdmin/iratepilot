@@ -1,7 +1,7 @@
 {
   "evidence": {
     "version": "flight-launch-progress-checkpoint-v1",
-    "checkedAt": "2026-09-23T19:34:12-05:00",
+    "checkedAt": "2026-09-23T19:55:27-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "providerRequestsPerformed": false,
@@ -107,7 +107,7 @@
         "ticketIssued": false
       },
       "latestCanonicalProductionSurfaceCheck": {
-        "checkedAt": "2026-09-23T19:30:03-05:00",
+        "checkedAt": "2026-09-23T19:55:27-05:00",
         "url": "https://www.iratepilot.com/flights",
         "pageTitle": "Flight planning preview | iRatePilot",
         "surface": "supplier_offline_planning_preview",
