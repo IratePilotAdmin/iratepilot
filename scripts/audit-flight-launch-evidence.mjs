@@ -77,6 +77,10 @@ assert(catalog.liveConnectorCount === 0, "candidateCatalog.liveConnectorCount mu
 
 assert(manifest.routeDecision.primary === "duffel", "Duffel must remain the primary route preference.");
 assert(manifest.routeDecision.secondary === "sabre", "Sabre must remain the secondary route preference.");
+assert(manifest.sourceCommit === checkpoint.source.commit,
+  "the route-packet manifest must bind the checkpoint source commit.");
+assert(!manifest.externalBlockers.some((blocker) => blocker.includes("current Production still serves a different branch")),
+  "the route-packet manifest must not retain the retired Production-branch blocker.");
 for (const [label, value] of Object.entries(manifest.routeDecision)) {
   if (label.endsWith("Authorized") || label === "operationalRouteEnabled") {
     assertClosed(value, `routeDecision.${label}`);
@@ -208,6 +212,18 @@ for (const key of [
 
 for (const [label, value] of Object.entries(checkpoint.authorityBoundary)) {
   assertClosed(value, `checkpoint.authorityBoundary.${label}`);
+}
+
+const requiredExternalGateFragments = [
+  "Duffel contract",
+  "Duffel commercial/content/ticketing authority",
+  "Stripe, settlement, reconciliation, fraud/refund",
+  "named support/on-call ownership",
+  "DNS/email sender authentication",
+];
+for (const fragment of requiredExternalGateFragments) {
+  assert(checkpoint.remainingExternalGates.some((gate) => gate.includes(fragment)),
+    `the remaining external-gate list must retain ${fragment}.`);
 }
 
 const latestVercelCheck = checkpoint.vercelDeploymentRecheck.latestVercelReadOnlyCheck;
