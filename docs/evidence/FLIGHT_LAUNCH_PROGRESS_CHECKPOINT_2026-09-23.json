@@ -1,7 +1,7 @@
 {
   "evidence": {
     "version": "flight-launch-progress-checkpoint-v1",
-    "checkedAt": "2026-09-23T19:10:33-05:00",
+    "checkedAt": "2026-09-23T19:11:39-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "providerRequestsPerformed": false,
@@ -11,8 +11,8 @@
     "source": {
       "repository": "IratePilotAdmin/iratepilot",
       "branch": "agent/flight-live-foundation-20260823",
-      "commit": "29fd151",
-      "commitMessage": "test(flights): bind launch audit to deployment boundaries",
+      "commit": "8017837",
+      "commitMessage": "test(flights): enforce build evidence in launch audit",
       "workingTreeChangeForThisReceipt": false
     },
     "routePacketManifest": "docs/evidence/FLIGHT_CONNECTOR_ROUTE_PACKET_MANIFEST_2026-09-23.json",
@@ -118,7 +118,7 @@
         "ticketsIssued": false
       },
       "latestLaunchEvidenceAudit": {
-        "checkedAt": "2026-09-23T18:54:32-05:00",
+        "checkedAt": "2026-09-23T19:11:27-05:00",
         "command": "node scripts/audit-flight-launch-evidence.mjs",
         "status": "passed",
         "candidateConnectors": 9,
@@ -129,7 +129,7 @@
         "ticketsIssued": false
       },
       "latestLaunchEvidenceAuditTest": {
-        "checkedAt": "2026-09-23T18:54:32-05:00",
+        "checkedAt": "2026-09-23T19:11:27-05:00",
         "command": "vitest run tests/flight-launch-evidence-audit.test.ts --reporter=dot",
         "testFilesPassed": 1,
         "testsPassed": 1,
