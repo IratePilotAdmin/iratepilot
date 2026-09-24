@@ -719,7 +719,7 @@ export default function Page() {
 
       <section className="mt-10">
         <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Next real gate · Preview release</p><h2 className="mt-2 text-2xl font-bold">Controlled Preview release approval</h2></div><Plane className="h-7 w-7 text-slate-400" /></div>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Preview release approval is blocked by support and release readiness. Current state is {rolloutPreviewRelease.completeRouteCount}/{rolloutPreviewRelease.totalRoutes} route packets; no environment promotion, consumer booking, payment, ticketing, or provider traffic is authorized.</p>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Preview release approval is blocked by support and release readiness. Current state is {rolloutPreviewRelease.completeRouteCount}/{rolloutPreviewRelease.totalRoutes} route packets; no consumer-release promotion, consumer booking, payment, ticketing, or provider traffic is authorized.</p>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           {rolloutPreviewRelease.records.map((record) => (
             <article key={record.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">
@@ -733,7 +733,7 @@ export default function Page() {
 
       <section className="mt-10">
         <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Final gate · Production release</p><h2 className="mt-2 text-2xl font-bold">Consumer flight launch readiness</h2></div><Plane className="h-7 w-7 text-slate-400" /></div>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Production readiness is blocked by controlled Preview acceptance. Current state is {rolloutProductionRelease.completeRouteCount}/{rolloutProductionRelease.totalRoutes} route packets; no production credential, deployment, alias, live traffic, consumer booking, ticketing, or payment is authorized.</p>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Production readiness is blocked by controlled Preview acceptance. The reviewed flight build is deployed to Production, but current state is {rolloutProductionRelease.completeRouteCount}/{rolloutProductionRelease.totalRoutes} route packets; no live provider traffic, consumer booking, ticketing, or payment is authorized.</p>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           {rolloutProductionRelease.records.map((record) => (
             <article key={record.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">
@@ -747,7 +747,7 @@ export default function Page() {
 
       <section className="mt-10">
         <div className="flex items-end justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Final action gate · consumer booking</p><h2 className="mt-2 text-2xl font-bold">Consumer flight booking activation</h2></div><TicketCheck className="h-7 w-7 text-slate-400" /></div>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Consumer activation is blocked by Production-release readiness. Current state is {rolloutConsumerLaunch.completeRouteCount}/{rolloutConsumerLaunch.totalRoutes} route packets; no deployment, alias, live traffic, consumer booking, ticketing, or payment is authorized.</p>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Consumer activation is blocked by Production-release readiness. The reviewed flight deployment and aliases exist, but current state is {rolloutConsumerLaunch.completeRouteCount}/{rolloutConsumerLaunch.totalRoutes} route packets; no live traffic, consumer booking, ticketing, or payment is authorized.</p>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           {rolloutConsumerLaunch.records.map((record) => (
             <article key={record.connectorId} className="rounded-2xl border border-slate-200 bg-white p-6">
