@@ -1,7 +1,7 @@
 {
   "evidence": {
     "version": "flight-launch-progress-checkpoint-v1",
-    "checkedAt": "2026-09-23T19:01:42-05:00",
+    "checkedAt": "2026-09-23T19:05:38-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "providerRequestsPerformed": false,
@@ -120,6 +120,17 @@
         "command": "vitest run tests/flight-launch-evidence-audit.test.ts --reporter=dot",
         "testFilesPassed": 1,
         "testsPassed": 1,
+        "status": "passed",
+        "providerRequestsPerformed": false,
+        "ordersPerformed": false,
+        "paymentsPerformed": false,
+        "ticketsIssued": false
+      },
+      "latestOperationsRunbookIntegrityTest": {
+        "checkedAt": "2026-09-23T19:05:38-05:00",
+        "command": "vitest run tests/flight-consumer-production-operations-runbook.test.ts tests/flight-launch-evidence-audit.test.ts --reporter=dot",
+        "testFilesPassed": 2,
+        "testsPassed": 3,
         "status": "passed",
         "providerRequestsPerformed": false,
         "ordersPerformed": false,
