@@ -162,6 +162,38 @@ for (const key of [
   "ticketsIssued",
 ]) assertClosed(latestControlledLiveSearchSafetyTest[key], `latestControlledLiveSearchSafetyTest.${key}`);
 
+const latestVercelPreviewEnvironmentCheck = checkpoint.localVerification.latestVercelPreviewEnvironmentCheck;
+assert(latestVercelPreviewEnvironmentCheck.selectedEnvironment === "Preview"
+  && latestVercelPreviewEnvironmentCheck.secretValuesRead === false
+  && latestVercelPreviewEnvironmentCheck.environmentMutationPerformed === false
+  && latestVercelPreviewEnvironmentCheck.deploymentTriggered === false,
+  "the latest Vercel Preview environment check must remain read-only and secret-safe.");
+for (const name of [
+  "DUFFEL_TEST_ACCESS_TOKEN",
+  "FLIGHT_CONSUMER_PREVIEW_ENABLED",
+  "FLIGHT_RUNTIME_ENABLED",
+  "FLIGHT_RUNTIME_ENVIRONMENT",
+  "FLIGHT_RUNTIME_MODE",
+  "FLIGHT_PROVIDER_TRAFFIC_ENABLED",
+  "FLIGHT_BOOKING_ENABLED",
+  "ENABLE_LIVE_BOOKING_PAYMENTS",
+  "FLIGHT_DUFFEL_TEST_AUTHORITY_SECRET",
+  "SUPABASE_SERVICE_ROLE_KEY",
+]) assert(latestVercelPreviewEnvironmentCheck.observedVariableNames.includes(name),
+  `the Vercel Preview check must observe ${name}.`);
+assert(latestVercelPreviewEnvironmentCheck.observedControlValues.FLIGHT_PROVIDER_TRAFFIC_ENABLED === "true",
+  "Preview provider traffic must be enabled only for the sandbox route.");
+assert(latestVercelPreviewEnvironmentCheck.observedControlValues.FLIGHT_BOOKING_ENABLED === "true",
+  "Preview booking control must be enabled for the sandbox route.");
+assert(latestVercelPreviewEnvironmentCheck.observedControlValues.ENABLE_LIVE_BOOKING_PAYMENTS === "false",
+  "Preview live-money booking payments must remain disabled.");
+for (const key of [
+  "providerRequestsPerformed",
+  "ordersPerformed",
+  "paymentsPerformed",
+  "ticketsIssued",
+]) assertClosed(latestVercelPreviewEnvironmentCheck[key], `latestVercelPreviewEnvironmentCheck.${key}`);
+
 for (const [label, value] of Object.entries(checkpoint.authorityBoundary)) {
   assertClosed(value, `checkpoint.authorityBoundary.${label}`);
 }
