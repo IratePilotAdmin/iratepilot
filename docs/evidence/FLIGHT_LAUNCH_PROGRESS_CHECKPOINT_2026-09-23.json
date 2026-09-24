@@ -1,7 +1,7 @@
 {
   "evidence": {
     "version": "flight-launch-progress-checkpoint-v1",
-    "checkedAt": "2026-09-23T19:05:38-05:00",
+    "checkedAt": "2026-09-23T19:09:04-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "providerRequestsPerformed": false,
@@ -55,6 +55,19 @@
           "testsPassed": 2970,
           "status": "passed"
         },
+        "providerRequestsPerformed": false,
+        "ordersPerformed": false,
+        "paymentsPerformed": false,
+        "ticketsIssued": false
+      },
+      "latestStaticChecks": {
+        "checkedAt": "2026-09-23T19:09:04-05:00",
+        "commands": [
+          "eslint .",
+          "tsc --noEmit"
+        ],
+        "eslint": "passed",
+        "typescriptNoEmit": "passed",
         "providerRequestsPerformed": false,
         "ordersPerformed": false,
         "paymentsPerformed": false,
