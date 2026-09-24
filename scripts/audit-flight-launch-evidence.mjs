@@ -7,6 +7,7 @@ const files = {
   matrix: "docs/evidence/FLIGHT_RELEASE_GATE_MATRIX_2026-09-18.json",
   manifest: "docs/evidence/FLIGHT_CONNECTOR_ROUTE_PACKET_MANIFEST_2026-09-23.json",
   securityScan: "docs/evidence/FLIGHT_SECURITY_SCAN_2026-09-23.json",
+  previewRecheck: "docs/evidence/FLIGHT_PREVIEW_DEPLOYMENT_RECHECK_2026-09-23.json",
 };
 
 function fail(message) {
@@ -46,6 +47,7 @@ const loaded = Object.fromEntries(
 const checkpoint = loaded.checkpoint.value.evidence;
 const matrix = loaded.matrix.value.evidence;
 const manifest = loaded.manifest.value.evidence;
+const previewRecheck = loaded.previewRecheck.value.evidence;
 
 assert(checkpoint.source?.branch === "agent/flight-live-foundation-20260823",
   "the checkpoint must describe the flight foundation branch.");
@@ -267,6 +269,32 @@ assert(latestPreviewCheck.bookingCreated === false,
 assert(latestPreviewCheck.ticketIssued === false,
   "the latest Preview check must not issue a ticket.");
 
+assert(previewRecheck.source?.branch === "agent/flight-live-foundation-20260823",
+  "the Preview recheck must describe the flight foundation branch.");
+assert(previewRecheck.source?.commit === "d9e1368",
+  "the Preview recheck must bind the latest evidence commit.");
+assert(previewRecheck.deployment?.state === "READY"
+  && previewRecheck.deployment?.target === "preview"
+  && previewRecheck.deployment?.sourceBranch === previewRecheck.source.branch
+  && previewRecheck.deployment?.sourceCommit?.startsWith(previewRecheck.source.commit),
+"the latest evidence commit must have a READY Preview deployment bound to it.");
+assert(previewRecheck.browserSmoke?.surface === "supplier_offline_planning_preview",
+  "the latest Preview recheck must remain supplier-offline.");
+for (const key of [
+  "liveInventoryDisplayed",
+  "providerRequestDispatched",
+  "paymentCreated",
+  "bookingCreated",
+  "ticketIssued",
+]) assertClosed(previewRecheck.browserSmoke?.[key], `previewRecheck.browserSmoke.${key}`);
+for (const key of [
+  "consumerReleaseEnabled",
+  "productionProviderTrafficEnabled",
+  "bookingEnabled",
+  "paymentEnabled",
+  "ticketingEnabled",
+]) assertClosed(previewRecheck.authorityBoundary?.[key], `previewRecheck.authorityBoundary.${key}`);
+
 const latestCanonicalSurfaceCheck = checkpoint.localVerification.latestCanonicalProductionSurfaceCheck;
 assert(latestCanonicalSurfaceCheck.surface === "supplier_offline_planning_preview",
   "the canonical Production flight surface must remain supplier-offline.");
@@ -335,6 +363,7 @@ const result = {
   paymentEnabled: false,
   monitoringCollectorAssembly: true,
   productionSourceIsFlightBranch: true,
+  latestPreviewRecheck: true,
   duffelResponseReceived: false,
 };
 process.stdout.write(`${JSON.stringify(result)}\n`);

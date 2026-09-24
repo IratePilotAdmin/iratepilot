@@ -1,0 +1,38 @@
+{
+  "evidence": {
+    "version": "flight-preview-deployment-recheck-v1",
+    "checkedAt": "2026-09-23T23:40:10-05:00",
+    "sanitized": true,
+    "secretValuesIncluded": false,
+    "source": {
+      "repository": "IratePilotAdmin/iratepilot",
+      "branch": "agent/flight-live-foundation-20260823",
+      "commit": "d9e1368",
+      "commitMessage": "docs(flights): record Duffel response check"
+    },
+    "deployment": {
+      "deploymentId": "CTwAvhpho8kAwioQQmoJddbAc4M4",
+      "deploymentUrl": "https://iratepilotadmin-d8e49qkkf-irate-pilot.vercel.app/flights",
+      "state": "READY",
+      "target": "preview",
+      "sourceBranch": "agent/flight-live-foundation-20260823",
+      "sourceCommit": "d9e13680c64322f4823eecf8d5229931412d35a2"
+    },
+    "browserSmoke": {
+      "pageTitle": "Flight planning preview | iRatePilot",
+      "surface": "supplier_offline_planning_preview",
+      "liveInventoryDisplayed": false,
+      "providerRequestDispatched": false,
+      "paymentCreated": false,
+      "bookingCreated": false,
+      "ticketIssued": false
+    },
+    "authorityBoundary": {
+      "consumerReleaseEnabled": false,
+      "productionProviderTrafficEnabled": false,
+      "bookingEnabled": false,
+      "paymentEnabled": false,
+      "ticketingEnabled": false
+    }
+  }
+}
