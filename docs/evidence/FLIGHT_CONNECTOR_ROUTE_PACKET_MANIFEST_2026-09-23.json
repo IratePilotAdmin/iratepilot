@@ -1,14 +1,14 @@
 {
   "evidence": {
     "version": "flight-connector-route-packet-manifest-v1",
-    "checkedAt": "2026-09-23T23:05:12-05:00",
+    "checkedAt": "2026-09-23T23:31:56-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "providerRequestsPerformed": false,
     "ordersPerformed": false,
     "paymentsPerformed": false,
     "ticketsIssued": false,
-    "sourceCommit": "4e56b7c",
+    "sourceCommit": "3d293b9",
     "routeDecision": {
       "primary": "duffel",
       "secondary": "sabre",
