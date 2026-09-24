@@ -161,3 +161,25 @@ The product goal includes an AI Hotel Assistant that answers questions from the 
 | **OTA booking does not appear** | Check that listing, mapping, sandbox connection, capture/delivery controls, and the source booking acknowledgement are all enabled and accepted. |
 
 For an unresolved problem, note the property, room or reservation reference, date/time, screen, and exact message. Do not include passwords, card numbers, full ID images, or full document numbers in a support request.
+
+## 14. Supervised pilot acceptance checklist
+
+Run this checklist only in a named, isolated non-production property with synthetic guest data and test payment credentials. Do not use a live guest stay as a test. Record evidence references without guest names, identity data, payment details, or secrets. An item remains **Not tested** until its end-to-end result is observed in the application and confirmed in the relevant property record or provider sandbox.
+
+| Area | Acceptance check | Result / evidence reference |
+| --- | --- | --- |
+| Access | Owner, manager, and front-desk roles can sign in; a user cannot access another property outside their assigned scope. | Not tested |
+| Property setup | Property time zone, hotel operating model, room types, unique room numbers, occupancy limits, and capacity agree. | Not tested |
+| Rates and charges | An active rate returns the expected nightly price; city/state/lodging taxes and resort/technology fees calculate correctly for one night and multiple nights. | Not tested |
+| Reservation lifecycle | Create, retrieve, modify, assign, cancel, and no-show a synthetic booking; retries do not create duplicate reservations. | Not tested |
+| Room assignment | Assign a future reservation, reject an overlapping assignment, and move a test stay while preserving the audit trail. | Not tested |
+| Walk-in and ID capture | Complete a synthetic walk-in; test camera and image upload separately; verify any extracted fields are reviewable and only permitted fields are saved. | Not tested |
+| Payment and folio | In the provider's test mode, verify authorization/deposit, payment failure, duplicate-submit handling, folio balance, refund or void, and reconciliation. No raw card data may enter PMS fields. | Not tested |
+| Check-in and checkout | Complete a synthetic arrival and departure; confirm reservation, folio, payment state, room state, and timestamps agree afterward. | Not tested |
+| Housekeeping and maintenance | Change a vacant room through dirty, clean/inspected, ready, and maintenance states; test bulk selection on multiple test rooms and confirm occupied rooms are protected. | Not tested |
+| Reports and service-day close | Compare occupancy, ADR, RevPAR, revenue, taxes/fees, payment totals, arrivals/departures, cancellations, and no-shows with the underlying synthetic reservations and folios. | Not tested |
+| OTA round trip | In a sandbox only, publish test ARI, create a synthetic OTA booking, confirm PMS acknowledgement and mapping, then modify and cancel it; confirm idempotency and audit records. | Not tested |
+| Mobile and browsers | Repeat core arrival, room status, and reservation checks in desktop Chrome, iPad Safari, and Android Chrome at supported viewport sizes. | Not tested |
+| Backup and recovery | Complete an isolated backup restore drill and verify restored records, tenant boundaries, and recovery evidence before any production cutover. | Not tested |
+
+**Pilot decision:** Not accepted. A launch owner should record the test date, build/version, isolated property reference, operator, blocking findings, remediation owner, and final approval after the required checks pass. A Preview build, local automated tests, or a demo walkthrough alone does not pass this checklist.
