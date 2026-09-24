@@ -34,6 +34,13 @@ requirements.
 | Traveler notifications | Detects delayed and failed notifications. |
 | Safe output | Emits aggregate counts, ages, thresholds, severity, response target, runbook section, and the digest binding the accepted trusted context only. It emits no raw provider identifiers, traveler data, credentials, or payment data. |
 
+The repository also includes an explicitly injected collector-assembly seam. It
+combines one result from each of the nine source readers with their supplied
+authority receipts and the finance-approved Duffel reserve policy, then produces
+the exact snapshot/trusted-context pair consumed by the evaluator. The seam has
+no database, network, provider, payment, alert, or release capability; Production
+readers and receipt issuers remain separately supplied and accepted.
+
 ## What is not implemented
 
 The evaluator does not collect its own evidence or deliver its own alerts.
