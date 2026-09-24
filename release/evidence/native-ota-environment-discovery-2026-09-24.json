@@ -1,0 +1,55 @@
+{
+  "format": "iratepilot-native-ota-environment-discovery-v1",
+  "observedAt": "2026-09-24T14:22:00Z",
+  "productionCandidate": {
+    "branch": "codex/native-ota-production-port",
+    "commit": "3a050177bf4656c073a2d670252c79541ef9ecbe",
+    "deploymentId": "dpl_J8UJkzwaYhTd2ZU1d4kgaF26fM7v",
+    "deploymentUrl": "iratepilotadmin-5f93f9ba2-irate-pilot.vercel.app",
+    "deploymentState": "READY",
+    "applicationRouteInspection": "Unauthenticated requests redirected to Vercel SSO; application responses not inspected",
+    "productionChanges": "none"
+  },
+  "productionDomain": {
+    "capabilitiesRoute": 404,
+    "ariReceiverRoute": 404,
+    "checkedAt": "2026-09-24T14:13:25Z"
+  },
+  "hotelRehearsalProject": {
+    "projectName": "iratepilot-hotel-rehearsal-20260908",
+    "projectRef": "trwuofvnqxdpmjztrnwp",
+    "supabaseHost": "trwuofvnqxdpmjztrnwp.supabase.co",
+    "dashboardHealthAtInspection": "Unhealthy",
+    "readOnlySqlConnectivity": "passed",
+    "publicBaseTables": 42,
+    "requiredOtaTablesPresent": ["properties", "rooms", "bookings", "partners"],
+    "propertyCount": 1,
+    "redRoofNameMatches": 0,
+    "recordedMigrationHistory": "empty",
+    "connectorMigrationsApplied": false,
+    "interpretation": "Candidate OTA rehearsal database; resolve inconsistent dashboard health and verify schema baseline before migration acceptance.",
+    "dataChanges": "none"
+  },
+  "otherProjects": {
+    "iratepilotPreview": {
+      "projectRef": "eiqmdldjnedqgbtoozqa",
+      "recordedPmsMigrationHead": "202609070175",
+      "purpose": "Managed Preview database with flight-preview controls; not modified"
+    },
+    "pmsRestoreDrill": {
+      "projectRef": "onwdgkwsyxkbodzouapi",
+      "purpose": "Restore-drill project; not modified"
+    }
+  },
+  "secrets": {
+    "readOrCopied": false,
+    "transmitted": false
+  },
+  "changes": {
+    "hostedMigrations": "none",
+    "propertyRecords": "none",
+    "reservations": "none",
+    "payments": "none",
+    "production": "none"
+  }
+}
