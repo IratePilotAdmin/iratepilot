@@ -1,0 +1,32 @@
+{
+  "evidence": {
+    "version": "flight-dns-email-auth-recheck-v1",
+    "checkedAt": "2026-09-24T00:13:37-05:00",
+    "sanitized": true,
+    "secretValuesIncluded": false,
+    "publicRecordValuesIncluded": false,
+    "readOnly": true,
+    "domain": "iratepilot.com",
+    "vercelDomainSurface": {
+      "apexRedirectsTo": "www.iratepilot.com",
+      "wwwEnvironment": "production"
+    },
+    "dnsObservations": {
+      "apexARecordPresent": true,
+      "wwwCnamePresent": true,
+      "mxRecordPresent": true,
+      "spfTxtPresent": true,
+      "resendDkimTxtPresent": true,
+      "dmarcTxtPresent": false
+    },
+    "authorityBoundary": {
+      "dnsMutated": false,
+      "emailSent": false,
+      "consumerReleaseEnabled": false,
+      "providerTrafficEnabled": false,
+      "bookingEnabled": false,
+      "paymentEnabled": false
+    },
+    "remainingRequirement": "Add and verify the approved DMARC policy, then complete sender-authentication and registrar operational acceptance before commercial launch."
+  }
+}

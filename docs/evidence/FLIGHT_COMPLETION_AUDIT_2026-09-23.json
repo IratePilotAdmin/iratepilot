@@ -83,7 +83,8 @@
         "id": "dns_email_sender_authentication",
         "state": "pending_external",
         "evidence": [
-          "remainingExternalGates[4]"
+          "remainingExternalGates[4]",
+          "docs/evidence/FLIGHT_DNS_EMAIL_AUTH_RECHECK_2026-09-24.json"
         ],
         "authorityEnabled": false
       },
