@@ -154,6 +154,31 @@ describe("native iRatePilot PMS delivery", () => {
     expect(rpc.mock.calls[2][1]).toMatchObject({ p_outcome: "retry", p_code: "invalid_acknowledgement" });
   });
 
+  it("retries malformed, non-JSON, and non-object acknowledgements without treating them as delivered", async () => {
+    const replies = [
+      new Response(JSON.stringify({ status: 200, body: { outcome: "reservation-staged", eventId: event.eventId, sourceVersion: 1 } }), {
+        status: 200, headers: { "content-type": "text/html" },
+      }),
+      Response.json(null),
+      Response.json([]),
+      Response.json({ status: 200, body: null }),
+      Response.json({ status: 200, body: [] }),
+      new Response(Uint8Array.from([0xff, 0xfe]), { status: 200, headers: { "content-type": "application/json" } }),
+    ];
+
+    for (const response of replies) {
+      rpc
+        .mockResolvedValueOnce({ data: [storedConnection()], error: null })
+        .mockResolvedValueOnce({ data: [row], error: null })
+        .mockResolvedValueOnce({ data: true, error: null });
+      const fetcher = vi.fn(async () => response);
+      await expect(deliverNativePmsEventOnce({ env, fetcher }))
+        .resolves.toMatchObject({ outcome: "retry", eventId: event.eventId, receiverOutcome: null });
+      expect(rpc.mock.calls.at(-1)?.[1]).toMatchObject({ p_outcome: "retry", p_code: "invalid_acknowledgement" });
+      rpc.mockReset();
+    }
+  });
+
   it("places a mismatched claimed event into review without sending it", async () => {
     rpc
       .mockResolvedValueOnce({ data: [storedConnection()], error: null })
