@@ -2,8 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PGlite } from "@electric-sql/pglite";
 import { readFile } from "node:fs/promises";
 
-const reservationMigration = await readFile(new URL("../supabase/migrations/20260923151000_iratepilot_pms_reservation_connection_setup.sql", import.meta.url), "utf8");
-const atomicMigration = await readFile(new URL("../supabase/migrations/20260924101500_iratepilot_pms_atomic_connection_setup.sql", import.meta.url), "utf8");
+const reservationMigration = await readFile(new URL("../supabase/migrations/202609230142_iratepilot_pms_reservation_connection_setup.sql", import.meta.url), "utf8");
+const atomicMigration = await readFile(new URL("../supabase/migrations/202609240144_iratepilot_pms_atomic_connection_setup.sql", import.meta.url), "utf8");
 const schemaVerification = await readFile(new URL("../supabase/verify_schema.sql", import.meta.url), "utf8");
 const db = new PGlite();
 const property = "11111111-1111-4111-8111-111111111111";

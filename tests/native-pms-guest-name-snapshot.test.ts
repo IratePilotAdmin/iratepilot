@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-const migration = readFileSync(path.join(process.cwd(), "supabase/migrations/20260923120000_iratepilot_pms_guest_name_snapshot.sql"), "utf8");
+const migration = readFileSync(path.join(process.cwd(), "supabase/migrations/202609230139_iratepilot_pms_guest_name_snapshot.sql"), "utf8");
 
 describe("native PMS guest-name snapshot", () => {
   it("shares only a bounded display name with the property PMS connector", () => {

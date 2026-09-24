@@ -19,7 +19,6 @@ function ApprovedPaymentForm({ bookingId, breakdown, paymentMode }: { bookingId:
   const router = useRouter();
   const stripe = useStripe();
   const elements = useElements();
-  const router = useRouter();
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [walletsAvailable, setWalletsAvailable] = useState(false);

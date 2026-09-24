@@ -1,0 +1,19 @@
+{
+  "format": "iratepilot-native-ota-focused-validation-v1",
+  "observedAt": "2026-09-24T06:39:00Z",
+  "environment": "Local OTA connector worktree; PGlite for isolated migration and lifecycle checks",
+  "command": "pnpm exec vitest run tests/native-ari-migration-behavior.test.ts tests/native-pms-outbox-booking-lifecycle.test.ts tests/native-pms-delivery-connection-registry.test.ts tests/native-pms-baseline-review-control.test.ts tests/native-pms-reservation-connection-setup.test.ts services/hotel-suppliers/iratepilot-pms/native-delivery.test.ts",
+  "result": {
+    "testFilesPassed": 6,
+    "testsPassed": 22,
+    "exitCode": 0
+  },
+  "notProven": [
+    "Hosted preview migrations or schema parity",
+    "Red Roof property mapping or approved marketplace publication",
+    "Persisted reservation round trip from iratepilot.com to PMS",
+    "Production deployment or external OTA certification"
+  ],
+  "productionChanges": "none",
+  "guestOrPaymentDataChanged": "none"
+}

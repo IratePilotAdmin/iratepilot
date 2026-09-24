@@ -27,7 +27,6 @@ function PaymentForm({ breakdown }: { breakdown: Breakdown }) {
   const router = useRouter();
   const stripe = useStripe();
   const elements = useElements();
-  const router = useRouter();
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 

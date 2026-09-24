@@ -1,0 +1,44 @@
+{
+  "format": "iratepilot-native-ota-production-port-validation-v1",
+  "validatedAt": "2026-09-24T14:10:26Z",
+  "branch": "codex/native-ota-production-port",
+  "baseCommit": "3d293b9e6a9c25450475e78775ee1c380e92d4aa",
+  "scope": "Production-based OTA candidate with native PMS connector; tests use local and synthetic fixtures only. No hosted migration, production deployment, property mapping, reservation, or traffic enablement.",
+  "checks": {
+    "lint": "passed",
+    "typecheck": "passed",
+    "tests": {
+      "passed": 3038,
+      "failed": 0,
+      "files": 477
+    },
+    "productionBuild": "passed",
+    "flightLaunchEvidenceAudit": "passed",
+    "nativePmsDynamicRoutes": [
+      "/api/ota/capabilities",
+      "/api/pms/ari"
+    ]
+  },
+  "production": {
+    "deploymentId": "dpl_CgLUV9bxXnmnqvVF869nL3iCafR5",
+    "branch": "agent/flight-live-foundation-20260823",
+    "commit": "3d293b9e6a9c25450475e78775ee1c380e92d4aa",
+    "connectorCapabilityRouteStatus": 404,
+    "ariReceiverRouteStatus": 404,
+    "productionChanges": "none"
+  },
+  "migrationSafety": {
+    "nativePmsMigrations": 11,
+    "filenames": "12-digit canonical stamps",
+    "flightMigrationGate": "recognizes exact PMS migration set and excludes it from flight apply plan",
+    "automaticPreviewAllowlistChanged": false,
+    "hostedMigration": "not applied"
+  },
+  "acceptance": {
+    "redRoofPartnerListing": "not verified",
+    "propertyRoomRateMapping": "not verified",
+    "sandboxReservationRoundTrip": "not verified",
+    "liveTrafficEnabled": false
+  },
+  "productionChanges": "none"
+}

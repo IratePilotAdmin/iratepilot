@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PGlite } from "@electric-sql/pglite";
 import { readFile } from "node:fs/promises";
 
-const migration = await readFile(new URL("../supabase/migrations/20260924100000_iratepilot_pms_baseline_review_control.sql", import.meta.url), "utf8");
+const migration = await readFile(new URL("../supabase/migrations/202609240143_iratepilot_pms_baseline_review_control.sql", import.meta.url), "utf8");
 const db = new PGlite();
 const actor = "11111111-1111-4111-8111-111111111111";
 const property = "22222222-2222-4222-8222-222222222222";

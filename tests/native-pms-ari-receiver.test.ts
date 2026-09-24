@@ -58,7 +58,7 @@ describe("iRatePilot PMS native ARI receiver", () => {
   });
 
   it("keeps connection and event tables private and performs each mapped inventory batch atomically", async () => {
-    const sql = await readFile(new URL("../supabase/migrations/20260923130000_iratepilot_pms_native_ari_receiver.sql", import.meta.url), "utf8");
+    const sql = await readFile(new URL("../supabase/migrations/202609230140_iratepilot_pms_native_ari_receiver.sql", import.meta.url), "utf8");
     expect(sql).toMatch(/enabled boolean not null default false/);
     expect(sql).toMatch(/alter table public\.irp_pms_native_ari_connections enable row level security/);
     expect(sql).toMatch(/revoke all on function public\.irp_pms_apply_native_ari[\s\S]*?from public, anon, authenticated/);

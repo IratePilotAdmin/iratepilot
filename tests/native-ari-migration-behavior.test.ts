@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PGlite } from "@electric-sql/pglite";
 import { readFile } from "node:fs/promises";
 
-const migration = await readFile(new URL("../supabase/migrations/20260923130000_iratepilot_pms_native_ari_receiver.sql", import.meta.url), "utf8");
+const migration = await readFile(new URL("../supabase/migrations/202609230140_iratepilot_pms_native_ari_receiver.sql", import.meta.url), "utf8");
 const db = new PGlite();
 const propertyId = "10000000-0000-4000-8000-000000000001";
 const otaRoomId = "20000000-0000-4000-8000-000000000001";

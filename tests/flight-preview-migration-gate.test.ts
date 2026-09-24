@@ -10,6 +10,7 @@ import {
   assertPreviewLedger,
   buildSupabaseChildEnv,
   listRepositoryMigrations,
+  NATIVE_PMS_MIGRATIONS,
   parseInvocationMode,
   CANONICAL_FLIGHT_MIGRATION_VERSIONS,
   PINNED_FLIGHT_MIGRATIONS,
@@ -1453,6 +1454,9 @@ describe("flight Preview migration gate", () => {
     expect(pinnedPlan.flightVersions).toEqual(CANONICAL_FLIGHT_MIGRATION_VERSIONS);
     expect(pinnedPlan.flightVersions).toHaveLength(19);
     expect(repositoryVersions.slice(-19)).toEqual(pinnedPlan.flightVersions);
+    expect(listRepositoryMigrations().filter(({ filename }: { filename: string }) => filename.includes("_iratepilot_pms_")))
+      .toEqual(NATIVE_PMS_MIGRATIONS);
+    expect(pinnedPlan.migrations.some(({ filename }: { filename: string }) => filename.includes("_iratepilot_pms_"))).toBe(false);
     expect(RETIRED_FLIGHT_MIGRATION_VERSIONS).toHaveLength(18);
     expect(pinnedPlan.sharedHotelMigrationPresent).toBe(true);
   });

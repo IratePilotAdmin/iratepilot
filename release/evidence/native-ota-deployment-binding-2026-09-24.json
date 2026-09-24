@@ -1,0 +1,60 @@
+{
+  "format": "iratepilot-native-ota-deployment-binding-v1",
+  "verifiedAt": "2026-09-24T05:44:52.976Z",
+  "production": {
+    "project": "iratepilotadmin",
+    "projectId": "prj_qFxx3L5PiFgr0S1bNPmzvetGdKRW",
+    "aliases": [
+      "www.iratepilot.com",
+      "iratepilot.com"
+    ],
+    "deploymentId": "dpl_CgLUV9bxXnmnqvVF869nL3iCafR5",
+    "branch": "agent/flight-live-foundation-20260823",
+    "commit": "3d293b9e6a9c25450475e78775ee1c380e92d4aa",
+    "capabilityRoute": "404 in previous read-only public probe",
+    "receiverRoute": "404 in previous read-only public probe"
+  },
+  "connectorPreview": {
+    "alias": "iratepilotadmin-git-codex-pms-native-ota-connector-irate-pilot.vercel.app",
+    "deploymentId": "dpl_Dd461dodRK2sQJS3tAS2RnM4RSHK",
+    "branch": "codex/pms-native-ota-connector",
+    "commit": "fe49932e71b3f9146a9199f6311686e90d72c3bb",
+    "state": "READY",
+    "capability": {
+      "route": "/api/ota/capabilities",
+      "result": "JSON served in signed-in browser",
+      "trafficEnabled": false
+    },
+    "receiver": {
+      "route": "/api/pms/ari",
+      "method": "GET",
+      "result": "405 method_not_allowed, confirming route is deployed"
+    }
+  },
+  "candidate": {
+    "latestLocalValidation": "release/evidence/native-ota-candidate-validation-2026-09-24-v2.json",
+    "workingTreeDirty": false,
+    "hostedMigrations": "not applied",
+    "reservationRoundTrip": "not verified",
+    "baseCommit": "f63eeb19193980e9cb662dea69fa3e04263a4568"
+  },
+  "productionChanges": "none",
+  "limitations": [
+    "Preview SSO prevented independent inspection of the application-level capability and receiver responses.",
+    "The candidate database migrations have not been applied to a verified non-production Supabase project.",
+    "The Red Roof Inn reservation round trip remains unverified.",
+    "The production domain still points to a different branch and commit; no production deployment was performed."
+  ],
+  "latestPreview": {
+    "verifiedAt": "2026-09-24T11:38:03Z",
+    "deploymentId": "dpl_6wbmTenve4UwjsXPMgfjdHUMJKB2",
+    "url": "iratepilotadmin-rbwnl13g6-irate-pilot.vercel.app",
+    "branch": "codex/pms-native-ota-connector",
+    "commit": "f63eeb19193980e9cb662dea69fa3e04263a4568",
+    "state": "READY",
+    "capabilityRoute": "Protected by Vercel SSO; unauthenticated check returned 302, response body not inspected",
+    "ariReceiverRoute": "Protected by Vercel SSO; unauthenticated check returned 302, response body not inspected",
+    "hostedPreviewMigration": "not applied",
+    "trafficEnabled": false
+  }
+}

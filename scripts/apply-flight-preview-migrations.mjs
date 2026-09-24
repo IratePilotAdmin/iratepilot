@@ -6,6 +6,19 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 export const PREVIEW_PROJECT_REF = "eiqmdldjnedqgbtoozqa";
 export const PRODUCTION_PROJECT_REF = "allliumarkejinplrggl";
 export const REQUIRED_BASELINE_TIP = "202608170067";
+export const NATIVE_PMS_MIGRATIONS = Object.freeze([
+  { version: "202609070139", filename: "202609070139_iratepilot_pms_transactional_outbox.sql" },
+  { version: "202609070140", filename: "202609070140_iratepilot_pms_baseline_activation.sql" },
+  { version: "202609070141", filename: "202609070141_iratepilot_pms_delivery_control.sql" },
+  { version: "202609070157", filename: "202609070157_iratepilot_pms_scoped_source_claim.sql" },
+  { version: "202609070158", filename: "202609070158_iratepilot_pms_scoped_source_claim_identity.sql" },
+  { version: "202609230139", filename: "202609230139_iratepilot_pms_guest_name_snapshot.sql" },
+  { version: "202609230140", filename: "202609230140_iratepilot_pms_native_ari_receiver.sql" },
+  { version: "202609230141", filename: "202609230141_iratepilot_pms_delivery_connection_registry.sql" },
+  { version: "202609230142", filename: "202609230142_iratepilot_pms_reservation_connection_setup.sql" },
+  { version: "202609240143", filename: "202609240143_iratepilot_pms_baseline_review_control.sql" },
+  { version: "202609240144", filename: "202609240144_iratepilot_pms_atomic_connection_setup.sql" },
+]);
 export const REQUIRED_REMOTE_FLIGHT_BASELINE_TIP = "202608250080";
 export const APPLY_CONFIRMATION_FLAG =
   "--apply-confirmation=PREVIEW_eiqmdldjnedqgbtoozqa_FLIGHT_120_138";
@@ -318,14 +331,21 @@ export function assertPinnedFlightMigrations({
   )),
   requireSharedHotel = false,
 } = {}) {
-  const baselineTipIndex = repositoryMigrations.findIndex(
+  const pmsMigrations = repositoryMigrations.filter(({ filename }) => filename.includes("_iratepilot_pms_"));
+  const expectedPmsMigrations = NATIVE_PMS_MIGRATIONS.map(({ version, filename }) => ({ version, filename }));
+  if (JSON.stringify(pmsMigrations) !== JSON.stringify(expectedPmsMigrations)) {
+    throw new Error("The native PMS migration set must match its exact registered files and versions.");
+  }
+  const pmsFilenames = new Set(NATIVE_PMS_MIGRATIONS.map(({ filename }) => filename));
+  const flightRepositoryMigrations = repositoryMigrations.filter(({ filename }) => !pmsFilenames.has(filename));
+  const baselineTipIndex = flightRepositoryMigrations.findIndex(
     ({ version }) => version === REQUIRED_BASELINE_TIP,
   );
   if (baselineTipIndex < 0) {
     throw new Error("Required repository migration 067 is missing.");
   }
 
-  const postBaseline = repositoryMigrations.slice(baselineTipIndex + 1);
+  const postBaseline = flightRepositoryMigrations.slice(baselineTipIndex + 1);
   const retiredSet = new Set(RETIRED_FLIGHT_MIGRATION_VERSIONS);
   const sharedHotelRows = postBaseline.filter(
     ({ version, filename }) => version === SHARED_HOTEL_MIGRATION.version
@@ -389,7 +409,7 @@ export function assertPinnedFlightMigrations({
     }
   }
 
-  const remoteBaselineTipIndex = repositoryMigrations.findIndex(
+  const remoteBaselineTipIndex = flightRepositoryMigrations.findIndex(
     ({ version }) => version === REQUIRED_REMOTE_FLIGHT_BASELINE_TIP,
   );
   if (remoteBaselineTipIndex < 0) {
@@ -405,8 +425,8 @@ export function assertPinnedFlightMigrations({
   }
 
   return {
-    migrations: repositoryMigrations,
-    baselineVersions: repositoryMigrations
+    migrations: flightRepositoryMigrations,
+    baselineVersions: flightRepositoryMigrations
       .slice(0, remoteBaselineTipIndex + 1)
       .map(({ version }) => version),
     flightVersions: canonicalMigrations.map(({ version }) => version),
