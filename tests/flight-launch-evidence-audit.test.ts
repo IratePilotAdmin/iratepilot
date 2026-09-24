@@ -20,7 +20,7 @@ describe("flight launch evidence audit", () => {
       bookingEnabled: false,
       paymentEnabled: false,
       monitoringCollectorAssembly: true,
-      productionSourceIsFlightBranch: false,
+      productionSourceIsFlightBranch: true,
       duffelResponseReceived: false,
     });
   });

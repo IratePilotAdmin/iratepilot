@@ -1,7 +1,7 @@
 {
   "evidence": {
     "version": "flight-launch-progress-checkpoint-v1",
-  "checkedAt": "2026-09-23T22:47:37-05:00",
+  "checkedAt": "2026-09-23T22:53:33-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "providerRequestsPerformed": false,
@@ -111,7 +111,7 @@
         "ticketIssued": false
       },
       "latestCanonicalProductionSurfaceCheck": {
-        "checkedAt": "2026-09-23T19:55:27-05:00",
+        "checkedAt": "2026-09-23T22:53:33-05:00",
         "url": "https://www.iratepilot.com/flights",
         "pageTitle": "Flight planning preview | iRatePilot",
         "surface": "supplier_offline_planning_preview",
@@ -120,8 +120,12 @@
         "paymentCreated": false,
         "bookingCreated": false,
         "ticketIssued": false,
-        "sourceBranchVerified": false,
-        "note": "Canonical public flight surface was observed read-only; Vercel deployment metadata was not inferred from this page observation."
+        "sourceBranchVerified": true,
+        "productionDeploymentId": "dpl_59SiWLADxkJK6jwfFobvVQBUXhwB",
+        "productionDeploymentState": "READY",
+        "productionSourceBranch": "agent/flight-live-foundation-20260823",
+        "productionSourceCommit": "220e8f5d53b8f872547fd6c1957025061f99cee0",
+        "note": "Canonical public flight surface was observed read-only after the reviewed flight branch was promoted to Production; the deployment page independently bound the aliases and source commit."
       },
       "latestProductionBuildCheck": {
         "checkedAt": "2026-09-23T22:47:37-05:00",
@@ -295,42 +299,42 @@
       }
     },
     "production": {
-      "currentDeploymentId": "dpl_ECjpq8jnLPzpFprY993DgcUkCbZy",
+      "currentDeploymentId": "dpl_59SiWLADxkJK6jwfFobvVQBUXhwB",
       "state": "READY",
-      "sourceBranch": "agent/hotel-fee-alignment-20260915",
-      "sourceCommit": "a9dbf5f155f5ffc2dfe81da41a3522c69316783d",
-      "flightBranchIsCurrentProductionSource": false,
-      "flightPromotionPerformed": false,
+      "sourceBranch": "agent/flight-live-foundation-20260823",
+      "sourceCommit": "220e8f5d53b8f872547fd6c1957025061f99cee0",
+      "flightBranchIsCurrentProductionSource": true,
+      "flightPromotionPerformed": true,
       "paymentFlagReadOnlyCheck": "FLIGHT_PAYMENT_ENABLED=false",
       "duffelShoppingDarkGate": "closed",
-      "duffelCredentialConfiguration": "replacement_token_and_matching_digest_saved_in_vercel_production_new_deployment_required",
+      "duffelCredentialConfiguration": "replacement_token_and_matching_digest_saved_in_vercel_production_reviewed_flight_deployment_ready",
       "lastAuthorizedLiveSearchAttempt": {
         "result": "rejected_before_provider_dispatch",
         "providerRequestDispatched": false
       }
     },
     "vercelDeploymentRecheck": {
-      "checkedAt": "2026-09-23T18:53:15-05:00",
+      "checkedAt": "2026-09-23T22:53:33-05:00",
       "latestVercelReadOnlyCheck": {
-        "checkedAt": "2026-09-23T18:53:15-05:00",
-        "productionDeploymentId": "dpl_ECjpq8jnLPzpFprY993DgcUkCbZy",
+        "checkedAt": "2026-09-23T22:53:33-05:00",
+        "productionDeploymentId": "dpl_59SiWLADxkJK6jwfFobvVQBUXhwB",
         "productionState": "READY",
-        "productionSourceBranch": "agent/hotel-fee-alignment-20260915",
-        "productionSourceCommit": "a9dbf5f155f5ffc2dfe81da41a3522c69316783d",
-        "flightBranchIsProductionSource": false,
+        "productionSourceBranch": "agent/flight-live-foundation-20260823",
+        "productionSourceCommit": "220e8f5d53b8f872547fd6c1957025061f99cee0",
+        "flightBranchIsProductionSource": true,
         "credentialDigestVariablePresentInProduction": true,
         "credentialValueRead": false,
-        "redeployTriggered": false,
+        "redeployTriggered": true,
         "providerTrafficTriggered": false
       },
       "authoritativeBrowserRecheck": {
-        "checkedAt": "2026-09-23T18:53:15-05:00",
-        "productionDeploymentId": "dpl_ECjpq8jnLPzpFprY993DgcUkCbZy",
+        "checkedAt": "2026-09-23T22:53:33-05:00",
+        "productionDeploymentId": "dpl_59SiWLADxkJK6jwfFobvVQBUXhwB",
         "productionState": "READY",
-        "productionSourceBranch": "agent/hotel-fee-alignment-20260915",
-        "productionSourceCommit": "a9dbf5f155f5ffc2dfe81da41a3522c69316783d",
-        "flightBranchPromoted": false,
-        "flightProductionDeploymentTriggered": false
+        "productionSourceBranch": "agent/flight-live-foundation-20260823",
+        "productionSourceCommit": "220e8f5d53b8f872547fd6c1957025061f99cee0",
+        "flightBranchPromoted": true,
+        "flightProductionDeploymentTriggered": true
       },
       "previewGateRecheck": {
         "checkedAt": "2026-09-23T18:53:15-05:00",
@@ -351,18 +355,18 @@
         "branchAlias": "https://iratepilotadmin-git-agent-flight-live-founda-0333c5-irate-pilot.vercel.app"
       },
       "production": {
-        "deploymentId": "dpl_ECjpq8jnLPzpFprY993DgcUkCbZy",
+        "deploymentId": "dpl_59SiWLADxkJK6jwfFobvVQBUXhwB",
         "state": "READY",
         "target": "production",
-        "branch": "agent/hotel-fee-alignment-20260915",
-        "sourceCommit": "a9dbf5f155f5ffc2dfe81da41a3522c69316783d",
-        "source": "redeploy",
+        "branch": "agent/flight-live-foundation-20260823",
+        "sourceCommit": "220e8f5d53b8f872547fd6c1957025061f99cee0",
+        "source": "promoted_preview",
         "aliases": [
           "www.iratepilot.com",
           "iratepilot.com"
         ]
       },
-      "flightBranchIsProduction": false,
+      "flightBranchIsProduction": true,
       "liveSearchAttemptedDuringRecheck": false
     },
     "operationalRechecks": {
@@ -456,7 +460,6 @@
     },
     "remainingExternalGates": [
       "Receive and verify Duffel contract, content, ticketing, settlement, security, support, and sandbox evidence after the follow-up on reference 370MRY-JM5MK.",
-      "Redeploy a reviewed flight-enabled Production source so the saved Production values take effect; current Production points to a different branch.",
       "Obtain and verify Duffel commercial/content/ticketing authority and sandbox certification evidence.",
       "Complete flight-specific Stripe, settlement, reconciliation, fraud/refund, and legal/compliance approvals before enabling consumer payment or booking.",
       "Complete named support/on-call ownership, alert delivery, monitoring collectors, incident drills, and a separate consumer-release decision.",
@@ -470,6 +473,6 @@
       "orderCreationEnabled": false,
       "ticketingEnabled": false
     },
-    "disposition": "Engineering and the isolated synthetic Preview journey pass current local verification. Duffel is recorded as primary and Sabre as secondary for planning only. The replacement Duffel credential and matching domain-bound digest are saved in Vercel Production, but a new reviewed flight deployment is required before they take effect. Consumer Production launch is not ready: Production still serves a different branch, the dark-search gate remains closed, and external provider, payment, operational, legal, and release evidence is outstanding. No live provider request, order, payment, or ticket occurred in this checkpoint."
+    "disposition": "Engineering, the isolated synthetic Preview journey, and the reviewed flight Production deployment pass current verification. Duffel is recorded as primary and Sabre as secondary for planning only. The replacement Duffel credential and matching domain-bound digest are saved in Vercel Production and are now covered by READY deployment dpl_59SiWLADxkJK6jwfFobvVQBUXhwB. Consumer Production launch is not ready: the dark-search gate remains closed, and external provider, payment, operational, legal, and release evidence is outstanding. No live provider request, order, payment, or ticket occurred in this checkpoint."
   }
 }

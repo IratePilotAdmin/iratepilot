@@ -108,8 +108,8 @@ for (const packet of manifest.routePackets) {
 for (const [label, value] of Object.entries(matrix.boundary)) {
   assertClosed(value, `matrix.boundary.${label}`);
 }
-assert(matrix.latestReadOnlyVerification.flightBranchIsProductionSource === false,
-  "Production must not currently point at the flight branch.");
+assert(matrix.latestReadOnlyVerification.flightBranchIsProductionSource === true,
+  "Production must point at the reviewed flight branch.");
 assert(matrix.latestReadOnlyVerification.providerRequestDispatched === false,
   "the latest read-only check must not dispatch a provider request.");
 assert(matrix.latestReadOnlyVerification.duffelResponseReceived === false,
@@ -211,14 +211,14 @@ for (const [label, value] of Object.entries(checkpoint.authorityBoundary)) {
 }
 
 const latestVercelCheck = checkpoint.vercelDeploymentRecheck.latestVercelReadOnlyCheck;
-assert(latestVercelCheck.flightBranchIsProductionSource === false,
-  "the latest Vercel check must keep the flight branch out of Production.");
+assert(latestVercelCheck.flightBranchIsProductionSource === true,
+  "the latest Vercel check must bind Production to the reviewed flight branch.");
 assert(latestVercelCheck.credentialDigestVariablePresentInProduction === true,
   "the latest Vercel check must record the Production digest variable.");
 assert(latestVercelCheck.credentialValueRead === false,
   "the latest Vercel check must not read the credential value.");
-assert(latestVercelCheck.redeployTriggered === false,
-  "the evidence audit must not record a redeploy.");
+assert(latestVercelCheck.redeployTriggered === true,
+  "the evidence audit must record the reviewed flight deployment promotion.");
 assert(latestVercelCheck.providerTrafficTriggered === false,
   "the evidence audit must not record provider traffic.");
 
@@ -307,7 +307,7 @@ const result = {
   bookingEnabled: false,
   paymentEnabled: false,
   monitoringCollectorAssembly: true,
-  productionSourceIsFlightBranch: false,
+  productionSourceIsFlightBranch: true,
   duffelResponseReceived: false,
 };
 process.stdout.write(`${JSON.stringify(result)}\n`);
