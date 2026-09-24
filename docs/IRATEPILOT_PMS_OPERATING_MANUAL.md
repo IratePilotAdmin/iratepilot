@@ -1,6 +1,16 @@
 # iRatePilot PMS Operating Manual
 
-**Status:** Pilot draft. This guide covers workflows requested for the Red Roof Inn Ridgeland, Mississippi test property. Screen labels can change between releases. Connector, payment, ID-capture, and production readiness are called out separately where they have not been verified end to end.
+**Status:** Pilot draft; not yet an approved operating procedure for live guest stays. This guide describes workflows requested for the Red Roof Inn Ridgeland, Mississippi test property. Screen labels can change between releases.
+
+### What is verified and what is still a demo
+
+- The currently inspectable PMS screen at `iratepilot-recovery-20260923-pms-current.iratepilot-recovery-7561.workers.dev/demo` is a **sample demo** for “The Linden Hotel” (12 rooms). Its edits stay in the page and reset on reload. Do not use it to manage real reservations, guest records, room status, or folios.
+- This manual is a guided draft, not proof that every workflow is enabled on the live Red Roof account. Confirm each action in the signed-in Red Roof property before using it operationally.
+- Room status, reservation creation/assignment, walk-in, housekeeping, reports, payments, and ID capture still require end-to-end verification against the live PMS and its database. In particular, a visible camera preview does not prove that ID data was recognized or saved.
+- The native iRatePilot.com connector has a Vercel Preview build, but that preview is protected by sign-in and its OTA routes have not been verified end to end. The live OTA API did not expose the expected connector routes in the last check. No real iRatePilot.com reservation should be expected to reach the PMS until sandbox round-trip testing succeeds.
+- A production AI Hotel Assistant connected to authorized, live PMS data is not verified. Use the PMS records and reports as the source of truth.
+
+Use the following steps for training and test records only until the owner confirms the corresponding workflow has passed a live, non-production test. Never test by changing or charging a real guest stay.
 
 ## 1. Sign in and choose the property
 
