@@ -227,7 +227,7 @@ assert(latestPreviewCheck.previewDeploymentState === "READY",
   "the latest Preview deployment must be READY.");
 assert(latestPreviewCheck.previewSourceBranch === "agent/flight-live-foundation-20260823",
   "the latest Preview deployment must come from the flight branch.");
-assert(latestPreviewCheck.previewSourceCommit === "b4ad1b33541fd9a6178106380fae0e430a9f8c8f",
+assert(latestPreviewCheck.previewSourceCommit === "220e8f5d53b8f872547fd6c1957025061f99cee0",
   "the latest Preview deployment must bind the verified flight commit.");
 assert(latestPreviewCheck.liveInventoryDisplayed === false,
   "the latest Preview check must not display live inventory.");
