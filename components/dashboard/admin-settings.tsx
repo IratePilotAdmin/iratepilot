@@ -11,6 +11,7 @@ import type {
 } from "@/services/hotel-suppliers/priority-readiness";
 import { SynxisCrsReadiness } from "@/components/dashboard/synxis-crs-readiness";
 import { PaymentReadiness } from "@/components/dashboard/payment-readiness";
+import { NativeAriSetup } from "@/components/dashboard/native-ari-setup";
 
 type Response = {
   items: ReadinessItem[];
@@ -389,6 +390,8 @@ export function AdminSettings() {
           </article>)}
         </div>}
       </section>
+
+      <NativeAriSetup />
 
       <section className="card mt-6 p-6">
         <span className="text-xs uppercase tracking-wider text-slate-500">Administrators only</span>

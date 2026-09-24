@@ -68,7 +68,9 @@ describe("commercial launch remediation phase A", () => {
         NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_test_placeholder",
         STRIPE_WEBHOOK_SECRET: "whsec_placeholder",
         RESEND_WEBHOOK_SECRET: "whsec_resend_placeholder",
-        NEXT_PUBLIC_SUPABASE_URL: "https://sandbox.example.supabase.co",
+        NEXT_PUBLIC_SUPABASE_URL: "https://sandbox.supabase.co",
+        SANDBOX_SUPABASE_PROJECT_REF: "sandbox",
+        SANDBOX_SUPABASE_SERVICE_ROLE_KEY: "sandbox-placeholder",
         SUPABASE_SERVICE_ROLE_KEY: "sandbox-placeholder",
       },
     });

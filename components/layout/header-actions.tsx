@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { customerNavigation } from "@/data/navigation";
@@ -43,7 +44,7 @@ export function HeaderActions() {
   async function signOut() {
     setSigningOut(true);
     const response = await fetch("/api/auth/session", { method: "POST" });
-    if (response.ok) router.push("/");
+    if (response.ok) router.replace("/");
     else setSigningOut(false);
   }
 

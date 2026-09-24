@@ -16,6 +16,7 @@ import type { BookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
 type Breakdown = { confirmationCode: string; propertyName: string; roomName: string; total: number };
 
 function ApprovedPaymentForm({ bookingId, breakdown, paymentMode }: { bookingId: string; breakdown: Breakdown; paymentMode: BookingPaymentMode }) {
+  const router = useRouter();
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();

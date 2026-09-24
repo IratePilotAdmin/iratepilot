@@ -27,4 +27,14 @@ describe("booking transactional notifications", () => {
     }
     expect(routes).toContain('? "declined" : "approved"');
   });
+
+  it("schedules the PMS handoff before fallible email work for every booking lifecycle mutation", () => {
+    const notifications = read("lib/email/booking-notifications.ts");
+    const delivery = read("services/hotel-suppliers/iratepilot-pms/native-delivery.ts");
+    expect(notifications.indexOf("scheduleNativePmsOutboxDelivery()"))
+      .toBeLessThan(notifications.indexOf("queueTransactionalEmail({"));
+    expect(delivery).toContain("after(async () =>");
+    expect(delivery).toContain("await drainNativePmsEvents(10)");
+    expect(delivery).toContain("authenticated cron recovery");
+  });
 });

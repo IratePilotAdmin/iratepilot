@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { queueTransactionalEmail, wakeTransactionalEmailWorker } from "@/lib/email/outbox";
 import { sendBookingPushNotification } from "@/lib/notifications/expo";
+import { scheduleNativePmsOutboxDelivery } from "@/services/hotel-suppliers/iratepilot-pms/native-delivery";
 import type { BookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
 
 type BookingEmailEvent = "request_received" | "approved" | "declined" | "payment_confirmed" | "cancelled" | "refund_completed";
@@ -22,6 +23,11 @@ export async function queueBookingNotification(input: {
   recipientEmail?: string | null;
   paymentMode?: BookingPaymentMode;
 }) {
+  try {
+    scheduleNativePmsOutboxDelivery();
+  } catch (error) {
+    console.error("Native PMS event delivery wake-up could not be scheduled", error);
+  }
   try {
     const admin = createAdminClient();
     let recipientEmail = input.recipientEmail;

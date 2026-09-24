@@ -24,6 +24,7 @@ type Breakdown = {
 };
 
 function PaymentForm({ breakdown }: { breakdown: Breakdown }) {
+  const router = useRouter();
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
