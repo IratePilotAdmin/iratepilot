@@ -151,6 +151,19 @@ assert(latestPreviewCheck.bookingCreated === false,
 assert(latestPreviewCheck.ticketIssued === false,
   "the latest Preview check must not issue a ticket.");
 
+const latestBuildCheck = checkpoint.localVerification.latestProductionBuildCheck;
+assert(latestBuildCheck.status === "passed",
+  "the latest local Production build must pass.");
+assert(Number.isInteger(latestBuildCheck.staticPagesGenerated)
+  && latestBuildCheck.staticPagesGenerated > 0,
+"the latest local Production build must record generated pages.");
+
+const latestStaticChecks = checkpoint.localVerification.latestStaticChecks;
+assert(latestStaticChecks.eslint === "passed",
+  "the latest ESLint check must pass.");
+assert(latestStaticChecks.typescriptNoEmit === "passed",
+  "the latest TypeScript check must pass.");
+
 const result = {
   version: "flight-launch-evidence-audit-v1",
   status: "pass",
