@@ -82,7 +82,7 @@ with expected(table_name, required_columns) as (
               where version::text in (
                 '202609070139','202609070140','202609070141','202609070157','202609070158',
                 '202609230139','202609230140','202609230141','202609230142',
-                '202609240143','202609240144','202609240145'
+                '202609240143','202609240144','202609240145','202609240146'
               )
               order by version
             $migration_query$,
@@ -105,6 +105,6 @@ select jsonb_build_object(
     'ledgerPresent', ledger_present,
     'nativeVersions', native_versions,
     'nativeMigrationCount', jsonb_array_length(native_versions),
-    'expectedNativeMigrationCount', 12
+    'expectedNativeMigrationCount', 13
   ) from migration_history)
 ) as migration_preflight;

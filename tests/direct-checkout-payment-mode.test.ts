@@ -57,7 +57,8 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
   it("recognizes later flight migrations without adding them to the legacy Preview apply allowlist", () => {
     const versions = listMigrationVersions();
     expect(versions).toEqual(expect.arrayContaining(REQUIRED_PREVIEW_BASELINE));
-    expect(versions.at(-1)).toBe("202609240145");
+    expect(versions).toContain("202609240145");
+    expect(versions.at(-1)).toBe("202609240146");
     expect(APPROVED_PREVIEW_PENDING).toEqual([
       "202608170064",
       "202608170065",
@@ -125,7 +126,7 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
     )).toThrow("does not match");
   });
 
-  it("refuses the latest flight migration before push because it is outside the legacy Preview allowlist", () => {
+  it("refuses the latest repository migration before push because it is outside the legacy Preview allowlist", () => {
     const repoMigrationVersions = listMigrationVersions();
     const latestVersion = repoMigrationVersions.at(-1);
     expect(latestVersion).toBeDefined();

@@ -56,7 +56,7 @@ describe("native OTA staging migration preflight", () => {
       ledgerPresent: false,
       nativeVersions: [],
       nativeMigrationCount: 0,
-      expectedNativeMigrationCount: 12,
+      expectedNativeMigrationCount: 13,
     });
   });
 
@@ -65,16 +65,16 @@ describe("native OTA staging migration preflight", () => {
       CREATE SCHEMA supabase_migrations;
       CREATE TABLE supabase_migrations.schema_migrations(version text PRIMARY KEY);
       INSERT INTO supabase_migrations.schema_migrations(version) VALUES
-        ('202609070139'), ('202609070140'), ('202609240145'), ('unrelated-version');
+        ('202609070139'), ('202609070140'), ('202609240145'), ('202609240146'), ('unrelated-version');
     `);
     const result = await db.query<{ migration_preflight: {
       migrationHistory: { ledgerPresent: boolean; nativeVersions: string[]; nativeMigrationCount: number; expectedNativeMigrationCount: number };
     } }>(preflight);
     expect(result.rows[0].migration_preflight.migrationHistory).toEqual({
       ledgerPresent: true,
-      nativeVersions: ["202609070139", "202609070140", "202609240145"],
-      nativeMigrationCount: 3,
-      expectedNativeMigrationCount: 12,
+      nativeVersions: ["202609070139", "202609070140", "202609240145", "202609240146"],
+      nativeMigrationCount: 4,
+      expectedNativeMigrationCount: 13,
     });
   });
 });

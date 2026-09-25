@@ -15,6 +15,7 @@ const migrationFiles = [
   "202609240143_iratepilot_pms_baseline_review_control.sql",
   "202609240144_iratepilot_pms_atomic_connection_setup.sql",
   "202609240145_iratepilot_pms_revenue_recommendation_generation.sql",
+  "202609240146_iratepilot_pms_ota_reservation_inbox.sql",
 ];
 const migrations = await Promise.all(migrationFiles.map((name) =>
   readFile(new URL(`../supabase/migrations/${name}`, import.meta.url), "utf8"),
@@ -108,14 +109,15 @@ describe("native OTA ordered migration chain", () => {
   afterAll(async () => { await db.close(); });
 
   it("applies the chain, configures the OTA mapping, and keeps every sync switch disabled", async () => {
-    const contracts = await db.query<{ connection_setup: boolean; ari_apply: boolean; outbox_claim: boolean; baseline_review: boolean }>(`
+    const contracts = await db.query<{ connection_setup: boolean; ari_apply: boolean; outbox_claim: boolean; baseline_review: boolean; ota_reservation_stage: boolean }>(`
       SELECT
         to_regprocedure('public.irp_pms_configure_native_connection(uuid,uuid,uuid,text,uuid,uuid,text,text,text,integer,jsonb)') IS NOT NULL AS connection_setup,
         to_regprocedure('public.irp_pms_apply_native_ari(text,text,bigint,text,timestamptz,jsonb)') IS NOT NULL AS ari_apply,
         to_regprocedure('public.irp_pms_claim_configured_event(jsonb)') IS NOT NULL AS outbox_claim,
-        to_regprocedure('public.irp_pms_capture_reviewed_baseline(uuid,uuid,uuid,date,integer,text)') IS NOT NULL AS baseline_review
+        to_regprocedure('public.irp_pms_capture_reviewed_baseline(uuid,uuid,uuid,date,integer,text)') IS NOT NULL AS baseline_review,
+        to_regprocedure('public.irp_ota_stage_reservation(text,uuid,text,text,text,text,text,text,text,integer,jsonb)') IS NOT NULL AS ota_reservation_stage
     `);
-    expect(contracts.rows[0]).toEqual({ connection_setup: true, ari_apply: true, outbox_claim: true, baseline_review: true });
+    expect(contracts.rows[0]).toEqual({ connection_setup: true, ari_apply: true, outbox_claim: true, baseline_review: true, ota_reservation_stage: true });
 
     const configured = await db.query<{ result: Record<string, unknown> }>(`
       SELECT public.irp_pms_configure_native_connection(
