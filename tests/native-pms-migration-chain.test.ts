@@ -157,6 +157,70 @@ describe("native OTA ordered migration chain", () => {
       [propertyId, "2026-09-25"],
     );
     expect(baseline.rows[0].result).toMatchObject({ eligibleForCapture: true, reservationCount: 0 });
+
+    const capture = await db.query<{ result: { replayed: boolean } }>(`
+      SELECT public.irp_pms_capture_reviewed_baseline(
+        $1::uuid,$2::uuid,$3::uuid,$4::date,0,$5
+      ) AS result
+    `, ["77777777-7777-4777-8777-777777777777", actorId, propertyId, "2026-09-25", "local-chain-capture"]);
+    expect(capture.rows[0].result.replayed).toBe(false);
+
+    const released = await db.query<{ result: { released: boolean; replayed: boolean } }>(`
+      SELECT public.irp_pms_release_reviewed_baseline(
+        $1::uuid,$2::uuid,$3::uuid,$4::date,0,$5
+      ) AS result
+    `, ["88888888-8888-4888-8888-888888888888", actorId, propertyId, "2026-09-25", "local-chain-roundtrip"]);
+    expect(released.rows[0].result).toEqual({ released: true, replayed: false });
+
+    const ariEnabled = await db.query<{ result: { enabled: boolean; outcome: string } }>(`
+      SELECT public.irp_pms_set_native_ari_enabled(
+        $1::uuid,$2,true,$3::uuid,$4
+      ) AS result
+    `, ["99999999-9999-4999-8999-999999999999", "redroof-ridgeland-test", actorId, "local-chain-roundtrip"]);
+    expect(ariEnabled.rows[0].result).toEqual({ connectionId: "redroof-ridgeland-test", enabled: true, outcome: "updated" });
+
+    const dateResult = await db.query<{ stay_date: string }>("SELECT (current_date + 2)::text AS stay_date");
+    const stayDate = dateResult.rows[0].stay_date;
+    const nextDate = await db.query<{ stay_date: string }>("SELECT ($1::date + 1)::text AS stay_date", [stayDate]);
+    const ariUpdate = [{
+      date: stayDate,
+      roomTypeId: "NDQ2",
+      ratePlanId: "BAR",
+      available: 3,
+      rateMinor: 10900,
+      currency: "USD",
+      minimumStay: 1,
+      maximumStay: null,
+      restrictions: [],
+    }];
+    const firstAri = await db.query<{ result: { outcome: string } }>(`
+      SELECT public.irp_pms_apply_native_ari($1,$2,1,$3,$4::timestamptz,$5::jsonb) AS result
+    `, ["redroof-ridgeland-test", "ari-chain-1", "a".repeat(64), new Date().toISOString(), JSON.stringify(ariUpdate)]);
+    expect(firstAri.rows[0].result).toEqual({ outcome: "applied" });
+
+    await db.query("INSERT INTO public.profiles(id,full_name,role) VALUES ($1::uuid,'Test Guest','guest')", [actorId]);
+    await db.query(`
+      INSERT INTO public.bookings(
+        id,confirmation_code,customer_id,property_id,room_id,check_in,check_out,
+        guests,subtotal,taxes,fees,total,status
+      ) VALUES ($1::uuid,'RP-CHAIN-1',$2::uuid,$3::uuid,$4::uuid,$5::date,$6::date,2,100,10,5,115,'confirmed')
+    `, ["aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", actorId, propertyId, roomId, stayDate, nextDate.rows[0].stay_date]);
+
+    const secondAri = await db.query<{ result: { outcome: string } }>(`
+      SELECT public.irp_pms_apply_native_ari($1,$2,2,$3,$4::timestamptz,$5::jsonb) AS result
+    `, ["redroof-ridgeland-test", "ari-chain-2", "b".repeat(64), new Date().toISOString(), JSON.stringify(ariUpdate)]);
+    expect(secondAri.rows[0].result).toEqual({ outcome: "applied" });
+
+    const roundTrip = await db.query<{ available_units: number; rate: string; source_version: string; guest_name: string }>(`
+      SELECT i.available_units, i.rate::text, o.source_version::text,
+        o.event_payload #>> '{booking,guest_name}' AS guest_name
+      FROM public.inventory i
+      JOIN public.irp_pms_outbox o ON o.property_id = $1::uuid
+      WHERE i.room_id = $2::uuid AND i.stay_date = $3::date
+    `, [propertyId, roomId, stayDate]);
+    expect(roundTrip.rows).toHaveLength(1);
+    expect(roundTrip.rows[0]).toMatchObject({ available_units: 2, source_version: "1", guest_name: "Test Guest" });
+    expect(Number(roundTrip.rows[0].rate)).toBe(109);
   });
 
   it("retains the migration filenames in strictly increasing order", () => {

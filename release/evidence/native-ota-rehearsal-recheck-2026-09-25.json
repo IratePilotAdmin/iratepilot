@@ -83,7 +83,7 @@
     "reason": "Supabase CLI is available through a temporary package runner, but no SUPABASE_ACCESS_TOKEN is configured for this workspace. No login or credential retrieval was attempted."
   },
   "localOrderedMigrationRehearsal": {
-    "checkedAt": "2026-09-25T02:12:44Z",
+    "checkedAt": "2026-09-25T02:16:11Z",
     "database": "ephemeral PGlite instance with a minimal Supabase-like base schema",
     "migrationCount": 12,
     "result": "passed",
@@ -91,7 +91,9 @@
       "all native OTA/PMS migrations apply in timestamp order",
       "reservation setup, ARI receiver, outbox claim, and reviewed baseline RPCs exist after the chain",
       "reservation capture, reservation delivery, and ARI activation remain disabled after setup",
-      "configured room/rate mapping is persisted and aggregate baseline preview is eligible"
+      "configured room/rate mapping is persisted and aggregate baseline preview is eligible",
+      "explicit reviewed sandbox controls enable a synthetic ARI update and booking outbox snapshot",
+      "a subsequent ARI update subtracts the outstanding synthetic booking from sellable inventory"
     ],
     "scopeLimit": "Local migration compatibility only; does not prove hosted project history, backup restoration, authorization, preview binding, or a live reservation round trip."
   },
