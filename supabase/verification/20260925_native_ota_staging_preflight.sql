@@ -66,6 +66,33 @@ with expected(table_name, required_columns) as (
     (select count(*)::bigint from public.revenue_recommendations rec
      left join public.rooms r on r.id = rec.room_id
      where r.id is null or r.property_id <> rec.property_id) as invalid_recommendation_room_rows
+), migration_history as (
+  select
+    to_regclass('supabase_migrations.schema_migrations') is not null as ledger_present,
+    case
+      when to_regclass('supabase_migrations.schema_migrations') is null then '[]'::jsonb
+      else (
+        select coalesce(jsonb_agg(version_node::text order by version_node::text), '[]'::jsonb)
+        from unnest(xpath(
+          '/table/row/version/text()',
+          query_to_xml(
+            $migration_query$
+              select version::text as version
+              from supabase_migrations.schema_migrations
+              where version::text in (
+                '202609070139','202609070140','202609070141','202609070157','202609070158',
+                '202609230139','202609230140','202609230141','202609230142',
+                '202609240143','202609240144','202609240145'
+              )
+              order by version
+            $migration_query$,
+            false,
+            false,
+            ''
+          )
+        )) as applied(version_node)
+      )
+    end as native_versions
 )
 select jsonb_build_object(
   'tables', (select jsonb_agg(jsonb_build_object(
@@ -73,5 +100,11 @@ select jsonb_build_object(
     'missingColumns', to_jsonb(missing_columns)
   ) order by table_name) from table_state),
   'platform', (select to_jsonb(platform_state) from platform_state),
-  'revenueIntegrity', (select to_jsonb(revenue_integrity) from revenue_integrity)
+  'revenueIntegrity', (select to_jsonb(revenue_integrity) from revenue_integrity),
+  'migrationHistory', (select jsonb_build_object(
+    'ledgerPresent', ledger_present,
+    'nativeVersions', native_versions,
+    'nativeMigrationCount', jsonb_array_length(native_versions),
+    'expectedNativeMigrationCount', 12
+  ) from migration_history)
 ) as migration_preflight;

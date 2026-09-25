@@ -32,6 +32,7 @@ describe("native OTA staging migration preflight", () => {
       tables: Array<{ table: string; relationPresent: boolean; missingColumns: string[] }>;
       platform: Record<string, boolean>;
       revenueIntegrity: Record<string, number>;
+      migrationHistory: { ledgerPresent: boolean; nativeVersions: string[]; nativeMigrationCount: number; expectedNativeMigrationCount: number };
     } }>(preflight);
     const report = result.rows[0].migration_preflight;
     const tables = Object.fromEntries(report.tables.map(item => [item.table, item]));
@@ -51,5 +52,29 @@ describe("native OTA staging migration preflight", () => {
       service_role_present: true,
     });
     expect(report.revenueIntegrity).toEqual({ invalid_revenue_input_room_rows: 0, invalid_recommendation_room_rows: 0 });
+    expect(report.migrationHistory).toEqual({
+      ledgerPresent: false,
+      nativeVersions: [],
+      nativeMigrationCount: 0,
+      expectedNativeMigrationCount: 12,
+    });
+  });
+
+  it("reports only native migration versions present in the Supabase ledger", async () => {
+    await db.exec(`
+      CREATE SCHEMA supabase_migrations;
+      CREATE TABLE supabase_migrations.schema_migrations(version text PRIMARY KEY);
+      INSERT INTO supabase_migrations.schema_migrations(version) VALUES
+        ('202609070139'), ('202609070140'), ('202609240145'), ('unrelated-version');
+    `);
+    const result = await db.query<{ migration_preflight: {
+      migrationHistory: { ledgerPresent: boolean; nativeVersions: string[]; nativeMigrationCount: number; expectedNativeMigrationCount: number };
+    } }>(preflight);
+    expect(result.rows[0].migration_preflight.migrationHistory).toEqual({
+      ledgerPresent: true,
+      nativeVersions: ["202609070139", "202609070140", "202609240145"],
+      nativeMigrationCount: 3,
+      expectedNativeMigrationCount: 12,
+    });
   });
 });

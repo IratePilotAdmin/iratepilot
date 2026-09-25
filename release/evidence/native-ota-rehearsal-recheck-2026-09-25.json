@@ -97,6 +97,14 @@
     ],
     "scopeLimit": "Local migration compatibility only; does not prove hosted project history, backup restoration, authorization, preview binding, or a live reservation round trip."
   },
+  "readOnlyMigrationLedgerInspector": {
+    "checkedAt": "2026-09-25T02:22:17Z",
+    "path": "supabase/verification/20260925_native_ota_staging_preflight.sql",
+    "result": "PGlite tests passed for both an absent migration ledger and a ledger containing a subset of native OTA/PMS versions",
+    "reports": ["ledger presence", "applied native migration version list", "applied count out of 12"],
+    "hostedLedgerResult": "not observed; the authenticated dashboard SQL Editor is open but this runtime has no documented SQL-editor execution API",
+    "changes": "none"
+  },
   "changes": {
     "database": "none",
     "propertyRecords": "none",
