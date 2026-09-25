@@ -1,6 +1,6 @@
 {
   "format": "iratepilot-native-ota-rehearsal-recheck-v1",
-  "checkedAt": "2026-09-25T02:03:55Z",
+  "checkedAt": "2026-09-25T02:07:05Z",
   "project": {
     "name": "iratepilot-hotel-rehearsal-20260908",
     "ref": "trwuofvnqxdpmjztrnwp",
@@ -64,6 +64,24 @@
     "executedStatementClass": "SELECT only; no schema or row changes"
   },
   "interpretation": "The database is reachable and healthy but is not a verified native OTA connector staging baseline. The native receiver migration depends on PMS booking outbox objects that are not present in the observed table inventory. Applying only the receiver migration would be out of order.",
+  "liveRouteRecheck": {
+    "checkedAt": "2026-09-25T02:07:05Z",
+    "productionHost": "www.iratepilot.com",
+    "health": 200,
+    "otaCapabilities": 404,
+    "pmsAriReceiver": 404,
+    "connectorPreview": {
+      "deploymentId": "dpl_Ekg5Nf85Hx41AQN1DfoMVcY188G3",
+      "commit": "104035acdae11be115e284632de75d0023be08c6",
+      "state": "READY",
+      "target": null,
+      "applicationRoutesVerified": false
+    }
+  },
+  "migrationHistoryCliCheck": {
+    "state": "not_read",
+    "reason": "Supabase CLI is available through a temporary package runner, but no SUPABASE_ACCESS_TOKEN is configured for this workspace. No login or credential retrieval was attempted."
+  },
   "changes": {
     "database": "none",
     "propertyRecords": "none",
