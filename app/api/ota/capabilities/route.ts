@@ -30,8 +30,27 @@ export function GET() {
       ],
     },
     externalOtaProviders: {
-      status: "certification_required",
-      providers: [],
+      status: "not_connected",
+      providers: [
+        {
+          id: "booking_com",
+          status: "development_only",
+          implemented: ["ARI payload preparation", "guarded test transport", "reservation parsing", "encrypted reservation staging"],
+          missing: ["partner credentials and token lifecycle", "PMS booking import", "scheduled polling", "production transport", "partner certification"],
+        },
+        {
+          id: "expedia",
+          status: "not_implemented",
+          implemented: [],
+          missing: ["partner onboarding", "API adapter", "PMS booking import", "sandbox certification", "production deployment"],
+        },
+        ...["agoda", "airbnb", "google_hotel"].map((id) => ({
+          id,
+          status: "not_implemented",
+          implemented: [],
+          missing: ["provider-specific adapter", "partner approval", "end-to-end certification", "production deployment"],
+        })),
+      ],
     },
   }, { headers });
 }

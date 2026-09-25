@@ -22,6 +22,16 @@ describe("public OTA capabilities route", () => {
       restrictions: false,
     });
     expect(body.nativePmsAri.activationRequires).toContain("authorized sandbox round trip");
+    expect(body.externalOtaProviders).toMatchObject({
+      status: "not_connected",
+      providers: [
+        { id: "booking_com", status: "development_only" },
+        { id: "expedia", status: "not_implemented" },
+        { id: "agoda", status: "not_implemented" },
+        { id: "airbnb", status: "not_implemented" },
+        { id: "google_hotel", status: "not_implemented" },
+      ],
+    });
     expect(response.headers.get("access-control-allow-origin")).toBe("*");
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(JSON.stringify(body)).not.toContain("SIGNING_SECRET");
