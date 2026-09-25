@@ -1,6 +1,6 @@
 {
   "format": "iratepilot-native-ota-rehearsal-recheck-v1",
-  "checkedAt": "2026-09-25T01:58:29Z",
+  "checkedAt": "2026-09-25T02:03:55Z",
   "project": {
     "name": "iratepilot-hotel-rehearsal-20260908",
     "ref": "trwuofvnqxdpmjztrnwp",
@@ -24,13 +24,16 @@
     "redRoofPropertyMatch": false
   },
   "readOnlyMigrationPreflight": {
-    "checkedAt": "2026-09-25T01:58:29Z",
+    "checkedAt": "2026-09-25T02:03:55Z",
     "baseTables": {
       "properties": { "present": true, "missingColumns": [] },
       "partners": { "present": true, "missingColumns": [] },
       "rooms": { "present": true, "missingColumns": [] },
       "inventory": { "present": true, "missingColumns": [] },
-      "bookings": { "present": true, "missingColumns": [] }
+      "bookings": { "present": true, "missingColumns": [] },
+      "profiles": { "present": true, "missingColumns": [] },
+      "revenue_daily_inputs": { "present": true, "missingColumns": [] },
+      "revenue_recommendations": { "present": true, "missingColumns": [] }
     },
     "connectorTables": {
       "irp_pms_outbox_connections": {
@@ -45,6 +48,18 @@
         "present": false,
         "missingColumns": ["attempts", "booking_id", "connection_id", "created_at", "due_at", "event_id", "event_payload", "lease_token", "lease_until", "pms_property_id", "property_id", "result_code", "source_version", "state", "tenant_id"]
       }
+    },
+    "platformPrerequisites": {
+      "auth_users_present": true,
+      "auth_uid_present": true,
+      "gen_random_uuid_present": true,
+      "anon_role_present": true,
+      "authenticated_role_present": true,
+      "service_role_present": true
+    },
+    "revenueIntegrity": {
+      "invalid_revenue_input_room_rows": 0,
+      "invalid_recommendation_room_rows": 0
     },
     "executedStatementClass": "SELECT only; no schema or row changes"
   },
