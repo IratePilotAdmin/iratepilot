@@ -105,6 +105,31 @@
     "hostedLedgerResult": "not observed; the authenticated dashboard SQL Editor is open but this runtime has no documented SQL-editor execution API",
     "changes": "none"
   },
+  "previewRouteProbe": {
+    "checkedAt": "2026-09-25T02:26:08Z",
+    "deploymentId": "dpl_CN6QSeeFdQ6XDpJ2ZfkxhwsVx2ca",
+    "deploymentCommit": "5a40ea36d0619a0ac96ccc044056b216ba5e2819",
+    "deploymentState": "READY",
+    "capabilitiesRoute": {
+      "firstFetch": {
+        "status": 200,
+        "bodyObserved": true,
+        "nativePmsAriImplementation": "available",
+        "trafficEnabled": false,
+        "externalOtaProviders": []
+      },
+      "repeatFetch": {
+        "status": 302,
+        "result": "Redirected to Vercel SSO"
+      }
+    },
+    "ariRoute": {
+      "status": 302,
+      "result": "Redirected to Vercel SSO"
+    },
+    "interpretation": "The Preview deployment is READY and one authenticated fetch returned the expected capability contract with traffic disabled. Repeated route probes redirected to Vercel SSO, so repeatable authenticated route acceptance and the ARI runtime remain unverified.",
+    "changes": "none"
+  },
   "changes": {
     "database": "none",
     "propertyRecords": "none",
