@@ -22,6 +22,7 @@ describe("flight launch evidence audit", () => {
       monitoringCollectorAssembly: true,
       productionSourceIsFlightBranch: true,
       latestPreviewRecheck: true,
+      currentPreviewDeploymentRecheck: true,
       completionAudit: true,
       duffelResponseReceived: false,
     });
