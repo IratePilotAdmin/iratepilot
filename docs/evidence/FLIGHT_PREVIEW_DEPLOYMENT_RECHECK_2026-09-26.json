@@ -1,22 +1,22 @@
 {
   "evidence": {
     "version": "flight-preview-deployment-recheck-v1",
-    "checkedAt": "2026-09-26T00:22:41-05:00",
+    "checkedAt": "2026-09-26T00:24:45-05:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "source": {
       "repository": "IratePilotAdmin/iratepilot",
       "branch": "agent/flight-live-foundation-20260823",
-      "commit": "003dab4a879e9ed75a194c397c537a696c121f5e",
-      "commitMessage": "docs(flights): record Sep 26 Duffel recheck"
+      "commit": "9379ce2274a7660beccab2c45e437b077ed45588",
+      "commitMessage": "test(flights): bind current preview deployment"
     },
     "deployment": {
-      "deploymentId": "B4zX2K38SxBiQQbWJacYb9YwJc7s",
-      "deploymentUrl": "https://iratepilotadmin-90a121nd8-irate-pilot.vercel.app/flights",
+      "deploymentId": "Q2QfLneoapC3g4B1GNdixSA3eBYy",
+      "deploymentUrl": "https://iratepilotadmin-3sr9mqve2-irate-pilot.vercel.app/flights",
       "state": "READY",
       "target": "preview",
       "sourceBranch": "agent/flight-live-foundation-20260823",
-      "sourceCommit": "003dab4a879e9ed75a194c397c537a696c121f5e"
+      "sourceCommit": "9379ce2274a7660beccab2c45e437b077ed45588"
     },
     "browserSmoke": {
       "pageTitle": "Flight planning preview | iRatePilot",

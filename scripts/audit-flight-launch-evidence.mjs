@@ -337,7 +337,7 @@ for (const key of [
 ]) assertClosed(previewRecheck.authorityBoundary?.[key], `previewRecheck.authorityBoundary.${key}`);
 
 assert(latestPreviewRecheck.source?.branch === "agent/flight-live-foundation-20260823"
-  && latestPreviewRecheck.source?.commit === "003dab4a879e9ed75a194c397c537a696c121f5e",
+  && latestPreviewRecheck.source?.commit === "9379ce2274a7660beccab2c45e437b077ed45588",
 "the current Preview recheck must bind the pushed flight evidence commit.");
 assert(latestPreviewRecheck.deployment?.state === "READY"
   && latestPreviewRecheck.deployment?.target === "preview"
