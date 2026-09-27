@@ -11,7 +11,8 @@ The six pending versions, in order, are:
 3. `202609070141` — delivery control receipts
 4. `202609070157` — scoped event claim
 5. `202609070158` — scoped claim identity correction
-6. `202609270159` — inactive PMS-only property and revenue approval guard
+6. `202609270159` — inactive PMS-only property, authenticated inventory and
+   room-rate write guards, and revenue approval guard
 
 Run the preflight only from a trusted environment with the Supabase CLI installed.
 Set `PREVIEW_SUPABASE_PROJECT_REF` to the project above and provide
@@ -33,3 +34,8 @@ Review the dry-run result and the six SQL files before separately approving a
 Preview migration push. Verify the ledger and schema afterward. Do not merge
 or deploy the application before its database guard exists. Do not enable PMS
 delivery or create a hotel draft as part of this preflight.
+
+The PMS-only guard rejects authenticated inventory writes and room base-rate
+changes, including direct database API calls. A trusted service-role PMS
+ingestion process may populate a pilot after hotel access is verified. The
+partner rate editor returns a conflict for PMS-only inventory changes.

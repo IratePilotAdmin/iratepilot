@@ -6,6 +6,53 @@ ALTER TABLE public.properties
 ALTER TABLE public.properties
   ADD CONSTRAINT properties_pms_only_inactive CHECK (NOT pms_only OR NOT active);
 
+-- A PMS-only pilot can be populated by a trusted PMS ingestion process, but
+-- authenticated rate-editor clients cannot write its inventory directly.
+CREATE FUNCTION public.guard_pms_only_inventory_write()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_room_id uuid;
+  v_old_room_id uuid;
+BEGIN
+  IF TG_OP = 'DELETE' THEN v_room_id := OLD.room_id;
+  ELSE v_room_id := NEW.room_id;
+  END IF;
+  IF TG_OP = 'UPDATE' THEN v_old_room_id := OLD.room_id; END IF;
+  IF auth.role() = 'authenticated' AND EXISTS (
+    SELECT 1 FROM public.rooms r JOIN public.properties p ON p.id = r.property_id
+    WHERE r.id IN (v_room_id, v_old_room_id) AND p.pms_only
+  ) THEN
+    RAISE EXCEPTION 'PMS-only inventory is read-only for authenticated clients';
+  END IF;
+  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER guard_pms_only_inventory_write
+BEFORE INSERT OR UPDATE OR DELETE ON public.inventory
+FOR EACH ROW EXECUTE FUNCTION public.guard_pms_only_inventory_write();
+
+REVOKE ALL ON FUNCTION public.guard_pms_only_inventory_write() FROM PUBLIC;
+
+CREATE FUNCTION public.guard_pms_only_room_rate_write()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF auth.role() = 'authenticated' AND NEW.base_rate IS DISTINCT FROM OLD.base_rate
+    AND EXISTS (SELECT 1 FROM public.properties WHERE id IN (OLD.property_id, NEW.property_id) AND pms_only)
+  THEN
+    RAISE EXCEPTION 'PMS-only room rates are read-only for authenticated clients';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER guard_pms_only_room_rate_write
+BEFORE UPDATE OF base_rate ON public.rooms
+FOR EACH ROW EXECUTE FUNCTION public.guard_pms_only_room_rate_write();
+
+REVOKE ALL ON FUNCTION public.guard_pms_only_room_rate_write() FROM PUBLIC;
+
 CREATE OR REPLACE FUNCTION public.review_revenue_recommendation(
   p_recommendation_id uuid, p_decision text
 ) RETURNS public.revenue_recommendations
