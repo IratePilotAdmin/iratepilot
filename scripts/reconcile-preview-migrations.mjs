@@ -17,6 +17,17 @@ export const APPROVED_PREVIEW_PENDING = [
   "202609070158",
 ];
 
+// Observed on the Preview dashboard. This is a read-only preflight target, not push approval.
+export const PMS_PILOT_PREFLIGHT_PENDING = [
+  "202609070139",
+  "202609070140",
+  "202609070141",
+  "202609070157",
+  "202609070158",
+  "202609270159",
+];
+export const PMS_PILOT_PREVIEW_PROJECT_REF = "tztrvyhqyhkjhjwhrbaa";
+
 export const PRODUCTION_PROJECT_REF = "allliumarkejinplrggl";
 
 export function listMigrationVersions(directoryUrl = new URL("../supabase/migrations/", import.meta.url)) {
@@ -172,6 +183,10 @@ export function reconcilePreviewMigrations(
     return safeSummary;
   }
 
+  if (argv.includes("--preflight") && plan.projectRef !== PMS_PILOT_PREVIEW_PROJECT_REF) {
+    throw new Error("PMS pilot preflight targets only the verified Preview sandbox.");
+  }
+
   const command = env.SUPABASE_CLI_PATH?.trim() || "supabase";
   const common = ["--db-url", plan.databaseUrl];
   const beforeOutput = runner(
@@ -180,6 +195,26 @@ export function reconcilePreviewMigrations(
     env,
     { capture: true },
   );
+  if (argv.includes("--preflight")) {
+    const observed = assertPreviewRemoteMigrationState(
+      beforeOutput, plan.migrationVersions, [PMS_PILOT_PREFLIGHT_PENDING],
+    );
+    const dryRunOutput = runner(
+      command,
+      ["db", "push", ...common, "--dry-run"],
+      env,
+      { capture: true },
+    );
+    assertPreviewDryRun(dryRunOutput, observed.pendingVersions, plan.migrationVersions);
+    const result = {
+      projectRef: plan.projectRef,
+      latestRepositoryMigration: plan.migrationVersions.at(-1),
+      pendingVersions: observed.pendingVersions,
+      dryRunOnly: true,
+    };
+    console.log(JSON.stringify(result, null, 2));
+    return result;
+  }
   const before = assertPreviewRemoteMigrationState(beforeOutput, plan.migrationVersions);
 
   if (before.pendingVersions.length === 0) {

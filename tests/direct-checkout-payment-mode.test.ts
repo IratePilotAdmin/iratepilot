@@ -6,6 +6,7 @@ import {
   assertPreviewMigrationTarget,
   assertPreviewRemoteMigrationState,
   listMigrationVersions,
+  PMS_PILOT_PREFLIGHT_PENDING,
   PRODUCTION_PROJECT_REF,
   reconcilePreviewMigrations,
   REQUIRED_PREVIEW_BASELINE,
@@ -135,6 +136,51 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
     ]);
     expect(calls.flatMap(({ args }) => args)).not.toContain("--include-all");
     expect(calls[0].capture).toBe(true);
+  });
+
+  it("preflights the exact observed six migrations with only list and dry-run calls", () => {
+    const versions = listMigrationVersions();
+    const applied = versions.filter((version) => !PMS_PILOT_PREFLIGHT_PENDING.includes(version));
+    const calls: string[][] = [];
+    const outputs = [
+      migrationList(versions, applied),
+      PMS_PILOT_PREFLIGHT_PENDING.map((version) => `Would push migration ${version}.sql`).join("\n"),
+    ];
+    const runner = (_command: string, args: string[]) => {
+      calls.push(args);
+      return outputs.shift() ?? "";
+    };
+    const log = console.log;
+    console.log = () => {};
+    try {
+      expect(reconcilePreviewMigrations({
+        PREVIEW_SUPABASE_DB_URL: previewUrl,
+        PREVIEW_SUPABASE_PROJECT_REF: previewRef,
+      }, ["--preflight"], runner)).toMatchObject({
+        projectRef: previewRef, pendingVersions: PMS_PILOT_PREFLIGHT_PENDING, dryRunOnly: true,
+      });
+    } finally { console.log = log; }
+    expect(calls.map((args) => args.slice(0, 2))).toEqual([
+      ["migration", "list"], ["db", "push"],
+    ]);
+    expect(calls[1]).toContain("--dry-run");
+    expect(calls.flat()).not.toContain("--yes");
+  });
+
+  it("stops the preflight before a dry run if Preview migration history changes", () => {
+    const versions = listMigrationVersions();
+    const remote = versions.filter((version) => !PMS_PILOT_PREFLIGHT_PENDING.includes(version) && version !== "202608150061");
+    const calls: string[][] = [];
+    const runner = (_command: string, args: string[]) => {
+      calls.push(args);
+      return migrationList(versions, remote);
+    };
+    expect(() => reconcilePreviewMigrations({
+      PREVIEW_SUPABASE_DB_URL: previewUrl,
+      PREVIEW_SUPABASE_PROJECT_REF: previewRef,
+    }, ["--preflight"], runner)).toThrow("unapproved pending set");
+    expect(calls).toHaveLength(1);
+    expect(calls[0].slice(0, 2)).toEqual(["migration", "list"]);
   });
 
   it("performs no push when the remote ledger is already current or invalid", () => {
