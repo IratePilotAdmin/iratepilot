@@ -90,7 +90,7 @@ export function PmsRevenueSnapshot({ propertyId }: { propertyId: string }) {
         <tbody>{shown.map((row) => <tr className="border-t" key={`${row.room_id}:${row.stay_date}`}><td className="px-4 py-3">{row.stay_date}</td><td className="px-4 py-3">{roomNames.get(row.room_id) || "Room type"}</td><td className="px-4 py-3">{row.available_units}</td><td className="px-4 py-3">{money(row.rate)}</td></tr>)}</tbody>
       </table></div>
       {!activeSnapshot.inventory.length && <p className="mt-4 text-sm text-slate-600">No dated inventory is loaded for this property.</p>}
-      <p className="mt-4 text-sm text-slate-600">The downloaded JSON includes this property's room types, dated rates, and remaining availability. Keep it with authorized staff. Remaining availability is not total capacity or occupancy. Pricing recommendations still require verified booking pace and historical data; this view never updates a PMS rate.</p>
+      <p className="mt-4 text-sm text-slate-600">The downloaded JSON includes room types for the selected property, dated rates, and remaining availability. Keep it with authorized staff. Remaining availability is not total capacity or occupancy. Pricing recommendations still require verified booking pace and historical data; this view never updates a PMS rate.</p>
     </>}
   </section>;
 }
