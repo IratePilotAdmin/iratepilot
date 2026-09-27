@@ -57,15 +57,30 @@ export function PmsRevenueSnapshot({ propertyId }: { propertyId: string }) {
   const roomNames = useMemo(() => new Map(activeSnapshot?.rooms.map((room) => [room.id, room.name]) ?? []), [activeSnapshot]);
   const shown = activeSnapshot?.inventory.slice(0, 30) ?? [];
 
+  const downloadSnapshot = () => {
+    if (!activeSnapshot) return;
+    const url = URL.createObjectURL(new Blob([JSON.stringify(activeSnapshot)], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `iratepilot-pms-${activeSnapshot.property.id}-${activeSnapshot.from}.json`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+  };
+
   return <section className="card p-6">
     <div className="flex flex-wrap items-center justify-between gap-4">
       <div>
         <h2 className="text-xl font-semibold">iRatePilot PMS inventory</h2>
         <p className="mt-1 text-sm text-slate-600">Read-only room rates and remaining availability for the next 90 days.</p>
       </div>
-      <button className="btn-secondary" type="button" disabled={!propertyId || loading} onClick={() => void refresh()}>
-        {loading ? "Loading…" : "Refresh PMS data"}
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button className="btn-secondary" type="button" disabled={!propertyId || loading} onClick={() => void refresh()}>
+          {loading ? "Loading…" : "Refresh PMS data"}
+        </button>
+        <button className="btn-secondary" type="button" disabled={!activeSnapshot} onClick={downloadSnapshot}>
+          Download read-only snapshot
+        </button>
+      </div>
     </div>
     {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
     {activeSnapshot && <>
@@ -75,7 +90,7 @@ export function PmsRevenueSnapshot({ propertyId }: { propertyId: string }) {
         <tbody>{shown.map((row) => <tr className="border-t" key={`${row.room_id}:${row.stay_date}`}><td className="px-4 py-3">{row.stay_date}</td><td className="px-4 py-3">{roomNames.get(row.room_id) || "Room type"}</td><td className="px-4 py-3">{row.available_units}</td><td className="px-4 py-3">{money(row.rate)}</td></tr>)}</tbody>
       </table></div>
       {!activeSnapshot.inventory.length && <p className="mt-4 text-sm text-slate-600">No dated inventory is loaded for this property.</p>}
-      <p className="mt-4 text-sm text-slate-600">Remaining availability is not total capacity or occupancy. Pricing recommendations still require verified booking pace and historical data; this view never updates a PMS rate.</p>
+      <p className="mt-4 text-sm text-slate-600">The downloaded JSON includes room types for the selected property, dated rates, and remaining availability. Keep it with authorized staff. Remaining availability is not total capacity or occupancy. Pricing recommendations still require verified booking pace and historical data; this view never updates a PMS rate.</p>
     </>}
   </section>;
 }
