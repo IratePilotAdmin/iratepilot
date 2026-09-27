@@ -7,9 +7,17 @@ const component = readFileSync(new URL("../components/dashboard/partner-pms-conn
 
 describe("partner PMS connections", () => {
   it("requires an approved partner and verifies property ownership", () => {
-    expect(route).toContain('requireRole(["partner"])');
-    expect(route).toContain('status === "approved"');
-    expect(route).toContain('.eq("partner_id", partner.id)');
+    expect(route).toContain('requireRole(["partner", "admin"])');
+    expect(route).toContain("resolvePartnerIntegrationAccess");
+    expect(route).toContain('.eq("partner_id", integrationAccess.access.partnerId)');
+    expect(route).toContain("Approved, owner-authorized partner integration access is required.");
+    expect(route).toContain("Apply partner integration access migration 046");
+  });
+
+  it("does not present an access failure as a missing property", () => {
+    expect(component).toContain("loadError &&");
+    expect(component).toContain("!loadError && properties.length === 0");
+    expect(component).toContain("try {");
   });
 
   it("never accepts credentials from the partner portal", () => {

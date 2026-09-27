@@ -1,0 +1,25 @@
+{
+  "format": "iratepilot-partner-integration-access-validation-v1",
+  "observedAt": "2026-09-26",
+  "scope": "Local partner PMS and SynXis integration authorization behavior and UI error-state checks. No hosted data or production configuration changed.",
+  "change": "Owner/admin access is resolved to an explicitly owned partner; delegated integration roles are validated through the existing database resolver. Unsupported roles and absent access stay denied. PMS connection load failures no longer appear as an empty property list.",
+  "validation": {
+    "focusedTests": {
+      "command": "pnpm exec vitest run tests/partner-integration-access.test.ts tests/partner-pms-connections.test.ts tests/partner-synxis-onboarding.test.ts",
+      "files": 3,
+      "tests": 17,
+      "passed": 17,
+      "failed": 0
+    },
+    "typecheck": "passed",
+    "changedFileLint": "passed"
+  },
+  "externalChanges": "none",
+  "productionDeployment": "not performed",
+  "hostedDatabaseChanges": "none",
+  "limits": [
+    "Authorization tests exercise the resolver with mocked Supabase RPC responses and do not prove hosted policy or account-role configuration.",
+    "The live partner integration page still requires a deployment of this fix before browser acceptance can be confirmed.",
+    "Vendor credentials, property mappings, external PMS connectivity, and live reservation synchronization remain unverified."
+  ]
+}

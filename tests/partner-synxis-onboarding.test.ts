@@ -34,7 +34,7 @@ describe("partner SynXis property onboarding", () => {
   });
 
   it("requires scoped integration access, verifies property ownership, and stays pending", () => {
-    expect(route).toContain('requireRole(["partner"])');
+    expect(route).toContain('requireRole(["partner", "admin"])');
     expect(route).toContain("resolvePartnerIntegrationAccess");
     expect(route).toContain('.eq("partner_id", access.partnerId)');
     expect(route).toContain('access.role !== "owner"');

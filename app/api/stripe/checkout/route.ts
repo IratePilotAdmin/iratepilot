@@ -8,11 +8,17 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { checkoutSchema } from "@/lib/validation";
 import { calculateVerifiedStayPricing } from "@/lib/bookings/stay-pricing";
 import { hasActiveMembership } from "@/lib/memberships/eligibility";
+import { readBoundedJson } from "@/lib/http/read-bounded-json";
 
 export async function POST(request: Request) {
   if (process.env.ENABLE_TEST_CHECKOUT !== "true") return NextResponse.json({ error: "Test checkout is disabled." }, { status: 503 });
   if (!process.env.STRIPE_SECRET_KEY?.startsWith("sk_test_")) return NextResponse.json({ error: "A Stripe test key is required." }, { status: 503 });
-  const parsed = checkoutSchema.safeParse(await request.json());
+  const body = await readBoundedJson(request);
+  if (!body.ok) {
+    const status = body.reason === "too_large" ? 413 : body.reason === "unsupported_media_type" ? 415 : 400;
+    return NextResponse.json({ error: body.reason === "too_large" ? "The checkout request is too large." : body.reason === "unsupported_media_type" ? "Send the checkout request as JSON." : "The checkout request is not valid JSON." }, { status });
+  }
+  const parsed = checkoutSchema.safeParse(body.value);
   if (!parsed.success) return NextResponse.json({ error: "Check the property, room, dates, and guest count." }, { status: 400 });
 
   const checkIn = parseISO(parsed.data.checkIn);

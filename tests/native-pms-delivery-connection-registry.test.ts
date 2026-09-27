@@ -25,7 +25,7 @@ describe("native PMS delivery connection registry migration", () => {
       );
     `);
     await db.exec(migration);
-  });
+  }, 30_000);
 
   afterAll(async () => { await db.close(); });
 

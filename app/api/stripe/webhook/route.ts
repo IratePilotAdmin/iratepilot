@@ -20,15 +20,25 @@ import { getVerifiedMembershipSubscriptionTier } from "@/lib/stripe/membership-s
 import { queueBookingNotification } from "@/lib/email/booking-notifications";
 import { getApprovedBookingMetadataMode, getStripeWebhookMode } from "@/lib/stripe/booking-payment-mode";
 import { reconcileStripeBookingRefund, type StripeRefundReconciliation } from "@/lib/bookings/stripe-refund-reconciliation";
+import { readBoundedText } from "@/lib/http/read-bounded-json";
+
+const MAX_STRIPE_WEBHOOK_BYTES = 1024 * 1024;
 
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!signature || !secret) return NextResponse.json({ error: "Webhook configuration missing." }, { status: 503 });
 
+  const rawBody = await readBoundedText(request, MAX_STRIPE_WEBHOOK_BYTES);
+  if (!rawBody.ok) {
+    return NextResponse.json({ error: rawBody.reason === "too_large" ? "Webhook payload is too large." : "Webhook payload is invalid." }, {
+      status: rawBody.reason === "too_large" ? 413 : 400,
+    });
+  }
+
   let event: Stripe.Event;
   try {
-    event = getStripe().webhooks.constructEvent(await request.text(), signature, secret);
+    event = getStripe().webhooks.constructEvent(rawBody.value, signature, secret);
   } catch {
     return NextResponse.json({ error: "Webhook signature verification failed." }, { status: 400 });
   }

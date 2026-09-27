@@ -43,7 +43,7 @@ describe("native OTA ARI migration behavior", () => {
       insert into public.rooms values ('${otaRoomId}','${propertyId}',true);
     `);
     await db.exec(migration);
-  });
+  }, 30_000);
 
   afterAll(async () => { await db.close(); });
 

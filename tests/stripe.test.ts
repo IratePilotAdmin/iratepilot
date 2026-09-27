@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
 import Stripe from "stripe";
 import { getStripe, isStripeTestMode } from "../lib/stripe";
+import { readBoundedText } from "../lib/http/read-bounded-json";
 
 describe("Stripe SDK configuration", () => {
   afterEach(() => {
@@ -38,5 +40,33 @@ describe("Stripe SDK configuration", () => {
     expect(stripe).toBeInstanceOf(Stripe);
     expect(event.id).toBe("evt_test");
     expect(event.type).toBe("payment_intent.succeeded");
+  });
+
+  it("preserves the raw UTF-8 webhook text while enforcing a streamed body limit", async () => {
+    const raw = '{"id":"evt_raw","data":{"note":"café"}}';
+    const request = new Request("https://example.test/webhook", {
+      method: "POST", headers: { "content-type": "application/json" }, body: raw,
+    });
+    expect(await readBoundedText(request, 1024)).toEqual({ ok: true, value: raw });
+
+    const oversized = new Request("https://example.test/webhook", {
+      method: "POST", headers: { "content-type": "application/json", "content-length": "1025" }, body: "x",
+    });
+    expect(await readBoundedText(oversized, 1024)).toEqual({ ok: false, reason: "too_large" });
+
+    const chunked = new Request("https://example.test/webhook", {
+      method: "POST",
+      body: new ReadableStream<Uint8Array>({ start(controller) { controller.enqueue(new Uint8Array(65)); controller.close(); } }),
+      duplex: "half",
+    } as RequestInit & { duplex: "half" });
+    expect(await readBoundedText(chunked, 64)).toEqual({ ok: false, reason: "too_large" });
+  });
+
+  it("bounds webhook bytes before Stripe signature verification", () => {
+    const route = readFileSync(new URL("../app/api/stripe/webhook/route.ts", import.meta.url), "utf8");
+    expect(route).toContain("const MAX_STRIPE_WEBHOOK_BYTES = 1024 * 1024");
+    expect(route).toContain("readBoundedText(request, MAX_STRIPE_WEBHOOK_BYTES)");
+    expect(route.indexOf("readBoundedText(request, MAX_STRIPE_WEBHOOK_BYTES)")).toBeLessThan(route.indexOf("constructEvent(rawBody.value"));
+    expect(route).not.toContain("constructEvent(await request.text()");
   });
 });

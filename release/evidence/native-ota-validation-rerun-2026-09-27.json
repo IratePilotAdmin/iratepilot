@@ -1,0 +1,41 @@
+{
+  "verifiedAt": "2026-09-27T18:09:07Z",
+  "scope": "Local iRatePilot.com-to-PMS connector regression and a read-only public-route availability check. No OTA property, reservation, payment, database, deployment, or provider configuration was changed.",
+  "commands": [
+    "pnpm run lint",
+    "pnpm run typecheck",
+    "pnpm test",
+    "pnpm run build",
+    "pnpm exec vitest run tests/booking-approval-bookability.test.ts tests/native-ari-migration-behavior.test.ts tests/native-pms-atomic-connection-setup.test.ts tests/native-pms-delivery-connection-registry.test.ts tests/native-pms-reservation-change-route-integration.test.ts tests/native-pms-reservation-connection-setup.test.ts",
+    "pnpm exec eslint tests/booking-approval-bookability.test.ts tests/native-ari-migration-behavior.test.ts tests/native-pms-atomic-connection-setup.test.ts tests/native-pms-delivery-connection-registry.test.ts tests/native-pms-reservation-change-route-integration.test.ts tests/native-pms-reservation-connection-setup.test.ts"
+  ],
+  "localVerification": {
+    "lint": "passed",
+    "typecheck": "passed",
+    "fullSuite": { "files": 237, "passed": 1014, "failed": 0, "skipped": 0 },
+    "focusedPGliteRetry": { "files": 6, "passed": 16, "failed": 0 },
+    "focusedLint": "passed",
+    "productionBuild": "passed",
+    "routesInBuild": [
+      "/api/ota/capabilities",
+      "/api/pms/ari",
+      "/api/pms/reservation-changes"
+    ]
+  },
+  "publicProductionProbe": {
+    "observedAtUtc": "2026-09-27T18:04Z",
+    "method": "GET",
+    "results": [
+      { "url": "https://www.iratepilot.com/api/ota/capabilities", "status": 404 },
+      { "url": "https://www.iratepilot.com/api/pms/ari", "status": 404 },
+      { "url": "https://www.iratepilot.com/api/pms/reservation-changes", "status": 404 }
+    ],
+    "interpretation": "The current public deployment does not expose these local connector routes. Local build and tests do not establish production deployment or OTA readiness."
+  },
+  "knownOperationalGates": [
+    "No approved iRatePilot.com property record exists for the Red Roof test property.",
+    "Hosted schema migration and sandbox reservation round trip remain unverified.",
+    "Outbound traffic remains disabled until approved test scope, credentials, and round-trip evidence are available.",
+    "External OTA partners remain uncertified and are not live."
+  ]
+}

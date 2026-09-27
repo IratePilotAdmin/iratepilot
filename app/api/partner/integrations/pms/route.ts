@@ -1,30 +1,28 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/require-role";
+import { resolvePartnerIntegrationAccess } from "@/lib/partner/integration-access";
 import { pmsConnectionSchema } from "@/lib/validation";
 import { pmsProviders } from "@/services/hotel-suppliers";
 
 export const dynamic = "force-dynamic";
 
-async function approvedPartner(auth: Awaited<ReturnType<typeof requireRole>>) {
-  if ("error" in auth) return null;
-  const result = await auth.supabase
-    .from("partners")
-    .select("id,status")
-    .eq("owner_id", auth.user.id)
-    .maybeSingle();
-  if (result.error) throw result.error;
-  return result.data?.status === "approved" ? result.data : null;
-}
-
 export async function GET() {
   try {
-    const auth = await requireRole(["partner"]);
+    const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-    const partner = await approvedPartner(auth);
-    if (!partner) return NextResponse.json({ error: "An approved partner account is required." }, { status: 403 });
+    const integrationAccess = await resolvePartnerIntegrationAccess(auth);
+    if (integrationAccess.migrationRequired) return NextResponse.json(
+      { error: "Apply partner integration access migration 046 before configuring a PMS." },
+      { status: 503 },
+    );
+    if (!integrationAccess.access) return NextResponse.json(
+      { error: "Approved, owner-authorized partner integration access is required." },
+      { status: 403 },
+    );
+    const partnerId = integrationAccess.access.partnerId;
 
     const [propertiesResult, connectionsResult] = await Promise.all([
-      auth.supabase.from("properties").select("id,name,active").eq("partner_id", partner.id).order("name"),
+      auth.supabase.from("properties").select("id,name,active").eq("partner_id", partnerId).order("name"),
       auth.supabase.from("property_pms_connections").select("property_id,provider_id,external_property_code,hotel_authorized,room_type_mapping,rate_plan_mapping,tax_fee_mapping,cancellation_policy_mapping,connection_status,last_validated_at,updated_at"),
     ]);
     if (propertiesResult.error) throw propertiesResult.error;
@@ -34,6 +32,7 @@ export async function GET() {
     return NextResponse.json({
       providers: pmsProviders.map(({ id, name, vendor, certificationRequired }) => ({ id, name, vendor, certificationRequired })),
       properties: (propertiesResult.data ?? []).map((property) => ({ ...property, connection: connections.get(property.id) ?? null })),
+      accessRole: integrationAccess.access.role,
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Partner PMS connections could not be loaded", error);
@@ -51,11 +50,18 @@ export async function PUT(request: Request) {
   }
 
   try {
-    const auth = await requireRole(["partner"]);
+    const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
-    const partner = await approvedPartner(auth);
-    if (!partner) return NextResponse.json({ error: "An approved partner account is required." }, { status: 403 });
-    const property = await auth.supabase.from("properties").select("id").eq("id", parsed.data.propertyId).eq("partner_id", partner.id).maybeSingle();
+    const integrationAccess = await resolvePartnerIntegrationAccess(auth);
+    if (integrationAccess.migrationRequired) return NextResponse.json(
+      { error: "Apply partner integration access migration 046 before configuring a PMS." },
+      { status: 503 },
+    );
+    if (!integrationAccess.access) return NextResponse.json(
+      { error: "Approved, owner-authorized partner integration access is required." },
+      { status: 403 },
+    );
+    const property = await auth.supabase.from("properties").select("id").eq("id", parsed.data.propertyId).eq("partner_id", integrationAccess.access.partnerId).maybeSingle();
     if (property.error) throw property.error;
     if (!property.data) return NextResponse.json({ error: "Property not found." }, { status: 404 });
 

@@ -1,0 +1,37 @@
+{
+  "format": "iratepilot-bounded-booking-json-validation-v1",
+  "observedAt": "2026-09-26",
+  "scope": "Local iRatePilot.com source checkout; booking-request and Stripe checkout JSON parsing only.",
+  "changes": [
+    "Added streaming 16 KiB JSON body bounds with a declared-length early reject to reservation-request and Stripe test-checkout endpoints.",
+    "Malformed JSON, invalid UTF-8 and unsupported content types now return controlled 400/415 responses instead of uncaught parse errors.",
+    "Oversized booking and checkout payloads receive 413 before schema validation or downstream booking/payment operations."
+  ],
+  "validation": {
+    "focusedTests": {
+      "command": "pnpm exec vitest run lib/http/read-bounded-json.test.ts tests/approved-marketplace-bookings.test.ts tests/native-pms-outbox-booking-lifecycle.test.ts",
+      "files": 3,
+      "tests": 11,
+      "passed": 11,
+      "failed": 0
+    },
+    "fullSuite": {
+      "command": "pnpm exec vitest run --reporter=dot --maxWorkers=2",
+      "files": 231,
+      "tests": 985,
+      "passed": 985,
+      "failed": 0
+    },
+    "typecheck": "passed",
+    "changedFileLint": "passed",
+    "productionBuild": "passed"
+  },
+  "externalChanges": "none",
+  "productionDeployment": "not performed",
+  "hostedDatabaseChanges": "none",
+  "livePayments": "not enabled",
+  "limits": [
+    "This only bounds request bodies on the two named endpoints; it does not implement a shared distributed API rate limiter.",
+    "This local validation does not prove public booking, payment, PMS delivery, or OTA-provider acceptance in hosted environments."
+  ]
+}

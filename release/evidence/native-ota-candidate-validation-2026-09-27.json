@@ -1,0 +1,70 @@
+{
+  "verifiedAt": "2026-09-27T01:40:56Z",
+  "check": {
+    "command": "pnpm run check",
+    "lint": "passed",
+    "typecheck": "passed",
+    "tests": {
+      "files": 237,
+      "passed": 1014,
+      "failed": 0,
+      "skipped": 0
+    },
+    "productionBuild": "passed",
+    "builtRoutes": [
+      "/api/ota/capabilities",
+      "/api/pms/ari",
+      "/api/pms/reservation-changes"
+    ]
+  },
+  "testTimeoutRepair": {
+    "file": "tests/native-pms-outbox-booking-lifecycle.test.ts",
+    "change": "increased the isolated PGlite beforeAll setup timeout from Vitest default 10 seconds to 30 seconds after one full-suite hook timeout; focused lifecycle rerun passed 3/3 and full suite passed 1014/1014"
+  },
+  "localProductionRuntime": {
+    "GET /api/ota/capabilities": {
+      "status": 200,
+      "trafficEnabled": false,
+      "externalOtaProviders": "certification_required; no providers configured"
+    },
+    "GET /api/pms/ari": 405,
+    "POST /api/pms/ari": 503,
+    "GET /api/pms/reservation-changes": 405,
+    "POST /api/pms/reservation-changes": 503
+  },
+  "publicProductionReadOnlyProbe": {
+    "GET https://www.iratepilot.com/api/ota/capabilities": 404,
+    "GET https://www.iratepilot.com/api/pms/ari": 404,
+    "GET https://www.iratepilot.com/api/pms/reservation-changes": 404
+  },
+  "scope": "Local tests/build and unauthenticated public GET probes only. No deployment, hosted migration, credentials, provider traffic, property configuration, reservation, or payment was changed.",
+  "partnerCenterReadOnlyInspection": {
+    "observedAtUtc": "2026-09-27T01:44:37Z",
+    "propertiesPage": "authenticated Partner Center reports no property records; listing drafts remain private until administrator approval",
+    "pmsConnectionsPage": "cannot configure PMS until an approved property is added",
+    "redRoofPartnerRecord": "not present",
+    "result": "No OTA property-to-PMS mapping or reservation round trip can be configured in the current partner workspace."
+  },
+  "latestPublicProbe": {
+    "results": [
+      {
+        "status": 404,
+        "contentType": "text/html; charset=utf-8",
+        "url": "https://www.iratepilot.com/api/ota/capabilities"
+      },
+      {
+        "status": 404,
+        "contentType": "text/html; charset=utf-8",
+        "url": "https://www.iratepilot.com/api/pms/ari"
+      },
+      {
+        "status": 404,
+        "contentType": "text/html; charset=utf-8",
+        "url": "https://www.iratepilot.com/api/pms/reservation-changes"
+      }
+    ],
+    "scope": "Unauthenticated read-only probes; no data or configuration changed.",
+    "method": "GET",
+    "verifiedAtLocal": "2026-09-27T08:31:03.9793046-05:00"
+  }
+}

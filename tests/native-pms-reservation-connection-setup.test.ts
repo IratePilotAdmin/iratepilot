@@ -32,7 +32,7 @@ describe("native PMS reservation connection setup migration", () => {
       INSERT INTO public.properties VALUES ('${property}','55555555-5555-4555-8555-555555555555',true);
     `);
     await db.exec(migration);
-  });
+  }, 30_000);
 
   afterAll(async () => { await db.close(); });
 

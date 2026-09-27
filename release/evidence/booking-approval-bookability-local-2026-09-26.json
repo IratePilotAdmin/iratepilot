@@ -1,0 +1,32 @@
+{
+  "format": "iratepilot-booking-approval-bookability-validation-v1",
+  "observedAt": "2026-09-26",
+  "scope": "Local PGlite execution of the production booking-review function and additive approval hardening migration; no hosted data changed.",
+  "change": "Reservation approval now locks and rechecks current approved partner, active property, and active room state before inventory is locked and decremented. A standalone rollback restores the previous review function without altering booking or inventory data.",
+  "validation": {
+    "focusedTests": {
+      "command": "pnpm exec vitest run tests/booking-approval-bookability.test.ts tests/approved-partner-reservations.test.ts",
+      "files": 2,
+      "tests": 8,
+      "passed": 8,
+      "failed": 0
+    },
+    "behavioralCases": [
+      "Active partner/property/room approval atomically confirms the pending booking and decrements all covered nights.",
+      "A property disabled after a request remains pending and consumes no inventory when approval is attempted.",
+      "A room disabled after a request remains pending and consumes no inventory when approval is attempted.",
+      "An approval arriving on or after check-in preserves the existing expiry behavior, cancels the request, notifies the guest and consumes no inventory.",
+      "The rollback function installs successfully and continues to approve active requests while consuming inventory normally."
+    ],
+    "rollback": "passed in PGlite; rollback changes only the stored function definition and the test's isolated booking",
+    "typecheck": "passed",
+    "changedTestLint": "passed"
+  },
+  "externalChanges": "none",
+  "productionDeployment": "not performed",
+  "hostedDatabaseChanges": "none",
+  "limits": [
+    "PGlite verifies production SQL semantics in an isolated local database; it does not model concurrent multi-session locking contention.",
+    "Hosted migration parity, browser/JWT acceptance, payment, PMS outbox delivery and real-hotel approval remain unverified."
+  ]
+}

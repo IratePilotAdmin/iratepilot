@@ -8,6 +8,7 @@ import { calculateVerifiedStayPricing } from "@/lib/bookings/stay-pricing";
 import { hasActiveMembership } from "@/lib/memberships/eligibility";
 import { queueBookingNotification } from "@/lib/email/booking-notifications";
 import { getApprovedBookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
+import { readBoundedJson } from "@/lib/http/read-bounded-json";
 
 export async function GET(request: Request) {
   try {
@@ -35,7 +36,12 @@ export async function POST(request: Request) {
       ? "commercial_request"
       : null;
   if (!requestMode) return NextResponse.json({ error: "Booking requests are disabled." }, { status: 503 });
-  const parsed = bookingSchema.safeParse(await request.json());
+  const body = await readBoundedJson(request);
+  if (!body.ok) {
+    const status = body.reason === "too_large" ? 413 : body.reason === "unsupported_media_type" ? 415 : 400;
+    return NextResponse.json({ error: body.reason === "too_large" ? "The booking request is too large." : body.reason === "unsupported_media_type" ? "Send the booking request as JSON." : "The booking request is not valid JSON." }, { status });
+  }
+  const parsed = bookingSchema.safeParse(body.value);
   if (!parsed.success) return NextResponse.json({ error: "Check the property, room, dates, and guest count." }, { status: 400 });
 
   const checkIn = parseISO(parsed.data.checkIn);

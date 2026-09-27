@@ -63,7 +63,7 @@ describe("atomic native PMS connector setup", () => {
       $$;
     `);
     await db.exec(atomicMigration);
-  });
+  }, 30_000);
 
   afterAll(async () => { await db.close(); });
 

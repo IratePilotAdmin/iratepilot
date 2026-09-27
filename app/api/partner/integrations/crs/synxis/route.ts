@@ -9,7 +9,7 @@ const noStoreHeaders = { "Cache-Control": "private, no-store" };
 
 export async function GET() {
   try {
-    const auth = await requireRole(["partner"]);
+    const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json(
       { error: auth.error },
       { status: auth.status, headers: noStoreHeaders },
@@ -63,7 +63,7 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   try {
-    const auth = await requireRole(["partner"]);
+    const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json(
       { error: auth.error },
       { status: auth.status, headers: noStoreHeaders },

@@ -1,0 +1,26 @@
+{
+  "recordedAt": "2026-09-26",
+  "requirement": "IRATEPILOT OTA INTEGRATION / Hotel direct booking engine",
+  "scope": "Local tests for the iRatePilot marketplace hotel search, listing presentation, booking request, quote calculation, deduplication and approval bookability.",
+  "command": "pnpm exec vitest run tests/marketplace-search.test.ts tests/marketplace-presentation.test.ts tests/booking.test.ts tests/booking-quote.test.ts tests/booking-deduplication.test.ts tests/booking-write-security.test.ts tests/booking-approval-bookability.test.ts tests/production-test-checkout-gates.test.ts",
+  "result": "passed",
+  "summary": {
+    "testFilesPassed": 8,
+    "testsPassed": 28,
+    "testsFailed": 0
+  },
+  "verified": [
+    "Search criteria validate future dates and guest counts; availability requires every night and adequate capacity.",
+    "Listing presentation distinguishes database-backed availability from demos and labels demo room examples non-bookable.",
+    "Server-side booking uses approved room/property state and verified nightly pricing instead of trusting client totals.",
+    "Duplicate open stays return the existing request rather than creating another.",
+    "Booking creation is server-side, authenticated and rejected when the property or room becomes inactive before approval.",
+    "Production checkout remains gated unless explicitly configured."
+  ],
+  "limitations": [
+    "This is local unit and PGlite acceptance, not a live browser or hosted production booking test.",
+    "The booking request requires customer authentication and partner approval; it is not instant-confirmation inventory.",
+    "Production payment checkout was not enabled or verified.",
+    "No OTA-to-PMS end-to-end reservation was made during this check."
+  ]
+}

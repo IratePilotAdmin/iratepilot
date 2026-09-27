@@ -1,0 +1,32 @@
+{
+  "date": "2026-09-26",
+  "scope": "OTA website Stripe webhook request-body hardening and migration-manifest consistency",
+  "environment": "local only; no hosted database or external payment provider was called",
+  "changes": [
+    "Stripe webhook raw UTF-8 body is streamed through a 1 MiB hard cap before signature verification.",
+    "Declared Content-Length is checked early; streamed over-limit bodies are rejected even when size metadata is absent or inaccurate.",
+    "Malformed UTF-8 and body-read errors return controlled client errors; valid raw text is preserved exactly for Stripe signature verification.",
+    "The new pending Supabase migration is listed in the Preview reconciliation allowlist and production pending-deployment manifest; no migration was pushed."
+  ],
+  "checks": {
+    "stripe_and_bounded_body_focused_tests": {
+      "passed": 5,
+      "failed": 0
+    },
+    "migration_manifest_followup_tests": {
+      "passed": 11,
+      "failed": 0
+    },
+    "typescript": "passed",
+    "changed_file_eslint": "passed",
+    "production_build": "passed",
+    "full_suite_after_manifest_sync": {
+      "passed": 992,
+      "failed": 0,
+      "total": 992,
+      "test_files_passed": 232,
+      "duration_seconds": 151.14
+    }
+  },
+  "readiness_limit": "Local verification only. Stripe secrets, hosted webhook registration, provider delivery, deployment, production migration state, and live payment acceptance remain unverified."
+}
