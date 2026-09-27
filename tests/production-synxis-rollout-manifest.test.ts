@@ -35,8 +35,8 @@ describe("SynXis production rollout manifest", () => {
     expect(new Set(deploymentVersions).size).toBe(deploymentVersions.length);
     expect(manifest.historyRepairCandidates.at(-1)).toBe("202608130038");
     expect(manifest.appliedDeploymentVersions[0]).toBe("202608130039");
-    expect(manifest.appliedDeploymentVersions).toEqual(migrationVersions.slice(49));
-    expect(manifest.pendingDeploymentVersions).toEqual([]);
+    expect(manifest.appliedDeploymentVersions).toEqual(migrationVersions.slice(49, -1));
+    expect(manifest.pendingDeploymentVersions).toEqual(["202609270159"]);
   });
 
   it("records completed database rollout while preserving later launch gates", () => {
@@ -55,6 +55,7 @@ describe("SynXis production rollout manifest", () => {
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("application deployment");
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("manager invitation");
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("live-traffic approval");
+    expect(manifest.requiredWriteGates.join(" ")).toContain("PMS-only migration 202609270159");
     expect(manifest.stopConditions.length).toBeGreaterThan(0);
     expect(manifest.stopConditions.join(" ")).toContain("039-through-061");
     expect(manifest.stopConditions.join(" ").toLowerCase()).toContain("merged or the application is deployed without separate production approval");

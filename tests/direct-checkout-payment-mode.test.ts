@@ -54,7 +54,7 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
   it("recognizes the repository migration chain through the OTA delivery migrations before reconciling Preview", () => {
     const versions = listMigrationVersions();
     expect(versions).toEqual(expect.arrayContaining(REQUIRED_PREVIEW_BASELINE));
-    expect(versions.at(-1)).toBe("202609070158");
+    expect(versions.at(-1)).toBe("202609270159");
     expect(assertPreviewMigrationTarget({
       PREVIEW_SUPABASE_DB_URL: previewUrl,
       PREVIEW_SUPABASE_PROJECT_REF: previewRef,
@@ -113,28 +113,22 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
     )).toThrow("does not match");
   });
 
-  it("validates the remote ledger before push and never uses include-all", () => {
+  it("refuses a push when the new PMS-only migration is pending outside the approved Preview set", () => {
     const repoMigrationVersions = listMigrationVersions();
     const calls: Array<{ args: string[]; capture?: boolean }> = [];
     const outputs = [
       migrationList(repoMigrationVersions, repoMigrationVersions.slice(0, -APPROVED_PREVIEW_PENDING.length)),
-      APPROVED_PREVIEW_PENDING.map((version) => `Would push migration ${version}.sql`).join("\n"),
-      "",
-      migrationList(repoMigrationVersions, repoMigrationVersions),
     ];
     const runner = (_command: string, args: string[], _env: Record<string, string | undefined>, options?: { capture?: boolean }) => {
       calls.push({ args, capture: options?.capture });
       return outputs.shift() ?? "";
     };
 
-    expect(reconcilePreviewMigrations({
+    expect(() => reconcilePreviewMigrations({
       PREVIEW_SUPABASE_DB_URL: previewUrl,
       PREVIEW_SUPABASE_PROJECT_REF: previewRef,
-    }, [], runner)).toMatchObject({ applied: true, pendingAfter: [] });
+    }, [], runner)).toThrow("unapproved pending set");
     expect(calls.map(({ args }) => args.slice(0, 2))).toEqual([
-      ["migration", "list"],
-      ["db", "push"],
-      ["db", "push"],
       ["migration", "list"],
     ]);
     expect(calls.flatMap(({ args }) => args)).not.toContain("--include-all");
