@@ -10,6 +10,8 @@ type Snapshot = {
   inventory: Array<{ room_id: string; stay_date: string; available_units: number; rate: number | string }>;
   source: "iratepilot_pms";
   readOnly: true;
+  schemaVersion: 1;
+  generatedAt: string;
 };
 
 const money = (value: number | string) => new Intl.NumberFormat("en-US", {
@@ -84,7 +86,7 @@ export function PmsRevenueSnapshot({ propertyId }: { propertyId: string }) {
     </div>
     {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
     {activeSnapshot && <>
-      <p className="mt-4 text-sm text-slate-600">{activeSnapshot.property.name}: {activeSnapshot.rooms.length} active room types and {activeSnapshot.inventory.length} dated rates loaded. Showing the first {shown.length} rows.</p>
+      <p className="mt-4 text-sm text-slate-600">{activeSnapshot.property.name}: {activeSnapshot.rooms.length} active room types and {activeSnapshot.inventory.length} dated rates loaded. Snapshot generated {new Date(activeSnapshot.generatedAt).toLocaleString()}. Showing the first {shown.length} rows.</p>
       <div className="mt-4 overflow-x-auto"><table className="w-full text-left text-sm">
         <thead className="bg-slate-50 text-slate-600"><tr><th className="px-4 py-3">Stay date</th><th className="px-4 py-3">Room type</th><th className="px-4 py-3">Remaining units</th><th className="px-4 py-3">Current rate</th></tr></thead>
         <tbody>{shown.map((row) => <tr className="border-t" key={`${row.room_id}:${row.stay_date}`}><td className="px-4 py-3">{row.stay_date}</td><td className="px-4 py-3">{roomNames.get(row.room_id) || "Room type"}</td><td className="px-4 py-3">{row.available_units}</td><td className="px-4 py-3">{money(row.rate)}</td></tr>)}</tbody>

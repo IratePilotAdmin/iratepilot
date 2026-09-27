@@ -41,7 +41,10 @@ export async function GET(request: Request) {
     const roomIds = (rooms ?? []).map((room) => room.id);
     const from = format(new Date(), "yyyy-MM-dd");
     const through = format(addDays(new Date(), 89), "yyyy-MM-dd");
-    if (!roomIds.length) return NextResponse.json({ property: { id: property.id, name: property.name }, from, through, rooms: [], inventory: [], source: "iratepilot_pms", readOnly: true });
+    if (!roomIds.length) return NextResponse.json({
+      property: { id: property.id, name: property.name }, from, through, rooms: [], inventory: [],
+      source: "iratepilot_pms", readOnly: true, schemaVersion: 1, generatedAt: new Date().toISOString(),
+    }, { headers: { "Cache-Control": "private, no-store" } });
 
     const inventory: Array<{ room_id: string; stay_date: string; available_units: number; rate: number | string }> = [];
     for (let offset = 0; offset < 9_000; offset += 1_000) {
@@ -57,6 +60,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       property: { id: property.id, name: property.name }, from, through,
       rooms: rooms ?? [], inventory, source: "iratepilot_pms", readOnly: true,
+      schemaVersion: 1, generatedAt: new Date().toISOString(),
     }, { headers: { "Cache-Control": "private, no-store" } });
   } catch {
     return NextResponse.json({ error: "PMS inventory could not be loaded." }, { status: 503 });
