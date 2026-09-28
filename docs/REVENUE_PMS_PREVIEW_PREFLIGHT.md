@@ -48,9 +48,11 @@ schema.
 Compare the branch's **View logs** workflow with the historical Postgres error
 above. Follow Supabase's
 [MIGRATIONS_FAILED troubleshooting guide](https://supabase.com/docs/guides/troubleshooting/branch-in-migrations-failed-status).
-The source of the initial schema (`supabase/schema.sql`) must be represented
-in a reproducible migration baseline before replaying `202607260001` on a
-fresh branch. Review the recovered SQL for versions `062` and `063`, compare
+The current `supabase/schema.sql` is a cumulative snapshot that already
+contains later objects; replaying it as the bootstrap would cause duplicate
+schema changes. A reviewed initial schema must be represented in a
+reproducible migration baseline before replaying `202607260001` on a fresh
+branch. Review the recovered SQL for versions `062` and `063`, compare
 their resulting schema with main, and reconcile the repository migration history.
 Then create a clean Preview branch from that history or repair and verify this
 one. Recheck project identity, branch health, and both ledgers before running
