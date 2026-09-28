@@ -96,4 +96,78 @@ $$;
 REVOKE ALL ON FUNCTION public.review_revenue_recommendation(uuid,text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.review_revenue_recommendation(uuid,text) TO authenticated;
 
+-- A single RPC request replaces pending recommendations atomically. SECURITY
+-- INVOKER keeps the existing partner/admin RLS policies in force for every row.
+CREATE FUNCTION public.replace_revenue_recommendations(
+  p_property_id uuid, p_rows jsonb
+) RETURNS integer
+LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $$
+DECLARE
+  v_count integer;
+  v_valid integer;
+  v_distinct integer;
+BEGIN
+  IF auth.uid() IS NULL OR p_property_id IS NULL THEN
+    RAISE EXCEPTION 'Authenticated property access is required';
+  END IF;
+
+  -- Serialize concurrent generation requests for the same property.
+  PERFORM 1 FROM public.properties p WHERE p.id = p_property_id
+    AND (
+      EXISTS (SELECT 1 FROM public.profiles a WHERE a.id = auth.uid() AND a.role = 'admin')
+      OR EXISTS (SELECT 1 FROM public.partners pa WHERE pa.id = p.partner_id
+        AND pa.owner_id = auth.uid() AND pa.status = 'approved')
+    ) FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Approved property access is required'; END IF;
+
+  IF jsonb_typeof(p_rows) IS DISTINCT FROM 'array' THEN
+    RAISE EXCEPTION 'Recommendations must be an array';
+  END IF;
+  v_count := jsonb_array_length(p_rows);
+  IF v_count < 1 OR v_count > 500 THEN
+    RAISE EXCEPTION 'Recommendation count must be between 1 and 500';
+  END IF;
+
+  SELECT count(*), count(DISTINCT (r.room_id, r.stay_date))
+    INTO v_valid, v_distinct
+  FROM jsonb_to_recordset(p_rows) AS r(
+    room_id uuid, stay_date date, current_rate numeric,
+    recommended_rate numeric, occupancy_forecast numeric,
+    estimated_revenue_impact numeric, reason text
+  )
+  JOIN public.rooms room ON room.id = r.room_id AND room.property_id = p_property_id
+  JOIN public.revenue_daily_inputs input ON input.room_id = r.room_id
+    AND input.property_id = p_property_id AND input.stay_date = r.stay_date
+    AND input.current_rate = r.current_rate
+  WHERE r.stay_date BETWEEN CURRENT_DATE AND CURRENT_DATE + 89
+    AND r.current_rate > 0 AND r.recommended_rate > 0
+    AND r.occupancy_forecast BETWEEN 0 AND 100
+    AND r.estimated_revenue_impact IS NOT NULL
+    AND length(r.reason) BETWEEN 1 AND 1000;
+  IF v_valid <> v_count OR v_distinct <> v_count THEN
+    RAISE EXCEPTION 'Recommendations must match distinct current property inputs';
+  END IF;
+
+  UPDATE public.revenue_recommendations SET status = 'superseded'
+    WHERE property_id = p_property_id AND status = 'pending';
+  INSERT INTO public.revenue_recommendations (
+    property_id, room_id, stay_date, current_rate, recommended_rate,
+    occupancy_forecast, estimated_revenue_impact, reason
+  ) SELECT p_property_id, r.room_id, r.stay_date, r.current_rate,
+      r.recommended_rate, r.occupancy_forecast, r.estimated_revenue_impact, r.reason
+    FROM jsonb_to_recordset(p_rows) AS r(
+      room_id uuid, stay_date date, current_rate numeric,
+      recommended_rate numeric, occupancy_forecast numeric,
+      estimated_revenue_impact numeric, reason text
+    );
+  INSERT INTO public.revenue_audit_log (property_id,actor_id,action,details)
+    VALUES (p_property_id,auth.uid(),'recommendations_generated',
+      jsonb_build_object('count',v_count,'window_days',90));
+  RETURN v_count;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.replace_revenue_recommendations(uuid,jsonb) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.replace_revenue_recommendations(uuid,jsonb) TO authenticated;
+
 COMMIT;

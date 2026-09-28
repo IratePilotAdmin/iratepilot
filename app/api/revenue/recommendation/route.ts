@@ -9,7 +9,7 @@ import { assertSupportedRecommendationCount, RevenueGenerationLimitError } from 
 const schema = z.object({ propertyId: z.string().uuid() });
 
 export async function POST(request: Request) {
-  if (process.env.PILOT_MODE !== "true") return NextResponse.json({ error: "Revenue recommendations are disabled." }, { status: 503 });
+  if (process.env.REVENUE_AI_ENABLED !== "true") return NextResponse.json({ error: "Revenue recommendations are disabled until the hotel data and database release are verified." }, { status: 503 });
   const parsed = schema.safeParse(await request.json());
   if (!parsed.success) return NextResponse.json({ error: "A valid property is required." }, { status: 400 });
   try {
@@ -31,15 +31,13 @@ export async function POST(request: Request) {
     });
     if (!inputs.length) return NextResponse.json({ error: "Upload revenue data for the next 90 days first." }, { status: 409 });
     assertSupportedRecommendationCount(inputs.length);
-    const supersede = await auth.supabase.from("revenue_recommendations").update({ status: "superseded" }).eq("property_id", property.id).eq("status", "pending");
-    if (supersede.error) throw supersede.error;
     const rows = inputs.map(input => {
       const recommendation = buildRateRecommendation(input as RevenueCsvRow);
-      return { property_id: input.property_id, room_id: input.room_id, stay_date: input.stay_date, current_rate: recommendation.currentRate, recommended_rate: recommendation.recommendedRate, occupancy_forecast: recommendation.occupancyForecast, estimated_revenue_impact: recommendation.estimatedRevenueImpact, reason: recommendation.reason };
+      return { room_id: input.room_id, stay_date: input.stay_date, current_rate: recommendation.currentRate, recommended_rate: recommendation.recommendedRate, occupancy_forecast: recommendation.occupancyForecast, estimated_revenue_impact: recommendation.estimatedRevenueImpact, reason: recommendation.reason };
     });
-    const result = await auth.supabase.from("revenue_recommendations").insert(rows).select("id");
+    const result = await auth.supabase.rpc("replace_revenue_recommendations", { p_property_id: property.id, p_rows: rows });
     if (result.error) throw result.error;
-    await auth.supabase.from("revenue_audit_log").insert({ property_id: property.id, actor_id: auth.user.id, action: "recommendations_generated", details: { count: rows.length, window_days: 90 } });
+    if (result.data !== rows.length) throw new Error("Recommendation count mismatch.");
     return NextResponse.json({ message: `${rows.length} pricing recommendations generated for the 90-day window.` });
   } catch (error) {
     if (error instanceof RevenueRowLimitError || error instanceof RevenueGenerationLimitError) return NextResponse.json({ error: error.message }, { status: 422 });
