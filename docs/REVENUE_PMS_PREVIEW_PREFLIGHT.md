@@ -14,6 +14,33 @@ The six pending versions, in order, are:
 6. `202609270159` — inactive PMS-only property, authenticated inventory and
    room-rate write guards, and revenue approval guard
 
+## Live branch check on 2026-09-27
+
+The Supabase connection identifies `tztrvyhqyhkjhjwhrbaa` as the
+`iratepilot-preview-sandbox` **development branch** of the main iRatePilot
+project. Its migration ledger has exactly 72 entries through `202608150061`,
+with the six versions above absent and no unexpected versions. The branch
+has no PMS outbox tables, no `properties.pms_only` column, and no Red Roof
+pilot draft row.
+
+**Blocked:** Supabase reports the branch status as `MIGRATIONS_FAILED` even
+though the database is reachable. The main project has 79 migration entries,
+including `202608220062` (`hotel_partner_fee_schema`) and `202608220063`
+(`activate_hotel_partner_fee_schedule`), which are absent from this branch
+and the repository. Their recorded SQL statements are unavailable in the
+migration ledger. Do not apply the six pending migrations until the branch
+workflow failure is diagnosed and the two missing fee migrations are
+reconciled with the repository and branch strategy. Never repair history by
+marking versions applied without confirming the corresponding schema.
+
+Open the branch's **View logs** workflow in Supabase and identify the failed
+replay statement and its Postgres error. Follow Supabase's
+[MIGRATIONS_FAILED troubleshooting guide](https://supabase.com/docs/guides/troubleshooting/branch-in-migrations-failed-status).
+Locate the source SQL for versions `062` and `063`, compare their resulting
+schema with main, then decide whether to repair this branch or create a new
+Preview branch from a reconciled migration history. Recheck project identity,
+branch health, and both ledgers before running the preflight below.
+
 Run the preflight only from a trusted environment with the Supabase CLI installed.
 Set `PREVIEW_SUPABASE_PROJECT_REF` to the project above and provide
 `PREVIEW_SUPABASE_DB_URL` through a secure environment facility. Do not put the
