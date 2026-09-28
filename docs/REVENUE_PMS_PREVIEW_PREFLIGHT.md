@@ -35,19 +35,23 @@ does not establish that its schema replay is clean.
 The main project has 79 migration entries,
 including `202608220062` (`hotel_partner_fee_schema`) and `202608220063`
 (`activate_hotel_partner_fee_schedule`), which are absent from this branch
-and the repository. Their recorded SQL statements are unavailable in the
-migration ledger. Do not apply the six pending migrations until the branch
-workflow failure is diagnosed and the two missing fee migrations are
-reconciled with the repository and branch strategy. Never repair history by
-marking versions applied without confirming the corresponding schema.
+and the repository. Their migration-ledger `statements` are null, but their
+source SQL was recovered from production Postgres logs in
+[RECOVERED_HOTEL_PARTNER_FEE_SQL.md](./RECOVERED_HOTEL_PARTNER_FEE_SQL.md).
+Production has the four fee columns and the active 13% + 3% function; this
+Preview branch has none of the four columns. Do not apply the six pending
+migrations until the branch workflow failure is diagnosed and the two missing
+fee migrations are reconciled with the repository and branch strategy. Never
+repair history by marking versions applied without confirming the corresponding
+schema.
 
 Compare the branch's **View logs** workflow with the historical Postgres error
 above. Follow Supabase's
 [MIGRATIONS_FAILED troubleshooting guide](https://supabase.com/docs/guides/troubleshooting/branch-in-migrations-failed-status).
 The source of the initial schema (`supabase/schema.sql`) must be represented
 in a reproducible migration baseline before replaying `202607260001` on a
-fresh branch. Locate the source SQL for versions `062` and `063`, compare their
-resulting schema with main, and reconcile the repository migration history.
+fresh branch. Review the recovered SQL for versions `062` and `063`, compare
+their resulting schema with main, and reconcile the repository migration history.
 Then create a clean Preview branch from that history or repair and verify this
 one. Recheck project identity, branch health, and both ledgers before running
 the preflight below. Do not use `migration repair` as a substitute for creating
