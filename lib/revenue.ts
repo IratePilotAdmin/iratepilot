@@ -57,6 +57,9 @@ export function parseRevenueCsv(csv: string): RevenueCsvRow[] {
     const value = (key: string) => values[headers.indexOf(key)] || "";
     const number = (key: string) => Number(value(key));
     const nullableNumber = (key: string) => value(key) === "" ? null : Number(value(key));
+    if (["rooms_available", "rooms_sold", "current_rate"].some(key => value(key) === "")) {
+      throw new Error(`Row ${index + 2} is missing a required room or rate value.`);
+    }
     const row: RevenueCsvRow = {
       property_id: value("property_id"), room_id: value("room_id"), stay_date: value("stay_date"),
       rooms_available: number("rooms_available"), rooms_sold: number("rooms_sold"), current_rate: number("current_rate"),

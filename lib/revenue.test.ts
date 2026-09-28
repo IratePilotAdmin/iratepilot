@@ -14,6 +14,7 @@ describe("Revenue AI CSV and recommendations", () => {
     ["invalid calendar date", "p1,r1,2026-02-30,10,7,189,,"],
     ["nonnumeric competitor", "p1,r1,2026-10-01,10,7,189,abc,"],
     ["fractional room inventory", "p1,r1,2026-10-01,10.5,7,189,,"],
+    ["missing sold rooms", "p1,r1,2026-10-01,10,,189,,"],
     ["extra unquoted comma", "p1,r1,2026-10-01,10,7,189,,Festival, Downtown"],
   ])("rejects %s", (_description, row) => {
     expect(() => parseRevenueCsv(`property_id,room_id,stay_date,rooms_available,rooms_sold,current_rate,competitor_rate,event_name\n${row}`)).toThrow();
