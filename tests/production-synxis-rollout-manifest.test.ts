@@ -26,16 +26,18 @@ const migrationVersions = readdirSync(
 
 describe("SynXis production rollout manifest", () => {
   it("records every repository migration exactly once in production order", () => {
-    expect(manifest.historyRepairCandidates).toEqual(migrationVersions.slice(0, 49));
+    const deploymentStart = migrationVersions.indexOf("202608130039");
+    expect(deploymentStart).toBeGreaterThan(0);
+    expect(manifest.historyRepairCandidates).toEqual(migrationVersions.slice(0, deploymentStart));
     const deploymentVersions = [
       ...manifest.appliedDeploymentVersions,
       ...manifest.pendingDeploymentVersions,
     ];
-    expect([...deploymentVersions].sort()).toEqual(migrationVersions.slice(49));
+    expect([...deploymentVersions].sort()).toEqual(migrationVersions.slice(deploymentStart));
     expect(new Set(deploymentVersions).size).toBe(deploymentVersions.length);
     expect(manifest.historyRepairCandidates.at(-1)).toBe("202608130038");
     expect(manifest.appliedDeploymentVersions[0]).toBe("202608130039");
-    expect(manifest.appliedDeploymentVersions).toEqual(migrationVersions.slice(49, -1));
+    expect(manifest.appliedDeploymentVersions).toEqual(migrationVersions.slice(deploymentStart, -1));
     expect(manifest.pendingDeploymentVersions).toEqual(["202609270159"]);
   });
 

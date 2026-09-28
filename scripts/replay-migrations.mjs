@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const folders = ['supabase/migrations', 'docs/recovered_migrations'];
+const folders = ['supabase/migrations'];
 const migrations = (await Promise.all(folders.map(async (folder) =>
   (await readdir(path.join(root, folder)))
     .filter((file) => /^\d{12,}_.+\.sql$/.test(file))
@@ -39,7 +39,9 @@ try {
     const source = await readFile(path.join(root, folder, file), 'utf8');
     // PGlite does not bundle uuid-ossp; its UUID helper above uses PostgreSQL's
     // gen_random_uuid(). All other migration SQL executes unmodified.
-    const sql = source.replace(/^create extension if not exists "uuid-ossp";\s*/gim, '');
+    const sql = source
+      .replace(/^create extension if not exists "uuid-ossp";\s*/gim, '')
+      .replace(/^\s*execute \$ip_stmt\$create extension if not exists "uuid-ossp";\$ip_stmt\$;/gim, '');
     try {
       await db.exec(sql);
     } catch (error) {
@@ -59,7 +61,26 @@ try {
   if (!Object.values(rows[0]).every(Boolean)) {
     throw new Error(`Replay missing required Revenue AI objects: ${JSON.stringify(rows[0])}`);
   }
+  const bootstrap = await readFile(path.join(root, 'supabase/migrations/202607260000_initial_schema_bootstrap.sql'), 'utf8');
+  const before = (await db.query("select count(*)::integer as n from pg_class where relnamespace = 'public'::regnamespace")).rows[0].n;
+  await db.exec(bootstrap); // Existing production-style schema must be a no-op.
+  const after = (await db.query("select count(*)::integer as n from pg_class where relnamespace = 'public'::regnamespace")).rows[0].n;
+  if (before !== after) throw new Error('Bootstrap changed an existing complete schema');
   console.log(`Replayed ${migrations.length} SQL migrations in order; Revenue AI schema present.`);
 } finally {
   await db.close();
+}
+
+const partial = new PGlite();
+try {
+  await partial.exec('create table public.partners(id integer)');
+  const bootstrap = await readFile(path.join(root, 'supabase/migrations/202607260000_initial_schema_bootstrap.sql'), 'utf8');
+  let rejected = false;
+  try { await partial.exec(bootstrap); } catch (error) {
+    if (!error.message.includes('Partial iRatePilot base schema')) throw error;
+    rejected = true;
+  }
+  if (!rejected) throw new Error('Bootstrap accepted a partial existing schema');
+} finally {
+  await partial.close();
 }
