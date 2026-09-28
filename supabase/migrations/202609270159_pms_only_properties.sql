@@ -61,6 +61,7 @@ DECLARE
   v_recommendation public.revenue_recommendations;
   v_authorized boolean;
   v_status text;
+  v_inventory_rows bigint;
 BEGIN
   SELECT * INTO v_recommendation FROM public.revenue_recommendations
     WHERE id = p_recommendation_id FOR UPDATE;
@@ -80,7 +81,12 @@ BEGIN
   v_status := CASE WHEN p_decision = 'approve' THEN 'approved' ELSE 'rejected' END;
   IF v_status = 'approved' THEN
     UPDATE public.inventory SET rate = v_recommendation.recommended_rate
-      WHERE room_id = v_recommendation.room_id AND stay_date = v_recommendation.stay_date;
+      WHERE room_id = v_recommendation.room_id AND stay_date = v_recommendation.stay_date
+        AND rate = v_recommendation.current_rate;
+    GET DIAGNOSTICS v_inventory_rows = ROW_COUNT;
+    IF v_inventory_rows <> 1 THEN
+      RAISE EXCEPTION 'Recommendation has no matching current inventory rate to update';
+    END IF;
   END IF;
   UPDATE public.revenue_recommendations SET status = v_status, reviewed_by = auth.uid(), reviewed_at = now()
     WHERE id = p_recommendation_id RETURNING * INTO v_recommendation;
