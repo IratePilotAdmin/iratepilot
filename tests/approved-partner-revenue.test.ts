@@ -15,10 +15,10 @@ const migration = readFileSync(
 
 describe("approved partner revenue access", () => {
   it("checks approved partner status across every revenue API surface", () => {
-    for (const route of routeFiles) {
-      expect(route).toContain("status");
-      expect(route).toContain("approved");
-    }
+    expect(routeFiles[0]).toContain('partner.status !== "approved"');
+    for (const route of routeFiles.slice(1)) expect(route).toContain("isApprovedRevenueOwner");
+    const access = readFileSync(new URL("../lib/revenue-access.ts", import.meta.url), "utf8");
+    expect(access).toContain('partner?.status === "approved"');
   });
 
   it("limits direct revenue data access to approved property owners", () => {

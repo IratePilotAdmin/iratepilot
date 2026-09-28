@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { addDays, format, parseISO } from "date-fns";
 import { requireRole } from "@/lib/auth/require-role";
 import { parseRevenueCsv } from "@/lib/revenue";
+import { isApprovedRevenueOwner } from "@/lib/revenue-access";
 
 export async function POST(request: Request) {
   try {
@@ -17,9 +18,7 @@ export async function POST(request: Request) {
     const roomIds = [...new Set(rows.map(row => row.room_id))];
     const { data: properties } = await auth.supabase.from("properties").select("id,partner_id,partners(owner_id,status)").in("id", propertyIds);
     const authorized = (properties || []).every(property => {
-      const owner = property.partners?.[0]?.owner_id;
-      const partnerStatus = property.partners?.[0]?.status;
-      return auth.profile.role === "admin" || (owner === auth.user.id && partnerStatus === "approved");
+      return auth.profile.role === "admin" || isApprovedRevenueOwner(property.partners, auth.user.id);
     });
     if (!authorized || properties?.length !== propertyIds.length) return NextResponse.json({ error: "CSV contains a property you cannot manage." }, { status: 403 });
     const { data: rooms } = await auth.supabase.from("rooms").select("id,property_id").in("id", roomIds);

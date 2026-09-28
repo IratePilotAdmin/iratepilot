@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireRole } from "@/lib/auth/require-role";
 import { loadCompleteRevenueRows, RevenueRowLimitError } from "@/lib/revenue-pagination";
 import { summarizeRevenueInputs } from "@/lib/revenue-report";
+import { isApprovedRevenueOwner } from "@/lib/revenue-access";
 
 const schema = z.object({ propertyId: z.string().uuid() });
 
@@ -14,9 +15,7 @@ export async function POST(request: Request) {
     const auth = await requireRole(["partner", "admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
     const { data: property } = await auth.supabase.from("properties").select("id,name,partners(owner_id,status)").eq("id", parsed.data.propertyId).single();
-    const owner = property?.partners?.[0]?.owner_id;
-    const partnerStatus = property?.partners?.[0]?.status;
-    if (!property || (auth.profile.role !== "admin" && (owner !== auth.user.id || partnerStatus !== "approved"))) return NextResponse.json({ error: "Approved property access is required." }, { status: 403 });
+    if (!property || (auth.profile.role !== "admin" && !isApprovedRevenueOwner(property.partners, auth.user.id))) return NextResponse.json({ error: "Approved property access is required." }, { status: 403 });
     const today = format(new Date(), "yyyy-MM-dd");
     const end = format(addDays(new Date(), 89), "yyyy-MM-dd");
     const [inputs, pendingResult] = await Promise.all([
