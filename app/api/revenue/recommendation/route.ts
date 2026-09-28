@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireRole } from "@/lib/auth/require-role";
 import { buildRateRecommendation, type RevenueCsvRow } from "@/lib/revenue";
 import { loadCompleteRevenueRows, RevenueRowLimitError } from "@/lib/revenue-pagination";
+import { assertSupportedRecommendationCount, RevenueGenerationLimitError } from "@/lib/revenue-generation-limit";
 
 const schema = z.object({ propertyId: z.string().uuid() });
 
@@ -29,6 +30,7 @@ export async function POST(request: Request) {
       return { rows: data ?? [], count };
     });
     if (!inputs.length) return NextResponse.json({ error: "Upload revenue data for the next 90 days first." }, { status: 409 });
+    assertSupportedRecommendationCount(inputs.length);
     const supersede = await auth.supabase.from("revenue_recommendations").update({ status: "superseded" }).eq("property_id", property.id).eq("status", "pending");
     if (supersede.error) throw supersede.error;
     const rows = inputs.map(input => {
@@ -40,7 +42,7 @@ export async function POST(request: Request) {
     await auth.supabase.from("revenue_audit_log").insert({ property_id: property.id, actor_id: auth.user.id, action: "recommendations_generated", details: { count: rows.length, window_days: 90 } });
     return NextResponse.json({ message: `${rows.length} pricing recommendations generated for the 90-day window.` });
   } catch (error) {
-    if (error instanceof RevenueRowLimitError) return NextResponse.json({ error: error.message }, { status: 422 });
+    if (error instanceof RevenueRowLimitError || error instanceof RevenueGenerationLimitError) return NextResponse.json({ error: error.message }, { status: 422 });
     return NextResponse.json({ error: "Revenue recommendations could not be generated." }, { status: 503 });
   }
 }
