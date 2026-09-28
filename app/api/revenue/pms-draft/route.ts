@@ -32,7 +32,11 @@ export async function POST() {
       return NextResponse.json({ data: { id: existing.data.id, name: existing.data.name, pmsOnly: true, active: false }, message: "PMS-only draft already exists." });
     }
 
-    const duplicate = await admin.from("properties").select("id").eq("partner_id", partnerId).ilike("name", draft.name).limit(1);
+    // The existing private pilot may have a suffix such as ", MS" in its name.
+    // Do not create a second hotel record just because its display name differs.
+    const duplicate = await admin.from("properties").select("id")
+      .eq("city", draft.city)
+      .ilike("name", `${draft.name}%`).limit(1);
     if (duplicate.error) throw duplicate.error;
     if (duplicate.data?.length) return NextResponse.json({ error: "A property with this name already exists. Review it before creating another." }, { status: 409 });
 
