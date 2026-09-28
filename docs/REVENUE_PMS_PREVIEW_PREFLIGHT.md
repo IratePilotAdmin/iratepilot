@@ -1,5 +1,33 @@
 # Revenue AI PMS-only Preview preflight
 
+## Migration-history recovery (2026-09-28)
+
+The original deployment commit `5abc0d2` contains the pre-migration
+`supabase/schema.sql`. Its exact SQL body has been recovered as
+`docs/recovered_migrations/202607260000_initial_schema.sql` for review. The
+two fee migration bodies recovered from production logs have likewise been
+copied into `docs/recovered_migrations/202608220062_hotel_partner_fee_schema.sql`
+and `docs/recovered_migrations/202608220063_activate_hotel_partner_fee_schedule.sql`.
+Their bodies match the SQL already recorded in this repository's
+`RECOVERED_HOTEL_PARTNER_FEE_SQL.md`. These are **recovery source files**, not
+active migrations. Moving them into `supabase/migrations/` and running `db push`
+against main would try to create objects already present in production.
+
+The branch cannot be declared healthy merely by adding repository files:
+Supabase replays **main's database migration history** when creating a branch.
+The production ledger needs a reviewed, replayable baseline before version
+`202607260001`, and the missing fee versions must be reconciled with the
+production schema. Test the complete ordered history on a fresh isolated
+database or branch, compare its schema with production, then repair main's
+history through the supported migration workflow. Create or rebase Preview and
+confirm `MIGRATIONS_FAILED` clears before the six pending application migrations
+are considered. Do not enable live Revenue AI or PMS delivery on this basis.
+
+The present environment has neither the Supabase CLI nor a local Postgres
+server, so a fresh replay and a safe production-history repair were not
+performed here. No production or Preview schema or migration ledger was
+changed by this recovery work.
+
 The Supabase dashboard identified project `tztrvyhqyhkjhjwhrbaa` as
 `iratepilot-preview-sandbox` on 2026-09-27. Its migration history contained 72
 versions through `202608150061`. The repository contained 78 versions.
