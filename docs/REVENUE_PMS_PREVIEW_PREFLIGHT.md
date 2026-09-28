@@ -91,8 +91,11 @@ requires a separate cost confirmation.
 Red Roof Inn Ridgeland, MS has one sandbox iRatePilot outbox connection with
 capture and delivery enabled in production, one released baseline run with
 zero snapshots, and one delivered outbox event dated 2026-09-18. This is
-limited sandbox evidence, not a verified live PMS feed. Review its source
-identity, delivery receipts, and current PMS credentials before the live gate.
+limited sandbox evidence, not a verified live PMS feed. The property is
+inactive. A 2026-09-28 read-only check found no matching
+`property_pms_connections` record and no delivery control receipt; the
+outbox event's result code is `reservation-staged`. Verify the source identity,
+an actual PMS delivery receipt, and current PMS credentials before the live gate.
 
 An isolated in-memory PostgreSQL replay is available with
 `npm run migration:replay`. It runs all 81 active migrations in version order
