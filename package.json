@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "migration:replay": "node scripts/replay-migrations.mjs",
-    "check": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "check": "npm run lint && npm run typecheck && npm run migration:replay && npm run test && npm run build",
     "commercial:sandbox-preflight": "node scripts/commercial-sandbox-preflight.mjs",
     "preview:migrations": "node scripts/reconcile-preview-migrations.mjs"
   },
