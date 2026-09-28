@@ -5,6 +5,7 @@ import { requireRole } from "@/lib/auth/require-role";
 const schema = z.object({ decision: z.enum(["approve", "reject"]) });
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
+  if (process.env.REVENUE_AI_ENABLED !== "true") return NextResponse.json({ error: "Revenue review is disabled until the hotel data and database release are verified." }, { status: 503 });
   const parsed = schema.safeParse(await request.json());
   if (!parsed.success) return NextResponse.json({ error: "Choose approve or reject." }, { status: 400 });
   try {
