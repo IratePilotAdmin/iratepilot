@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { PmsRevenueSnapshot } from "@/components/dashboard/pms-revenue-snapshot";
+import { PrivateRevenueSimulation } from "@/components/dashboard/private-revenue-simulation";
 
 type Property = { id: string; name: string; pms_only: boolean };
 type Input = { property_id: string; stay_date: string; rooms_available: number; rooms_sold: number; current_rate: number | string };
 type Recommendation = { id: string; property_id: string; stay_date: string; current_rate: number | string; recommended_rate: number | string; occupancy_forecast: number | string; estimated_revenue_impact: number | string; reason: string; status: string; rooms: { name: string } | null };
 type Audit = { id: string; property_id: string; action: string; details: Record<string, unknown>; created_at: string };
 type Report = { id: string; property_id: string; report_date: string; average_occupancy: number | string; average_daily_rate: number | string; forecast_revenue: number | string; pending_actions: number; summary: string };
-type Simulation = { propertyName: string; simulated: true; readOnly: true; inputRows: number; report: { averageOccupancy: number; averageRate: number; forecastRevenue: number }; recommendations: Array<{ room_name: string; stay_date: string; currentRate: number; recommendedRate: number; reason: string }> };
 type Payload = { properties: Property[]; inputs: Input[]; inputCount: number; recommendations: Recommendation[]; audit: Audit[]; reports: Report[]; canGenerateRecommendations: boolean; canCreatePmsPilot: boolean };
 const money = (value: number | string) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value));
 
@@ -18,7 +18,6 @@ export function RevenueAiCenter() {
   const [propertyId, setPropertyId] = useState("");
   const [message, setMessage] = useState("Loading Revenue AI…");
   const [busy, setBusy] = useState("");
-  const [simulation, setSimulation] = useState<Simulation | null>(null);
   const selectedProperty = data.properties.find(property => property.id === propertyId);
   const redRoofDraft = data.properties.find(property => property.pms_only && property.name === "Red Roof Inn Ridgeland");
   const load = useCallback(async () => {
@@ -66,17 +65,6 @@ export function RevenueAiCenter() {
     } catch { setMessage("PMS-only draft could not be created."); }
     finally { setBusy(""); }
   }
-  async function runPrivateSimulation() {
-    setBusy("simulation");
-    try {
-      const response = await fetch("/api/revenue/private-simulation", { cache: "no-store" });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error);
-      setSimulation(body);
-      setMessage("Synthetic private test ready. No hotel data or rates were changed.");
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Private simulation could not run."); }
-    finally { setBusy(""); }
-  }
   function downloadTemplate() {
     const today = format(new Date(), "yyyy-MM-dd");
     const csv = `property_id,room_id,stay_date,rooms_available,rooms_sold,current_rate,competitor_rate,last_year_occupancy,event_name\nPROPERTY_UUID,ROOM_UUID,${today},10,8,189,209,72,Local concert\n`;
@@ -88,10 +76,7 @@ export function RevenueAiCenter() {
       <p className="mt-2 text-sm text-slate-600">Create an inactive PMS-only draft under your authorized hotel organization. It is excluded from public hotel search and cannot be approved for OTA publication. No rooms, reservations, or rates are created by this step.</p>
       {redRoofDraft ? <p className="mt-3 text-sm">PMS-only draft: <strong>{redRoofDraft.name}</strong> · Property ID <code>{redRoofDraft.id}</code></p>
         : <button className="btn-secondary mt-4" type="button" disabled={!!busy} onClick={() => void createPmsDraft()}>{busy === "pms-draft" ? "Creating…" : "Create inactive PMS-only draft"}</button>}
-      <div className="mt-5 border-t pt-5"><p className="text-sm text-slate-600">Run a synthetic 30-day test of the Revenue AI calculations. Sample rates and occupancy are illustrative and are never saved to the PMS.</p>
-        <button className="btn-secondary mt-3" type="button" disabled={!!busy} onClick={() => void runPrivateSimulation()}>{busy === "simulation" ? "Running…" : "Run private synthetic test"}</button>
-        {simulation && <div className="mt-4 rounded-xl border bg-slate-50 p-4 text-sm"><strong>{simulation.propertyName}</strong><p className="mt-2">{simulation.inputRows} sample room dates · {simulation.report.averageOccupancy}% sample occupancy · {money(simulation.report.averageRate)} sample ADR · {money(simulation.report.forecastRevenue)} sample room revenue</p><ul className="mt-3 list-disc pl-5">{simulation.recommendations.slice(0, 3).map(row => <li key={`${row.room_name}-${row.stay_date}`}>{row.stay_date} {row.room_name}: {money(row.currentRate)} → {money(row.recommendedRate)}</li>)}</ul><p className="mt-3 text-slate-600">Read-only simulation. No PMS records, bookings, or live prices were changed.</p></div>}
-      </div>
+      <div className="mt-5 border-t pt-5"><PrivateRevenueSimulation /></div>
     </section>}
     <section className="card flex flex-wrap items-end justify-between gap-5 p-6">
       <label className="grid min-w-64 gap-2 text-sm font-semibold">Property<select className="rounded-xl border border-slate-300 bg-white px-4 py-3" value={propertyId} onChange={event => setPropertyId(event.target.value)}>{data.properties.map(property => <option value={property.id} key={property.id}>{property.name}</option>)}</select></label>
