@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { addDays, format } from "date-fns";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/require-role";
+import { loadCompleteRevenueRows, RevenueRowLimitError } from "@/lib/revenue-pagination";
 
 const schema = z.object({ propertyId: z.string().uuid() });
 
@@ -17,11 +18,20 @@ export async function POST(request: Request) {
     if (!property || (auth.profile.role !== "admin" && (owner !== auth.user.id || partnerStatus !== "approved"))) return NextResponse.json({ error: "Approved property access is required." }, { status: 403 });
     const today = format(new Date(), "yyyy-MM-dd");
     const end = format(addDays(new Date(), 89), "yyyy-MM-dd");
-    const [{ data: inputs }, { count: pending }] = await Promise.all([
-      auth.supabase.from("revenue_daily_inputs").select("rooms_available,rooms_sold,current_rate").eq("property_id", property.id).gte("stay_date", today).lte("stay_date", end),
+    const [inputs, pendingResult] = await Promise.all([
+      loadCompleteRevenueRows(async (offset) => {
+        const { data, error, count } = await auth.supabase.from("revenue_daily_inputs")
+          .select("rooms_available,rooms_sold,current_rate", { count: offset === 0 ? "exact" : undefined })
+          .eq("property_id", property.id).gte("stay_date", today).lte("stay_date", end)
+          .order("stay_date").order("room_id").range(offset, offset + 999);
+        if (error) throw error;
+        return { rows: data ?? [], count };
+      }),
       auth.supabase.from("revenue_recommendations").select("id", { count: "exact", head: true }).eq("property_id", property.id).eq("status", "pending")
     ]);
-    if (!inputs?.length) return NextResponse.json({ error: "Upload 90-day data before creating a report." }, { status: 409 });
+    if (pendingResult.error || pendingResult.count === null) throw pendingResult.error ?? new Error("Pending recommendation count is unavailable.");
+    const pending = pendingResult.count;
+    if (!inputs.length) return NextResponse.json({ error: "Upload 90-day data before creating a report." }, { status: 409 });
     const rooms = inputs.reduce((sum, row) => sum + row.rooms_available, 0);
     const sold = inputs.reduce((sum, row) => sum + row.rooms_sold, 0);
     const averageOccupancy = rooms ? Math.round(sold / rooms * 10000) / 100 : 0;
@@ -32,7 +42,8 @@ export async function POST(request: Request) {
     if (result.error) throw result.error;
     await auth.supabase.from("revenue_audit_log").insert({ property_id: property.id, actor_id: auth.user.id, action: "daily_report_generated", details: { report_date: today, pending_actions: pending || 0 } });
     return NextResponse.json({ message: "Today’s 90-day revenue report is ready.", summary });
-  } catch {
+  } catch (error) {
+    if (error instanceof RevenueRowLimitError) return NextResponse.json({ error: error.message }, { status: 422 });
     return NextResponse.json({ error: "Daily report could not be generated." }, { status: 503 });
   }
 }
