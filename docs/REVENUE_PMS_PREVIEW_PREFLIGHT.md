@@ -23,10 +23,24 @@ history through the supported migration workflow. Create or rebase Preview and
 confirm `MIGRATIONS_FAILED` clears before the six pending application migrations
 are considered. Do not enable live Revenue AI or PMS delivery on this basis.
 
-The present environment has neither the Supabase CLI nor a local Postgres
-server, so a fresh replay and a safe production-history repair were not
-performed here. No production or Preview schema or migration ledger was
-changed by this recovery work.
+An isolated in-memory PostgreSQL replay is available with
+`npm run migration:replay`. It runs the three recovered sources and all active
+migrations in version order with minimal stand-ins for Supabase Auth. The only
+SQL substitution is `uuid-ossp`, which PGlite does not bundle; its UUID helper
+uses PostgreSQL's `gen_random_uuid()` instead. On 2026-09-28 this replay found
+that `202607290001_stripe_webhook_reliability.sql` indexed `received_at` even
+though the preceding financial reconciliation migration had already created
+the table without that column. The migration now adds and backfills the four
+missing webhook columns and updates the status constraint before indexing.
+All 81 SQL files then replayed successfully, with the PMS-only column, fee
+column, and Revenue AI RPC present at the end. TypeScript typecheck passed.
+
+This is a **local SQL gate**, not a Supabase Preview branch replay. PGlite uses
+PostgreSQL 18 and minimal Auth stand-ins; Supabase's managed roles/extensions,
+the actual production history ledger, and version 16 behavior still need a
+real branch check. No production or Preview schema or migration ledger was
+changed by this recovery work. This environment has no Supabase CLI, so a
+production-history repair was not performed here.
 
 The Supabase dashboard identified project `tztrvyhqyhkjhjwhrbaa` as
 `iratepilot-preview-sandbox` on 2026-09-27. Its migration history contained 72
