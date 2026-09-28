@@ -4,6 +4,8 @@ import { z } from "zod";
 import { requireRole } from "@/lib/auth/require-role";
 import { resolvePartnerHotelAccess } from "@/lib/partner/hotel-access";
 import { loadCompleteSnapshotRows } from "@/lib/pms-snapshot-pagination";
+import { loadCompleteRevenueRows } from "@/lib/revenue-pagination";
+import { reconcileRevenueRows } from "@/lib/revenue-reconciliation";
 
 const querySchema = z.object({
   propertyId: z.string().uuid(),
@@ -45,21 +47,30 @@ export async function GET(request: Request) {
     const through = format(addDays(new Date(), 89), "yyyy-MM-dd");
     if (!roomIds.length) return NextResponse.json({
       property: { id: property.id, name: property.name }, from, through, rooms: [], inventory: [],
+      reconciliation: reconcileRevenueRows([], []),
       source: "iratepilot_pms", readOnly: true, schemaVersion: 1, generatedAt: new Date().toISOString(),
     }, { headers: { "Cache-Control": "private, no-store" } });
 
-    const inventory = await loadCompleteSnapshotRows(async (offset) => {
+    const [inventory, revenueInputs] = await Promise.all([loadCompleteSnapshotRows(async (offset) => {
       const { data, error, count } = await auth.supabase.from("inventory")
         .select("room_id,stay_date,available_units,rate", { count: offset === 0 ? "exact" : undefined })
         .in("room_id", roomIds).gte("stay_date", from).lte("stay_date", through)
         .order("stay_date").order("room_id").range(offset, offset + 999);
       if (error) throw error;
       return { rows: data ?? [], count };
-    }, 9_000);
+    }, 9_000), loadCompleteRevenueRows(async (offset) => {
+      const { data, error, count } = await auth.supabase.from("revenue_daily_inputs")
+        .select("room_id,stay_date,rooms_available,rooms_sold,current_rate,source", { count: offset === 0 ? "exact" : undefined })
+        .eq("property_id", property.id).gte("stay_date", from).lte("stay_date", through)
+        .order("stay_date").order("room_id").range(offset, offset + 999);
+      if (error) throw error;
+      return { rows: data ?? [], count };
+    })]);
 
     return NextResponse.json({
       property: { id: property.id, name: property.name }, from, through,
       rooms: rooms ?? [], inventory, source: "iratepilot_pms", readOnly: true,
+      reconciliation: reconcileRevenueRows(inventory, revenueInputs),
       schemaVersion: 1, generatedAt: new Date().toISOString(),
     }, { headers: { "Cache-Control": "private, no-store" } });
   } catch {

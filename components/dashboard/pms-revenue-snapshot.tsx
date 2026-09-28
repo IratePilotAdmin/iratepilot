@@ -8,6 +8,14 @@ type Snapshot = {
   through: string;
   rooms: Array<{ id: string; name: string; base_rate: number | string }>;
   inventory: Array<{ room_id: string; stay_date: string; available_units: number; rate: number | string }>;
+  reconciliation: {
+    status: "no_revenue_inputs" | "differences" | "indicative_match";
+    pmsRows: number; revenueRows: number; matchedDates: number;
+    missingPmsDates: number; missingImportedDates: number;
+    rateDifferences: number; indicativeAvailabilityDifferences: number;
+    inputSources: string[];
+    examples: Array<{ roomId: string; stayDate: string; issue: string }>;
+  };
   source: "iratepilot_pms";
   readOnly: true;
   schemaVersion: 1;
@@ -126,6 +134,13 @@ export function PmsRevenueSnapshot({ propertyId }: { propertyId: string }) {
     {handoffStatus && <p role="status" className="mt-4 text-sm text-slate-700">{handoffStatus}</p>}
     {activeSnapshot && <>
       <p className="mt-4 text-sm text-slate-600">{activeSnapshot.property.name}: {activeSnapshot.rooms.length} active room types and {activeSnapshot.inventory.length} dated rates loaded. Snapshot generated {new Date(activeSnapshot.generatedAt).toLocaleString()}. Showing the first {shown.length} rows.</p>
+      <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950" aria-label="Read-only revenue reconciliation">
+        <strong>Read-only data comparison · {activeSnapshot.reconciliation.status === "no_revenue_inputs" ? "No revenue inputs" : activeSnapshot.reconciliation.status === "indicative_match" ? "Indicative match" : "Differences found"}</strong>
+        <p className="mt-2">PMS snapshot: {activeSnapshot.reconciliation.pmsRows} dated rows. Revenue inputs: {activeSnapshot.reconciliation.revenueRows} rows ({activeSnapshot.reconciliation.inputSources.join(", ") || "none"}). Matched room dates: {activeSnapshot.reconciliation.matchedDates}.</p>
+        <p className="mt-1">Missing from PMS: {activeSnapshot.reconciliation.missingPmsDates}; missing from revenue inputs: {activeSnapshot.reconciliation.missingImportedDates}; rate differences: {activeSnapshot.reconciliation.rateDifferences}; estimated remaining-room differences: {activeSnapshot.reconciliation.indicativeAvailabilityDifferences}.</p>
+        <p className="mt-2">PMS remaining availability can include holds, blocks, and other adjustments. This comparison does not verify occupancy, authorize rate publishing, or establish a live feed.</p>
+        {activeSnapshot.reconciliation.examples.length > 0 && <ul className="mt-3 list-disc pl-5">{activeSnapshot.reconciliation.examples.slice(0, 5).map((item, index) => <li key={`${item.roomId}:${item.stayDate}:${index}`}>{roomNames.get(item.roomId) || "Room type"} · {item.stayDate}: {item.issue}</li>)}</ul>}
+      </div>
       <div className="mt-4 overflow-x-auto"><table className="w-full text-left text-sm">
         <thead className="bg-slate-50 text-slate-600"><tr><th className="px-4 py-3">Stay date</th><th className="px-4 py-3">Room type</th><th className="px-4 py-3">Remaining units</th><th className="px-4 py-3">Current rate</th></tr></thead>
         <tbody>{shown.map((row) => <tr className="border-t" key={`${row.room_id}:${row.stay_date}`}><td className="px-4 py-3">{row.stay_date}</td><td className="px-4 py-3">{roomNames.get(row.room_id) || "Room type"}</td><td className="px-4 py-3">{row.available_units}</td><td className="px-4 py-3">{money(row.rate)}</td></tr>)}</tbody>
