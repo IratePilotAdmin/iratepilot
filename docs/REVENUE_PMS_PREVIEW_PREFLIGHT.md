@@ -14,17 +14,85 @@ Their bodies match the SQL already recorded in this repository's
 base on an empty database and checks for all 17 base tables without recreating
 them on production. The two fee files are in `supabase/migrations/` under their
 existing production versions. Do not run `db push` against main merely because
-the files now exist: the production fee versions are recorded with null SQL,
-the bootstrap version is absent, and later application migrations are pending.
+the files now exist: the production history has been repaired separately below,
+and the final property guard migration remains pending.
 
 The branch cannot be declared healthy merely by adding repository files:
 Supabase replays **main's database migration history** when creating a branch.
-The production ledger still needs the replayable baseline before version
-`202607260001`, the repaired webhook migration, and SQL for the fee versions.
-Reconcile the production ledger through the supported migration workflow.
-Create or rebase Preview and
-confirm `MIGRATIONS_FAILED` clears before the six pending application migrations
-are considered. Do not enable live Revenue AI or PMS delivery on this basis.
+The production ledger now has the replayable baseline before version
+`202607260001`, the corrected webhook migration, and SQL for the fee versions.
+The existing Preview branch now reports `FUNCTIONS_DEPLOYED`; a fresh branch
+replay is still needed for the older access history. Do not enable live Revenue AI
+or PMS delivery on this basis.
+
+## Hosted history repair (2026-09-28)
+
+The connected production project `allliumarkejinplrggl` had all 17 original
+base tables but no `202607260000` ledger entry. A guarded transaction inserted
+that historical version with the executable bootstrap `DO` statement. Its
+stored 30,999-byte statement matched the published PR file with MD5
+`02e24eb0a7da99e3a00091d531d66f72`.
+
+The two existing fee ledger entries had null `statements`. Production already
+had all four fee columns, six fee constraints, and the active 13% plus 3%
+function. Guarded updates restored the 10 and 4 parsed statements of versions
+`202608220062` and `202608220063`. The stored MD5 digests over statements
+joined with ASCII unit separator matched the published files:
+`b2f4ad0779dad62cc7ee70f1f39856b1` and
+`65cb4f1755e57cdd593d37f516d7eea6`.
+
+The original six-statement webhook history for `202607290001` could not replay
+against a fresh base. Production already had the four target columns, two
+indexes, status constraint, and RLS. Its recorded statements were replaced in
+a guarded transaction with the 11 statements from the corrected PR file;
+the stored digest matched `742ef3ac32e84ddd2ce8ebc654e7273a`.
+These changes only updated `supabase_migrations.schema_migrations`; they did
+not execute DDL against production application tables or modify booking rows.
+They used the connected SQL tool because an authenticated CLI session and the
+shared dashboard browser were unavailable. The hosted branch replay remains
+the release gate, since ledger shape alone cannot prove that branch
+provisioning executes a repair-marked baseline.
+
+The first hosted rebase executed the recovered bootstrap and fee versions, then
+failed at `202609070139` with SQLSTATE `42601` near `manual`. Five production
+PMS versions (`139`, `140`, `141`, `157`, `158`) had each stored the literal
+placeholder `manual production rollout` as their only statement. Production
+already had all five PMS tables with RLS, eight expected functions, the
+booking outbox trigger, delivery column and constraint, and due index. A
+guarded ledger-only transaction replaced the five placeholders with the
+published files' parsed statements. Their statement counts are 23, 18, 9, 5,
+and 5; stored digests respectively match
+`21c79df2ceb21676c5aba5067eb3fefd`,
+`5a5d9257889b69bb6e32aa2dc0c21a5f`,
+`e0abba40e40cdc0b93a7720b9ad26f72`,
+`cdc7f6ac3ab54d5176c4092c39941294`, and
+`a34b0843b318844e0a813929962cbe10`. The next Preview rebase applied
+these five PMS versions and reached `FUNCTIONS_DEPLOYED`.
+
+Eight earlier hotel access versions (`202608150054` through
+`202608150061`) also had empty or null statements in production history.
+Production already had the two hotel access capability columns, the expected
+hotel manager functions and enabled write guard triggers, the manager policies,
+and the owner delete policies. A guarded, ledger-only transaction restored
+51, 8, 10, 6, 6, 8, 6, and 6 parsed statements from the published migration
+files. Each stored digest matched its source file, and no production history
+version now has empty or null statements. Rebase then reached
+`FUNCTIONS_DEPLOYED` with 80 versions on Preview, including the PMS
+transactional outbox and access functions and policies.
+
+This existing Preview branch retained 72 empty historical statement arrays
+after rebase, including versions 054 through 061. Its objects and version
+list are present, but rebase only logged application of the newly missing
+versions. A fresh branch replay remains the proof that every older historical
+statement executes from scratch. Do not reset the current Preview to force
+that check: it contains one property and four bookings. New branch creation
+requires a separate cost confirmation.
+
+Red Roof Inn Ridgeland, MS has one sandbox iRatePilot outbox connection with
+capture and delivery enabled in production, one released baseline run with
+zero snapshots, and one delivered outbox event dated 2026-09-18. This is
+limited sandbox evidence, not a verified live PMS feed. Review its source
+identity, delivery receipts, and current PMS credentials before the live gate.
 
 An isolated in-memory PostgreSQL replay is available with
 `npm run migration:replay`. It runs all 81 active migrations in version order
@@ -42,17 +110,17 @@ column, and Revenue AI RPC present at the end. TypeScript typecheck passed.
 This is a **local SQL gate**, not a Supabase Preview branch replay. PGlite uses
 PostgreSQL 18 and minimal Auth stand-ins; Supabase's managed roles/extensions,
 the actual production history ledger, and version 16 behavior still need a
-real branch check. No production or Preview schema or migration ledger was
-changed by this recovery work. The CLI is installed in a disposable workspace,
-but no linked database credentials are available; production-history repair
-was not performed here.
+fresh branch check. The CLI is installed in a disposable workspace, but no
+linked database credentials are available. The production ledger repair above
+was performed through the connected SQL tool and verified with read-only
+queries; the existing Preview branch completed its incremental rebase.
 
 The Supabase dashboard identified project `tztrvyhqyhkjhjwhrbaa` as
 `iratepilot-preview-sandbox` on 2026-09-27. Its migration history contained 72
 versions through `202608150061`. The repository had 78 active versions at
 that time; it now has 81, including the three history-recovery versions.
 
-The six pending versions, in order, are:
+The six versions absent from Preview on 2026-09-27 were, in order:
 
 1. `202609070139` — transactional PMS outbox, disabled by default
 2. `202609070140` — sandbox baseline and delivery gates
@@ -62,7 +130,10 @@ The six pending versions, in order, are:
 6. `202609270159` — inactive PMS-only property, authenticated inventory and
    room-rate write guards, and revenue approval guard
 
-## Live branch check on 2026-09-27
+Versions 139, 140, 141, 157, and 158 reached Preview on 2026-09-28. Version
+159 is still absent from main and Preview; applying it requires its own review.
+
+## Historical branch check on 2026-09-27 (superseded above)
 
 The Supabase connection identifies `tztrvyhqyhkjhjwhrbaa` as the
 `iratepilot-preview-sandbox` **development branch** of the main iRatePilot
