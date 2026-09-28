@@ -3,6 +3,7 @@ import { addDays, format } from "date-fns";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/require-role";
 import { loadCompleteRevenueRows, RevenueRowLimitError } from "@/lib/revenue-pagination";
+import { summarizeRevenueInputs } from "@/lib/revenue-report";
 
 const schema = z.object({ propertyId: z.string().uuid() });
 
@@ -32,11 +33,7 @@ export async function POST(request: Request) {
     if (pendingResult.error || pendingResult.count === null) throw pendingResult.error ?? new Error("Pending recommendation count is unavailable.");
     const pending = pendingResult.count;
     if (!inputs.length) return NextResponse.json({ error: "Upload 90-day data before creating a report." }, { status: 409 });
-    const rooms = inputs.reduce((sum, row) => sum + row.rooms_available, 0);
-    const sold = inputs.reduce((sum, row) => sum + row.rooms_sold, 0);
-    const averageOccupancy = rooms ? Math.round(sold / rooms * 10000) / 100 : 0;
-    const averageRate = Math.round(inputs.reduce((sum, row) => sum + Number(row.current_rate), 0) / inputs.length * 100) / 100;
-    const forecastRevenue = Math.round(inputs.reduce((sum, row) => sum + row.rooms_sold * Number(row.current_rate), 0) * 100) / 100;
+    const { averageOccupancy, averageRate, forecastRevenue } = summarizeRevenueInputs(inputs);
     const summary = `${property.name}: ${averageOccupancy}% average occupancy and $${averageRate.toFixed(2)} ADR across the loaded 90-day window. ${pending || 0} pricing actions require manager review.`;
     const result = await auth.supabase.from("revenue_daily_reports").upsert({ property_id: property.id, report_date: today, forecast_window_days: 90, average_occupancy: averageOccupancy, average_daily_rate: averageRate, forecast_revenue: forecastRevenue, pending_actions: pending || 0, summary, created_by: auth.user.id }, { onConflict: "property_id,report_date" });
     if (result.error) throw result.error;
