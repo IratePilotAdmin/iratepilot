@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/auth/require-role";
 import { resolvePartnerHotelAccess, type PartnerHotelAccessResult } from "@/lib/partner/hotel-access";
 import { inventorySchema, roomSchema, roomUpdateSchema } from "@/lib/validation";
 import { getInventoryDateRangeError, getUpcomingInventory } from "@/lib/inventory-dates";
+import { isPmsOnlyRoom } from "@/lib/pms-only-room";
 
 const hotelAccessError = (resolved: PartnerHotelAccessResult) => NextResponse.json({
   error: resolved.migrationRequired
@@ -103,7 +104,7 @@ export async function POST(request: Request) {
       const { data: room, error: roomError } = await roomQuery.maybeSingle();
       if (roomError) throw roomError;
       if (!room) return NextResponse.json({ error: "Room type not found." }, { status: 404 });
-      if (room.properties?.some((property) => property.pms_only) && Number(room.base_rate) !== parsed.data.baseRate) {
+      if (isPmsOnlyRoom(room.properties) && Number(room.base_rate) !== parsed.data.baseRate) {
         return NextResponse.json({ error: "PMS-only room rates are read-only in the rate editor." }, { status: 409 });
       }
       const result = await auth.supabase.from("rooms").update({
@@ -127,7 +128,7 @@ export async function POST(request: Request) {
       if (partnerId) roomQuery = roomQuery.eq("properties.partner_id", partnerId);
       const { data: room } = await roomQuery.maybeSingle();
       if (!room) return NextResponse.json({ error: "Room type not found." }, { status: 404 });
-      if (room.properties?.some((property) => property.pms_only)) {
+      if (isPmsOnlyRoom(room.properties)) {
         return NextResponse.json({ error: "PMS-only inventory is read-only in the rate editor." }, { status: 409 });
       }
       const start = parseISO(parsed.data.startDate);
