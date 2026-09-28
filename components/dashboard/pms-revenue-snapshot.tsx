@@ -74,6 +74,10 @@ export function PmsRevenueSnapshot({ propertyId }: { propertyId: string }) {
   const openRevenuePilot = () => {
     const selectedSnapshot = activeSnapshot;
     if (!selectedSnapshot) return;
+    if (!selectedSnapshot.inventory.length) {
+      setHandoffStatus("Load dated PMS inventory before opening Revenue AI.");
+      return;
+    }
     if (Date.now() - Date.parse(selectedSnapshot.generatedAt) > 24 * 60 * 60 * 1000) {
       setHandoffStatus("Refresh the PMS snapshot before opening Revenue AI.");
       return;
@@ -113,7 +117,7 @@ export function PmsRevenueSnapshot({ propertyId }: { propertyId: string }) {
         <button className="btn-secondary" type="button" disabled={!activeSnapshot} onClick={downloadSnapshot}>
           Download read-only snapshot
         </button>
-        <button className="btn-secondary" type="button" disabled={!activeSnapshot} onClick={openRevenuePilot}>
+        <button className="btn-secondary" type="button" disabled={!activeSnapshot?.inventory.length} onClick={openRevenuePilot}>
           Open in Revenue AI pilot
         </button>
       </div>
@@ -126,7 +130,7 @@ export function PmsRevenueSnapshot({ propertyId }: { propertyId: string }) {
         <thead className="bg-slate-50 text-slate-600"><tr><th className="px-4 py-3">Stay date</th><th className="px-4 py-3">Room type</th><th className="px-4 py-3">Remaining units</th><th className="px-4 py-3">Current rate</th></tr></thead>
         <tbody>{shown.map((row) => <tr className="border-t" key={`${row.room_id}:${row.stay_date}`}><td className="px-4 py-3">{row.stay_date}</td><td className="px-4 py-3">{roomNames.get(row.room_id) || "Room type"}</td><td className="px-4 py-3">{row.available_units}</td><td className="px-4 py-3">{money(row.rate)}</td></tr>)}</tbody>
       </table></div>
-      {!activeSnapshot.inventory.length && <p className="mt-4 text-sm text-slate-600">No dated inventory is loaded for this property.</p>}
+      {!activeSnapshot.inventory.length && <p className="mt-4 text-sm text-slate-600">No dated inventory is loaded for this property. The Revenue AI handoff becomes available after PMS data is loaded.</p>}
       <p className="mt-4 text-sm text-slate-600">Open in Revenue AI transfers this selected property’s read-only snapshot directly to the private workspace tab after you click. It includes dated rates and remaining availability, without guest records or API tokens. You can also download the JSON and import it manually. Remaining availability is not total capacity or occupancy; this view never updates a PMS rate.</p>
     </>}
   </section>;
