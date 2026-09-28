@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { format } from "date-fns";
 import { PmsRevenueSnapshot } from "@/components/dashboard/pms-revenue-snapshot";
 
 type Property = { id: string; name: string; pms_only: boolean };
@@ -8,11 +9,11 @@ type Input = { property_id: string; stay_date: string; rooms_available: number; 
 type Recommendation = { id: string; property_id: string; stay_date: string; current_rate: number | string; recommended_rate: number | string; occupancy_forecast: number | string; estimated_revenue_impact: number | string; reason: string; status: string; rooms: { name: string } | null };
 type Audit = { id: string; property_id: string; action: string; details: Record<string, unknown>; created_at: string };
 type Report = { id: string; property_id: string; report_date: string; average_occupancy: number | string; average_daily_rate: number | string; forecast_revenue: number | string; pending_actions: number; summary: string };
-type Payload = { properties: Property[]; inputs: Input[]; recommendations: Recommendation[]; audit: Audit[]; reports: Report[]; canCreatePmsPilot: boolean };
+type Payload = { properties: Property[]; inputs: Input[]; inputCount: number; recommendations: Recommendation[]; audit: Audit[]; reports: Report[]; canCreatePmsPilot: boolean };
 const money = (value: number | string) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(value));
 
 export function RevenueAiCenter() {
-  const [data, setData] = useState<Payload>({ properties: [], inputs: [], recommendations: [], audit: [], reports: [], canCreatePmsPilot: false });
+  const [data, setData] = useState<Payload>({ properties: [], inputs: [], inputCount: 0, recommendations: [], audit: [], reports: [], canCreatePmsPilot: false });
   const [propertyId, setPropertyId] = useState("");
   const [message, setMessage] = useState("Loading Revenue AI…");
   const [busy, setBusy] = useState("");
@@ -64,7 +65,8 @@ export function RevenueAiCenter() {
     finally { setBusy(""); }
   }
   function downloadTemplate() {
-    const csv = "property_id,room_id,stay_date,rooms_available,rooms_sold,current_rate,competitor_rate,last_year_occupancy,event_name\nPROPERTY_UUID,ROOM_UUID,2026-08-14,10,8,189,209,72,Local concert\n";
+    const today = format(new Date(), "yyyy-MM-dd");
+    const csv = `property_id,room_id,stay_date,rooms_available,rooms_sold,current_rate,competitor_rate,last_year_occupancy,event_name\nPROPERTY_UUID,ROOM_UUID,${today},10,8,189,209,72,Local concert\n`;
     const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); link.download = "iratepilot-revenue-template.csv"; link.click(); URL.revokeObjectURL(link.href);
   }
 
@@ -80,7 +82,7 @@ export function RevenueAiCenter() {
     </section>
     <p className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">CSV-first pilot mode. Automatic pricing is disabled. PMS-only drafts allow review and rejection, but approval and rate writes are blocked. For eligible OTA properties, approved recommendations update the selected room/date inventory rate and are logged.</p>
         <PmsRevenueSnapshot key={propertyId} propertyId={propertyId} />
-    <section className="grid gap-4 md:grid-cols-4">{[["90-day dates loaded", forecast.dates], ["Forecast occupancy", `${forecast.occupancy}%`], ["Average daily rate", money(forecast.adr)], ["Loaded room revenue", money(forecast.revenue)]].map(([label, value]) => <article className="card p-5" key={String(label)}><span className="text-sm text-slate-500">{label}</span><strong className="mt-2 block text-2xl">{value}</strong></article>)}</section>
+    <section aria-label="Revenue input preview"><p className="mb-3 text-sm text-slate-600">Dashboard preview of up to 500 rows across your properties for the next 90 days. {data.inputCount > data.inputs.length ? `${data.inputCount} total rows are available; generate the report for complete property totals.` : ""}</p><div className="grid gap-4 md:grid-cols-4">{[["Dates in preview", forecast.dates], ["Preview occupancy", `${forecast.occupancy}%`], ["Preview average rate", money(forecast.adr)], ["Preview room revenue", money(forecast.revenue)]].map(([label, value]) => <article className="card p-5" key={String(label)}><span className="text-sm text-slate-500">{label}</span><strong className="mt-2 block text-2xl">{value}</strong></article>)}</div></section>
     <section className="card p-6"><div className="flex flex-wrap items-center justify-between gap-4"><div><h2 className="text-xl font-semibold">AI pricing recommendations</h2><p className="mt-1 text-sm text-slate-500">Generate recommendations from loaded dates within the next 90 days.</p></div><button className="btn-primary" disabled={!propertyId || !!busy} onClick={() => action("/api/revenue/recommendation", { propertyId }, "generate")}>{busy === "generate" ? "Analyzing…" : "Generate 90-day recommendations"}</button></div>
       <div className="mt-6 overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-slate-500"><tr>{["Date / room", "Forecast", "Current", "Recommended", "Impact", "Decision"].map(item => <th className="px-4 py-3" key={item}>{item}</th>)}</tr></thead><tbody>{scopedRecommendations.map(row => <tr className="border-t align-top" key={row.id}><td className="px-4 py-4"><strong>{row.stay_date}</strong><small className="block text-slate-500">{row.rooms?.name || "Room type"}</small></td><td className="px-4 py-4">{row.occupancy_forecast}%</td><td className="px-4 py-4">{money(row.current_rate)}</td><td className="px-4 py-4 font-semibold">{money(row.recommended_rate)}<small className="mt-1 block max-w-64 font-normal text-slate-500">{row.reason}</small></td><td className="px-4 py-4">{money(row.estimated_revenue_impact)}</td><td className="px-4 py-4">{row.status === "pending" ? <div className="flex gap-2">{!selectedProperty?.pms_only && <button className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white" disabled={!!busy} onClick={() => action(`/api/revenue/recommendations/${row.id}`, { decision: "approve" }, row.id)}>Approve</button>}<button className="rounded-lg border px-3 py-2 text-xs font-bold" disabled={!!busy} onClick={() => action(`/api/revenue/recommendations/${row.id}`, { decision: "reject" }, row.id)}>Reject</button></div> : <span className="capitalize">{row.status}</span>}</td></tr>)}</tbody></table></div>{!scopedRecommendations.length && <p className="mt-6 text-sm text-slate-500">No recommendations yet. Upload the CSV template, then generate recommendations.</p>}
     </section>
