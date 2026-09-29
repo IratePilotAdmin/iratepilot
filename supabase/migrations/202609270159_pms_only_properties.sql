@@ -33,7 +33,7 @@ CREATE TRIGGER guard_pms_only_inventory_write
 BEFORE INSERT OR UPDATE OR DELETE ON public.inventory
 FOR EACH ROW EXECUTE FUNCTION public.guard_pms_only_inventory_write();
 
-REVOKE ALL ON FUNCTION public.guard_pms_only_inventory_write() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.guard_pms_only_inventory_write() FROM PUBLIC, anon, authenticated;
 
 CREATE FUNCTION public.guard_pms_only_room_rate_write()
 RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
@@ -51,7 +51,7 @@ CREATE TRIGGER guard_pms_only_room_rate_write
 BEFORE UPDATE OF base_rate ON public.rooms
 FOR EACH ROW EXECUTE FUNCTION public.guard_pms_only_room_rate_write();
 
-REVOKE ALL ON FUNCTION public.guard_pms_only_room_rate_write() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.guard_pms_only_room_rate_write() FROM PUBLIC, anon, authenticated;
 
 CREATE OR REPLACE FUNCTION public.review_revenue_recommendation(
   p_recommendation_id uuid, p_decision text
@@ -99,7 +99,7 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.review_revenue_recommendation(uuid,text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.review_revenue_recommendation(uuid,text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.review_revenue_recommendation(uuid,text) TO authenticated;
 
 -- A single RPC request replaces pending recommendations atomically. SECURITY
@@ -173,7 +173,7 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.replace_revenue_recommendations(uuid,jsonb) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.replace_revenue_recommendations(uuid,jsonb) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.replace_revenue_recommendations(uuid,jsonb) TO authenticated;
 
 COMMIT;
