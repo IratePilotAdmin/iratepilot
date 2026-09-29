@@ -18,7 +18,7 @@ export async function GET(request: Request, { params }: { params: Params }) {
     if (!/^[0-9a-f-]{36}$/i.test(orderId)) {
       return privateNoStoreJson({ error: "Test order not found." }, 404);
     }
-    const order = await getConsumerFlightOrder(orderId);
+    const order = await getConsumerFlightOrder(orderId, authentication);
     if (!order) return privateNoStoreJson({ error: "Test order not found." }, 404);
     return privateNoStoreJson({
       data: {

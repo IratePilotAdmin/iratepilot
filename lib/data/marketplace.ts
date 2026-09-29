@@ -2,7 +2,6 @@ import { hotels as demoHotels, type Hotel } from "@/data/hotels";
 import { fees } from "@/config/fees";
 import { memberships, type MembershipTier } from "@/config/memberships";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { getActiveMembershipTier } from "@/lib/memberships/eligibility";
 import { inventoryLimits } from "@/lib/inventory-limits";
 import { isHotelPublicationEnabled } from "@/lib/hotels/publication-gate";
@@ -44,8 +43,10 @@ export async function getMarketplaceHotels(
   }
 
   try {
-    const admin = createAdminClient();
-    const { data, error } = await admin.from("properties")
+    // Public inventory must flow through the anon/authenticated RLS policies.
+    // The service role would bypass the property-specific agreement expiry gate.
+    const supabase = await createClient();
+    const { data, error } = await supabase.from("properties")
       .select("slug,name,city,country,star_rating,description,image_url,amenities,guest_rating,review_count,partners!inner(status),rooms(id,active,base_rate,max_guests,inventory(stay_date,available_units,rate))")
       .eq("active", true)
       .eq("pms_only", false)
@@ -93,8 +94,8 @@ export async function getMarketplaceHotel(slug: string, stay: StayCriteria | nul
   const marketplace = await getMarketplaceHotels();
   if (marketplace.source === "database") {
     try {
-      const admin = createAdminClient();
-      const { data } = await admin.from("properties")
+      const supabase = await createClient();
+      const { data } = await supabase.from("properties")
         .select("partners!inner(status),rooms(id,name,active,base_rate,max_guests,inventory(stay_date,available_units,rate))")
         .eq("slug", slug).eq("active", true).eq("pms_only", false).eq("partners.status", "approved").eq("rooms.active", true).single();
       const roomRows = (data?.rooms || []) as Array<SearchableRoom & { id: string; name: string }>;

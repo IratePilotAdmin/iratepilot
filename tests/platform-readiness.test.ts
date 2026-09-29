@@ -6,11 +6,11 @@ const route = readFileSync(new URL("../app/api/admin/settings/route.ts", import.
 const page = readFileSync(new URL("../app/admin/settings/page.tsx", import.meta.url), "utf8");
 const component = readFileSync(new URL("../components/dashboard/admin-settings.tsx", import.meta.url), "utf8");
 const aiUsageGrant = readFileSync(new URL(
-  "../supabase/hotel-migrations/202609180146_ai_travel_admin_usage_read.sql",
+  "../supabase/migrations/202609180146_ai_travel_admin_usage_read.sql",
   import.meta.url,
 ), "utf8");
 const aiUsageGrantRollback = readFileSync(new URL(
-  "../supabase/hotel-rollbacks/202609180146_ai_travel_admin_usage_read.rollback.sql",
+  "../supabase/rollbacks/202609180146_ai_travel_admin_usage_read.rollback.sql",
   import.meta.url,
 ), "utf8");
 

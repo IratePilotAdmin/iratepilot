@@ -183,6 +183,10 @@ async function authenticatedClient() {
   return user ? { supabase, user } : null;
 }
 
+type ConsumerFlightAuthenticatedClient = NonNullable<
+  Awaited<ReturnType<typeof authenticatedClient>>
+>;
+
 async function readSegments(
   supabase: Awaited<ReturnType<typeof createClient>>,
   offerIds: readonly string[],
@@ -367,10 +371,13 @@ async function loadOrder(
   });
 }
 
-export async function getConsumerFlightOrder(orderId: string): Promise<ConsumerFlightOrderDto | null> {
+export async function getConsumerFlightOrder(
+  orderId: string,
+  requestAuthentication?: ConsumerFlightAuthenticatedClient,
+): Promise<ConsumerFlightOrderDto | null> {
   if (!uuidPattern.test(orderId)) return null;
   const runtime = await requireFlightConsumerPreviewRequestRuntime();
-  const authenticated = await authenticatedClient();
+  const authenticated = requestAuthentication ?? await authenticatedClient();
   return authenticated ? loadOrder(orderId, authenticated, runtime.binding.executionScopeSha256) : null;
 }
 

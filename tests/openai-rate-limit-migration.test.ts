@@ -2,11 +2,11 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const migration = readFileSync(
-  new URL("../supabase/hotel-migrations/202609180145_ai_travel_request_limits.sql", import.meta.url),
+  new URL("../supabase/migrations/202609180145_ai_travel_request_limits.sql", import.meta.url),
   "utf8",
 );
 const rollback = readFileSync(
-  new URL("../supabase/hotel-rollbacks/202609180145_ai_travel_request_limits.rollback.sql", import.meta.url),
+  new URL("../supabase/rollbacks/202609180145_ai_travel_request_limits.rollback.sql", import.meta.url),
   "utf8",
 );
 

@@ -34,6 +34,8 @@ export const PINNED_NON_FLIGHT_MIGRATIONS = Object.freeze([
   ["202609070141", "202609070141_iratepilot_pms_delivery_control.sql"],
   ["202609070157", "202609070157_iratepilot_pms_scoped_source_claim.sql"],
   ["202609070158", "202609070158_iratepilot_pms_scoped_source_claim_identity.sql"],
+  ["202609180145", "202609180145_ai_travel_request_limits.sql"],
+  ["202609180146", "202609180146_ai_travel_admin_usage_read.sql"],
   ["202609180159", "202609180159_hotel_payment_launch_authorization.sql"],
   ["202609200160", "202609200160_live_payment_authorization_runtime_gate.sql"],
   ["202609270159", "202609270159_pms_only_properties.sql"],

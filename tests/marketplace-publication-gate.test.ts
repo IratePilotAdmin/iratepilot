@@ -1,14 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ createAdminClient: vi.fn(), launchAuthorized: vi.fn() }));
+const mocks = vi.hoisted(() => ({ createClient: vi.fn(), launchAuthorized: vi.fn() }));
 
 vi.mock("@/data/hotels", () => ({ hotels: [{ city: "Miami", country: "US", name: "Demo Hotel" }] }));
 vi.mock("@/config/fees", () => ({ fees: { serviceFeeRate: 0.03 } }));
 vi.mock("@/config/memberships", () => ({ memberships: {} }));
-vi.mock("@/lib/supabase/admin", () => ({
-  createAdminClient: mocks.createAdminClient,
-}));
-vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn() }));
+vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.createClient }));
 vi.mock("@/lib/memberships/eligibility", () => ({ getActiveMembershipTier: vi.fn() }));
 vi.mock("@/lib/inventory-limits", () => ({
   inventoryLimits: { minGuests: 1, maxGuests: 20, minNightlyRate: 25, maxNightlyRate: 25_000 },
@@ -41,7 +38,7 @@ describe("public marketplace publication gate", () => {
 
     expect(result.source).toBe("demo");
     expect(result.hotels).toEqual([]);
-    expect(mocks.createAdminClient).not.toHaveBeenCalled();
+    expect(mocks.createClient).not.toHaveBeenCalled();
   });
 
   it("never reads production hotel records when the flag is on but launch evidence is incomplete", async () => {
@@ -50,6 +47,6 @@ describe("public marketplace publication gate", () => {
 
     expect(result.source).toBe("demo");
     expect(mocks.launchAuthorized).toHaveBeenCalledOnce();
-    expect(mocks.createAdminClient).not.toHaveBeenCalled();
+    expect(mocks.createClient).not.toHaveBeenCalled();
   });
 });
