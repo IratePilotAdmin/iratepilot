@@ -24,6 +24,11 @@ export const SHARED_HOTEL_MIGRATION = Object.freeze({
 export const PINNED_NON_FLIGHT_MIGRATIONS = Object.freeze([
   ["202608220062", "202608220062_hotel_partner_fee_schema.sql"],
   ["202608220063", "202608220063_activate_hotel_partner_fee_schedule.sql"],
+  ["202608220070", "202608220070_hotel_commercial_intake_readiness.sql"],
+  ["202608220071", "202608220071_direct_hotel_request_foundation.sql"],
+  ["202608220072", "202608220072_ai_hotel_planner_user_quota.sql"],
+  ["202608220073", "202608220073_legacy_hotel_transaction_barrier.sql"],
+  ["202608220074", "202608220074_email_delivery_integrity_controls.sql"],
   ["202609070139", "202609070139_iratepilot_pms_transactional_outbox.sql"],
   ["202609070140", "202609070140_iratepilot_pms_baseline_activation.sql"],
   ["202609070141", "202609070141_iratepilot_pms_delivery_control.sql"],

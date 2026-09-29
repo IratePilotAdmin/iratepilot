@@ -2,6 +2,7 @@
 // schema standing in for the Supabase-managed auth objects. This catches SQL
 // ordering errors; a real Supabase Preview replay is still required.
 import { PGlite } from '@electric-sql/pglite';
+import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto';
 import { readFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -22,12 +23,19 @@ for (const required of ['202607260000', '202608220062', '202608220063']) {
   if (!versions.includes(required)) throw new Error(`Missing recovery source ${required}`);
 }
 
-const db = new PGlite();
+const db = new PGlite({ extensions: { pgcrypto } });
 try {
   await db.exec(`
+    create schema extensions;
+    create extension pgcrypto with schema extensions;
     create schema auth;
     create role authenticated; create role anon; create role service_role;
-    create table auth.users(id uuid primary key, email text, raw_user_meta_data jsonb);
+    create table auth.users(
+      id uuid primary key,
+      email text,
+      email_confirmed_at timestamptz,
+      raw_user_meta_data jsonb
+    );
     create function auth.uid() returns uuid language sql stable as $$select null::uuid$$;
     create function auth.role() returns text language sql stable as $$select 'authenticated'::text$$;
     create function auth.jwt() returns jsonb language sql stable as $$select '{}'::jsonb$$;
