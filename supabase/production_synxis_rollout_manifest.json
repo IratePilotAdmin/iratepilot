@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "executionState": "migrations_001_061_applied_application_deployment_pending_manager_acceptance_incomplete_synxis_traffic_disabled",
+  "executionState": "migrations_through_159_applied_application_deployment_pending_manager_acceptance_incomplete_synxis_traffic_disabled",
   "historyRepairCandidates": [
     "202607260000",
     "202607260001",
@@ -83,13 +83,12 @@
     "202609070140",
     "202609070141",
     "202609070157",
-    "202609070158"
-  ],
-  "pendingDeploymentVersions": [
+    "202609070158",
     "202609270159"
   ],
+  "pendingDeploymentVersions": [],
   "requiredWriteGates": [
-    "separate production approval and migration-ledger verification before applying PMS-only migration 202609270159 or deploying its application changes",
+    "separate production approval to merge PR #309 and deploy the PMS-only Revenue AI application changes after verified migration 202609270159",
     "separate production approval to merge PR #279 and deploy the corresponding application before any manager invitation or manager activation",
     "separate approval to send and accept a verified manager invitation and activate hotel-manager access after the application deployment is verified",
     "separate Sabre certification approval before any certification traffic",
