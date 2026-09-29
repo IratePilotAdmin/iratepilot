@@ -12,26 +12,68 @@ export type RevenueCsvRow = {
 
 const requiredHeaders = ["property_id", "room_id", "stay_date", "rooms_available", "rooms_sold", "current_rate"];
 
+function csvRecords(csv: string): string[][] {
+  const records: string[][] = [];
+  let record: string[] = [];
+  let field = "";
+  let quoted = false;
+  let closed = false;
+  for (let index = 0; index < csv.length; index++) {
+    const character = csv[index];
+    if (quoted) {
+      if (character === '"' && csv[index + 1] === '"') { field += '"'; index++; }
+      else if (character === '"') { quoted = false; closed = true; }
+      else field += character;
+    } else if (character === '"' && field === "" && !closed) {
+      quoted = true;
+    } else if (character === "," || character === "\n" || character === "\r") {
+      record.push(field.trim()); field = ""; closed = false;
+      if (character !== ",") {
+        if (record.some(value => value !== "")) records.push(record);
+        record = [];
+        if (character === "\r" && csv[index + 1] === "\n") index++;
+      }
+    } else {
+      if (closed || character === '"') throw new Error(`Malformed CSV near row ${records.length + 1}.`);
+      field += character;
+    }
+  }
+  if (quoted) throw new Error("CSV has an unclosed quoted field.");
+  record.push(field.trim());
+  if (record.some(value => value !== "")) records.push(record);
+  return records;
+}
+
 export function parseRevenueCsv(csv: string): RevenueCsvRow[] {
-  const lines = csv.replace(/^\uFEFF/, "").split(/\r?\n/).filter(line => line.trim());
-  if (lines.length < 2) throw new Error("CSV must include a header and at least one data row.");
-  const headers = lines[0].split(",").map(value => value.trim().toLowerCase());
+  const records = csvRecords(csv.replace(/^\uFEFF/, ""));
+  if (records.length < 2) throw new Error("CSV must include a header and at least one data row.");
+  const headers = records[0].map(value => value.toLowerCase());
   if (requiredHeaders.some(header => !headers.includes(header))) throw new Error(`Required columns: ${requiredHeaders.join(", ")}.`);
-  if (lines.length > 5001) throw new Error("A single upload can contain no more than 5,000 rows.");
-  return lines.slice(1).map((line, index) => {
-    const values = line.split(",").map(value => value.trim());
+  if (new Set(headers).size !== headers.length) throw new Error("CSV columns must be unique.");
+  if (records.length > 5001) throw new Error("A single upload can contain no more than 5,000 rows.");
+  const seen = new Set<string>();
+  return records.slice(1).map((values, index) => {
+    if (values.length !== headers.length) throw new Error(`Row ${index + 2} has the wrong number of columns.`);
     const value = (key: string) => values[headers.indexOf(key)] || "";
     const number = (key: string) => Number(value(key));
     const nullableNumber = (key: string) => value(key) === "" ? null : Number(value(key));
+    if (["rooms_available", "rooms_sold", "current_rate"].some(key => value(key) === "")) {
+      throw new Error(`Row ${index + 2} is missing a required room or rate value.`);
+    }
     const row: RevenueCsvRow = {
       property_id: value("property_id"), room_id: value("room_id"), stay_date: value("stay_date"),
       rooms_available: number("rooms_available"), rooms_sold: number("rooms_sold"), current_rate: number("current_rate"),
       competitor_rate: nullableNumber("competitor_rate"), last_year_occupancy: nullableNumber("last_year_occupancy"),
       event_name: value("event_name") || null
     };
-    if (!row.property_id || !row.room_id || !/^\d{4}-\d{2}-\d{2}$/.test(row.stay_date)) throw new Error(`Row ${index + 2} has invalid IDs or date.`);
-    if ([row.rooms_available, row.rooms_sold, row.current_rate].some(item => !Number.isFinite(item) || item < 0) || row.rooms_sold > row.rooms_available) throw new Error(`Row ${index + 2} has invalid room or rate values.`);
-    if (row.last_year_occupancy !== null && (row.last_year_occupancy < 0 || row.last_year_occupancy > 100)) throw new Error(`Row ${index + 2} has invalid occupancy.`);
+    const date = new Date(`${row.stay_date}T00:00:00Z`);
+    if (!row.property_id || !row.room_id || !/^\d{4}-\d{2}-\d{2}$/.test(row.stay_date) || Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== row.stay_date) throw new Error(`Row ${index + 2} has invalid IDs or date.`);
+    if ([row.rooms_available, row.rooms_sold, row.current_rate].some(item => !Number.isFinite(item) || item < 0) || !Number.isInteger(row.rooms_available) || !Number.isInteger(row.rooms_sold) || row.rooms_sold > row.rooms_available || row.current_rate <= 0) throw new Error(`Row ${index + 2} has invalid room or rate values.`);
+    if (row.competitor_rate !== null && (!Number.isFinite(row.competitor_rate) || row.competitor_rate <= 0)) throw new Error(`Row ${index + 2} has invalid competitor rate.`);
+    if (row.last_year_occupancy !== null && (!Number.isFinite(row.last_year_occupancy) || row.last_year_occupancy < 0 || row.last_year_occupancy > 100)) throw new Error(`Row ${index + 2} has invalid occupancy.`);
+    const key = `${row.room_id}\u0000${row.stay_date}`;
+    if (seen.has(key)) throw new Error(`Row ${index + 2} duplicates a room and date.`);
+    seen.add(key);
     return row;
   });
 }

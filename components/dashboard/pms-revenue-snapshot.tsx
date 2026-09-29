@@ -1,0 +1,114 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+type Snapshot = {
+  property: { id: string; name: string };
+  from: string;
+  through: string;
+  rooms: Array<{ id: string; name: string; base_rate: number | string }>;
+  inventory: Array<{ room_id: string; stay_date: string; available_units: number; rate: number | string }>;
+  reconciliation: {
+    status: "no_revenue_inputs" | "differences" | "indicative_match";
+    inventoryRows: number; revenueRows: number; matchedDates: number;
+    missingInventoryDates: number; missingImportedDates: number;
+    rateDifferences: number; indicativeAvailabilityDifferences: number;
+    inputSources: string[];
+    examples: Array<{ roomId: string; stayDate: string; issue: string }>;
+  };
+  source: "iratepilot_ota_inventory";
+  pmsSourceVerified: false;
+  readOnly: true;
+  schemaVersion: 2;
+  generatedAt: string;
+};
+
+const money = (value: number | string) => new Intl.NumberFormat("en-US", {
+  style: "currency", currency: "USD",
+}).format(Number(value));
+
+async function loadSnapshot(propertyId: string, signal?: AbortSignal): Promise<Snapshot> {
+  const response = await fetch(`/api/revenue/pms-snapshot?propertyId=${encodeURIComponent(propertyId)}`, { signal, cache: "no-store" });
+  const body = await response.json();
+  if (!response.ok) throw new Error(body.error || "OTA inventory could not be loaded.");
+  return body as Snapshot;
+}
+
+export function PmsRevenueSnapshot({ propertyId }: { propertyId: string }) {
+  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    if (!propertyId) return;
+    setLoading(true);
+    setError("");
+    try {
+      setSnapshot(await loadSnapshot(propertyId));
+    } catch (cause) {
+      setSnapshot(null);
+      setError(cause instanceof Error ? cause.message : "OTA inventory could not be loaded.");
+    } finally {
+      setLoading(false);
+    }
+  }, [propertyId]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    if (propertyId) {
+      void loadSnapshot(propertyId, controller.signal).then(
+        (result) => { if (!controller.signal.aborted) { setSnapshot(result); setLoading(false); } },
+        (cause) => { if (!controller.signal.aborted) { setError(cause instanceof Error ? cause.message : "OTA inventory could not be loaded."); setLoading(false); } },
+      );
+    }
+    return () => controller.abort();
+  }, [propertyId]);
+
+  const activeSnapshot = snapshot?.property.id === propertyId ? snapshot : null;
+  const roomNames = useMemo(() => new Map(activeSnapshot?.rooms.map((room) => [room.id, room.name]) ?? []), [activeSnapshot]);
+  const shown = activeSnapshot?.inventory.slice(0, 30) ?? [];
+
+  const downloadSnapshot = () => {
+    if (!activeSnapshot) return;
+    const url = URL.createObjectURL(new Blob([JSON.stringify(activeSnapshot)], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `iratepilot-ota-inventory-${activeSnapshot.property.id}-${activeSnapshot.from}.json`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+  };
+
+  return <section className="card p-6">
+    <div className="flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h2 className="text-xl font-semibold">iRatePilot OTA inventory</h2>
+        <p className="mt-1 text-sm text-slate-600">Read-only OTA room rates and remaining availability for the next 90 days. PMS origin and sync are unverified.</p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <button className="btn-secondary" type="button" disabled={!propertyId || loading} onClick={() => void refresh()}>
+          {loading ? "Loading…" : "Refresh OTA inventory"}
+        </button>
+        <button className="btn-secondary" type="button" disabled={!activeSnapshot} onClick={downloadSnapshot}>
+          Download read-only snapshot
+        </button>
+      </div>
+    </div>
+    {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
+    {activeSnapshot && <>
+      <p className="mt-4 text-sm text-slate-600">{activeSnapshot.property.name}: {activeSnapshot.rooms.length} active room types and {activeSnapshot.inventory.length} dated rates loaded. Snapshot generated {new Date(activeSnapshot.generatedAt).toLocaleString()}. Showing the first {shown.length} rows.</p>
+      <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950" aria-label="Read-only revenue reconciliation">
+        <strong>Read-only data comparison · {activeSnapshot.reconciliation.status === "no_revenue_inputs" ? "No revenue inputs" : activeSnapshot.reconciliation.status === "indicative_match" ? "Indicative match" : "Differences found"}</strong>
+        <p className="mt-2">OTA inventory: {activeSnapshot.reconciliation.inventoryRows} dated rows. Revenue inputs: {activeSnapshot.reconciliation.revenueRows} rows ({activeSnapshot.reconciliation.inputSources.join(", ") || "none"}). Matched room dates: {activeSnapshot.reconciliation.matchedDates}.</p>
+        <p className="mt-1">Missing from OTA inventory: {activeSnapshot.reconciliation.missingInventoryDates}; missing from revenue inputs: {activeSnapshot.reconciliation.missingImportedDates}; rate differences: {activeSnapshot.reconciliation.rateDifferences}; estimated remaining-room differences: {activeSnapshot.reconciliation.indicativeAvailabilityDifferences}.</p>
+        <p className="mt-2">OTA remaining availability can include holds, blocks, and other adjustments. This comparison does not verify occupancy, authorize rate publishing, or establish a live PMS feed.</p>
+        {activeSnapshot.reconciliation.examples.length > 0 && <ul className="mt-3 list-disc pl-5">{activeSnapshot.reconciliation.examples.slice(0, 5).map((item, index) => <li key={`${item.roomId}:${item.stayDate}:${index}`}>{roomNames.get(item.roomId) || "Room type"} · {item.stayDate}: {item.issue}</li>)}</ul>}
+      </div>
+      <div className="mt-4 overflow-x-auto"><table className="w-full text-left text-sm">
+        <thead className="bg-slate-50 text-slate-600"><tr><th className="px-4 py-3">Stay date</th><th className="px-4 py-3">Room type</th><th className="px-4 py-3">Remaining units</th><th className="px-4 py-3">Current rate</th></tr></thead>
+        <tbody>{shown.map((row) => <tr className="border-t" key={`${row.room_id}:${row.stay_date}`}><td className="px-4 py-3">{row.stay_date}</td><td className="px-4 py-3">{roomNames.get(row.room_id) || "Room type"}</td><td className="px-4 py-3">{row.available_units}</td><td className="px-4 py-3">{money(row.rate)}</td></tr>)}</tbody>
+      </table></div>
+      {!activeSnapshot.inventory.length && <p className="mt-4 text-sm text-slate-600">No dated OTA inventory is loaded for this property.</p>}
+      <p className="mt-4 text-sm text-slate-600">This export contains OTA inventory, without guest records or API tokens. Its source field identifies the OTA; it must not be imported as a verified PMS snapshot. Remaining availability is not total capacity or occupancy. This view never updates a PMS rate.</p>
+    </>}
+  </section>;
+}

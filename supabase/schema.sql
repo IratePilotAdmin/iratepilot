@@ -119,6 +119,7 @@ create table properties (
   latitude numeric,
   longitude numeric,
   active boolean not null default false,
+  pms_only boolean not null default false constraint properties_pms_only_inactive check (not pms_only or not active),
   created_at timestamptz not null default now()
 );
 
@@ -2326,6 +2327,9 @@ begin
   if not v_authorized then raise exception 'Not authorized'; end if;
   if v_recommendation.status <> 'pending' then raise exception 'Recommendation already reviewed'; end if;
   if p_decision not in ('approve','reject') then raise exception 'Invalid decision'; end if;
+  if p_decision = 'approve' and exists (
+    select 1 from properties where id = v_recommendation.property_id and pms_only
+  ) then raise exception 'PMS-only properties require read-only revenue review'; end if;
   v_status := case when p_decision = 'approve' then 'approved' else 'rejected' end;
   if v_status = 'approved' then
     update inventory set rate = v_recommendation.recommended_rate

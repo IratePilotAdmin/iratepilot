@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/auth/require-role";
 import { resolvePartnerHotelAccess, type PartnerHotelAccessResult } from "@/lib/partner/hotel-access";
 import { inventorySchema, roomSchema, roomUpdateSchema } from "@/lib/validation";
 import { getInventoryDateRangeError, getUpcomingInventory } from "@/lib/inventory-dates";
+import { isPmsOnlyRoom } from "@/lib/pms-only-room";
 
 const hotelAccessError = (resolved: PartnerHotelAccessResult) => NextResponse.json({
   error: resolved.migrationRequired
@@ -102,12 +103,15 @@ export async function POST(request: Request) {
       const parsed = roomUpdateSchema.safeParse(body);
       if (!parsed.success) return NextResponse.json({ error: "Check the room name, guests, base rate, and status." }, { status: 400 });
       let roomQuery = auth.supabase.from("rooms")
-        .select("id,properties!inner(partner_id)")
+        .select("id,base_rate,properties!inner(partner_id,pms_only)")
         .eq("id", parsed.data.roomId);
       if (partnerId) roomQuery = roomQuery.eq("properties.partner_id", partnerId);
       const { data: room, error: roomError } = await roomQuery.maybeSingle();
       if (roomError) throw roomError;
       if (!room) return NextResponse.json({ error: "Room type not found." }, { status: 404 });
+      if (isPmsOnlyRoom(room.properties) && Number(room.base_rate) !== parsed.data.baseRate) {
+        return NextResponse.json({ error: "PMS-only room rates are read-only in the rate editor." }, { status: 409 });
+      }
       const result = await auth.supabase.from("rooms").update({
         name: parsed.data.name,
         max_guests: parsed.data.maxGuests,
@@ -130,10 +134,13 @@ export async function POST(request: Request) {
     if (body.action === "set_inventory") {
       const parsed = inventorySchema.safeParse(body);
       if (!parsed.success) return NextResponse.json({ error: "Check the date range, units, and nightly rate." }, { status: 400 });
-      let roomQuery = auth.supabase.from("rooms").select("id,properties!inner(partner_id)").eq("id", parsed.data.roomId);
+      let roomQuery = auth.supabase.from("rooms").select("id,properties!inner(partner_id,pms_only)").eq("id", parsed.data.roomId);
       if (partnerId) roomQuery = roomQuery.eq("properties.partner_id", partnerId);
       const { data: room } = await roomQuery.maybeSingle();
       if (!room) return NextResponse.json({ error: "Room type not found." }, { status: 404 });
+      if (isPmsOnlyRoom(room.properties)) {
+        return NextResponse.json({ error: "PMS-only inventory is read-only in the rate editor." }, { status: 409 });
+      }
       const start = parseISO(parsed.data.startDate);
       const end = parseISO(parsed.data.endDate);
       const dateError = getInventoryDateRangeError(parsed.data.startDate, parsed.data.endDate);

@@ -197,7 +197,9 @@ describe("hotel publication release gate", () => {
     };
     const from = vi.fn()
       .mockImplementationOnce(() => ({
-        select: vi.fn(() => ({ order: vi.fn(async () => ({ data: [property], error: null })) })),
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({ order: vi.fn(async () => ({ data: [property], error: null })) })),
+        })),
       }))
       .mockImplementationOnce(() => ({
         select: vi.fn(() => ({ in: vi.fn(async () => ({ data: null, error: { message: "missing columns" } })) })),

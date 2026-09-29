@@ -2,7 +2,6 @@ import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { APPROVED_PREVIEW_PENDING } from "./reconcile-preview-migrations.mjs";
 
 export const PREVIEW_PROJECT_REF = "eiqmdldjnedqgbtoozqa";
 export const PRODUCTION_PROJECT_REF = "allliumarkejinplrggl";
@@ -14,10 +13,26 @@ export const APPLY_CONFIRMATION_FLAG =
 export const SHARED_HOTEL_MIGRATION = Object.freeze({
   version: "202608250082",
   filename: "202608250082_hotel_commercial_agreement_evidence.sql",
-  sha256: "acbbc2ab50a1eada1ae99204a0b85dd7479de0605d636a51393fd7ab759af912",
+  sha256: "4fe136aa2e0d40af34490285d4c0f1706c898b8bf2402ae940a1bf9601a227a7",
   rollbackFilename: "202608250082_hotel_commercial_agreement_evidence.rollback.sql",
-  rollbackSha256: "7150387ee5f5d3e7f741ab04169d03de25a40ea479c7811bf614b170478492de",
+  rollbackSha256: "c069f9ac7d07f451182a5e48eedae44779afeba9b242f962beac91f8a7dda136",
 });
+
+// These files are governed by the hotel/PMS release lines. The exact registry
+// lets those release lines share the migration directory without weakening the
+// flight lineage allowlist.
+export const PINNED_NON_FLIGHT_MIGRATIONS = Object.freeze([
+  ["202608220062", "202608220062_hotel_partner_fee_schema.sql"],
+  ["202608220063", "202608220063_activate_hotel_partner_fee_schedule.sql"],
+  ["202609070139", "202609070139_iratepilot_pms_transactional_outbox.sql"],
+  ["202609070140", "202609070140_iratepilot_pms_baseline_activation.sql"],
+  ["202609070141", "202609070141_iratepilot_pms_delivery_control.sql"],
+  ["202609070157", "202609070157_iratepilot_pms_scoped_source_claim.sql"],
+  ["202609070158", "202609070158_iratepilot_pms_scoped_source_claim_identity.sql"],
+  ["202609180159", "202609180159_hotel_payment_launch_authorization.sql"],
+  ["202609200160", "202609200160_live_payment_authorization_runtime_gate.sql"],
+  ["202609270159", "202609270159_pms_only_properties.sql"],
+].map(([version, filename]) => Object.freeze({ version, filename })));
 
 export const RETIRED_FLIGHT_MIGRATION_VERSIONS = Object.freeze([
   "202608250081", "202608250082", "202608250083", "202608250084",
@@ -326,12 +341,12 @@ export function assertPinnedFlightMigrations({
     throw new Error("Required repository migration 067 is missing.");
   }
 
-  const approvedNonFlightVersions = new Set(
-    APPROVED_PREVIEW_PENDING.filter((version) => version > "202608260138"),
+  const approvedNonFlightRows = new Set(
+    PINNED_NON_FLIGHT_MIGRATIONS.map(({ version, filename }) => `${version}:${filename}`),
   );
   const postBaseline = repositoryMigrations
     .slice(baselineTipIndex + 1)
-    .filter(({ version }) => !approvedNonFlightVersions.has(version));
+    .filter(({ version, filename }) => !approvedNonFlightRows.has(`${version}:${filename}`));
   const retiredSet = new Set(RETIRED_FLIGHT_MIGRATION_VERSIONS);
   const sharedHotelRows = postBaseline.filter(
     ({ version, filename }) => version === SHARED_HOTEL_MIGRATION.version
@@ -356,7 +371,7 @@ export function assertPinnedFlightMigrations({
   ));
   if (JSON.stringify(postBaseline) !== JSON.stringify(expectedPostBaseline)) {
     throw new Error(
-      "Only pinned flight migrations 068 through 080 and 120 through 138, plus the externally owned hotel 082 file when present, may follow migration 067.",
+      "Only pinned flight migrations, the external hotel 082 predecessor, and explicitly registered hotel/PMS migrations may follow migration 067.",
     );
   }
 
@@ -410,10 +425,12 @@ export function assertPinnedFlightMigrations({
     throw new Error("The canonical flight migration block 120 through 138 is incomplete.");
   }
 
+  const nonFlightVersions = new Set(PINNED_NON_FLIGHT_MIGRATIONS.map(({ version }) => version));
   return {
     migrations: repositoryMigrations,
     baselineVersions: repositoryMigrations
       .slice(0, remoteBaselineTipIndex + 1)
+      .filter(({ version }) => !nonFlightVersions.has(version))
       .map(({ version }) => version),
     flightVersions: canonicalMigrations.map(({ version }) => version),
     sharedHotelMigrationPresent: sharedHotelRows.length === 1,
@@ -586,11 +603,8 @@ export function assertPreviewLedger(output, pinnedPlan) {
       "The Preview remote ledger is missing the already-applied external hotel migration 082 predecessor.",
     );
   }
-  const flightRemote = actualRemote.filter(
-    (version) => !(
-      version > "202608260138" && APPROVED_PREVIEW_PENDING.includes(version)
-    ),
-  );
+  const nonFlightVersions = new Set(PINNED_NON_FLIGHT_MIGRATIONS.map(({ version }) => version));
+  const flightRemote = actualRemote.filter((version) => !nonFlightVersions.has(version));
   const prefixLength = Array.from(
     { length: pinnedPlan.flightVersions.length + 1 },
     (_, length) => length,

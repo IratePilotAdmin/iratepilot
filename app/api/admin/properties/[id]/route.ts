@@ -28,10 +28,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         }, { status: 409 });
       }
       const { data: property, error: propertyError } = await auth.supabase.from("properties")
-        .select("image_url,amenities,partners!inner(status),rooms(active,base_rate,max_guests,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount))")
+        .select("pms_only,image_url,amenities,partners!inner(status),rooms(active,base_rate,max_guests,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount))")
         .eq("id", id).maybeSingle();
       if (propertyError) throw propertyError;
       if (!property) return NextResponse.json({ error: "Property not found." }, { status: 404 });
+      if (property.pms_only) return NextResponse.json({ error: "PMS-only properties cannot be published in the OTA." }, { status: 409 });
       const partner = property.partners as unknown as { status: string };
       if (partner.status !== "approved") {
         return NextResponse.json({

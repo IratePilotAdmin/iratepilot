@@ -54,7 +54,7 @@ describe("partner room management", () => {
       route.indexOf('body.action === "update_room"'),
       route.indexOf('body.action === "set_inventory"'),
     );
-    expect(updateBlock).toContain('select("id,properties!inner(partner_id)")');
+    expect(updateBlock).toContain('select("id,base_rate,properties!inner(partner_id,pms_only)")');
     expect(updateBlock).toContain('.eq("properties.partner_id", partnerId)');
     expect(updateBlock.indexOf("maybeSingle()"))
       .toBeLessThan(updateBlock.indexOf('.from("rooms").update'));

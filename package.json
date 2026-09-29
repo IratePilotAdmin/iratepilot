@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "check": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "migration:replay": "node scripts/replay-migrations.mjs",
+    "check": "npm run lint && npm run typecheck && npm run migration:replay && npm run test && npm run build",
     "commercial:sandbox-preflight": "node scripts/commercial-sandbox-preflight.mjs",
     "preview:migrations": "node scripts/reconcile-preview-migrations.mjs"
   },
@@ -31,11 +32,13 @@
     "react-dom": "^19.2.3",
     "react-hook-form": "^7.53.2",
     "resend": "^6.18.1",
+    "server-only": "0.0.1",
     "stripe": "^22.4.0",
     "tailwind-merge": "^2.5.4",
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",

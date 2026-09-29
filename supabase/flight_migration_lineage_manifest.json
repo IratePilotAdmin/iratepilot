@@ -113,8 +113,8 @@
   "sharedHotelOwnership": {
     "version": "202608250082",
     "filename": "202608250082_hotel_commercial_agreement_evidence.sql",
-    "forwardSha256": "acbbc2ab50a1eada1ae99204a0b85dd7479de0605d636a51393fd7ab759af912",
-    "rollbackSha256": "7150387ee5f5d3e7f741ab04169d03de25a40ea479c7811bf614b170478492de",
+    "forwardSha256": "4fe136aa2e0d40af34490285d4c0f1706c898b8bf2402ae940a1bf9601a227a7",
+    "rollbackSha256": "c069f9ac7d07f451182a5e48eedae44779afeba9b242f962beac91f8a7dda136",
     "status": "published_deferred_unapplied",
     "requiredAsAppliedExternalPredecessorBeforeFlightApply": true,
     "flightGateApplyAuthority": "never_authorized"

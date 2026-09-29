@@ -13,6 +13,7 @@ import {
   parseInvocationMode,
   CANONICAL_FLIGHT_MIGRATION_VERSIONS,
   PINNED_FLIGHT_MIGRATIONS,
+  PINNED_NON_FLIGHT_MIGRATIONS,
   PREVIEW_PROJECT_REF,
   PRODUCTION_PROJECT_REF,
   REQUIRED_REMOTE_FLIGHT_BASELINE_TIP,
@@ -20,7 +21,6 @@ import {
   SHARED_HOTEL_MIGRATION,
 // @ts-expect-error -- The production gate is an executable .mjs module without a declaration file.
 } from "../scripts/apply-flight-preview-migrations.mjs";
-import { APPROVED_PREVIEW_PENDING } from "../scripts/reconcile-preview-migrations.mjs";
 
 const previewPassword = "preview-password-never-log";
 const previewUrl =
@@ -37,7 +37,7 @@ const repositoryVersions: string[] = pinnedPlan.migrations.map(
   ({ version }: { version: string }) => version,
 );
 const approvedPostFlightVersions = new Set(
-  APPROVED_PREVIEW_PENDING.filter((version) => version > "202608260138"),
+  PINNED_NON_FLIGHT_MIGRATIONS.map(({ version }: { version: string }) => version),
 );
 const flightRepositoryVersions = repositoryVersions.filter(
   (version) => !approvedPostFlightVersions.has(version),
@@ -1466,9 +1466,9 @@ describe("flight Preview migration gate", () => {
 
   it("requires the exact pinned local hotel 082 predecessor for apply readiness", () => {
     expect(SHARED_HOTEL_MIGRATION).toMatchObject({
-      sha256: "acbbc2ab50a1eada1ae99204a0b85dd7479de0605d636a51393fd7ab759af912",
+      sha256: "4fe136aa2e0d40af34490285d4c0f1706c898b8bf2402ae940a1bf9601a227a7",
       rollbackSha256:
-        "7150387ee5f5d3e7f741ab04169d03de25a40ea479c7811bf614b170478492de",
+        "c069f9ac7d07f451182a5e48eedae44779afeba9b242f962beac91f8a7dda136",
     });
     const repositoryMigrations = listRepositoryMigrations();
     const hotelMigration = readFileSync(

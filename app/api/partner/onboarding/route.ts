@@ -66,6 +66,7 @@ export async function GET(request: Request) {
     const { data: properties, error: propertyError } = await reader.from("properties")
       .select("id,name,active,image_url,amenities,rooms(active,base_rate,max_guests,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount))")
       .eq("partner_id", partner.id)
+      .eq("pms_only", false)
       .order("created_at", { ascending: true });
     if (propertyError) throw propertyError;
     const prepared = (properties || []).map((property) => ({

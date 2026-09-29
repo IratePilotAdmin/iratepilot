@@ -77,7 +77,8 @@ describe("Automation Operations Center Phase 4", () => {
     expect(cronRoute).toContain('rpc("run_automation_policy_scan"');
     expect(envExample).toContain("AUTOMATION_POLICY_SCANNER_ENABLED=false");
     expect(vercel.crons).toContainEqual({ path: "/api/cron/automation-policy-scan", schedule: "15 8 * * *" });
-    expect(vercel.crons).toHaveLength(2);
+    expect(vercel.crons).toContainEqual({ path: "/api/cron/pms-outbox", schedule: "30 8 * * *" });
+    expect(new Set(vercel.crons.map(({ path }: { path: string }) => path)).size).toBe(vercel.crons.length);
   });
 
   it("keeps acknowledgment admin-owned and degrades safely before migration 066", () => {

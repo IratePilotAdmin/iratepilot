@@ -29,6 +29,7 @@ export const adminNavigation = [
   { href: "/admin/operations", label: "Operations" },
   { href: "/admin/flights", label: "Flights" },
   { href: "/admin/cars", label: "Car rentals" },
+  { href: "/admin/revenue-test", label: "Private Revenue AI test" },
   { href: "/admin/properties", label: "Properties" },
   { href: "/admin/agreements", label: "Hotel agreements" },
   { href: "/admin/content", label: "Content quality" },
