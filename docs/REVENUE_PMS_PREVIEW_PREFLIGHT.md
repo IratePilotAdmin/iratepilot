@@ -97,6 +97,32 @@ inactive. A 2026-09-28 read-only check found no matching
 outbox event's result code is `reservation-staged`. Verify the source identity,
 an actual PMS delivery receipt, and current PMS credentials before the live gate.
 
+## Fresh hosted replay and isolated guard validation (2026-09-28)
+
+After explicit confirmation of the Supabase branch price ($0.01344/hour), a
+disposable branch `revenue-history-replay-20260928` was created from main with
+no production data. It reached `FUNCTIONS_DEPLOYED` and contained all 80
+production versions from `202607260000` through `202609070158`, with no
+null or empty statement arrays. It had the PMS outbox, hotel access function,
+and eight hotel manager policies; it had zero properties and bookings. This
+proves the repaired main history replays from scratch on hosted Supabase.
+
+The published `202609270159_pms_only_properties.sql` body (blob
+`16ad15b0f83db76ccb69e5881ea38d2db13db2a3`) was then applied to this
+isolated branch as a validation migration. The MCP tool assigned the
+temporary version `20260929013714_pms_only_properties_release_validation`;
+this does **not** mark repository version `202609270159` applied on main
+or the existing Preview branch. The PMS-only column, both enabled write
+triggers, and recommendation replacement RPC were present. Anonymous
+`EXECUTE` on review was revoked and authenticated `EXECUTE` remained.
+
+Rollback-only synthetic data checks verified that authenticated updates to
+PMS-only inventory and room base rates were rejected, PMS-only activation
+failed its check constraint, recommendation approval was blocked without
+changing status, and rejection succeeded. The transaction left zero
+properties, bookings, and recommendations on the validation branch.
+The branch was disposable and may be deleted after this evidence is recorded.
+
 An isolated in-memory PostgreSQL replay is available with
 `npm run migration:replay`. It runs all 81 active migrations in version order
 with minimal stand-ins for Supabase Auth and checks that the bootstrap is a
