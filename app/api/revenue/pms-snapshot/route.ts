@@ -41,14 +41,14 @@ export async function GET(request: Request) {
       .eq("property_id", property.id).eq("active", true).order("name").limit(101);
     if (roomsError) throw roomsError;
     if (roomCount !== null && roomCount > 100) return NextResponse.json({ error: "This pilot supports up to 100 active room types per property." }, { status: 422 });
-    if (roomCount === null || (rooms?.length ?? 0) !== roomCount) throw new Error("PMS room list is incomplete.");
+    if (roomCount === null || (rooms?.length ?? 0) !== roomCount) throw new Error("Room list is incomplete.");
     const roomIds = (rooms ?? []).map((room) => room.id);
     const from = format(new Date(), "yyyy-MM-dd");
     const through = format(addDays(new Date(), 89), "yyyy-MM-dd");
     if (!roomIds.length) return NextResponse.json({
       property: { id: property.id, name: property.name }, from, through, rooms: [], inventory: [],
       reconciliation: reconcileRevenueRows([], []),
-      source: "iratepilot_pms", readOnly: true, schemaVersion: 1, generatedAt: new Date().toISOString(),
+      source: "iratepilot_ota_inventory", pmsSourceVerified: false, readOnly: true, schemaVersion: 2, generatedAt: new Date().toISOString(),
     }, { headers: { "Cache-Control": "private, no-store" } });
 
     const [inventory, revenueInputs] = await Promise.all([loadCompleteSnapshotRows(async (offset) => {
@@ -69,11 +69,11 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       property: { id: property.id, name: property.name }, from, through,
-      rooms: rooms ?? [], inventory, source: "iratepilot_pms", readOnly: true,
+      rooms: rooms ?? [], inventory, source: "iratepilot_ota_inventory", pmsSourceVerified: false, readOnly: true,
       reconciliation: reconcileRevenueRows(inventory, revenueInputs),
-      schemaVersion: 1, generatedAt: new Date().toISOString(),
+      schemaVersion: 2, generatedAt: new Date().toISOString(),
     }, { headers: { "Cache-Control": "private, no-store" } });
   } catch {
-    return NextResponse.json({ error: "PMS inventory could not be loaded." }, { status: 503 });
+    return NextResponse.json({ error: "OTA inventory could not be loaded." }, { status: 503 });
   }
 }
