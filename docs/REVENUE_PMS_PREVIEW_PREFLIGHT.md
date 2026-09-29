@@ -121,7 +121,7 @@ PMS-only inventory and room base rates were rejected, PMS-only activation
 failed its check constraint, recommendation approval was blocked without
 changing status, and rejection succeeded. The transaction left zero
 properties, bookings, and recommendations on the validation branch.
-The branch was disposable and may be deleted after this evidence is recorded.
+The disposable branch was deleted after the evidence was recorded, stopping its hourly charge.
 
 An isolated in-memory PostgreSQL replay is available with
 `npm run migration:replay`. It runs all 81 active migrations in version order
