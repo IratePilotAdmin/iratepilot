@@ -15,15 +15,15 @@ base on an empty database and checks for all 17 base tables without recreating
 them on production. The two fee files are in `supabase/migrations/` under their
 existing production versions. Do not run `db push` against main merely because
 the files now exist: the production history has been repaired separately below,
-and the final property guard migration remains pending.
+and the final property guard migration has been applied only on Preview, as detailed below.
 
 The branch cannot be declared healthy merely by adding repository files:
 Supabase replays **main's database migration history** when creating a branch.
 The production ledger now has the replayable baseline before version
 `202607260001`, the corrected webhook migration, and SQL for the fee versions.
-The existing Preview branch now reports `FUNCTIONS_DEPLOYED`; a fresh branch
-replay is still needed for the older access history. Do not enable live Revenue AI
-or PMS delivery on this basis.
+The existing Preview branch reports `FUNCTIONS_DEPLOYED`, and a fresh hosted
+branch replayed the complete main history. Live Revenue AI and PMS delivery
+remain gated by the production migration, application release, and PMS source evidence.
 
 ## Hosted history repair (2026-09-28)
 
@@ -83,10 +83,9 @@ transactional outbox and access functions and policies.
 This existing Preview branch retained 72 empty historical statement arrays
 after rebase, including versions 054 through 061. Its objects and version
 list are present, but rebase only logged application of the newly missing
-versions. A fresh branch replay remains the proof that every older historical
-statement executes from scratch. Do not reset the current Preview to force
-that check: it contains one property and four bookings. New branch creation
-requires a separate cost confirmation.
+versions. The fresh branch replay below proves the older historical statements execute
+from scratch. The current Preview contains one property and four bookings;
+do not reset it to repeat that check.
 
 Red Roof Inn Ridgeland, MS has one sandbox iRatePilot outbox connection with
 capture and delivery enabled in production, one released baseline run with
@@ -123,6 +122,34 @@ changing status, and rejection succeeded. The transaction left zero
 properties, bookings, and recommendations on the validation branch.
 The disposable branch was deleted after the evidence was recorded, stopping its hourly charge.
 
+## Exact-version Preview application and direct-grant repair (2026-09-28)
+
+On the existing `iratepilot-preview-sandbox`, the reviewed PMS-only SQL was
+applied through the connected migration tool after confirming version
+`202609270159` was absent. The tool assigned temporary version
+`20260929020029_pms_only_properties_preview`. The existing active property
+received the default `pms_only=false`; the branch kept one property and four
+bookings. Both write guards and the recommendation RPC were present.
+
+Preview's `postgres` default ACL grants `EXECUTE` to `anon` directly on
+new public functions. The original `REVOKE FROM PUBLIC` did not remove those
+direct grants. The repository migration was corrected to revoke direct
+`anon` grants on the four functions and direct `authenticated` grants on
+the two trigger functions. A guarded, atomic Preview transaction applied
+those permission reductions and replaced the temporary ledger row with the
+exact repository version `202609270159_pms_only_properties`, storing the
+corrected published SQL body (MD5 `f61de7682260df5d705431363b36ec43`).
+The temporary version is absent. Read-only verification found both enabled
+triggers, `anon` denied on all four functions, `authenticated` allowed on
+both intended RPCs, and the original property/bookings unchanged.
+No production application schema or rate row was changed by this step.
+
+The preflight script accepts an up-to-date Preview ledger with zero pending
+versions and remains dry-run only in `--preflight` mode. The existing branch's
+older 72 empty history arrays are unchanged; the fresh-branch test above is
+the proof of main history replayability. The production deployment of version
+159 and a verified PMS feed remain separate release gates.
+
 An isolated in-memory PostgreSQL replay is available with
 `npm run migration:replay`. It runs all 81 active migrations in version order
 with minimal stand-ins for Supabase Auth and checks that the bootstrap is a
@@ -136,7 +163,8 @@ missing webhook columns and updates the status constraint before indexing.
 All 81 SQL files then replayed successfully, with the PMS-only column, fee
 column, and Revenue AI RPC present at the end. TypeScript typecheck passed.
 
-This is a **local SQL gate**, not a Supabase Preview branch replay. PGlite uses
+This local SQL gate was supplemented by the hosted fresh replay and Preview
+migration application described above. PGlite uses
 PostgreSQL 18 and minimal Auth stand-ins; Supabase's managed roles/extensions,
 the actual production history ledger, and version 16 behavior still need a
 fresh branch check. The CLI is installed in a disposable workspace, but no
@@ -160,7 +188,8 @@ The six versions absent from Preview on 2026-09-27 were, in order:
    room-rate write guards, and revenue approval guard
 
 Versions 139, 140, 141, 157, and 158 reached Preview on 2026-09-28. Version
-159 is still absent from main and Preview; applying it requires its own review.
+Version 159 is absent from main but was applied and reconciled on Preview on
+2026-09-28 as detailed above.
 
 ## Historical branch check on 2026-09-27 (superseded above)
 
