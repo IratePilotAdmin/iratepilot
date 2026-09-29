@@ -37,13 +37,13 @@ describe("SynXis production rollout manifest", () => {
     expect(new Set(deploymentVersions).size).toBe(deploymentVersions.length);
     expect(manifest.historyRepairCandidates.at(-1)).toBe("202608130038");
     expect(manifest.appliedDeploymentVersions[0]).toBe("202608130039");
-    expect(manifest.appliedDeploymentVersions).toEqual(migrationVersions.slice(deploymentStart, -1));
-    expect(manifest.pendingDeploymentVersions).toEqual(["202609270159"]);
+    expect(manifest.appliedDeploymentVersions).toEqual(migrationVersions.slice(deploymentStart));
+    expect(manifest.pendingDeploymentVersions).toEqual([]);
   });
 
   it("records completed database rollout while preserving later launch gates", () => {
     expect(manifest.executionState).toBe(
-      "migrations_001_061_applied_application_deployment_pending_manager_acceptance_incomplete_synxis_traffic_disabled",
+      "migrations_through_159_applied_application_deployment_pending_manager_acceptance_incomplete_synxis_traffic_disabled",
     );
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("sabre certification");
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).not.toContain("migration 054");
@@ -57,7 +57,7 @@ describe("SynXis production rollout manifest", () => {
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("application deployment");
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("manager invitation");
     expect(manifest.requiredWriteGates.join(" ").toLowerCase()).toContain("live-traffic approval");
-    expect(manifest.requiredWriteGates.join(" ")).toContain("PMS-only migration 202609270159");
+    expect(manifest.requiredWriteGates.join(" ")).toContain("verified migration 202609270159");
     expect(manifest.stopConditions.length).toBeGreaterThan(0);
     expect(manifest.stopConditions.join(" ")).toContain("039-through-061");
     expect(manifest.stopConditions.join(" ").toLowerCase()).toContain("merged or the application is deployed without separate production approval");
