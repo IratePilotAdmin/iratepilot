@@ -197,7 +197,7 @@ export function reconcilePreviewMigrations(
   );
   if (argv.includes("--preflight")) {
     const observed = assertPreviewRemoteMigrationState(
-      beforeOutput, plan.migrationVersions, [PMS_PILOT_PREFLIGHT_PENDING],
+      beforeOutput, plan.migrationVersions, [PMS_PILOT_PREFLIGHT_PENDING, []],
     );
     const dryRunOutput = runner(
       command,
