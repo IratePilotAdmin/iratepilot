@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
+import { requireRole } from "@/lib/auth/require-role";
 import { emptyEmailWorkerSummary, isEmailWorkerEnabled } from "@/lib/email/worker-gate";
 import {
   resendOutboxIdTagName,
@@ -29,11 +30,13 @@ function batchSize() {
 async function processTransactionalEmail(request: Request) {
   const startedAt = Date.now();
   const cronSecret = process.env.CRON_SECRET;
-  if (!cronSecret) {
-    return NextResponse.json({ success: false, error: "Email worker authentication is not configured." }, { status: 503 });
-  }
-  if (request.headers.get("authorization") !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ success: false, error: "Unauthorized." }, { status: 401 });
+  const authorizedByCron = Boolean(cronSecret)
+    && request.headers.get("authorization") === `Bearer ${cronSecret}`;
+  if (!authorizedByCron) {
+    const auth = await requireRole(["admin"]);
+    if ("error" in auth) {
+      return NextResponse.json({ success: false, error: "Unauthorized." }, { status: 401 });
+    }
   }
 
   if (!isEmailWorkerEnabled()) {

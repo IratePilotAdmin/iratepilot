@@ -6,6 +6,10 @@ type Row = {
   id: string;
   gross_room_revenue: number | string;
   partner_commission: number | string;
+  reward_program_fee?: number | string | null;
+  partner_commission_rate_bps?: number | string | null;
+  reward_program_fee_rate_bps?: number | string | null;
+  fee_schedule_version?: string | null;
   partner_net: number | string;
   status: string;
   stripe_transfer_id: string | null;
@@ -16,10 +20,19 @@ type Row = {
   partners: { business_name: string } | null;
   bookings: { confirmation_code: string; status: string; stripe_refund_id: string | null } | null;
 };
-type Summary = { gross: number; commission: number; partnerNet: number; paidTransfers: number; reversedTransfers: number; failedTransfers: number };
+type Summary = { gross: number; commission: number; rewardProgramFee: number; totalHotelDeductions: number; partnerNet: number; paidTransfers: number; reversedTransfers: number; failedTransfers: number };
 type FinanceResponse = { data?: Row[]; summary: Summary; error?: string };
 const money = (value: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
 const shortId = (value: string | null) => value ? `${value.slice(0, 10)}…` : "—";
+const rate = (basisPoints: number | string | null | undefined) => basisPoints == null
+  ? null
+  : `${Number(basisPoints) / 100}%`;
+const schedule = (row: Row) => {
+  if (row.fee_schedule_version === "hotel_partner_commission_13_reward_fee_3_v1") return "Stored · 13% + 3%";
+  const commissionRate = rate(row.partner_commission_rate_bps);
+  const rewardRate = rate(row.reward_program_fee_rate_bps);
+  return commissionRate && rewardRate ? `Stored · ${commissionRate} + ${rewardRate}` : "Legacy recorded split · rate unknown";
+};
 const pendingRetryDelayMs = 10 * 60 * 1000;
 const isStalePending = (row: Row) => row.stripe_transfer_status === "pending"
   && Boolean(row.stripe_transferred_at)
@@ -34,7 +47,7 @@ async function fetchFinance() {
 
 export function AdminFinance() {
   const [rows, setRows] = useState<Row[]>([]);
-  const [summary, setSummary] = useState<Summary>({ gross: 0, commission: 0, partnerNet: 0, paidTransfers: 0, reversedTransfers: 0, failedTransfers: 0 });
+  const [summary, setSummary] = useState<Summary>({ gross: 0, commission: 0, rewardProgramFee: 0, totalHotelDeductions: 0, partnerNet: 0, paidTransfers: 0, reversedTransfers: 0, failedTransfers: 0 });
   const [message, setMessage] = useState("Loading financial report…");
   const [retrying, setRetrying] = useState<string | null>(null);
 
@@ -73,13 +86,18 @@ export function AdminFinance() {
   const attention = useMemo(() => rows.filter(row => row.stripe_transfer_status === "failed" || isStalePending(row)), [rows]);
   return <div className="mt-8 grid gap-8">
     <p className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">Stripe payout reconciliation. Transfer and reversal references are retained for audit review. “Cancelled” means a refunded booking never created a partner transfer.</p>
+    <p className="rounded-xl border border-violet-200 bg-violet-50 p-4 text-sm text-violet-950"><strong>Current schedule for new hotel bookings:</strong> 13% iRatePilot Group, LLC commission + 3% iRate Rewards Program contribution = 16% total hotel distribution cost. Historical rows retain their stored schedule and amounts; financial totals exclude void accounting while transfer counts retain the full ledger.</p>
     {attention.length > 0 && <p className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950"><strong>{attention.length} transfer{attention.length === 1 ? "" : "s"} need attention.</strong> Review the error and retry only after the partner payout account is ready.</p>}
-    <section className="grid gap-4 md:grid-cols-3">{[["Gross booking value", summary.gross], ["Marketplace revenue (14%)", summary.commission], ["Partner liability", summary.partnerNet]].map(([label, value]) => <article className="card p-6" key={String(label)}><span className="text-sm text-slate-500">{label}</span><strong className="mt-2 block text-3xl">{money(Number(value))}</strong></article>)}</section>
+    <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">{[["Gross booking value", summary.gross], ["Partner commission", summary.commission], ["iRate Rewards contribution", summary.rewardProgramFee], ["Total hotel deductions", summary.totalHotelDeductions], ["Partner liability", summary.partnerNet]].map(([label, value]) => <article className="card p-6" key={String(label)}><span className="text-sm text-slate-500">{label}</span><strong className="mt-2 block text-3xl">{money(Number(value))}</strong></article>)}</section>
     <section className="grid gap-4 md:grid-cols-3">{[["Transfers paid", summary.paidTransfers], ["Transfers reversed", summary.reversedTransfers], ["Transfers failed", summary.failedTransfers]].map(([label, value]) => <article className="card p-5" key={String(label)}><span className="text-sm text-slate-500">{label}</span><strong className="mt-1 block text-2xl">{value}</strong></article>)}</section>
-    <section className="card overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-slate-500"><tr>{["Booking", "Partner", "Gross", "Partner net", "Booking", "Transfer", "Stripe reference", "Action"].map(item => <th className="px-5 py-3" key={item}>{item}</th>)}</tr></thead><tbody>{rows.map(row => <tr className="border-t align-top" key={row.id}>
+    <section className="card overflow-hidden"><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-slate-500"><tr>{["Booking", "Partner", "Gross", "Commission", "iRate Rewards contribution", "Total deductions", "Fee schedule", "Partner net", "Booking status", "Transfer", "Stripe reference", "Action"].map(item => <th className="px-5 py-3" key={item}>{item}</th>)}</tr></thead><tbody>{rows.map(row => <tr className="border-t align-top" key={row.id}>
       <td className="px-5 py-4">{row.bookings?.confirmation_code || "—"}</td>
       <td className="px-5 py-4">{row.partners?.business_name || "—"}</td>
       <td className="px-5 py-4">{money(Number(row.gross_room_revenue))}</td>
+      <td className="px-5 py-4">{money(Number(row.partner_commission))}</td>
+      <td className="px-5 py-4">{money(Number(row.reward_program_fee || 0))}</td>
+      <td className="px-5 py-4">{money(Number(row.partner_commission) + Number(row.reward_program_fee || 0))}</td>
+      <td className="px-5 py-4 whitespace-nowrap">{schedule(row)}</td>
       <td className="px-5 py-4">{money(Number(row.partner_net))}</td>
       <td className="px-5 py-4 capitalize">{row.bookings?.status?.replaceAll("_", " ") || row.status.replaceAll("_", " ")}</td>
       <td className="px-5 py-4"><strong className="capitalize">{row.stripe_transfer_status.replaceAll("_", " ")}</strong>{row.stripe_transfer_error && <p className="mt-1 max-w-xs text-xs text-red-700">{row.stripe_transfer_error}</p>}</td>

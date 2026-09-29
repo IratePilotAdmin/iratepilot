@@ -20,7 +20,7 @@ export async function GET() {
     const [financials, payouts] = await Promise.all([
       auth.supabase
         .from("booking_financials")
-        .select("id,gross_room_revenue,partner_commission,partner_net,status,created_at,stripe_transfer_id,stripe_transfer_status,stripe_transfer_error,stripe_transferred_at,stripe_reversed_at,bookings(confirmation_code,check_in,check_out,status)")
+        .select("id,gross_room_revenue,partner_commission,reward_program_fee,partner_commission_rate_bps,reward_program_fee_rate_bps,fee_schedule_version,partner_net,status,created_at,stripe_transfer_id,stripe_transfer_status,stripe_transfer_error,stripe_transferred_at,stripe_reversed_at,bookings(confirmation_code,check_in,check_out,status)")
         .eq("partner_id", partner.id)
         .order("created_at", { ascending: false }),
       auth.supabase

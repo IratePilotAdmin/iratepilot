@@ -25,20 +25,29 @@ const migrationVersions = readdirSync(
   .map((name) => name.split("_")[0]);
 
 describe("SynXis production rollout manifest", () => {
-  it("records every repository migration exactly once in production order", () => {
+  it("records every in-scope SynXis migration exactly once while excluding later flight migrations", () => {
+    const rolloutCutoff = "202608170067";
+    const rolloutMigrationVersions = migrationVersions.filter((version) => version <= rolloutCutoff);
     const deploymentStart = migrationVersions.indexOf("202608130039");
     expect(deploymentStart).toBeGreaterThan(0);
-    expect(manifest.historyRepairCandidates).toEqual(migrationVersions.slice(0, deploymentStart));
+    expect(manifest.historyRepairCandidates).toEqual(rolloutMigrationVersions.slice(0, deploymentStart));
     const deploymentVersions = [
       ...manifest.appliedDeploymentVersions,
       ...manifest.pendingDeploymentVersions,
     ];
-    expect([...deploymentVersions].sort()).toEqual(migrationVersions.slice(deploymentStart));
+    const synxisDeploymentVersions = deploymentVersions.filter((version) => version <= rolloutCutoff);
+    expect([...synxisDeploymentVersions].sort()).toEqual(rolloutMigrationVersions.slice(deploymentStart));
     expect(new Set(deploymentVersions).size).toBe(deploymentVersions.length);
     expect(manifest.historyRepairCandidates.at(-1)).toBe("202608130038");
     expect(manifest.appliedDeploymentVersions[0]).toBe("202608130039");
-    expect(manifest.appliedDeploymentVersions).toEqual(migrationVersions.slice(deploymentStart));
-    expect(manifest.pendingDeploymentVersions).toEqual([]);
+    expect(
+      manifest.appliedDeploymentVersions.filter((version) => version <= rolloutCutoff),
+    ).toEqual(rolloutMigrationVersions.slice(deploymentStart, -6));
+    expect(manifest.pendingDeploymentVersions).toEqual(rolloutMigrationVersions.slice(-6));
+    expect(manifest.pendingDeploymentVersions.at(-1)).toBe(rolloutCutoff);
+    expect(manifest.appliedDeploymentVersions).toContain("202609270159");
+    expect(deploymentVersions).not.toContain("202608230068");
+    expect(deploymentVersions).not.toContain("202608240069");
   });
 
   it("records completed database rollout while preserving later launch gates", () => {

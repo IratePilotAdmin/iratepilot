@@ -16,6 +16,10 @@ iRatePilot is a premium travel marketplace for hotel and vacation-home discovery
 
 The repository includes mock and integration-ready flows. It is not connected to Expedia, Booking.com, Hotels.com, or another hotel supplier by default, and the production-readiness work below remains required before accepting real bookings.
 
+The current schedule for new hotel marketplace bookings is a 13% partner commission plus a separate mandatory 3% iRatePilot Rewards Program fee, for a 16% total hotel deduction. Management software subscriptions remain separate. Historical bookings retain their recorded fee schedules and amounts; see [Payments](docs/PAYMENTS.md) for the accounting rules.
+
+The private hotel application flow at `/partners` and `/partners/register` is disabled by default. It requires both the application setting and the isolated database control; see [Private hotel onboarding drafts](docs/PARTNER_SELF_SERVICE_DRAFTS_2026-09-16.md) before enabling it in Preview.
+
 ## Technology
 
 - Next.js 16 App Router, React 19, and TypeScript
@@ -65,6 +69,7 @@ The command runs linting, TypeScript checks, the Vitest suite, and a production 
 - [Compliance considerations](docs/COMPLIANCE.md)
 - [Deployment](docs/DEPLOYMENT.md)
 - [Roadmap](docs/ROADMAP.md)
+- [Hotel partner recruitment release](docs/HOTEL_PARTNER_RECRUITMENT_RELEASE_2026-09-17.md)
 
 ## Before accepting real bookings
 

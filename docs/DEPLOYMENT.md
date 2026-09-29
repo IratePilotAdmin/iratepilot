@@ -7,7 +7,7 @@ Push to GitHub, import into Vercel, add environment variables, run database migr
 Before merging a release branch into `main`:
 
 1. Confirm the production Vercel environment includes `NEXT_PUBLIC_APP_URL`, the Supabase URL and public key, `SUPABASE_SERVICE_ROLE_KEY`, `PILOT_MODE=true`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL` (or `EMAIL_FROM`), and `CRON_SECRET`.
-2. Keep `NEXT_PUBLIC_PUBLIC_BOOKING=false`, `NEXT_PUBLIC_ENABLE_TEST_CHECKOUT=false`, and `ENABLE_TEST_CHECKOUT=false` until the corresponding live-booking or test-payment review is complete.
+2. Keep `HOTEL_PUBLICATION_ENABLED=false`, `NEXT_PUBLIC_PUBLIC_BOOKING=false`, `NEXT_PUBLIC_ENABLE_TEST_CHECKOUT=false`, and `ENABLE_TEST_CHECKOUT=false` until the corresponding hotel-publication, live-booking, or test-payment review is complete.
 3. Link the Supabase CLI to the intended production project and run `supabase migration list`. Do not deploy the application when repository migrations are missing from the remote history.
 4. Apply pending migrations in filename order with `supabase db push`, then run `supabase migration list` again and verify that local and remote histories match.
 5. Verify `/api/health`, partner sign-in, administrator sign-in, property submission, room and inventory setup, and a customer booking request on the release preview.
@@ -20,6 +20,10 @@ Generate a high-entropy `CRON_SECRET` in Vercel for the transactional email work
 Apply migration `202608020021_enforce_future_partner_inventory.sql` before enabling partner rate and inventory management in production. It prevents approved partners from creating or changing inventory for dates that have already passed.
 
 The repository uses a Hobby-compatible daily schedule at 08:00 UTC. During the private pilot, urgent queues can be drained by sending an authenticated `POST /api/email/process` for each job. Upgrade the Vercel plan before increasing the automated cadence.
+
+The Automation Operations Center also declares a Hobby-compatible daily observation scan at 08:15 UTC. Its route requires `CRON_SECRET` and remains fail-closed while `AUTOMATION_POLICY_SCANNER_ENABLED=false`. Keep that flag false until migration `202608170066_automation_slo_escalations.sql`, the application release, and a separate Production scheduling decision are approved. The scanner records internal SLO and provider-ledger observations only; it sends no notifications and contacts no provider.
+
+Keep `AUTOMATION_SANDBOX_EXECUTOR_ENABLED=false` in every environment when first applying migration `202608170067_automation_sandbox_executor.sql`; the database registry also starts disabled. Enabling either kill switch requires a separate environment-specific decision, and both must remain disabled in Production until a distinct Production authorization. The only registered adapter reads a sanitized internal email-outbox status and cannot send a message or contact Resend.
 
 ## Verified deployment baseline
 
@@ -44,7 +48,11 @@ The following keys from `.env.example` are missing from the Vercel project:
 
 - `NEXT_PUBLIC_APP_URL` — set the production value to the canonical public origin, `https://www.iratepilot.com`.
 - `STRIPE_BASIC_PRICE_ID` — required before offering the Basic traveler membership.
-- `OPENAI_API_KEY` — required before enabling the AI travel planner.
+- `OPENAI_API_KEY` — server-only project credential required before enabling the AI travel planner.
+- `OPENAI_PROVIDER_ENABLED` — keep `false` until the provider credential, API billing, and signed-in planner flow have been verified; set exactly `true` to activate requests.
+- `OPENAI_MODEL` — optional model override; the application defaults to `gpt-5.6-luna`.
+
+The planner sends requests through the server-side `/api/ai/travel` route. It never exposes the API key to the browser, requires an authenticated iRatePilot account, limits prompts to 2,000 characters, sets `store: false`, and keeps the explicit provider flag off until activation is approved.
 
 `NEXT_PUBLIC_SUPABASE_ANON_KEY` is not required because `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is configured.
 
@@ -52,6 +60,7 @@ The non-secret release-gate values were verified separately:
 
 - `PILOT_MODE=true` — correct for the private pilot.
 - `NEXT_PUBLIC_PUBLIC_BOOKING=false` — public booking remains disabled.
+- `HOTEL_PUBLICATION_ENABLED=false` — new hotel publication remains locked until the property-specific commercial release approvals are complete.
 - `NEXT_PUBLIC_ENABLE_TEST_CHECKOUT=true` — **release blocker; set the Production value to `false`.**
 - `ENABLE_TEST_CHECKOUT=true` — **release blocker; set the Production value to `false`.**
 

@@ -1,10 +1,14 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabasePublicConfig } from "@/lib/supabase/config";
+import { isPartnerSelfServiceEnabled } from "@/config/partner-acquisition";
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const protectedRoute = pathname.startsWith("/account") || pathname.startsWith("/partner/") || pathname.startsWith("/admin");
+  const protectedRoute = pathname.startsWith("/account")
+    || pathname.startsWith("/partner/")
+    || pathname.startsWith("/admin")
+    || pathname.startsWith("/flights/preview");
   if (!protectedRoute) return NextResponse.next();
 
   const { url, key } = getSupabasePublicConfig();
@@ -23,13 +27,15 @@ export async function proxy(request: NextRequest) {
   });
 
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(pathname)}`, request.url));
+  if (!user) return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent(pathname + request.nextUrl.search)}`, request.url));
 
   if (pathname.startsWith("/admin") || pathname.startsWith("/partner/")) {
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
     const role = profile?.role;
     if (pathname.startsWith("/admin") && role !== "admin") return NextResponse.redirect(new URL("/account", request.url));
-    if (pathname.startsWith("/partner/") && role !== "partner" && role !== "admin") return NextResponse.redirect(new URL("/partner", request.url));
+    const applicantDashboard = role === "customer"
+      && isPartnerSelfServiceEnabled() && pathname === "/partner/dashboard";
+    if (pathname.startsWith("/partner/") && role !== "partner" && role !== "admin" && !applicantDashboard) return NextResponse.redirect(new URL("/partner", request.url));
   }
   return response;
 }

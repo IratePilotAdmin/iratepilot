@@ -1,0 +1,116 @@
+{
+  "evidence": {
+    "version": "flight-consumer-production-deployment-config-audit-v1",
+    "checkedAt": "2026-08-27T02:59:06-05:00",
+    "environment": "vercel_production_read_only",
+    "scope": "deployment_commit_and_environment_variable_name_scope_audit",
+    "result": "BLOCKED",
+    "sanitized": true,
+    "secretValuesRead": false,
+    "secretValuesIncluded": false,
+    "providerIdentifiersIncluded": false,
+    "productionDeployment": {
+      "provider": "Vercel",
+      "projectId": "prj_qFxx3L5PiFgr0S1bNPmzvetGdKRW",
+      "deploymentId": "dpl_D4pjuUgaNpQJ73Q4ejz2fxn5fA3w",
+      "state": "READY",
+      "target": "production",
+      "sourceCommit": "29df1d6120f0319e038dabfe2747d210020f41ee",
+      "sourceCommitMessage": "fix(hotels): make migration 082 replayable",
+      "latestAcceptedPreviewBranchCommitAtAuditStart": "f7b505a8c80f2a73b463f5f948a94594c41b745e",
+      "productionIncludesLatestAcceptedFlightBranch": false,
+      "productionPromotionPerformed": false
+    },
+    "productionOnlyVariablesPresent": [
+      "DUFFEL_LIVE_ACCESS_TOKEN",
+      "FLIGHT_CONSUMER_PRODUCTION_DUFFEL_WEBHOOK_SECRET",
+      "FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_KEY",
+      "FLIGHT_CONSUMER_PRODUCTION_STRIPE_PUBLISHABLE_KEY",
+      "FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_SHA256",
+      "FLIGHT_CONSUMER_PRODUCTION_STRIPE_CREDENTIAL_SHA256",
+      "FLIGHT_CONSUMER_PRODUCTION_STRIPE_PUBLISHABLE_KEY_SHA256",
+      "STRIPE_SECRET_KEY"
+    ],
+    "productionVariablesMissing": [
+      "FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ACCOUNT_ID",
+      "FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ACCOUNT_SHA256",
+      "FLIGHT_CONSUMER_PRODUCTION_DUFFEL_CREDENTIAL_SHA256",
+      "FLIGHT_PAYMENT_PROCESSOR_ID",
+      "FLIGHT_PAYMENT_ADAPTER_VERSION",
+      "FLIGHT_PAYMENT_ADAPTER_SOURCE_SHA256",
+      "FLIGHT_PAYMENT_ACCOUNT_SCOPE_SHA256",
+      "FLIGHT_PAYMENT_ENVIRONMENT_SCOPE_SHA256",
+      "FLIGHT_CONSUMER_PRODUCTION_STRIPE_PAYMENT_PLAN_DARK_ENABLED",
+      "FLIGHT_CONSUMER_PRODUCTION_DUFFEL_LIVE_REPRICE_DARK_ENABLED",
+      "FLIGHT_CONSUMER_PRODUCTION_PUBLIC_SHOPPING_PREVIEW_ENABLED",
+      "FLIGHT_CONSUMER_PRODUCTION_PUBLIC_SHOPPING_POLICY_SHA256",
+      "FLIGHT_CONSUMER_PRODUCTION_PUBLIC_SHOPPING_COHORT_SHA256",
+      "FLIGHT_CONSUMER_PRODUCTION_PUBLIC_SHOPPING_SOURCE_COMMIT_SHA"
+    ],
+    "productionControlVariableNamesPresent": [
+      "FLIGHT_CONSUMER_PRODUCTION_DARK_ENABLED",
+      "FLIGHT_CONSUMER_PRODUCTION_RELEASE_ENABLED",
+      "FLIGHT_CONSUMER_PRODUCTION_DUFFEL_SHOPPING_DARK_ENABLED",
+      "FLIGHT_CONSUMER_PRODUCTION_DUFFEL_SHOPPING_ORDER_ENABLED",
+      "FLIGHT_CONSUMER_PRODUCTION_DUFFEL_ORDER_PLAN_REHEARSAL_ENABLED",
+      "FLIGHT_CONSUMER_PRODUCTION_STRIPE_ACCOUNT_PREFLIGHT_ENABLED",
+      "FLIGHT_RUNTIME_MODE",
+      "FLIGHT_RUNTIME_ENVIRONMENT",
+      "FLIGHT_RUNTIME_ENABLED",
+      "FLIGHT_PROVIDER_TRAFFIC_ENABLED",
+      "FLIGHT_BOOKING_ENABLED",
+      "FLIGHT_PAYMENT_ENABLED",
+      "FLIGHT_SETTLEMENT_ENABLED",
+      "FLIGHT_TICKETING_ENABLED",
+      "FLIGHT_SERVICING_ENABLED",
+      "FLIGHT_WEBHOOKS_ENABLED",
+      "FLIGHT_PRODUCTION_TRAFFIC_ENABLED",
+      "FLIGHT_TRANSACTION_KILL_SWITCH"
+    ],
+    "variableInspectionSemantics": {
+      "namesAndEnvironmentScopesOnly": true,
+      "valuesInspected": false,
+      "presenceDoesNotProveCorrectValue": true,
+      "genericStripeSecretEnvironmentScope": "production_only_value_uninspected",
+      "publicStripeKeyScopes": [
+        "production",
+        "preview"
+      ]
+    },
+    "stripeAccountPreflightAttempt": {
+      "page": "/admin/flights/consumer-production/stripe-account",
+      "method": "POST",
+      "responseStatus": 503,
+      "userVisibleResult": "The Production Stripe account preflight is unavailable.",
+      "runtimeLogDiagnostic": "runtime_unavailable",
+      "stripeProviderRequestPerformed": false,
+      "paymentIntentCreated": false,
+      "chargeCreated": false,
+      "refundCreated": false,
+      "duffelOrderCreated": false,
+      "ticketIssued": false
+    },
+    "productionConsumerSurface": {
+      "path": "/flights",
+      "observedMode": "Flights Phase 1 supplier-offline planning preview",
+      "primaryAction": "Preview synthetic options",
+      "liveAirlineInventoryConnected": false,
+      "liveScheduleOrFareDisplayed": false,
+      "consumerBookingAccepted": false,
+      "consumerPaymentAccepted": false,
+      "ticketIssued": false
+    },
+    "disposition": {
+      "productionDatabaseTouched": false,
+      "productionEnvironmentChanged": false,
+      "productionDeploymentChanged": false,
+      "providerMutationPerformed": false,
+      "paymentPerformed": false,
+      "bookingPerformed": false,
+      "ticketingPerformed": false,
+      "publicReleasePerformed": false,
+      "nextSafeAction": "complete_default_off_code_and_evidence_then_obtain_action_time_approval_for_managed_configuration_and_canary_ladder"
+    },
+    "outcome": "production_configuration_and_deployment_are_not_ready_for_live_transaction_acceptance"
+  }
+}

@@ -11,8 +11,16 @@ afterEach(() => vi.resetAllMocks());
 
 describe("PMS-only partner rate editor", () => {
   it.each([
-    { action: "update_room", name: "King", maxGuests: 2, baseRate: 110, active: true },
-    { action: "set_inventory", roomId, startDate: "2026-10-01", endDate: "2026-10-01", availableUnits: 3, rate: 110 },
+    {
+      action: "update_room", name: "King", maxGuests: 2, baseRate: 110, active: true,
+      ratePlanCode: "BAR", ratePlanName: "Best Available Rate",
+      cancellationPolicy: "Free cancellation until 24 hours before arrival.",
+      cancellationPolicyVersion: "v1",
+    },
+    {
+      action: "set_inventory", roomId, startDate: "2026-10-01", endDate: "2026-10-01",
+      availableUnits: 3, rate: 110, taxAmount: 12, mandatoryFeeAmount: 5,
+    },
   ])("blocks $action before writing when the room relation is an object", async (body) => {
     const update = vi.fn();
     const upsert = vi.fn();

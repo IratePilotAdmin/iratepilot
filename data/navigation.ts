@@ -1,5 +1,7 @@
 export const customerNavigation = [
   { href: "/search", label: "Hotels" },
+  { href: "/flights", label: "Flights" },
+  { href: "/cars", label: "Car rentals" },
   { href: "/vacation-homes", label: "Vacation homes" },
   { href: "/deals", label: "Deals" },
   { href: "/rewards", label: "Rewards" },
@@ -23,8 +25,13 @@ export const partnerNavigation = [
 
 export const adminNavigation = [
   { href: "/admin", label: "Overview" },
+  { href: "/admin/launch-readiness", label: "Launch readiness" },
+  { href: "/admin/operations", label: "Operations" },
+  { href: "/admin/flights", label: "Flights" },
+  { href: "/admin/cars", label: "Car rentals" },
   { href: "/admin/revenue-test", label: "Private Revenue AI test" },
   { href: "/admin/properties", label: "Properties" },
+  { href: "/admin/agreements", label: "Hotel agreements" },
   { href: "/admin/content", label: "Content quality" },
   { href: "/admin/bookings", label: "Bookings" },
   { href: "/admin/cancellations", label: "Cancellations" },

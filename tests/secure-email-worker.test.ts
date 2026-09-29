@@ -56,6 +56,10 @@ describe("secure transactional email worker", () => {
         schedule: "0 8 * * *",
       },
       {
+        path: "/api/cron/automation-policy-scan",
+        schedule: "15 8 * * *",
+      },
+      {
         path: "/api/cron/pms-outbox",
         schedule: "30 8 * * *",
       },

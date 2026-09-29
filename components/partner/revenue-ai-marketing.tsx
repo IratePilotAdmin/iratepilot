@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Activity, ArrowRight, BarChart3, BellRing, Bot, CalendarDays, Check, CloudSun, Database, Gauge, LockKeyhole, ScanSearch, Sparkles, TrendingDown, Zap } from "lucide-react";
-import { partnerPlans, type PartnerPlan } from "@/config/partner-plans";
+import { publicPartnerPlans, type PublicPartnerPlan } from "@/config/public-partner-plans";
 
 const revenueSignals = [
   "Rates and availability", "Occupancy and booking pace", "Competitor prices",
@@ -88,7 +88,7 @@ export function RevenueAiMarketing() {
         <div className="mt-20">
           <div className="text-center"><span className="section-kicker">Revenue AI plans</span><h2 className="mt-4 text-4xl text-white sm:text-5xl">Built for independent hotels and growing portfolios.</h2></div>
           <div className="mt-9 grid gap-4 md:grid-cols-3">
-            {(Object.entries(partnerPlans) as [PartnerPlan, (typeof partnerPlans)[PartnerPlan]][]).map(([, plan]) => <article className={plan.featured ? "revenue-price featured" : "revenue-price"} key={plan.name}><span>{plan.name}</span><strong>${plan.monthlyPrice}<small>/month</small></strong><p>{plan.audience}</p></article>)}
+            {(Object.entries(publicPartnerPlans) as [PublicPartnerPlan, (typeof publicPartnerPlans)[PublicPartnerPlan]][]).map(([, plan]) => <article className={plan.featured ? "revenue-price featured" : "revenue-price"} key={plan.name}><span>{plan.name}</span><strong>${plan.monthlyPrice}<small>/month</small></strong><p>{plan.audience}</p></article>)}
           </div>
           <p className="mt-5 text-center text-sm text-slate-300">Private-pilot subscriptions use Stripe test mode. Live software billing requires launch approval.</p>
         </div>

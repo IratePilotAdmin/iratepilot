@@ -1,9 +1,11 @@
 import { hotels as demoHotels, type Hotel } from "@/data/hotels";
 import { fees } from "@/config/fees";
+import { memberships, type MembershipTier } from "@/config/memberships";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { hasActiveMembership } from "@/lib/memberships/eligibility";
+import { getActiveMembershipTier } from "@/lib/memberships/eligibility";
 import { inventoryLimits } from "@/lib/inventory-limits";
+import { isHotelPublicationEnabled } from "@/lib/hotels/publication-gate";
+import { isHotelMarketplaceLaunchAuthorized } from "@/lib/hotels/marketplace-launch-authorization";
 import {
   getAvailableRoomRates,
   getAvailableRooms,
@@ -33,9 +35,18 @@ const fallbackImage = "https://images.unsplash.com/photo-1566073771259-6a8506099
 export async function getMarketplaceHotels(
   criteria: MarketplaceSearchCriteria | null = null,
 ): Promise<{ hotels: Hotel[]; source: "database" | "demo" }> {
+  if (!isHotelPublicationEnabled() || !await isHotelMarketplaceLaunchAuthorized()) {
+    const hotels = criteria
+      ? demoHotels.filter((hotel) => matchesMarketplaceDestination(hotel, criteria.destination))
+      : demoHotels;
+    return { hotels, source: "demo" };
+  }
+
   try {
-    const admin = createAdminClient();
-    const { data, error } = await admin.from("properties")
+    // Public inventory must flow through the anon/authenticated RLS policies.
+    // The service role would bypass the property-specific agreement expiry gate.
+    const supabase = await createClient();
+    const { data, error } = await supabase.from("properties")
       .select("slug,name,city,country,star_rating,description,image_url,amenities,guest_rating,review_count,partners!inner(status),rooms(id,active,base_rate,max_guests,inventory(stay_date,available_units,rate))")
       .eq("active", true)
       .eq("pms_only", false)
@@ -83,8 +94,8 @@ export async function getMarketplaceHotel(slug: string, stay: StayCriteria | nul
   const marketplace = await getMarketplaceHotels();
   if (marketplace.source === "database") {
     try {
-      const admin = createAdminClient();
-      const { data } = await admin.from("properties")
+      const supabase = await createClient();
+      const { data } = await supabase.from("properties")
         .select("partners!inner(status),rooms(id,name,active,base_rate,max_guests,inventory(stay_date,available_units,rate))")
         .eq("slug", slug).eq("active", true).eq("pms_only", false).eq("partners.status", "approved").eq("rooms.active", true).single();
       const roomRows = (data?.rooms || []) as Array<SearchableRoom & { id: string; name: string }>;
@@ -119,18 +130,39 @@ export async function getMarketplaceHotel(slug: string, stay: StayCriteria | nul
   return { hotel: marketplace.hotels.find((item) => item.slug === slug), source: marketplace.source, rooms: [] };
 }
 
-export async function getTravelerServiceFeeRate() {
+type TravelerBenefits = {
+  tier: "none" | MembershipTier;
+  serviceFeeRate: number;
+  memberDiscountRate: number;
+  rewardMultiplier: number;
+};
+
+const publicTravelerBenefits: TravelerBenefits = {
+  tier: "none",
+  serviceFeeRate: fees.serviceFeeRate,
+  memberDiscountRate: 0,
+  rewardMultiplier: 0,
+};
+
+export async function getTravelerBenefits(): Promise<TravelerBenefits> {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return fees.serviceFeeRate;
+    if (!user) return publicTravelerBenefits;
     const { data, error } = await supabase.from("profiles")
       .select("membership_tier,membership_status")
       .eq("id", user.id)
       .single();
     if (error) throw error;
-    return hasActiveMembership(data) ? 0 : fees.serviceFeeRate;
+    const tier = getActiveMembershipTier(data);
+    if (tier === "none") return publicTravelerBenefits;
+    return {
+      tier,
+      serviceFeeRate: fees.serviceFeeRate,
+      memberDiscountRate: memberships[tier].discountRate,
+      rewardMultiplier: memberships[tier].rewardMultiplier,
+    };
   } catch {
-    return fees.serviceFeeRate;
+    return publicTravelerBenefits;
   }
 }

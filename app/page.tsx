@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Bot, BriefcaseBusiness, Building2, Check, Gem, Headphones, ShieldCheck, Sparkles, Star, TrendingDown } from "lucide-react";
+import { ArrowRight, Bot, BriefcaseBusiness, Building2, Check, Gem, Headphones, ShieldCheck, Sparkles, TrendingDown } from "lucide-react";
+import { memberships } from "@/config/memberships";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SearchForm } from "@/components/search/search-form";
@@ -28,27 +29,27 @@ export default function HomePage() {
                   Exceptional stays. <span className="gradient-text">Smarter value.</span>
                 </h1>
                 <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-                  Discover verified 4- and 5-star hotels, resorts, and premium vacation homes with transparent pricing, intelligent recommendations, and help whenever you need it.
+                  Explore premium hotels, resorts, and vacation homes with transparent pricing, intelligent recommendations, and help whenever you need it. Private-pilot inventory is clearly identified before booking.
                 </p>
                 <div className="mt-8 flex flex-wrap gap-3 text-sm font-semibold text-slate-600">
-                  <span className="trust-chip"><Check /> Premium-only collection</span>
+                  <span className="trust-chip"><Check /> Curated premium collection</span>
                   <span className="trust-chip"><Check /> Transparent trip totals</span>
-                  <span className="trust-chip"><Check /> Secure live payments</span>
+                  <span className="trust-chip"><Check /> Private-pilot safeguards</span>
                 </div>
               </div>
               <div className="journey-panel">
                 <div className="journey-glow" />
                 <div className="relative overflow-hidden rounded-[28px] bg-slate-950 shadow-2xl shadow-violet-300/40">
-                  <Image src={hotels[0].image} alt="Luxury beachfront hotel" width={1000} height={780} priority unoptimized sizes="(max-width: 1024px) 100vw, 50vw" className="h-[470px] w-full object-cover opacity-80" />
+                  <Image src={hotels[0].image} alt="Luxury beachfront hotel" width={1000} height={780} loading="eager" unoptimized sizes="(max-width: 1024px) 100vw, 50vw" className="h-[470px] w-full object-cover opacity-80" />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/15 to-transparent" />
                   <div className="absolute inset-x-0 bottom-0 p-7 text-white">
-                    <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold backdrop-blur">AI match · 96%</span>
+                    <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold backdrop-blur">Demo match · 96%</span>
                     <h2 className="mt-4 text-2xl font-extrabold">Your ideal beachfront escape</h2>
                     <p className="mt-2 text-sm text-slate-200">5-star stay · Free breakfast · Ocean view · Under your budget</p>
                   </div>
                 </div>
-                <div className="floating-card left-[-20px] top-10"><Bot className="h-5 w-5 text-violet-600" /><span><strong>Concierge found 7 matches</strong><small>Based on your preferences</small></span></div>
-                <div className="floating-card bottom-10 right-[-18px]"><TrendingDown className="h-5 w-5 text-emerald-600" /><span><strong>Member value available</strong><small>Save fees and earn rewards</small></span></div>
+                <div className="floating-card left-[-20px] top-10"><Bot className="h-5 w-5 text-violet-600" /><span><strong>Demo concierge found 7 matches</strong><small>Illustrative preferences</small></span></div>
+                <div className="floating-card bottom-10 right-[-18px]"><TrendingDown className="h-5 w-5 text-emerald-600" /><span><strong>Sample member value</strong><small>Benefits require activation</small></span></div>
               </div>
             </div>
             <div className="relative z-10 mt-12 lg:-mb-28">
@@ -76,8 +77,8 @@ export default function HomePage() {
         <section className="bg-white py-20">
           <div className="container-page">
             <div className="section-title-row">
-              <div><span className="section-kicker">Premium verified properties</span><h2>Stay somewhere remarkable.</h2><p>Sample properties demonstrate the marketplace until direct partner inventory is connected.</p></div>
-              <Link href="/search">View all properties <ArrowRight /></Link>
+              <div><span className="section-kicker">Private-pilot preview</span><h2>Stay somewhere remarkable.</h2><p>These sample properties demonstrate the marketplace. They are not live bookable inventory; approved partner listings will appear only after review and activation.</p></div>
+              <Link href="/search">Browse sample properties <ArrowRight /></Link>
             </div>
             <div className="mt-9 grid gap-6 lg:grid-cols-3">
               {hotels.slice(0, 3).map((hotel) => <HotelCard key={hotel.slug} hotel={hotel} variant="grid" hotelHref={`/search?destination=${encodeURIComponent(hotel.city)}`} />)}
@@ -89,13 +90,13 @@ export default function HomePage() {
           <div className="membership-shell">
             <div className="relative z-10 max-w-2xl">
               <span className="eyebrow-pill light"><Gem className="h-4 w-4" /> iRatePilot memberships</span>
-              <h2 className="mt-6 text-4xl font-black tracking-tight text-white sm:text-5xl">Book more. Pay less in fees. Earn more.</h2>
-              <p className="mt-5 text-lg leading-8 text-violet-100">Membership checkout is limited to Stripe test mode. Benefits activate only while a verified membership subscription is active.</p>
+              <h2 className="mt-6 text-4xl font-black tracking-tight text-white sm:text-5xl">No traveler fees. More member value.</h2>
+              <p className="mt-5 text-lg leading-8 text-violet-100">Every traveler pays a 0% traveler service fee. Active members also receive extra stay discounts and accelerated iRate Rewards points.</p>
               <Link href="/rewards" className="mt-7 inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 font-bold text-violet-800">Explore rewards <ArrowRight className="h-4 w-4" /></Link>
             </div>
             <div className="relative z-10 grid gap-4">
-              <article className="member-tier"><span>Basic</span><strong>$70<small>/year</small></strong><p>0% traveler service fee + reward points</p></article>
-              <article className="member-tier featured"><span><BriefcaseBusiness className="h-4 w-4" /> Business Traveler</span><strong>$120<small>/year</small></strong><p>0% traveler service fee · double reward points</p></article>
+              <article className="member-tier"><span>Basic</span><strong>${memberships.basic.annualPrice}<small>/year</small></strong><p>Extra {memberships.basic.discountRate * 100}% discount · {memberships.basic.rewardMultiplier}× iRate Rewards points</p></article>
+              <article className="member-tier featured"><span><BriefcaseBusiness className="h-4 w-4" /> Business Traveler</span><strong>${memberships.business.annualPrice}<small>/year</small></strong><p>Extra {memberships.business.discountRate * 100}% discount · {memberships.business.rewardMultiplier}× iRate Rewards points</p></article>
             </div>
           </div>
         </section>
@@ -107,8 +108,7 @@ export default function HomePage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <article className="dark-feature"><ShieldCheck /><strong>Admin-approved inventory</strong><p>Partner properties remain drafts until reviewed and published.</p></article>
                 <article className="dark-feature"><Building2 /><strong>4- and 5-star focus</strong><p>Hotels, resorts, and professionally managed vacation homes.</p></article>
-                <article className="dark-feature"><Headphones /><strong>AI + human support</strong><p>Routine answers with escalation for exceptions and complex cases.</p></article>
-                <article className="dark-feature"><Star /><strong>Transparent economics</strong><p>5% traveler fee and 14% partner commission shown separately.</p></article>
+                <article className="dark-feature sm:col-span-2"><Headphones /><strong>AI + human support</strong><p>Routine answers with escalation for exceptions and complex cases.</p></article>
               </div>
             </div>
           </div>

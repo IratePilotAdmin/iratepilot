@@ -15,7 +15,9 @@ export function BookingRequestForm({
   testCheckoutEnabled,
   initialSelection = {},
   availabilityState,
-  serviceFeeRate
+  serviceFeeRate,
+  memberDiscountRate,
+  membershipTier,
 }: {
   hotelSlug: string;
   rooms: Room[];
@@ -23,6 +25,8 @@ export function BookingRequestForm({
   initialSelection?: Selection;
   availabilityState: AvailabilityState;
   serviceFeeRate: number;
+  memberDiscountRate: number;
+  membershipTier: "none" | "basic" | "business";
 }) {
   const router = useRouter();
   const [message, setMessage] = useState("");
@@ -32,7 +36,7 @@ export function BookingRequestForm({
   const selectedRoom = rooms.find((room) => room.id === selectedRoomId);
   const quote = selectedRoom?.staySubtotal == null
     ? null
-    : calculateBookingQuote(selectedRoom.staySubtotal, serviceFeeRate);
+    : calculateBookingQuote(selectedRoom.staySubtotal, serviceFeeRate, memberDiscountRate);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -110,7 +114,7 @@ export function BookingRequestForm({
   return <form id="booking-request" onSubmit={submit} className="card grid gap-4 p-6">
     <div><h3 className="text-xl font-semibold">Book this stay</h3><p className="mt-1 text-sm text-slate-500">{testCheckoutEnabled ? "Availability and the final nightly total are verified securely before test payment." : "Availability and the final nightly total are verified before your request is sent to the property. No payment is collected."}</p></div>
     <label className="text-sm font-medium">Room type<select name="roomId" className="input mt-2" value={selectedRoomId} onChange={(event) => setSelectedRoomId(event.target.value)} required><option value="">Select a room</option>{rooms.map((room) => <option key={room.id} value={room.id}>{room.name} · ${room.baseRate.toFixed(2)} average nightly · {room.maxGuests} guests</option>)}</select></label>
-    {quote ? <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 text-sm"><div className="flex justify-between"><span>Room subtotal</span><strong>${quote.subtotal.toFixed(2)}</strong></div><div className="mt-2 flex justify-between"><span>Traveler service fee {serviceFeeRate === 0 ? "(member benefit)" : `(${serviceFeeRate * 100}%)`}</span><strong>${quote.serviceFee.toFixed(2)}</strong></div><div className="mt-3 flex justify-between border-t border-violet-200 pt-3 text-base"><strong>Request total</strong><strong>${quote.total.toFixed(2)}</strong></div><p className="mt-2 text-xs text-slate-500">Availability, rates, membership, and total are recalculated when you submit.</p></div> : <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Select a room to see the exact stay subtotal and service fee before requesting.</p>}
+    {quote ? <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 text-sm"><div className="flex justify-between"><span>Room subtotal</span><strong>${quote.baseSubtotal.toFixed(2)}</strong></div>{quote.memberDiscount > 0 ? <div className="mt-2 flex justify-between font-semibold text-emerald-700"><span>{membershipTier === "basic" ? "Basic" : "Business"} member discount ({memberDiscountRate * 100}%)</span><strong>−${quote.memberDiscount.toFixed(2)}</strong></div> : null}<div className="mt-2 flex justify-between"><span>Traveler service fee (0% for everyone)</span><strong>${quote.serviceFee.toFixed(2)}</strong></div><div className="mt-3 flex justify-between border-t border-violet-200 pt-3 text-base"><strong>Request total</strong><strong>${quote.total.toFixed(2)}</strong></div><p className="mt-2 text-xs text-slate-500">Availability, rates, active membership, and total are recalculated when you submit.</p></div> : <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Select a room to see the exact stay subtotal, member savings, and traveler total.</p>}
     <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-700"><strong className="block text-slate-950">Verified stay</strong><span>{initialSelection.checkIn} to {initialSelection.checkOut} · {initialSelection.guests} {initialSelection.guests === "1" ? "guest" : "guests"}</span><Link href={`/hotels/${encodeURIComponent(hotelSlug)}#booking-request`} className="mt-2 block font-semibold text-violet-700">Change dates or guests</Link></div>
     <input name="checkIn" type="hidden" value={initialSelection.checkIn || ""} />
     <input name="checkOut" type="hidden" value={initialSelection.checkOut || ""} />

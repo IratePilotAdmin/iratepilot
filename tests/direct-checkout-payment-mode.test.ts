@@ -115,10 +115,13 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
     )).toThrow("does not match");
   });
 
-  it("refuses a push when the new PMS-only migration is pending outside the approved Preview set", () => {
+  it("refuses a push when repository migrations are pending outside the approved Preview set", () => {
     const repoMigrationVersions = listMigrationVersions();
     const calls: Array<{ args: string[]; capture?: boolean }> = [];
-    const observedPreviewVersions = repoMigrationVersions.filter((version) => version <= "202608150061" && version !== "202607260000");
+    const unapprovedPending = repoMigrationVersions.filter((version) => (
+      version === "202607260000" || version > "202608150061"
+    ));
+    const observedPreviewVersions = repoMigrationVersions.filter((version) => !unapprovedPending.includes(version));
     const outputs = [
       migrationList(repoMigrationVersions, observedPreviewVersions),
     ];
@@ -130,7 +133,7 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
     expect(() => reconcilePreviewMigrations({
       PREVIEW_SUPABASE_DB_URL: previewUrl,
       PREVIEW_SUPABASE_PROJECT_REF: previewRef,
-    }, [], runner)).toThrow("unapproved pending set: 202607260000, 202608220062, 202608220063, 202609070139, 202609070140, 202609070141, 202609070157, 202609070158, 202609270159");
+    }, [], runner)).toThrow(`unapproved pending set: ${unapprovedPending.join(", ")}`);
     expect(calls.map(({ args }) => args.slice(0, 2))).toEqual([
       ["migration", "list"],
     ]);

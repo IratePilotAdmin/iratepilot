@@ -16,7 +16,7 @@ export async function GET() {
     const { data, error } = await admin
       .from("booking_financials")
       .select(
-        "id,gross_room_revenue,partner_commission,partner_net,status,created_at,stripe_transfer_id,stripe_transfer_status,stripe_transfer_error,stripe_transferred_at,stripe_reversed_at,partners(business_name),bookings(confirmation_code,status)"
+        "id,gross_room_revenue,partner_commission,reward_program_fee,partner_commission_rate_bps,reward_program_fee_rate_bps,fee_schedule_version,partner_net,status,created_at,stripe_transfer_id,stripe_transfer_status,stripe_transfer_error,stripe_transferred_at,stripe_reversed_at,partners(business_name),bookings(confirmation_code,status)"
       )
       .order("created_at", { ascending: false });
 
@@ -25,10 +25,15 @@ export async function GET() {
     const rows = data || [];
     const summary = rows.reduce(
       (total, row) => ({
-        gross: total.gross + Number(row.gross_room_revenue),
+        gross: total.gross + (row.status === "void" ? 0 : Number(row.gross_room_revenue)),
         commission:
-          total.commission + Number(row.partner_commission),
-        partnerNet: total.partnerNet + Number(row.partner_net),
+          total.commission + (row.status === "void" ? 0 : Number(row.partner_commission)),
+        rewardProgramFee:
+          total.rewardProgramFee + (row.status === "void" ? 0 : Number(row.reward_program_fee || 0)),
+        totalHotelDeductions:
+          total.totalHotelDeductions
+          + (row.status === "void" ? 0 : Number(row.partner_commission) + Number(row.reward_program_fee || 0)),
+        partnerNet: total.partnerNet + (row.status === "void" ? 0 : Number(row.partner_net)),
         paidTransfers:
           total.paidTransfers +
           (row.stripe_transfer_status === "paid" ? 1 : 0),
@@ -42,6 +47,8 @@ export async function GET() {
       {
         gross: 0,
         commission: 0,
+        rewardProgramFee: 0,
+        totalHotelDeductions: 0,
         partnerNet: 0,
         paidTransfers: 0,
         reversedTransfers: 0,
@@ -58,4 +65,3 @@ export async function GET() {
     );
   }
 }
-

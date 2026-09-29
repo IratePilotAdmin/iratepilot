@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -20,6 +20,17 @@ import { getVerifiedMembershipSubscriptionTier } from "@/lib/stripe/membership-s
 import { queueBookingNotification } from "@/lib/email/booking-notifications";
 import { getApprovedBookingMetadataMode, getStripeWebhookMode } from "@/lib/stripe/booking-payment-mode";
 import { reconcileStripeBookingRefund, type StripeRefundReconciliation } from "@/lib/bookings/stripe-refund-reconciliation";
+import { drainNativePmsEvents } from "@/services/hotel-suppliers/iratepilot-pms/native-delivery";
+
+function deliverCancellationToNativePms() {
+  after(async () => {
+    try {
+      await drainNativePmsEvents(10);
+    } catch (deliveryError) {
+      console.error("Refunded reservation was queued for later PMS delivery", deliveryError);
+    }
+  });
+}
 
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
@@ -240,6 +251,7 @@ export async function POST(request: Request) {
           customerId: refundReconciliation.customerId,
           paymentMode: webhookMode,
         });
+        deliverCancellationToNativePms();
       }
     }
 

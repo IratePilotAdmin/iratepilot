@@ -5,7 +5,7 @@ import "./globals.css";
 const siteUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://www.iratepilot.com").replace(/\/$/, "");
 const siteTitle = "iRatePilot | Book Hotels & Vacation Homes";
 const siteDescription =
-  "Search and book curated hotels, resorts, and vacation homes with transparent rates and secure online payments.";
+  "Explore curated hotels, resorts, and vacation homes with transparent rates, private-pilot safeguards, and clearly identified sample inventory.";
 
 const structuredData = {
   "@context": "https://schema.org",
@@ -74,7 +74,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body>
         <script
           type="application/ld+json"

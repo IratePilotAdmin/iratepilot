@@ -4,6 +4,8 @@ import { buildPartnerOverview, type PartnerOverviewBooking, type PartnerOverview
 
 const route = readFileSync(new URL("../app/api/partner/overview/route.ts", import.meta.url), "utf8");
 const page = readFileSync(new URL("../app/partner/dashboard/page.tsx", import.meta.url), "utf8");
+const overview = readFileSync(new URL("../components/dashboard/partner-overview.tsx", import.meta.url), "utf8");
+const onboardingSummary = readFileSync(new URL("../components/partner/partner-onboarding-summary.tsx", import.meta.url), "utf8");
 
 describe("live partner overview", () => {
   it("requires an approved partner before portfolio queries", () => {
@@ -35,5 +37,15 @@ describe("live partner overview", () => {
     expect(page).not.toContain("partnerStats");
     expect(page).not.toContain("RevenueChart");
     expect(page).not.toContain("RecentBookings");
+  });
+
+  it("shows live onboarding readiness and the next action on the partner dashboard", () => {
+    expect(overview).toContain("data.businessName ? <PartnerOnboardingSummary /> : null");
+    expect(onboardingSummary).toContain('fetch("/api/partner/onboarding"');
+    expect(onboardingSummary).toContain("Private-pilot preparation is complete");
+    expect(onboardingSummary).toContain("Next: {nextStep.label}");
+    expect(onboardingSummary).toContain("Choose a hotel to continue");
+    expect(onboardingSummary).toContain('href="/partner/onboarding"');
+    expect(onboardingSummary).toContain('role="progressbar"');
   });
 });

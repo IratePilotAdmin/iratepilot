@@ -4,12 +4,20 @@ import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createRequestClient } from "@/lib/supabase/request";
 import { getApprovedBookingMetadataMode, getApprovedBookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
+import { hasCurrentLivePaymentAuthorization } from "@/lib/stripe/live-payment-authorization";
+import { isHotelMarketplaceLaunchAuthorized } from "@/lib/hotels/marketplace-launch-authorization";
 
 const bookingIdSchema = z.string().uuid();
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const paymentMode = getApprovedBookingPaymentMode();
   if (!paymentMode) return NextResponse.json({ error: "Approved-reservation payments are disabled." }, { status: 503 });
+  if (paymentMode === "live" && !await isHotelMarketplaceLaunchAuthorized()) {
+    return NextResponse.json(
+      { error: "Live payments require every production launch gate to pass." },
+      { status: 503 },
+    );
+  }
 
   const { id } = await params;
   if (!bookingIdSchema.safeParse(id).success) return NextResponse.json({ error: "Invalid booking ID." }, { status: 400 });
@@ -19,6 +27,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!user) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
 
   const admin = createAdminClient();
+  if (paymentMode === "live" && !await hasCurrentLivePaymentAuthorization(admin)) {
+    return NextResponse.json(
+      { error: "Live payments require a current production payment approval." },
+      { status: 503 },
+    );
+  }
   const { data: booking, error } = await admin.from("bookings")
     .select("id,customer_id,confirmation_code,status,total,stripe_payment_intent_id,properties(name),rooms(name)")
     .eq("id", id)

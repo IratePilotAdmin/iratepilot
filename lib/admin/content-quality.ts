@@ -25,6 +25,7 @@ export function buildContentQuality(properties: ContentQualityProperty[], today?
       amenityCoverage: Array.isArray(property.amenities) && property.amenities.length >= 3,
       completeLocation: property.city.trim().length >= 2 && property.country.trim().length >= 2,
       activeRoom: readiness.requirements.activeRoom,
+      roomTerms: readiness.requirements.roomTerms,
       futureInventory: readiness.requirements.futureInventory,
     };
     const labels: Record<keyof typeof requirements, string> = {
@@ -34,7 +35,8 @@ export function buildContentQuality(properties: ContentQualityProperty[], today?
       amenityCoverage: "at least 3 amenities",
       completeLocation: "complete location",
       activeRoom: "active room type",
-      futureInventory: "future sellable inventory",
+      roomTerms: "room rate-plan and cancellation terms",
+      futureInventory: "future sellable inventory with taxes and mandatory fees",
     };
     const missing = (Object.keys(requirements) as Array<keyof typeof requirements>)
       .filter((key) => !requirements[key])

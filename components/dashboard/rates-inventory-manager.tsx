@@ -6,8 +6,21 @@ import { getTodayIsoDate, summarizeSellableInventory } from "@/lib/inventory-dat
 import type { PartnerHotelAccess } from "@/lib/partner/hotel-access";
 
 type Property = { id: string; name: string; active: boolean };
-type Inventory = { stay_date: string; available_units: number; rate: number };
-type Room = { id: string; property_id: string; name: string; max_guests: number; base_rate: number; active: boolean; inventory?: Inventory[] };
+type Inventory = { stay_date: string; available_units: number; rate: number; direct_tax_amount: number | null; direct_mandatory_fee_amount: number | null };
+type Room = {
+  id: string;
+  property_id: string;
+  name: string;
+  max_guests: number;
+  base_rate: number;
+  active: boolean;
+  direct_rate_plan_code: string | null;
+  direct_rate_plan_name: string | null;
+  direct_currency_code: string | null;
+  direct_cancellation_policy: string | null;
+  direct_cancellation_policy_version: string | null;
+  inventory?: Inventory[];
+};
 
 export function RatesInventoryManager() {
   const [properties, setProperties] = useState<Property[]>([]);
@@ -112,25 +125,32 @@ export function RatesInventoryManager() {
     </section>
     <div className="grid gap-8 xl:grid-cols-3">
       <form onSubmit={(event) => send(event, "create_room")} className="card grid gap-4 p-6">
-        <div><h2 className="text-xl font-semibold">Add room type</h2><p className="mt-1 text-sm text-slate-500">Create a room or vacation-home unit.</p></div>
+        <div><h2 className="text-xl font-semibold">Add room type</h2><p className="mt-1 text-sm text-slate-500">Create a room with the exact rate plan and cancellation terms shown to guests.</p></div>
         <label className="text-sm font-medium">Property<select name="propertyId" className="input mt-2" required><option value="">Select property</option>{properties.map((property) => <option key={property.id} value={property.id}>{property.name}</option>)}</select></label>
         <label className="text-sm font-medium">Room name<input name="name" className="input mt-2" placeholder="Deluxe King" required /></label>
         <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Maximum guests<input name="maxGuests" type="number" min="1" max="30" className="input mt-2" required /></label><label className="text-sm font-medium">Base nightly rate<input name="baseRate" type="number" min="25" step="0.01" className="input mt-2" required /></label></div>
+        <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Rate plan code<input name="ratePlanCode" className="input mt-2" placeholder="BAR" maxLength={80} required /></label><label className="text-sm font-medium">Rate plan name<input name="ratePlanName" className="input mt-2" placeholder="Best Available Rate" maxLength={160} required /></label></div>
+        <label className="text-sm font-medium">Cancellation policy<textarea name="cancellationPolicy" className="input mt-2 min-h-24" minLength={10} maxLength={2000} placeholder="State the exact cancellation deadline and charges." required /></label>
+        <label className="text-sm font-medium">Policy version<input name="cancellationPolicyVersion" className="input mt-2" placeholder="2026-09-20" maxLength={80} required /></label>
         <button disabled={busy || partnerSelectionRequired || !properties.length} className="btn-primary">Create room type</button>
       </form>
       <form onSubmit={(event) => send(event, "update_room")} className="card grid gap-4 p-6">
-        <div><h2 className="text-xl font-semibold">Edit room type</h2><p className="mt-1 text-sm text-slate-500">Correct details or retire a room from new bookings.</p></div>
+        <div><h2 className="text-xl font-semibold">Edit room type</h2><p className="mt-1 text-sm text-slate-500">Correct guest-facing terms or retire a room from new bookings.</p></div>
         <label className="text-sm font-medium">Room type<select name="roomId" value={selectedRoomId} onChange={(event) => setSelectedRoomId(event.target.value)} className="input mt-2" required><option value="">Select room</option>{rooms.map((room) => <option key={room.id} value={room.id}>{propertyNames.get(room.property_id)} — {room.name}</option>)}</select></label>
         <label className="text-sm font-medium">Room name<input key={`${selectedRoomId}-name`} name="name" defaultValue={selectedRoom?.name || ""} className="input mt-2" required disabled={!selectedRoom} /></label>
         <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Maximum guests<input key={`${selectedRoomId}-guests`} name="maxGuests" type="number" min="1" max="30" defaultValue={selectedRoom?.max_guests} className="input mt-2" required disabled={!selectedRoom} /></label><label className="text-sm font-medium">Base nightly rate<input key={`${selectedRoomId}-rate`} name="baseRate" type="number" min="25" step="0.01" defaultValue={selectedRoom?.base_rate} className="input mt-2" required disabled={!selectedRoom} /></label></div>
+        <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Rate plan code<input key={`${selectedRoomId}-plan-code`} name="ratePlanCode" defaultValue={selectedRoom?.direct_rate_plan_code || ""} className="input mt-2" maxLength={80} required disabled={!selectedRoom} /></label><label className="text-sm font-medium">Rate plan name<input key={`${selectedRoomId}-plan-name`} name="ratePlanName" defaultValue={selectedRoom?.direct_rate_plan_name || ""} className="input mt-2" maxLength={160} required disabled={!selectedRoom} /></label></div>
+        <label className="text-sm font-medium">Cancellation policy<textarea key={`${selectedRoomId}-policy`} name="cancellationPolicy" defaultValue={selectedRoom?.direct_cancellation_policy || ""} className="input mt-2 min-h-24" minLength={10} maxLength={2000} required disabled={!selectedRoom} /></label>
+        <label className="text-sm font-medium">Policy version<input key={`${selectedRoomId}-policy-version`} name="cancellationPolicyVersion" defaultValue={selectedRoom?.direct_cancellation_policy_version || ""} className="input mt-2" maxLength={80} required disabled={!selectedRoom} /></label>
         <label className="text-sm font-medium">Booking status<select key={`${selectedRoomId}-active`} name="active" defaultValue={selectedRoom?.active === false ? "false" : "true"} className="input mt-2" disabled={!selectedRoom}><option value="true">Active for new bookings</option><option value="false">Retired from new bookings</option></select></label>
         <button disabled={busy || partnerSelectionRequired || !selectedRoom} className="btn-primary">Save room type</button>
       </form>
       <form onSubmit={(event) => send(event, "set_inventory")} className="card grid gap-4 p-6">
-        <div><h2 className="text-xl font-semibold">Set dated inventory</h2><p className="mt-1 text-sm text-slate-500">Update up to 366 consecutive dates.</p></div>
+        <div><h2 className="text-xl font-semibold">Set dated inventory</h2><p className="mt-1 text-sm text-slate-500">Update up to 366 consecutive dates with the full guest price. Enter 0 when no tax or mandatory fee applies.</p></div>
         <label className="text-sm font-medium">Room type<select name="roomId" value={inventoryRoomId} onChange={(event) => setInventoryRoomId(event.target.value)} className="input mt-2" required><option value="">Select room</option>{rooms.map((room) => <option key={room.id} value={room.id}>{propertyNames.get(room.property_id)} — {room.name}</option>)}</select></label>
         <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Start date<input name="startDate" type="date" min={today} className="input mt-2" required disabled={!inventoryRoom} /></label><label className="text-sm font-medium">End date<input name="endDate" type="date" min={today} className="input mt-2" required disabled={!inventoryRoom} /></label></div>
         <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Available units<input name="availableUnits" type="number" min="0" max="500" className="input mt-2" required disabled={!inventoryRoom} /></label><label className="text-sm font-medium">Nightly rate<input key={`${inventoryRoomId}-inventory-rate`} name="rate" type="number" min="25" step="0.01" defaultValue={inventoryRoom?.base_rate} className="input mt-2" required disabled={!inventoryRoom} /></label></div>
+        <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Taxes per night<input name="taxAmount" type="number" min="0" max="25000" step="0.01" defaultValue="0" className="input mt-2" required disabled={!inventoryRoom} /></label><label className="text-sm font-medium">Mandatory fees per night<input name="mandatoryFeeAmount" type="number" min="0" max="25000" step="0.01" defaultValue="0" className="input mt-2" required disabled={!inventoryRoom} /></label></div>
         <button disabled={busy || partnerSelectionRequired || !inventoryRoom} className="btn-primary">Update inventory</button>
       </form>
     </div>

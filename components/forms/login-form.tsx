@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getSafeNextPath } from "@/lib/auth/safe-next-path";
 
-export function LoginForm({ configured }: { configured: boolean }) {
+export function LoginForm({ configured, googleEnabled = false }: { configured: boolean; googleEnabled?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -13,7 +13,7 @@ export function LoginForm({ configured }: { configured: boolean }) {
   const nextPath = getSafeNextPath(searchParams.get("next"));
 
   async function signInWithGoogle() {
-    if (!configured) return;
+    if (!configured || !googleEnabled) return;
     setLoading(true);
     setMessage("");
     try {
@@ -55,8 +55,8 @@ export function LoginForm({ configured }: { configured: boolean }) {
   return (
     <div className="grid gap-5">
       {!configured && <div role="alert" className="border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950"><strong>Sign-in is temporarily unavailable.</strong><p className="mt-1">The authentication service has not been connected to this deployment. No account information has been lost.</p></div>}
-      <button type="button" onClick={signInWithGoogle} disabled={loading || !configured} className="btn-secondary w-full disabled:cursor-not-allowed disabled:opacity-50">Continue with Google</button>
-      <div className="flex items-center gap-3 text-xs uppercase tracking-wider text-slate-400"><span className="h-px flex-1 bg-slate-200" />or use email<span className="h-px flex-1 bg-slate-200" /></div>
+      {googleEnabled && <><button type="button" onClick={signInWithGoogle} disabled={loading || !configured} className="btn-secondary w-full disabled:cursor-not-allowed disabled:opacity-50">Continue with Google</button>
+      <div className="flex items-center gap-3 text-xs uppercase tracking-wider text-slate-400"><span className="h-px flex-1 bg-slate-200" />or use email<span className="h-px flex-1 bg-slate-200" /></div></>}
       <form className="grid gap-4" onSubmit={submit}>
       <label className="grid gap-2 text-sm font-medium" htmlFor="login-email">Email address</label>
       <input id="login-email" name="email" className="input" type="email" autoComplete="email" disabled={!configured} required />

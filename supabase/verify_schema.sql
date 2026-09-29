@@ -16,6 +16,25 @@ select
   to_regclass('public.partner_team_access_events') is not null as partner_team_audit_ready;
 
 select
+  to_regclass('public.one_pending_partner_application_per_email_and_property') is not null
+    as hotel_intake_deduplication_ready,
+  to_regclass('public.partner_applications_property_id_key') is not null
+    as hotel_intake_property_link_ready,
+  exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'partner_applications'
+      and column_name = 'hotel_authorized'
+      and is_nullable = 'NO'
+  ) as hotel_intake_authorization_ready,
+  position(
+    'insert into public.properties'
+    in lower(pg_get_functiondef(
+      'public.review_partner_application(uuid,text)'::regprocedure
+    ))
+  ) > 0 as inactive_draft_provisioning_ready;
+
+select
   relname as table_name,
   relrowsecurity as row_level_security_enabled
 from pg_class

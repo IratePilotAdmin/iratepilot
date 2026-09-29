@@ -23,7 +23,7 @@ export async function GET() {
     const bookingIds = (data || []).map((booking) => booking.id);
     const { data: financials, error: financialError } = bookingIds.length
       ? await auth.supabase.from("booking_financials")
-          .select("booking_id,partner_commission,partner_net,status")
+          .select("booking_id,gross_room_revenue,partner_commission,reward_program_fee,partner_commission_rate_bps,reward_program_fee_rate_bps,fee_schedule_version,partner_net,status")
           .in("booking_id", bookingIds)
       : { data: [], error: null };
     if (financialError) throw financialError;

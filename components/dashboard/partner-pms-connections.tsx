@@ -73,7 +73,7 @@ export function PartnerPmsConnections() {
     <form key={propertyId || "empty"} onSubmit={submit} className="card grid h-fit gap-4 p-6">
       <div><h2 className="text-xl font-semibold">Declare a PMS</h2><p className="mt-1 text-sm text-slate-500">Select the system used by this hotel. Do not paste passwords, API keys, or client secrets.</p></div>
       <label className="text-sm font-medium">Property<select className="input mt-2" value={propertyId} onChange={(event) => setPropertyId(event.target.value)} required><option value="">Select property</option>{properties.map((property) => <option key={property.id} value={property.id}>{property.name}</option>)}</select></label>
-      <label className="text-sm font-medium">PMS provider<select name="providerId" className="input mt-2" defaultValue={selected?.connection?.provider_id || ""} required><option value="">Select provider</option>{providers.map((provider) => <option key={provider.id} value={provider.id}>{provider.name} â€” {provider.vendor}</option>)}</select></label>
+      <label className="text-sm font-medium">PMS provider<select name="providerId" className="input mt-2" defaultValue={selected?.connection?.provider_id || ""} required><option value="">Select provider</option>{providers.map((provider) => <option key={provider.id} value={provider.id}>{provider.name} — {provider.vendor}</option>)}</select></label>
       <label className="text-sm font-medium">Hotel/property code<input name="externalPropertyCode" className="input mt-2" defaultValue={selected?.connection?.external_property_code || ""} maxLength={120} required /><small className="mt-1 block text-slate-500">Use the non-secret identifier assigned to the hotel in its PMS.</small></label>
       <fieldset className="grid gap-4 border-t pt-4">
         <legend className="text-sm font-semibold">Pilot-hotel authorization and mappings</legend>
@@ -84,7 +84,7 @@ export function PartnerPmsConnections() {
         <label className="text-sm font-medium">Cancellation-policy mapping<textarea name="cancellationPolicyMapping" className="input mt-2 min-h-24" defaultValue={selected?.connection?.cancellation_policy_mapping || ""} maxLength={4000} placeholder="Map each sellable policy to its PMS policy code." /></label>
       </fieldset>
       {message && <p role="status" className="text-sm">{message}</p>}
-      <button className="btn-primary" disabled={busy || !propertyId}>{busy ? "Savingâ€¦" : "Save PMS declaration"}</button>
+      <button className="btn-primary" disabled={busy || !propertyId}>{busy ? "Saving…" : "Save PMS declaration"}</button>
     </form>
   </div>;
 }

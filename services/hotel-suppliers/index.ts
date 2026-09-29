@@ -1,6 +1,8 @@
 export { mockSupplier } from "./mock";
 export { getPmsProvider, pmsProviders } from "./providers";
 export { buildPmsReadiness, validatePmsConfiguration } from "./readiness";
+export { buildSupplierPhaseReadiness } from "./phase-readiness";
+export type { SupplierPhaseReadiness, SupplierPhaseStatus } from "./phase-readiness";
 export {
   auditPriorityPmsProductionReadiness,
   isVerifiedActivationDetail,

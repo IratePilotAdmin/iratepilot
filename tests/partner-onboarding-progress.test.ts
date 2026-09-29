@@ -8,10 +8,11 @@ const page = readFileSync(new URL("../app/partner/onboarding/page.tsx", import.m
 const navigation = readFileSync(new URL("../data/navigation.ts", import.meta.url), "utf8");
 const home = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
 const publicPartnerPage = readFileSync(new URL("../app/partner/page.tsx", import.meta.url), "utf8");
+const onboardingUi = readFileSync(new URL("../components/partner/partner-onboarding.tsx", import.meta.url), "utf8");
 
 const property = (overrides: Partial<OnboardingProperty> = {}): OnboardingProperty => ({
   id: "property-1", name: "Pilot Hotel", active: false,
-  readiness: { ready: true, missing: [], requirements: { primaryPhoto: true, amenities: true, activeRoom: true, futureInventory: true } },
+  readiness: { ready: true, missing: [], requirements: { primaryPhoto: true, amenities: true, activeRoom: true, roomTerms: true, futureInventory: true } },
   ...overrides,
 });
 
@@ -22,18 +23,35 @@ describe("live partner onboarding progress", () => {
       [property({ active: true })],
     );
     expect(progress.ready).toBe(true);
-    expect(progress.completed).toBe(7);
+    expect(progress.completed).toBe(8);
     expect(progress.percent).toBe(100);
+    expect(progress.pilotPreparation).toMatchObject({ ready: true, percent: 100, completed: 6, total: 6 });
+    expect(progress.commercialActivation).toMatchObject({ ready: true, percent: 100, completed: 2, total: 2 });
     expect(progress.software).toMatchObject({ plan: "none", active: false });
   });
 
   it("uses one strongest property for content, room, inventory, and publication steps", () => {
-    const incomplete = property({ id: "p1", name: "Incomplete", readiness: { ready: false, missing: ["future sellable inventory"], requirements: { primaryPhoto: true, amenities: true, activeRoom: true, futureInventory: false } } });
+    const incomplete = property({ id: "p1", name: "Incomplete", readiness: { ready: false, missing: ["future sellable inventory with taxes and mandatory fees"], requirements: { primaryPhoto: true, amenities: true, activeRoom: true, roomTerms: true, futureInventory: false } } });
     const stronger = property({ id: "p2", name: "Stronger" });
     const progress = buildPartnerOnboarding({ status: "approved", stripe_connect_status: "pending", software_plan: "starter", subscription_status: "active" }, [incomplete, stronger]);
     expect(progress.primaryProperty?.id).toBe("p2");
     expect(progress.steps.find((step) => step.key === "inventory")?.complete).toBe(true);
     expect(progress.steps.find((step) => step.key === "payouts")?.complete).toBe(false);
+    expect(progress.pilotPreparation).toMatchObject({ ready: true, percent: 100 });
+    expect(progress.commercialActivation).toMatchObject({ ready: false, percent: 0 });
+    expect(progress.ready).toBe(false);
+  });
+
+  it("lets an inactive delegated hotel reach private-pilot readiness without implying publication", () => {
+    const progress = buildPartnerOnboarding(
+      { status: "approved", stripe_connect_status: "pending", software_plan: "starter", subscription_status: "active" },
+      [property()],
+      "general_manager",
+    );
+    expect(progress.pilotPreparation).toMatchObject({ ready: true, percent: 100, completed: 5, total: 5 });
+    expect(progress.pilotPreparation.steps.map((step) => step.key)).toEqual(["property", "content", "rooms", "room_terms", "inventory"]);
+    expect(progress.commercialActivation).toMatchObject({ ready: false, percent: 0, completed: 0, total: 1 });
+    expect(progress.commercialActivation.steps.map((step) => step.key)).toEqual(["published"]);
     expect(progress.ready).toBe(false);
   });
 
@@ -44,8 +62,8 @@ describe("live partner onboarding progress", () => {
       "revenue_manager",
     );
     expect(progress.ready).toBe(true);
-    expect(progress.total).toBe(5);
-    expect(progress.steps.map((step) => step.key)).toEqual(["property", "content", "rooms", "inventory", "published"]);
+    expect(progress.total).toBe(6);
+    expect(progress.steps.map((step) => step.key)).toEqual(["property", "content", "rooms", "room_terms", "inventory", "published"]);
     expect(progress.steps.some((step) => step.href === "/partner/payouts")).toBe(false);
     expect(progress).not.toHaveProperty("software");
   });
@@ -60,10 +78,10 @@ describe("live partner onboarding progress", () => {
   });
 
   it("uses the already authorized partner scope when reading pending-owner draft properties", () => {
-    expect(route).toContain('await admin.from("properties")');
+    expect(route).toContain('await reader.from("properties")');
     expect(route).toContain('.eq("partner_id", partner.id)');
     expect(route.indexOf("if (!partner)"))
-      .toBeLessThan(route.indexOf('await admin.from("properties")'));
+      .toBeLessThan(route.indexOf('await reader.from("properties")'));
   });
 
   it("keeps pending ownership selectable without overriding requested managed access", () => {
@@ -103,5 +121,9 @@ describe("live partner onboarding progress", () => {
     expect(home).toContain('href="/partner#application"');
     expect(publicPartnerPage).toContain('id="application"');
     expect(publicPartnerPage).not.toContain('href="/partner/onboarding"');
+    expect(page).toContain("private-pilot preparation first");
+    expect(onboardingUi).toContain("Private-pilot checklist");
+    expect(onboardingUi).toContain("Publication and payouts require separate operator, provider, and production approvals.");
+    expect(onboardingUi).toContain("Private-pilot ready");
   });
 });
