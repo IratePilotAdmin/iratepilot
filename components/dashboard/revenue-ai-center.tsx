@@ -22,7 +22,7 @@ export function RevenueAiCenter() {
   const [validatedFile, setValidatedFile] = useState<File | null>(null);
   const [validation, setValidation] = useState<CsvValidation | null>(null);
   const selectedProperty = data.properties.find(property => property.id === propertyId);
-  const redRoofDraft = data.properties.find(property => property.pms_only && property.name === "Red Roof Inn Ridgeland");
+  const existingRedRoof = data.properties.find(property => property.name.toLowerCase().startsWith("red roof inn ridgeland"));
   const load = useCallback(async () => {
     const response = await fetch("/api/revenue"); const body = await response.json();
     if (!response.ok) throw new Error(body.error); setData(body); setPropertyId(current => current || body.properties[0]?.id || ""); setMessage("");
@@ -88,7 +88,7 @@ export function RevenueAiCenter() {
   return <div className="mt-8 grid gap-8">
     {data.canCreatePmsPilot && <section className="card p-6"><h2 className="text-xl font-semibold">Red Roof Inn Ridgeland PMS pilot</h2>
       <p className="mt-2 text-sm text-slate-600">Create an inactive PMS-only draft under your authorized hotel organization. It is excluded from public hotel search and cannot be approved for OTA publication. No rooms, reservations, or rates are created by this step.</p>
-      {redRoofDraft ? <p className="mt-3 text-sm">PMS-only draft: <strong>{redRoofDraft.name}</strong> · Property ID <code>{redRoofDraft.id}</code></p>
+      {existingRedRoof ? <p className="mt-3 text-sm">{existingRedRoof.pms_only ? "PMS-only draft" : "Existing property requires ownership and PMS source review"}: <strong>{existingRedRoof.name}</strong> · Property ID <code>{existingRedRoof.id}</code></p>
         : <button className="btn-secondary mt-4" type="button" disabled={!!busy} onClick={() => void createPmsDraft()}>{busy === "pms-draft" ? "Creating…" : "Create inactive PMS-only draft"}</button>}
       <div className="mt-5 border-t pt-5"><PrivateRevenueSimulation /></div>
     </section>}
