@@ -165,9 +165,8 @@ column, and Revenue AI RPC present at the end. TypeScript typecheck passed.
 
 This local SQL gate was supplemented by the hosted fresh replay and Preview
 migration application described above. PGlite uses
-PostgreSQL 18 and minimal Auth stand-ins; Supabase's managed roles/extensions,
-the actual production history ledger, and version 16 behavior still need a
-fresh branch check. The CLI is installed in a disposable workspace, but no
+PostgreSQL 18 and minimal Auth stand-ins. The hosted branch checks above
+covered the production history and managed Supabase behavior. The CLI is installed in a disposable workspace, but no
 linked database credentials are available. The production ledger repair above
 was performed through the connected SQL tool and verified with read-only
 queries; the existing Preview branch completed its incremental rebase.
@@ -187,7 +186,7 @@ The six versions absent from Preview on 2026-09-27 were, in order:
 6. `202609270159` — inactive PMS-only property, authenticated inventory and
    room-rate write guards, and revenue approval guard
 
-Versions 139, 140, 141, 157, and 158 reached Preview on 2026-09-28. Version
+Versions 139, 140, 141, 157, and 158 reached Preview on 2026-09-28.
 Version 159 is absent from main but was applied and reconciled on Preview on
 2026-09-28 as detailed above.
 
@@ -247,15 +246,14 @@ node scripts/reconcile-preview-migrations.mjs --preflight
 This command checks the project identity, compares the full local and remote
 migration ledgers, and runs `supabase db push --dry-run`. It prints only the
 project reference and versions. It never calls `db push --yes` or repairs
-history. It refuses to proceed if the remote ledger or dry run differs from
-the exact six-application-version set above. It will block while the three
-history-recovery versions also differ. The ordinary reconciliation command still
-blocks version `202609270159`; this preflight does not approve it.
+history. The 2026-09-27 preflight required the historical six-version pending set.
+It now also accepts zero pending versions and remains read-only. It still
+rejects unexpected remote versions or an unexpected dry run.
 
-Review the dry-run result and the six SQL files before separately approving a
-Preview migration push. Verify the ledger and schema afterward. Do not merge
-or deploy the application before its database guard exists. Do not enable PMS
-delivery or create a hotel draft as part of this preflight.
+Review the dry-run result before a production release. The Preview database
+guard exists, but the production migration and application deployment remain
+separate gates. Do not enable PMS delivery or create a hotel draft as part of
+this preflight.
 
 The PMS-only guard rejects authenticated inventory writes and room base-rate
 changes, including direct database API calls. A trusted service-role PMS
