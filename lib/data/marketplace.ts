@@ -38,6 +38,7 @@ export async function getMarketplaceHotels(
     const { data, error } = await admin.from("properties")
       .select("slug,name,city,country,star_rating,description,image_url,amenities,guest_rating,review_count,partners!inner(status),rooms(id,active,base_rate,max_guests,inventory(stay_date,available_units,rate))")
       .eq("active", true)
+      .eq("pms_only", false)
       .eq("partners.status", "approved")
       .in("star_rating", [4, 5])
       .eq("rooms.active", true);
@@ -85,7 +86,7 @@ export async function getMarketplaceHotel(slug: string, stay: StayCriteria | nul
       const admin = createAdminClient();
       const { data } = await admin.from("properties")
         .select("partners!inner(status),rooms(id,name,active,base_rate,max_guests,inventory(stay_date,available_units,rate))")
-        .eq("slug", slug).eq("active", true).eq("partners.status", "approved").eq("rooms.active", true).single();
+        .eq("slug", slug).eq("active", true).eq("pms_only", false).eq("partners.status", "approved").eq("rooms.active", true).single();
       const roomRows = (data?.rooms || []) as Array<SearchableRoom & { id: string; name: string }>;
       const availableRooms = stay
         ? getAvailableRooms(roomRows, stay)

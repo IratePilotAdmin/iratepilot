@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     let hotelAccess: PartnerHotelAccessResult | null = null;
-    let query = auth.supabase.from("properties").select("id,name,slug,type,star_rating,description,city,country,active,image_url,amenities,created_at,rooms(active,inventory(stay_date,available_units))").order("created_at", { ascending: false });
+    let query = auth.supabase.from("properties").select("id,name,slug,type,star_rating,description,city,country,active,image_url,amenities,created_at,rooms(active,inventory(stay_date,available_units))").eq("pms_only", false).order("created_at", { ascending: false });
     if (auth.profile.role !== "admin") {
       const requestedPartnerId = new URL(request.url).searchParams.get("partnerId");
       hotelAccess = await resolvePartnerHotelAccess(auth, requestedPartnerId);

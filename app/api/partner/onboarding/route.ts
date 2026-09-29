@@ -60,6 +60,7 @@ export async function GET(request: Request) {
     const { data: properties, error: propertyError } = await admin.from("properties")
       .select("id,name,active,image_url,amenities,rooms(active,inventory(stay_date,available_units))")
       .eq("partner_id", partner.id)
+      .eq("pms_only", false)
       .order("created_at", { ascending: true });
     if (propertyError) throw propertyError;
     const prepared = (properties || []).map((property) => ({

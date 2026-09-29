@@ -3,6 +3,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/require-role";
 import { resolvePartnerHotelAccess } from "@/lib/partner/hotel-access";
+import { loadCompleteSnapshotRows } from "@/lib/pms-snapshot-pagination";
+import { loadCompleteRevenueRows } from "@/lib/revenue-pagination";
+import { reconcileRevenueRows } from "@/lib/revenue-reconciliation";
 
 const querySchema = z.object({
   propertyId: z.string().uuid(),
@@ -33,33 +36,41 @@ export async function GET(request: Request) {
     if (propertyError) throw propertyError;
     if (!property) return NextResponse.json({ error: "Property not found or access denied." }, { status: 404 });
 
-    const { data: rooms, error: roomsError } = await auth.supabase.from("rooms")
-      .select("id,name,base_rate,active")
+    const { data: rooms, error: roomsError, count: roomCount } = await auth.supabase.from("rooms")
+      .select("id,name,base_rate,active", { count: "exact" })
       .eq("property_id", property.id).eq("active", true).order("name").limit(101);
     if (roomsError) throw roomsError;
-    if ((rooms?.length ?? 0) > 100) return NextResponse.json({ error: "This pilot supports up to 100 active room types per property." }, { status: 422 });
+    if (roomCount !== null && roomCount > 100) return NextResponse.json({ error: "This pilot supports up to 100 active room types per property." }, { status: 422 });
+    if (roomCount === null || (rooms?.length ?? 0) !== roomCount) throw new Error("PMS room list is incomplete.");
     const roomIds = (rooms ?? []).map((room) => room.id);
     const from = format(new Date(), "yyyy-MM-dd");
     const through = format(addDays(new Date(), 89), "yyyy-MM-dd");
     if (!roomIds.length) return NextResponse.json({
       property: { id: property.id, name: property.name }, from, through, rooms: [], inventory: [],
+      reconciliation: reconcileRevenueRows([], []),
       source: "iratepilot_pms", readOnly: true, schemaVersion: 1, generatedAt: new Date().toISOString(),
     }, { headers: { "Cache-Control": "private, no-store" } });
 
-    const inventory: Array<{ room_id: string; stay_date: string; available_units: number; rate: number | string }> = [];
-    for (let offset = 0; offset < 9_000; offset += 1_000) {
-      const { data, error } = await auth.supabase.from("inventory")
-        .select("room_id,stay_date,available_units,rate")
+    const [inventory, revenueInputs] = await Promise.all([loadCompleteSnapshotRows(async (offset) => {
+      const { data, error, count } = await auth.supabase.from("inventory")
+        .select("room_id,stay_date,available_units,rate", { count: offset === 0 ? "exact" : undefined })
         .in("room_id", roomIds).gte("stay_date", from).lte("stay_date", through)
         .order("stay_date").order("room_id").range(offset, offset + 999);
       if (error) throw error;
-      inventory.push(...(data ?? []));
-      if (!data || data.length < 1_000) break;
-    }
+      return { rows: data ?? [], count };
+    }, 9_000), loadCompleteRevenueRows(async (offset) => {
+      const { data, error, count } = await auth.supabase.from("revenue_daily_inputs")
+        .select("room_id,stay_date,rooms_available,rooms_sold,current_rate,source", { count: offset === 0 ? "exact" : undefined })
+        .eq("property_id", property.id).gte("stay_date", from).lte("stay_date", through)
+        .order("stay_date").order("room_id").range(offset, offset + 999);
+      if (error) throw error;
+      return { rows: data ?? [], count };
+    })]);
 
     return NextResponse.json({
       property: { id: property.id, name: property.name }, from, through,
       rooms: rooms ?? [], inventory, source: "iratepilot_pms", readOnly: true,
+      reconciliation: reconcileRevenueRows(inventory, revenueInputs),
       schemaVersion: 1, generatedAt: new Date().toISOString(),
     }, { headers: { "Cache-Control": "private, no-store" } });
   } catch {

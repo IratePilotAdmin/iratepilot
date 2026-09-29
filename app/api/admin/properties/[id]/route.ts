@@ -16,10 +16,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
     if (parsed.data.active) {
       const { data: property, error: propertyError } = await auth.supabase.from("properties")
-        .select("image_url,amenities,partners!inner(status),rooms(active,inventory(stay_date,available_units))")
+        .select("pms_only,image_url,amenities,partners!inner(status),rooms(active,inventory(stay_date,available_units))")
         .eq("id", id).maybeSingle();
       if (propertyError) throw propertyError;
       if (!property) return NextResponse.json({ error: "Property not found." }, { status: 404 });
+      if (property.pms_only) return NextResponse.json({ error: "PMS-only properties cannot be published in the OTA." }, { status: 409 });
       const partner = property.partners as unknown as { status: string };
       if (partner.status !== "approved") {
         return NextResponse.json({

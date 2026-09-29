@@ -8,6 +8,7 @@ export async function GET() {
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
     const { data, error } = await auth.supabase.from("properties")
       .select("id,name,slug,type,star_rating,city,country,active,image_url,amenities,created_at,partners(business_name,status),rooms(active,inventory(stay_date,available_units))")
+      .eq("pms_only", false)
       .order("created_at", { ascending: false });
     if (error) throw error;
     return NextResponse.json({

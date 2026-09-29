@@ -1,5 +1,7 @@
 export const REQUIRED_PREVIEW_BASELINE: string[];
 export const APPROVED_PREVIEW_PENDING: string[];
+export const PMS_PILOT_PREFLIGHT_PENDING: string[];
+export const PMS_PILOT_PREVIEW_PROJECT_REF: string;
 export const PRODUCTION_PROJECT_REF: string;
 
 export function listMigrationVersions(directoryUrl?: URL): string[];
@@ -51,4 +53,6 @@ export function reconcilePreviewMigrations(
   applied?: boolean;
   pendingBefore?: string[];
   pendingAfter?: string[];
+  pendingVersions?: string[];
+  dryRunOnly?: boolean;
 };
