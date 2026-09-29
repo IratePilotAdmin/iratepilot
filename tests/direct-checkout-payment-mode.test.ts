@@ -167,6 +167,31 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
     expect(calls.flat()).not.toContain("--yes");
   });
 
+  it("preflights an up-to-date Preview without offering a migration push", () => {
+    const versions = listMigrationVersions();
+    const calls: string[][] = [];
+    const outputs = [migrationList(versions, versions), "No migrations to push"];
+    const runner = (_command: string, args: string[]) => {
+      calls.push(args);
+      return outputs.shift() ?? "";
+    };
+    const log = console.log;
+    console.log = () => {};
+    try {
+      expect(reconcilePreviewMigrations({
+        PREVIEW_SUPABASE_DB_URL: previewUrl,
+        PREVIEW_SUPABASE_PROJECT_REF: previewRef,
+      }, ["--preflight"], runner)).toMatchObject({
+        projectRef: previewRef, pendingVersions: [], dryRunOnly: true,
+      });
+    } finally { console.log = log; }
+    expect(calls.map((args) => args.slice(0, 2))).toEqual([
+      ["migration", "list"], ["db", "push"],
+    ]);
+    expect(calls[1]).toContain("--dry-run");
+    expect(calls.flat()).not.toContain("--yes");
+  });
+
   it("stops the preflight before a dry run if Preview migration history changes", () => {
     const versions = listMigrationVersions();
     const remote = versions.filter((version) => !PMS_PILOT_PREFLIGHT_PENDING.includes(version) && version !== "202608150061");
