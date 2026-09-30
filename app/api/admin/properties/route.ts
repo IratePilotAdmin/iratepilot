@@ -15,6 +15,10 @@ export async function GET() {
 
     const properties = data ?? [];
     const propertyIds = properties.map((property) => property.id);
+    const { data: intakePropertyIds, error: intakeApprovalsError } = propertyIds.length > 0
+      ? await auth.supabase.rpc("get_verified_hotel_intake_property_ids", { p_property_ids: propertyIds })
+      : { data: [], error: null };
+    const verifiedIntakePropertyIds = new Set<string>(intakePropertyIds ?? []);
     const commercialStateByProperty = new Map<string, boolean>();
     const commercialReviewByProperty = new Map<string, boolean>();
     let commercialStateAvailable = true;
@@ -65,6 +69,10 @@ export async function GET() {
         created_at: property.created_at,
         partners: property.partners,
         readiness: getPropertyReadiness(property as PropertyReadinessInput),
+        intakeApproval: {
+          stateAvailable: !intakeApprovalsError,
+          verified: !intakeApprovalsError && verifiedIntakePropertyIds.has(property.id),
+        },
         commercialRelease: {
           stateAvailable: commercialStateAvailable,
           agreementEffective: commercialStateByProperty.get(property.id) === true,
