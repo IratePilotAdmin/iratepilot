@@ -39,6 +39,7 @@ export type HotelLaunchReadinessInput = {
   emailDeadLetterCount: number;
   deliveryFailureCount: number;
   payoutExceptionCount: number;
+  releaseAuthorizationValid: boolean;
   publicationEnabled: boolean;
 };
 
@@ -84,6 +85,7 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
     && supplierReady
     && paymentsReady
     && operationsReady
+    && input.releaseAuthorizationValid
     && input.publicationEnabled;
   const gates: HotelLaunchGate[] = [
     gate(
@@ -270,6 +272,11 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
           label: "Email and support operations",
           ready: operationsReady,
           value: operationsReady ? "Complete" : "Required",
+        },
+        {
+          label: "Current production release authorization",
+          ready: input.releaseAuthorizationValid,
+          value: input.releaseAuthorizationValid ? "Recorded" : "Required",
         },
         {
           label: "Server publication gate",

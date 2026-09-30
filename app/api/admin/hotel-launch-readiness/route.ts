@@ -5,6 +5,7 @@ import type { PaymentLaunchAuthorization } from "@/lib/admin/payment-readiness";
 import { requireRole } from "@/lib/auth/require-role";
 import { isEmailWorkerEnabled } from "@/lib/email/worker-gate";
 import { isHotelPublicationEnabled } from "@/lib/hotels/publication-gate";
+import { hasCurrentHotelMarketplaceReleaseAuthorization } from "@/lib/hotels/marketplace-release-authorization";
 import { getPropertyReadiness, type PropertyReadinessInput } from "@/lib/property-readiness";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -53,7 +54,7 @@ export async function GET() {
       if (linkedToProperty) query = query.not("partner_applications.property_id", "is", null);
       return query;
     };
-    const [properties, applications, applicationApprovalEvidence, applicationTotal, pendingApplications, declinedApplications, verifiedApprovals, verifiedLinkedApprovals, commercialControls, supplierEvidence, synxisEvidence, emailBacklog, emailDeadLetters, deliveryFailures, payoutExceptions, paymentApprovals, paymentRevocations] = await Promise.all([
+    const [properties, applications, applicationApprovalEvidence, applicationTotal, pendingApplications, declinedApplications, verifiedApprovals, verifiedLinkedApprovals, commercialControls, supplierEvidence, synxisEvidence, emailBacklog, emailDeadLetters, deliveryFailures, payoutExceptions, paymentApprovals, paymentRevocations, releaseAuthorizationValid] = await Promise.all([
       admin.from("properties").select("id,image_url,amenities,rooms(active,base_rate,max_guests,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount))"),
       admin.from("partner_applications").select("id,property_id,status"),
       auth.supabase.from("partner_application_review_evidence")
@@ -75,6 +76,7 @@ export async function GET() {
         .order("approved_at", { ascending: false }).limit(20),
       auth.supabase.from("hotel_payment_launch_authorization_revocations")
         .select("authorization_id,revoked_at"),
+      hasCurrentHotelMarketplaceReleaseAuthorization(admin),
     ]);
     if (properties.error || applications.error) {
       throw properties.error ?? applications.error;
@@ -344,6 +346,7 @@ export async function GET() {
       emailDeadLetterCount,
       deliveryFailureCount,
       payoutExceptionCount,
+      releaseAuthorizationValid,
       publicationEnabled: isHotelPublicationEnabled(),
     }), { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
