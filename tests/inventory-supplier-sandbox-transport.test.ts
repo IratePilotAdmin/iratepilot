@@ -19,11 +19,37 @@ const hotelbedsRequest = () => buildHotelbedsSandboxAvailabilityRequest({
   payload: { stay: { checkIn: "2026-10-22", checkOut: "2026-10-25" } },
 });
 
+function enabledEnvironment(supplierId: InventorySandboxRequest["supplierId"]) {
+  if (supplierId === "hotelbeds") {
+    return {
+      HOTEL_INVENTORY_HOTELBEDS_SANDBOX_ENABLED: "true",
+      HOTEL_INVENTORY_HOTELBEDS_API_KEY: "hotelbeds-api-key",
+      HOTEL_INVENTORY_HOTELBEDS_SECRET: "hotelbeds-secret",
+      HOTEL_INVENTORY_HOTELBEDS_MTLS_CERTIFICATE:
+        "-----BEGIN CERTIFICATE-----\ncertificate-data\n-----END CERTIFICATE-----",
+      HOTEL_INVENTORY_HOTELBEDS_MTLS_PRIVATE_KEY:
+        "-----BEGIN PRIVATE KEY-----\nprivate-key-data\n-----END PRIVATE KEY-----",
+    };
+  }
+  if (supplierId === "ratehawk") {
+    return {
+      HOTEL_INVENTORY_RATEHAWK_SANDBOX_ENABLED: "true",
+      HOTEL_INVENTORY_RATEHAWK_KEY_ID: "partner-id",
+      HOTEL_INVENTORY_RATEHAWK_API_KEY: "ratehawk-api-key",
+    };
+  }
+  return {
+    HOTEL_INVENTORY_EXPEDIA_RAPID_SANDBOX_ENABLED: "true",
+    HOTEL_INVENTORY_EXPEDIA_RAPID_API_KEY: "expedia-api-key",
+    HOTEL_INVENTORY_EXPEDIA_RAPID_SHARED_SECRET: "expedia-shared-secret",
+  };
+}
+
 describe("inventory supplier sandbox transport", () => {
   it("fails closed before calling fetch", async () => {
     const fetcher = vi.fn();
     await expect(executeInventorySandboxRequest(hotelbedsRequest(), {
-      enabled: false,
+      environment: {},
       fetcher,
     })).rejects.toMatchObject({ code: "disabled", supplierId: "hotelbeds" });
     expect(fetcher).not.toHaveBeenCalled();
@@ -56,7 +82,7 @@ describe("inventory supplier sandbox transport", () => {
     });
 
     await expect(executeInventorySandboxRequest(request, {
-      enabled: true,
+      environment: enabledEnvironment(request.supplierId),
       fetcher,
     })).resolves.toEqual({ hotels: [] });
     expect(fetcher).toHaveBeenCalledOnce();
@@ -75,7 +101,7 @@ describe("inventory supplier sandbox transport", () => {
     };
     const fetcher = vi.fn();
     await expect(executeInventorySandboxRequest(forged, {
-      enabled: true,
+      environment: enabledEnvironment(forged.supplierId),
       fetcher,
     })).rejects.toMatchObject({ code: "invalid_request" });
     expect(fetcher).not.toHaveBeenCalled();
@@ -87,7 +113,10 @@ describe("inventory supplier sandbox transport", () => {
     });
     let thrown: unknown;
     try {
-      await executeInventorySandboxRequest(hotelbedsRequest(), { enabled: true, fetcher });
+      await executeInventorySandboxRequest(hotelbedsRequest(), {
+        environment: enabledEnvironment("hotelbeds"),
+        fetcher,
+      });
     } catch (error) {
       thrown = error;
     }
@@ -100,7 +129,7 @@ describe("inventory supplier sandbox transport", () => {
   it("rejects invalid timeout configuration before calling fetch", async () => {
     const fetcher = vi.fn();
     await expect(executeInventorySandboxRequest(hotelbedsRequest(), {
-      enabled: true,
+      environment: enabledEnvironment("hotelbeds"),
       timeoutMs: 30_001,
       fetcher,
     })).rejects.toMatchObject({ code: "invalid_timeout" });
