@@ -6,7 +6,7 @@ type Readback={outcome:'validated';persisted:false;certified:false;observations:
 const maxBytes=262144,token=/^[A-Za-z0-9_-]{1,128}$/;
 const exact=(value:unknown,keys:string[])=>!!value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).sort().join(',')===keys.slice().sort().join(',');
 const integer=(value:unknown,min:number,max:number)=>typeof value==='number'&&Number.isSafeInteger(value)&&value>=min&&value<=max;
-function validBatch(value:unknown):value is NativeAriBatch{
+export function isNativeAriBatch(value:unknown):value is NativeAriBatch{
  if(!exact(value,['contractVersion','eventId','propertyId','connector','connectionId','sourceVersion','generatedAt','updates']))return false;
  const b=value as NativeAriBatch;
  if(b.contractVersion!==1||b.connector!=='iratepilot'||![b.eventId,b.propertyId,b.connectionId].every(v=>typeof v==='string'&&token.test(v))||!integer(b.sourceVersion,1,Number.MAX_SAFE_INTEGER)||typeof b.generatedAt!=='string'||!Number.isFinite(Date.parse(b.generatedAt))||new Date(b.generatedAt).toISOString()!==b.generatedAt||!Array.isArray(b.updates)||b.updates.length<1||b.updates.length>366)return false;
@@ -25,6 +25,6 @@ export async function handleNativeAriShadow(request:Request,config:Config,valida
  let raw:Buffer;try{raw=await boundedBody(request)}catch{return reply(413,{error:'payload_too_large'})}
  const expected=createHmac('sha256',secret).update(`${timestamp}.${id}.`).update(raw).digest();if(!timingSafeEqual(expected,Buffer.from(signature,'hex')))return reply(401,{error:'unauthorized'});
  let batch:unknown;try{batch=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(raw))}catch{return reply(400,{error:'invalid_json'})}
- if(!validBatch(batch)||batch.connectionId!==id)return reply(422,{error:'invalid_ari_contract'});
+ if(!isNativeAriBatch(batch)||batch.connectionId!==id)return reply(422,{error:'invalid_ari_contract'});
  try{const result=await validate(batch);if(result?.outcome!=='validated'||result.persisted!==false||result.certified!==false||!Array.isArray(result.observations)||result.observations.length!==batch.updates.length)throw Error('invalid_readback');return reply(200,{outcome:'validated',persisted:false,certified:false,observations:result.observations,eventId:batch.eventId,sourceVersion:batch.sourceVersion,mode:'validate_only'})}catch{return reply(503,{error:'validation_unavailable'})}
 }
