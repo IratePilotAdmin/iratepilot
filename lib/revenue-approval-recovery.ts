@@ -71,6 +71,14 @@ export function createRevenueApprovalRecovery(options:{actorId:string;tenantId:s
     const next:RevenueApprovalRecord={...record,phase:'saved',receipt:matchingReceipt(record.command,value)};
     write(next);return next;
   }
+  async function replyWithinDeadline(pending:Promise<unknown>,message:string){
+    let timer:ReturnType<typeof setTimeout>|undefined;
+    try{
+      return await Promise.race([pending,new Promise<never>((_resolve,reject)=>{
+        timer=setTimeout(()=>reject(new Error(message)),30000);
+      })]);
+    }finally{if(timer!==undefined)clearTimeout(timer);}
+  }
   return {
     read,
     stage(input:RevenueApprovalCommand){return options.lock(key,async()=>{
@@ -91,13 +99,16 @@ export function createRevenueApprovalRecovery(options:{actorId:string;tenantId:s
       if(record.phase==='awaiting')throw new Error('Check saved status before retrying');
       // Persist uncertainty BEFORE sending. Any exception leaves this exact request recoverable.
       write({...record,phase:'awaiting'});
-      return saved(record,await options.transport.apply(revenueApprovalCommandSchema.parse(record.command)));
+      const reply=await replyWithinDeadline(options.transport.apply(revenueApprovalCommandSchema.parse(record.command)),
+        'Approval reply timed out. Check saved status before taking another action.');
+      return saved(record,reply);
     });},
     recover(){return options.lock(key,async()=>{
       const record=read();
       if(!record||record.phase==='saved')return record;
       const command=record.command;
-      const value=await options.transport.status({p_tenant:tenant,p_property:property,p_request:command.p_request});
+      const value=await replyWithinDeadline(options.transport.status({p_tenant:tenant,p_property:property,p_request:command.p_request}),
+        'Saved-status check timed out. Approval remains unresolved.');
       const missing=z.object({found:z.literal(false),request_id:uuid,tenant_id:uuid,property_id:uuid}).strict().safeParse(value);
       if(missing.success){
         if(missing.data.request_id!==command.p_request||missing.data.tenant_id!==tenant||missing.data.property_id!==property)

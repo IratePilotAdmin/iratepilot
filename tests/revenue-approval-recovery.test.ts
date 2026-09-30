@@ -1,4 +1,4 @@
-import {describe,expect,it,vi} from 'vitest';
+import {afterEach,describe,expect,it,vi} from 'vitest';
 import {createRevenueApprovalRecovery,type ApprovalLock,type RevenueApprovalCommand} from '../lib/revenue-approval-recovery';
 
 const command:RevenueApprovalCommand={p_tenant:'00000000-0000-4000-8000-000000000001',
@@ -26,6 +26,66 @@ function fixture(){
   return {data,storage,transport,create};
 }
 describe('durable audited approval recovery',()=>{
+  afterEach(()=>{vi.useRealTimers();});
+  it('releases a stalled apply lock while retaining the request and ignores its late reply',async()=>{
+    vi.useFakeTimers();
+    const f=fixture();const c=f.create();await c.stage(command);
+    let finish!:(value:typeof receipt)=>void;
+    f.transport.apply.mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve;}));
+    const sending=c.submit();
+    const rejected=expect(sending).rejects.toThrow('Approval reply timed out');
+    // Another controller is queued behind the same exclusive lock.
+    const checking=f.create().recover();
+    await vi.advanceTimersByTimeAsync(30000);await rejected;
+    expect((await checking)?.phase).toBe('saved');
+    expect(f.transport.status).toHaveBeenCalledWith({p_tenant:command.p_tenant,p_property:command.p_property,p_request:command.p_request});
+    const persisted=[...f.data.values()];const writes=f.storage.setItem.mock.calls.length;
+    finish({...receipt,recommended_rate_minor:17000});
+    await Promise.resolve();await Promise.resolve();
+    expect([...f.data.values()]).toEqual(persisted);
+    expect(f.storage.setItem).toHaveBeenCalledTimes(writes);
+    await c.submit();expect(f.transport.apply).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+  it('retains uncertainty when status stalls, releases the lock and ignores late not-found',async()=>{
+    vi.useFakeTimers();
+    const f=fixture();const c=f.create();await c.stage(command);
+    f.transport.apply.mockRejectedValueOnce(new Error('Lost reply'));
+    await expect(c.submit()).rejects.toThrow('Lost reply');
+    let finish!:(value:unknown)=>void;
+    f.transport.status.mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve;}));
+    const checking=c.recover();
+    const rejected=expect(checking).rejects.toThrow('Saved-status check timed out');
+    await vi.advanceTimersByTimeAsync(30000);await rejected;
+    expect(f.create().read()?.phase).toBe('awaiting');
+    await expect(c.submit()).rejects.toThrow('Check saved status');
+    await expect(c.stage({...command,p_request:'00000000-0000-4000-8000-000000000007'})).rejects.toThrow('Resolve');
+    await expect(c.acknowledge()).rejects.toThrow('Resolve');
+    finish({found:false,request_id:command.p_request,tenant_id:command.p_tenant,property_id:command.p_property});
+    await Promise.resolve();await Promise.resolve();
+    expect(c.read()?.phase).toBe('awaiting');
+    expect((await f.create().recover())?.phase).toBe('saved');
+    expect(f.transport.apply).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+  it.each([
+    null,{}, {found:false}, {found:'true'},
+    {...receipt,found:true,request_id:'00000000-0000-4000-8000-000000000099'},
+    {...receipt,found:true,stay_date:'2026-10-02'},
+    {...receipt,found:true,saved_at:'invalid'},
+    {...receipt,found:true,unexpected:'field'},
+  ])('retains the exact uncertain request on malformed status %#',async value=>{
+    const f=fixture();const c=f.create();await c.stage(command);
+    f.transport.apply.mockRejectedValueOnce(new Error('Lost reply'));
+    await expect(c.submit()).rejects.toThrow('Lost reply');
+    const persisted=[...f.data.values()];
+    f.transport.status.mockResolvedValueOnce(value);
+    await expect(c.recover()).rejects.toThrow();
+    expect([...f.data.values()]).toEqual(persisted);
+    expect(c.read()).toMatchObject({phase:'awaiting',command});
+    await expect(c.submit()).rejects.toThrow('Check saved status');
+    expect(f.transport.apply).toHaveBeenCalledTimes(1);
+  });
   it('recovers a committed save after a lost reply and reload without sending again',async()=>{
     const f=fixture();f.transport.apply.mockRejectedValueOnce(new Error('Connection lost after commit'));
     const controller=f.create();await controller.stage(command);
