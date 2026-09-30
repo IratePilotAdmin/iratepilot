@@ -5,6 +5,17 @@ const f={tenantId:'t',propertyId:'p',roomTypeId:'king',stayDate:'2026-10-01',sta
 const snapshot={can_close:true,rows_truncated:false,next_service_date:'2026-10-01',time_zone:'America/Chicago',totals:{complete:true,occupied_nights:1},inventory_snapshot:{schema_version:1,complete:true,basis:'inventory_configuration_at_close',service_date:'2026-10-01',room_types:[{room_type_id:'king',effective_units:10}]},rows:[{room_type_id:'king',physical_room_id:'101',occupied_night:true,blocker:null},{room_type_id:'king',physical_room_id:'102',occupied_night:false,blocker:null}]};
 const c={tenantId:'t',propertyId:'p',serviceDate:'2026-10-01',closedAt:'2026-10-02T12:00:00.000Z',snapshot};
 describe('PMS finalized occupancy evidence',()=>{
+ it('rejects the whole close when another room type is over capacity',()=>{
+  const bad={...snapshot,totals:{complete:true,occupied_nights:2},inventory_snapshot:{...snapshot.inventory_snapshot,room_types:[...snapshot.inventory_snapshot.room_types,{room_type_id:'queen',effective_units:0}]},rows:[...snapshot.rows,{room_type_id:'queen',physical_room_id:'201',occupied_night:true,blocker:null}]};
+  expect(evaluatePmsForecastEvidence([f],[{...c,snapshot:bad}],scope)).toMatchObject({eligibleSamples:0,rejectedCloses:1});
+  const corrected={...bad,inventory_snapshot:{...bad.inventory_snapshot,room_types:[...snapshot.inventory_snapshot.room_types,{room_type_id:'queen',effective_units:1}]}};
+  expect(evaluatePmsForecastEvidence([f],[{...c,snapshot:corrected}],scope)).toMatchObject({eligibleSamples:1,rejectedCloses:0});
+ });
+ it('rejects subsecond calendar boundaries while preserving exact midnight',()=>{
+  for(const change of [{stayStartAt:'2026-10-01T05:00:00.001Z'},{stayEndAt:'2026-10-02T05:00:00.999Z'}])
+   expect(evaluatePmsForecastEvidence([{...f,...change}],[c],scope)).toMatchObject({eligibleSamples:0,rejectedCloses:1});
+  expect(evaluatePmsForecastEvidence([f],[c],scope).eligibleSamples).toBe(1);
+ });
  it('scores overnight rooms only and keeps pricing disabled',()=>{expect(evaluatePmsForecastEvidence([f],[c],scope)).toMatchObject({eligibleSamples:1,pendingHistory:0,rejectedCloses:0,accuracyCertified:false,writebackEnabled:false});});
  it('does not convert missing closes or pending history into zero occupancy',()=>{expect(evaluatePmsForecastEvidence([f],[],scope).eligibleSamples).toBe(0);expect(evaluatePmsForecastEvidence([{...f,predictedRooms:null,evidenceState:'insufficient_history'}],[c],scope)).toMatchObject({pendingHistory:1,eligibleSamples:0});});
  it('rejects incomplete, mismatched and duplicate occupancy snapshots',()=>{

@@ -5,6 +5,7 @@ type Obj=Record<string,unknown>;
 const obj=(v:unknown):Obj|null=>v!==null&&typeof v==='object'&&!Array.isArray(v)?v as Obj:null;
 const integer=(v:unknown):v is number=>typeof v==='number'&&Number.isSafeInteger(v)&&v>=0;
 function midnightAt(value:string,zone:string,day:string){
+ const instant=new Date(value);if(!Number.isFinite(instant.getTime())||instant.getUTCMilliseconds()!==0)return false;
  try {const parts=new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(new Date(value));
  const get=(k:string)=>parts.find(p=>p.type===k)?.value;
  return `${get('year')}-${get('month')}-${get('day')}`===day&&get('hour')==='00'&&get('minute')==='00'&&get('second')==='00';
@@ -18,9 +19,9 @@ function actualFor(f:StoredForecast,c:ClosedDay):ForecastEvidence['actual']{
  if(!midnightAt(f.stayStartAt,s.time_zone,f.stayDate)||!midnightAt(f.stayEndAt,s.time_zone,nextDay))return null;
  const capacities=new Map<string,number>();
  for(const v of inventory.room_types){const r=obj(v);if(!r||typeof r.room_type_id!=='string'||!r.room_type_id||!integer(r.effective_units)||capacities.has(r.room_type_id))return null;capacities.set(r.room_type_id,r.effective_units);}
- const physicalRooms=new Set<string>();let total=0,occupied=0;
+ const physicalRooms=new Set<string>(),occupiedByType=new Map<string,number>();let total=0,occupied=0;
  for(const v of s.rows){const r=obj(v);if(!r||typeof r.room_type_id!=='string'||!capacities.has(r.room_type_id)||typeof r.occupied_night!=='boolean'||r.blocker!==null)return null;
-  if(r.occupied_night){if(typeof r.physical_room_id!=='string'||!r.physical_room_id||physicalRooms.has(r.physical_room_id))return null;physicalRooms.add(r.physical_room_id);total++;if(r.room_type_id===f.roomTypeId)occupied++;}
+  if(r.occupied_night){if(typeof r.physical_room_id!=='string'||!r.physical_room_id||physicalRooms.has(r.physical_room_id))return null;physicalRooms.add(r.physical_room_id);total++;const typeOccupied=(occupiedByType.get(r.room_type_id)??0)+1;if(typeOccupied>capacities.get(r.room_type_id)!)return null;occupiedByType.set(r.room_type_id,typeOccupied);if(r.room_type_id===f.roomTypeId)occupied++;}
  }
  const capacity=capacities.get(f.roomTypeId);if(capacity===undefined||capacity===0||total!==totals.occupied_nights||occupied>capacity)return null;
  return {observedAt:c.closedAt,complete:true,capacity,occupiedRooms:occupied};
