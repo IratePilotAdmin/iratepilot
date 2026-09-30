@@ -317,10 +317,11 @@ export function AdminSettings() {
           {inventorySuppliers?.map((supplier) => <article className="rounded-lg border p-4" key={supplier.id}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <strong>{supplier.name}</strong>
-              <span className={supplier.status === "ready_for_sandbox_validation" ? "text-sm font-semibold text-emerald-700" : "text-sm font-semibold text-amber-700"}>{supplier.status.replaceAll("_", " ")}</span>
+              <span className={supplier.status === "ready_for_sandbox_validation" ? "text-sm font-semibold text-emerald-700" : supplier.status === "invalid_configuration" ? "text-sm font-semibold text-red-700" : "text-sm font-semibold text-amber-700"}>{supplier.status.replaceAll("_", " ")}</span>
             </div>
             <p className="mt-2 text-xs text-slate-600">{supplier.approvalNote}</p>
             {supplier.missingEnvironmentKeys.length > 0 && <p className="mt-3 break-words text-xs text-amber-700">Missing: {supplier.missingEnvironmentKeys.join(", ")}</p>}
+            {supplier.invalidEnvironmentKeys.length > 0 && <p className="mt-3 break-words text-xs text-red-700">Invalid: {supplier.invalidEnvironmentKeys.join(", ")}</p>}
             <a className="mt-3 inline-block text-xs font-semibold underline" href={supplier.documentationUrl} rel="noreferrer" target="_blank">Official integration documentation</a>
           </article>)}
         </div>
