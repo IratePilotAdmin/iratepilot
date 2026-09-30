@@ -27,6 +27,7 @@ describe("hotel marketplace release authorization", () => {
     expect(migration).toContain("hotel_marketplace_release_authorization_revocations");
     expect(migration).toContain("expires_at <= approved_at + interval '7 days'");
     expect(migration).toContain("Hotel marketplace release evidence is append-only");
+    expect(migration).toContain("pg_catalog.pg_advisory_xact_lock");
     expect(migration).toContain("has_current_hotel_marketplace_release_authorization");
     expect(migration).not.toMatch(/update public\.properties|HOTEL_PUBLICATION_ENABLED|ENABLE_LIVE_BOOKING_PAYMENTS/);
   });

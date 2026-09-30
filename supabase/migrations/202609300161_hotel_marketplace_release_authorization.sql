@@ -138,6 +138,12 @@ begin
   then
     raise exception 'Every marketplace release control must be current and verified' using errcode = 'P0001';
   end if;
+
+  -- Serialize the current-authorization check and insert. Without this lock,
+  -- two administrators could both observe no current row and create separate
+  -- authorizations whose independent revocation would be ambiguous.
+  perform pg_catalog.pg_advisory_xact_lock(6847268322523275464);
+
   if exists (
     select 1 from public.hotel_marketplace_release_authorizations as approval
     where approval.approved_at <= now()
