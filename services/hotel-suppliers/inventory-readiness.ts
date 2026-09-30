@@ -3,6 +3,7 @@ export type InventorySupplierId = "hotelbeds" | "ratehawk" | "expedia-rapid";
 export type InventorySupplierStatus =
   | "not_configured"
   | "credentials_required"
+  | "invalid_configuration"
   | "ready_for_sandbox_validation";
 
 export type InventorySupplierReadiness = {
@@ -11,6 +12,7 @@ export type InventorySupplierReadiness = {
   status: InventorySupplierStatus;
   requiredEnvironmentKeys: readonly string[];
   missingEnvironmentKeys: string[];
+  invalidEnvironmentKeys: string[];
   documentationUrl: string;
   approvalNote: string;
 };
@@ -19,8 +21,31 @@ type Environment = Record<string, string | undefined>;
 
 type InventorySupplierManifest = Omit<
   InventorySupplierReadiness,
-  "status" | "missingEnvironmentKeys"
+  "status" | "missingEnvironmentKeys" | "invalidEnvironmentKeys"
 >;
+
+const placeholderPattern = /^(?:changeme|example|placeholder|test|todo|unknown)$/i;
+
+function normalizePem(value: string) {
+  return value.replaceAll("\\n", "\n").trim();
+}
+
+function isValidConfiguredValue(key: string, value: string) {
+  const normalized = value.trim();
+  if (!normalized || placeholderPattern.test(normalized)) return false;
+  if (key.endsWith("_MTLS_CERTIFICATE")) {
+    const pem = normalizePem(normalized);
+    return pem.startsWith("-----BEGIN CERTIFICATE-----")
+      && pem.endsWith("-----END CERTIFICATE-----");
+  }
+  if (key.endsWith("_MTLS_PRIVATE_KEY")) {
+    const pem = normalizePem(normalized);
+    return /^-----BEGIN (?:RSA |EC )?PRIVATE KEY-----/.test(pem)
+      && /-----END (?:RSA |EC )?PRIVATE KEY-----$/.test(pem);
+  }
+  if (key.endsWith("_KEY_ID")) return normalized.length >= 3;
+  return normalized.length >= 8;
+}
 
 const inventorySupplierManifests = [
   {
@@ -67,16 +92,23 @@ export function buildInventorySupplierReadiness(
     const missingEnvironmentKeys = supplier.requiredEnvironmentKeys.filter(
       (key) => !environment[key]?.trim(),
     );
+    const invalidEnvironmentKeys = supplier.requiredEnvironmentKeys.filter((key) => {
+      const value = environment[key];
+      return Boolean(value?.trim()) && !isValidConfiguredValue(key, value ?? "");
+    });
     const status = configuredCount === 0
       ? "not_configured"
       : missingEnvironmentKeys.length > 0
         ? "credentials_required"
+        : invalidEnvironmentKeys.length > 0
+          ? "invalid_configuration"
         : "ready_for_sandbox_validation";
 
     return {
       ...supplier,
       status,
       missingEnvironmentKeys,
+      invalidEnvironmentKeys,
     };
   });
 }
