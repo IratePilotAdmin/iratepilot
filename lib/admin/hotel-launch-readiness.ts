@@ -13,6 +13,10 @@ export type HotelLaunchGate = {
 export type HotelLaunchReadinessInput = {
   approvedHotelCount: number;
   approvedHotelStateAvailable: boolean;
+  hotelApplicationCount: number;
+  pendingHotelApplicationCount: number;
+  declinedHotelApplicationCount: number;
+  verifiedHotelApprovalCount: number;
   inventoryReadyHotelCount: number;
   commerciallyReadyHotelCount: number;
   commercialStateAvailable: boolean;
@@ -61,6 +65,13 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
         : "Waiting for the first real 4- or 5-star hotel application to be approved and linked to a property.",
       "/admin/partners",
       "Review hotel applications",
+      input.approvedHotelStateAvailable ? [
+        { label: "Applications received", ready: input.hotelApplicationCount > 0, value: String(input.hotelApplicationCount) },
+        { label: "Pending administrator review", ready: input.pendingHotelApplicationCount === 0, value: String(input.pendingHotelApplicationCount) },
+        { label: "Verified approval decisions", ready: input.verifiedHotelApprovalCount > 0, value: String(input.verifiedHotelApprovalCount) },
+        { label: "Approved hotels linked to a property", ready: input.approvedHotelCount > 0, value: String(input.approvedHotelCount) },
+        { label: "Declined applications", ready: true, value: String(input.declinedHotelApplicationCount) },
+      ] : undefined,
     ),
     gate(
       "listing_inventory",
