@@ -6,4 +6,16 @@ Use immutable forecasts recorded before the stay, with model version, source-dat
 
 Reports separate model versions and lead-time horizons, room MAE/RMSE, signed bias, occupancy MAE in percentage points and error reduction relative to simply retaining the on-books count. A perfect baseline has no defined percentage improvement. Missing/incomplete actuals, future information, changed capacity and out-of-scope data are reported as excluded evidence. A positive metric in a small sample does not establish reliable accuracy; confidence intervals, minimum evidence volume, cancellation/no-show treatment, event/season coverage and operational review remain necessary.
 
-Integration remains pending: persist the current seven-day pace forecasts, assemble completed-stay PMS actuals, and show evaluation results on the authenticated Revenue AI board. No real Red Roof forecast scores have been calculated by this change. The existing readiness gate remains blocked. The signed native ARI connection test is a separate unresolved gate.
+Integration remains pending: obtain sufficient history for seven-day pace predictions, assemble completed-stay PMS actuals, and show evaluation results on the authenticated Revenue AI board. No real Red Roof forecast scores have been calculated by this change. The existing readiness gate remains blocked. The signed native ARI connection test is a separate unresolved gate.
+
+## Prospective PMS recording
+
+Applied `pms-migrations/20260930133338_revenue_forecast_recording.sql` to the actual PMS project `eiqmdldjnedqgbtoozqa`. This folder is deliberately outside the OTA `supabase/migrations` chain. Do not apply this migration to the OTA project.
+
+The existing six-hour snapshot cron now records private forecasts after capturing source data. Recording uses the current issue time, fresh source snapshots (at most seven hours old), the next 30 property-local calendar nights, positive known capacity and valid on-books counts. Rerunning against the same source snapshot creates no duplicate evidence. Old snapshots are never relabeled as historical issued forecasts. Calendar-night boundaries are not guest arrival/departure appointment times; completed-stay evaluation must use a matching operational-night definition.
+
+Two models are stored independently: `on-books-v1` retains current booked rooms as a comparison forecast; `seven-day-pace-v1` projects positive seven-day pickup, capped at capacity. The pace model requires a matching currency, source basis and capacity baseline within three hours of seven days before the current snapshot. Without that baseline it stores `insufficient_history` and a null prediction, which must not be scored as a forecast. No confidence certification is supplied.
+
+Initial live recording produced 90 on-books baseline forecasts and 90 insufficient-history pace records covering October 1–30, 2026, across three room types with positive capacity. The database repeat capture inserted zero duplicates. Anonymous, authenticated and service-role clients cannot read this table or execute its recording function; it is an internal cron operation. RLS without a policy is intentional for this internal table.
+
+Actual-results integration and the authenticated board reader remain pending. PMS contains `service_day_closes` with a close timestamp and JSON snapshot; the occupancy contents, correction handling and room-type attribution still need verification before using those closes as scoring evidence. No real pilot accuracy score has been calculated. Live rate writeback remains disabled.
