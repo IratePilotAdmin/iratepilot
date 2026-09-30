@@ -264,7 +264,7 @@ describe("hotel launch readiness", () => {
     expect(routeSource).toContain("priorityPmsLiveCount + synxisLiveCount");
   });
 
-  it("exposes an admin-only read path with no mutation handler", () => {
+  it("exposes an admin-only read path and a prerequisite-gated release authorization handler", () => {
     expect(routeSource).toContain('requireRole(["admin"])');
     expect(routeSource).toContain("paymentReadiness.productionConfiguration.checks.map");
     expect(routeSource).toContain("export async function GET()");
@@ -274,9 +274,17 @@ describe("hotel launch readiness", () => {
     expect(routeSource).toContain("review.reviewer_id === control?.commercial_verified_by");
     expect(routeSource).toContain("review.created_at === control?.commercial_verified_at");
     expect(routeSource).toContain("review.legal_business_verified");
-    expect(routeSource).not.toContain("export async function POST");
+    expect(routeSource).toContain("export async function POST");
+    expect(routeSource.indexOf('requireRole(["admin"])')).toBeLessThan(routeSource.indexOf('rpc("record_hotel_marketplace_release_authorization"'));
+    expect(routeSource).toContain("readiness.gates.slice(0, 6)");
+    expect(routeSource).toContain('gate.status !== "ready"');
+    expect(routeSource).toContain("All six production prerequisites must pass");
+    expect(routeSource).toContain('value.replace(/\\s+/g, " ").trim()');
+    expect(routeSource).toContain('rpc("revoke_hotel_marketplace_release_authorization"');
     expect(routeSource).not.toContain("export async function PATCH");
-    expect(uiSource).toContain("This page is read-only.");
+    expect(uiSource).toContain("Marketplace release authorization");
+    expect(uiSource).toContain("This control unlocks only after the first six production gates pass.");
+    expect(uiSource).toContain("Recording this evidence never changes a runtime switch.");
     expect(uiSource).toContain("item.checks.map");
     expect(navigationSource).toContain('{ href: "/admin/launch-readiness", label: "Launch readiness" }');
   });
