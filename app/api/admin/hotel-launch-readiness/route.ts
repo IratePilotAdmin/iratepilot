@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { buildHotelLaunchReadiness } from "@/lib/admin/hotel-launch-readiness";
+import { buildHotelLaunchReadiness, selectClosestSupplierCandidate } from "@/lib/admin/hotel-launch-readiness";
 import { buildPaymentReadiness } from "@/lib/admin/payment-readiness";
 import type { PaymentLaunchAuthorization } from "@/lib/admin/payment-readiness";
 import { requireRole } from "@/lib/auth/require-role";
@@ -275,8 +275,7 @@ export async function GET() {
         ],
       },
     ];
-    const closestSupplierCandidate = supplierCandidates
-      .sort((left, right) => right.checks.filter(({ passed }) => passed).length - left.checks.filter(({ passed }) => passed).length)[0];
+    const closestSupplierCandidate = selectClosestSupplierCandidate(supplierCandidates);
     const supplierChecks = closestSupplierCandidate ? [
       { label: "Closest production connector", passed: closestSupplierCandidate.live, value: closestSupplierCandidate.name },
       ...closestSupplierCandidate.checks,

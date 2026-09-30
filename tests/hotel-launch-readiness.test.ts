@@ -1,6 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { buildHotelLaunchReadiness, type HotelLaunchReadinessInput } from "../lib/admin/hotel-launch-readiness";
+import {
+  buildHotelLaunchReadiness,
+  selectClosestSupplierCandidate,
+  type HotelLaunchReadinessInput,
+} from "../lib/admin/hotel-launch-readiness";
 
 const empty: HotelLaunchReadinessInput = {
   approvedHotelCount: 0,
@@ -154,6 +158,20 @@ describe("hotel launch readiness", () => {
     expect(JSON.stringify(supplier)).not.toMatch(/API_KEY|SECRET|PASSWORD|credential value/i);
     expect(routeSource).toContain("provider.activationChecklist.productionConfigurationValid");
     expect(routeSource).toContain("synxisActivationEvidence.certificationEnvironmentApproved === true");
+  });
+
+  it("prefers a live connector over a longer incomplete checklist", () => {
+    const incompletePms = {
+      name: "Incomplete PMS",
+      live: false,
+      checks: Array.from({ length: 10 }, (_, index) => ({ label: `PMS ${index}`, passed: index < 8 })),
+    };
+    const liveCrs = {
+      name: "Live CRS",
+      live: true,
+      checks: Array.from({ length: 7 }, (_, index) => ({ label: `CRS ${index}`, passed: true })),
+    };
+    expect(selectClosestSupplierCandidate([incompletePms, liveCrs])?.name).toBe("Live CRS");
   });
 
   it("shows actionable aggregate operations checks without exposing queue records", () => {
