@@ -30,7 +30,9 @@ export function buildHotelbedsAuthHeaders(input: TimestampedCredentials & {
   const apiKey = requireCredential(input.apiKey);
   const secret = requireCredential(input.secret);
   const timestamp = requireTimestamp(input.timestampSeconds);
-  const signature = createHash("sha256")
+  // Hotelbeds requires SHA-256(apiKey + secret + timestamp) for request signing,
+  // not password storage. A password KDF or HMAC would violate its protocol.
+  const signature = createHash("sha256") // lgtm[js/insufficient-password-hash]
     .update(`${apiKey}${secret}${timestamp}`, "utf8")
     .digest("hex");
 
@@ -58,7 +60,9 @@ export function buildExpediaRapidAuthorization(input: TimestampedCredentials & {
   const apiKey = requireCredential(input.apiKey);
   const sharedSecret = requireCredential(input.sharedSecret);
   const timestamp = requireTimestamp(input.timestampSeconds);
-  const signature = createHash("sha512")
+  // Expedia Rapid requires SHA-512(apiKey + sharedSecret + timestamp) for
+  // request signing, not password storage. A password KDF or HMAC is invalid.
+  const signature = createHash("sha512") // lgtm[js/insufficient-password-hash]
     .update(`${apiKey}${sharedSecret}${timestamp}`, "utf8")
     .digest("hex");
 
