@@ -10,6 +10,12 @@ const empty: HotelLaunchReadinessInput = {
   declinedHotelApplicationCount: 1,
   verifiedHotelApprovalCount: 0,
   inventoryReadyHotelCount: 0,
+  listingStateAvailable: true,
+  listingCandidateAvailable: false,
+  listingChecks: [
+    { label: "Safe primary photo", passed: false },
+    { label: "Property amenities", passed: false },
+  ],
   commerciallyReadyHotelCount: 0,
   commercialStateAvailable: true,
   liveSupplierCount: 0,
@@ -50,9 +56,21 @@ describe("hotel launch readiness", () => {
       approvedHotelCount: 1,
       verifiedHotelApprovalCount: 1,
       inventoryReadyHotelCount: 1,
+      listingCandidateAvailable: true,
+      listingChecks: empty.listingChecks.map((item) => ({ ...item, passed: true })),
       commerciallyReadyHotelCount: 1,
     });
     expect(result).toMatchObject({ complete: 3, total: 7, percent: 43, launchReady: false });
+  });
+
+  it("shows safe listing requirements for the closest approved hotel candidate", () => {
+    const listing = buildHotelLaunchReadiness(empty).gates.find(({ id }) => id === "listing_inventory");
+    expect(listing?.checks).toEqual([
+      { label: "Approved linked hotel available", ready: false, value: "Required" },
+      { label: "Safe primary photo", ready: false, value: "Required" },
+      { label: "Property amenities", ready: false, value: "Required" },
+    ]);
+    expect(JSON.stringify(listing)).not.toMatch(/property_name|address|email|phone/i);
   });
 
   it("shows aggregate hotel application funnel counts without applicant details", () => {
@@ -73,6 +91,8 @@ describe("hotel launch readiness", () => {
       approvedHotelCount: 1,
       verifiedHotelApprovalCount: 1,
       inventoryReadyHotelCount: 1,
+      listingCandidateAvailable: true,
+      listingChecks: empty.listingChecks.map((item) => ({ ...item, passed: true })),
       commerciallyReadyHotelCount: 1,
       liveSupplierCount: 1,
       paymentConfigurationReady: true,
@@ -121,13 +141,14 @@ describe("hotel launch readiness", () => {
     const result = buildHotelLaunchReadiness({
       ...empty,
       approvedHotelStateAvailable: false,
+      listingStateAvailable: false,
       commercialStateAvailable: false,
       supplierStateAvailable: false,
       paymentAuthorizationStateAvailable: false,
       operationsStateAvailable: false,
     });
     expect(result.gates.filter(({ status }) => status === "unavailable").map(({ id }) => id)).toEqual([
-      "approved_hotel", "commercial_release", "supplier_connection", "production_payments", "support_operations",
+      "approved_hotel", "listing_inventory", "commercial_release", "supplier_connection", "production_payments", "support_operations",
     ]);
   });
 

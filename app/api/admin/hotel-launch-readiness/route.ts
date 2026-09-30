@@ -98,12 +98,24 @@ export async function GET() {
     const pendingHotelApplicationCount = pendingApplications.count ?? 0;
     const declinedHotelApplicationCount = declinedApplications.count ?? 0;
     const verifiedHotelApprovalCount = verifiedApprovals.count ?? 0;
-    const inventoryReadyPropertyIds = new Set(
+    const approvedPropertyReadiness =
       (properties.data ?? [])
-        .filter((property) => approvedPropertyIds.has(property.id)
-          && getPropertyReadiness(property as PropertyReadinessInput).ready)
-        .map((property) => property.id),
+        .filter((property) => approvedPropertyIds.has(property.id))
+        .map((property) => ({ id: property.id, readiness: getPropertyReadiness(property as PropertyReadinessInput) }));
+    const inventoryReadyPropertyIds = new Set(
+      approvedPropertyReadiness.filter(({ readiness }) => readiness.ready).map(({ id }) => id),
     );
+    const closestListingCandidate = approvedPropertyReadiness
+      .map(({ readiness }) => readiness)
+      .sort((left, right) =>
+        Object.values(right.requirements).filter(Boolean).length - Object.values(left.requirements).filter(Boolean).length)[0];
+    const listingChecks = [
+      { label: "Safe primary photo", passed: closestListingCandidate?.requirements.primaryPhoto ?? false },
+      { label: "Property amenities", passed: closestListingCandidate?.requirements.amenities ?? false },
+      { label: "Active room type", passed: closestListingCandidate?.requirements.activeRoom ?? false },
+      { label: "Room rate plan and cancellation terms", passed: closestListingCandidate?.requirements.roomTerms ?? false },
+      { label: "Future inventory with taxes and mandatory fees", passed: closestListingCandidate?.requirements.futureInventory ?? false },
+    ];
 
     const propertyIds = [...inventoryReadyPropertyIds];
     const commercialStates = propertyIds.length > 0
@@ -200,6 +212,9 @@ export async function GET() {
       declinedHotelApplicationCount,
       verifiedHotelApprovalCount,
       inventoryReadyHotelCount: inventoryReadyPropertyIds.size,
+      listingStateAvailable: approvedHotelStateAvailable,
+      listingCandidateAvailable: Boolean(closestListingCandidate),
+      listingChecks,
       commerciallyReadyHotelCount,
       commercialStateAvailable,
       liveSupplierCount,
