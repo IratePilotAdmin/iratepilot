@@ -171,6 +171,7 @@ export async function GET() {
       paymentConfigurationReady: paymentReadiness.productionConfiguration.ready,
       paymentAuthorizationValid: paymentReadiness.productionConfiguration.launchAuthorized,
       paymentAuthorizationStateAvailable,
+      paymentChecks: paymentReadiness.productionConfiguration.checks.map(({ label, passed }) => ({ label, passed })),
       operationsReady,
       operationsStateAvailable,
       emailWorkerEnabled,

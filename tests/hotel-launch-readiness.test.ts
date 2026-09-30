@@ -13,6 +13,10 @@ const empty: HotelLaunchReadinessInput = {
   paymentConfigurationReady: false,
   paymentAuthorizationValid: false,
   paymentAuthorizationStateAvailable: true,
+  paymentChecks: [
+    { label: "Live booking payments are enabled", passed: false },
+    { label: "Stripe live key pair is staged or active", passed: true },
+  ],
   operationsReady: false,
   operationsStateAvailable: true,
   emailWorkerEnabled: false,
@@ -55,6 +59,7 @@ describe("hotel launch readiness", () => {
       liveSupplierCount: 1,
       paymentConfigurationReady: true,
       paymentAuthorizationValid: true,
+      paymentChecks: empty.paymentChecks.map((item) => ({ ...item, passed: true })),
       operationsReady: true,
       emailWorkerEnabled: true,
       emailBacklogCount: 0,
@@ -65,6 +70,16 @@ describe("hotel launch readiness", () => {
     });
     expect(result).toMatchObject({ complete: 7, total: 7, percent: 100, launchReady: true });
     expect(result.gates.every(({ status }) => status === "ready")).toBe(true);
+  });
+
+  it("shows safe payment configuration and approval blockers", () => {
+    const payments = buildHotelLaunchReadiness(empty).gates.find(({ id }) => id === "production_payments");
+    expect(payments?.checks).toEqual([
+      { label: "Live booking payments are enabled", ready: false, value: "Required" },
+      { label: "Stripe live key pair is staged or active", ready: true, value: "Complete" },
+      { label: "Current production payment approval", ready: false, value: "Required" },
+    ]);
+    expect(JSON.stringify(payments)).not.toMatch(/sk_live_|pk_live_|whsec_/);
   });
 
   it("shows actionable aggregate operations checks without exposing queue records", () => {
@@ -114,6 +129,7 @@ describe("hotel launch readiness", () => {
 
   it("exposes an admin-only read path with no mutation handler", () => {
     expect(routeSource).toContain('requireRole(["admin"])');
+    expect(routeSource).toContain("paymentReadiness.productionConfiguration.checks.map");
     expect(routeSource).toContain("export async function GET()");
     expect(routeSource).toContain("!commercialControls.error && !commercialStates.error");
     expect(routeSource).not.toContain("export async function POST");
