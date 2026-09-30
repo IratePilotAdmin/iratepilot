@@ -193,7 +193,12 @@ describe("hotel launch readiness", () => {
     expect(routeSource).toContain('requireRole(["admin"])');
     expect(routeSource).toContain("paymentReadiness.productionConfiguration.checks.map");
     expect(routeSource).toContain("export async function GET()");
-    expect(routeSource).toContain("!commercialControls.error && !commercialStates.error");
+    expect(routeSource).toContain("!commercialControls.error && !commercialStates.error && !commercialReviews.error");
+    expect(routeSource).toContain('from("property_commercial_review_evidence")');
+    expect(routeSource).toContain("review.commercial_agreement_evidence_id");
+    expect(routeSource).toContain("review.reviewer_id === control?.commercial_verified_by");
+    expect(routeSource).toContain("review.created_at === control?.commercial_verified_at");
+    expect(routeSource).toContain("review.legal_business_verified");
     expect(routeSource).not.toContain("export async function POST");
     expect(routeSource).not.toContain("export async function PATCH");
     expect(uiSource).toContain("This page is read-only.");
