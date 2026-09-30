@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/require-role";
 import { partnerAcquisitionAttributionSchema } from "@/lib/partner/acquisition";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET() {
   try {
@@ -9,7 +10,11 @@ export async function GET() {
       return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
 
-    const { data, error } = await auth.supabase
+    // Authorization is established above. Use the server-only client for the
+    // queue so a missing or stale production RLS policy cannot silently hide
+    // submitted applications from an authorized administrator.
+    const admin = createAdminClient();
+    const { data, error } = await admin
       .from("partner_applications")
       .select("id,property_name,contact_name,email,property_type,status,created_at,star_rating,contact_role,phone,website_url,address_line1,city,region,postal_code,country,description,amenities,photo_source_url,additional_notes,hotel_authorized,content_rights_confirmed,information_accurate,commercial_terms_acknowledged,commercial_terms_version_acknowledged,property_id")
       .order("created_at", { ascending: false });
@@ -19,6 +24,8 @@ export async function GET() {
     const applicationIds = applications.map((application) => application.id);
     const attributionByApplication = new Map<string, unknown>();
     if (applicationIds.length > 0) {
+      // Drafts intentionally grant SELECT only to authenticated users. The
+      // role check above and the draft RLS policy protect this attribution read.
       const { data: drafts, error: draftError } = await auth.supabase
         .from("partner_onboarding_drafts")
         .select("application_id,registration")
