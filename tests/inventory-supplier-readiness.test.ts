@@ -84,6 +84,35 @@ describe("inventory supplier readiness", () => {
     expect(JSON.stringify(hotelbeds)).not.toContain("private-key-material");
   });
 
+  it("rejects decorated placeholder credentials", () => {
+    const readiness = buildInventorySupplierReadiness({
+      HOTEL_INVENTORY_EXPEDIA_RAPID_API_KEY: "example-api-key",
+      HOTEL_INVENTORY_EXPEDIA_RAPID_SHARED_SECRET: "placeholder_shared_secret",
+    });
+    const expedia = readiness.find(({ id }) => id === "expedia-rapid");
+
+    expect(expedia?.status).toBe("invalid_configuration");
+    expect(expedia?.invalidEnvironmentKeys).toEqual([
+      "HOTEL_INVENTORY_EXPEDIA_RAPID_API_KEY",
+      "HOTEL_INVENTORY_EXPEDIA_RAPID_SHARED_SECRET",
+    ]);
+  });
+
+  it("rejects mismatched private-key PEM boundary types", () => {
+    const readiness = buildInventorySupplierReadiness({
+      HOTEL_INVENTORY_HOTELBEDS_API_KEY: "issued-hotelbeds-api-key",
+      HOTEL_INVENTORY_HOTELBEDS_SECRET: "issued-hotelbeds-secret",
+      HOTEL_INVENTORY_HOTELBEDS_MTLS_CERTIFICATE: "-----BEGIN CERTIFICATE-----\\ncertificate-material\\n-----END CERTIFICATE-----",
+      HOTEL_INVENTORY_HOTELBEDS_MTLS_PRIVATE_KEY: "-----BEGIN RSA PRIVATE KEY-----\\nprivate-key-material\\n-----END EC PRIVATE KEY-----",
+    });
+    const hotelbeds = readiness.find(({ id }) => id === "hotelbeds");
+
+    expect(hotelbeds?.status).toBe("invalid_configuration");
+    expect(hotelbeds?.invalidEnvironmentKeys).toContain(
+      "HOTEL_INVENTORY_HOTELBEDS_MTLS_PRIVATE_KEY",
+    );
+  });
+
   it("exposes the read-only audit through the admin-only no-store endpoint", () => {
     expect(route).toContain("buildInventorySupplierReadiness(process.env)");
     expect(route).toContain("inventorySuppliers");

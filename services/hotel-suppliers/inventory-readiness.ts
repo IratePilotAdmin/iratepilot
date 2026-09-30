@@ -24,7 +24,8 @@ type InventorySupplierManifest = Omit<
   "status" | "missingEnvironmentKeys" | "invalidEnvironmentKeys"
 >;
 
-const placeholderPattern = /^(?:changeme|example|placeholder|test|todo|unknown)$/i;
+const exactPlaceholderPattern = /^(?:changeme|example|placeholder|test|todo|unknown)$/i;
+const decoratedPlaceholderPattern = /(?:^|[-_.\s])(?:changeme|example|placeholder|todo|unknown)(?:$|[-_.\s])|^test(?:[-_.\s])(?:api[-_.\s]?key|secret|token|credential|certificate|private[-_.\s]?key)(?:$|[-_.\s])/i;
 
 function normalizePem(value: string) {
   return value.replaceAll("\\n", "\n").trim();
@@ -32,7 +33,8 @@ function normalizePem(value: string) {
 
 function isValidConfiguredValue(key: string, value: string) {
   const normalized = value.trim();
-  if (!normalized || placeholderPattern.test(normalized)) return false;
+  if (!normalized || exactPlaceholderPattern.test(normalized)
+    || decoratedPlaceholderPattern.test(normalized)) return false;
   if (key.endsWith("_MTLS_CERTIFICATE")) {
     const pem = normalizePem(normalized);
     return pem.startsWith("-----BEGIN CERTIFICATE-----")
@@ -40,8 +42,8 @@ function isValidConfiguredValue(key: string, value: string) {
   }
   if (key.endsWith("_MTLS_PRIVATE_KEY")) {
     const pem = normalizePem(normalized);
-    return /^-----BEGIN (?:RSA |EC )?PRIVATE KEY-----/.test(pem)
-      && /-----END (?:RSA |EC )?PRIVATE KEY-----$/.test(pem);
+    const boundary = pem.match(/^-----BEGIN ((?:RSA |EC )?PRIVATE KEY)-----/);
+    return Boolean(boundary) && pem.endsWith(`-----END ${boundary?.[1]}-----`);
   }
   if (key.endsWith("_KEY_ID")) return normalized.length >= 3;
   return normalized.length >= 8;
