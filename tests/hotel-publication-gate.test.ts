@@ -34,6 +34,18 @@ const readyRoom = {
   }],
 };
 
+function intakeEvidenceQuery(result: { data?: unknown[] | null; count?: number | null; error: unknown }) {
+  const query = {
+    select: vi.fn(),
+    eq: vi.fn(),
+    not: vi.fn(async () => result),
+    limit: vi.fn(async () => result),
+  };
+  query.select.mockReturnValue(query);
+  query.eq.mockReturnValue(query);
+  return query;
+}
+
 beforeEach(() => {
   vi.resetAllMocks();
   delete process.env.HOTEL_PUBLICATION_ENABLED;
@@ -106,10 +118,13 @@ describe("hotel publication release gate", () => {
       data: { id: propertyId, name: "Pilot Hotel", active: true },
       error: null,
     }));
+    const from = vi.fn()
+      .mockImplementationOnce(() => ({ select }))
+      .mockImplementationOnce(() => intakeEvidenceQuery({ count: 1, error: null }));
     mocks.auth.mockResolvedValue({
       user: { id: "admin-a" },
       profile: { role: "admin" },
-      supabase: { from: vi.fn(() => ({ select })), rpc },
+      supabase: { from, rpc },
     });
 
     const response = await PATCH(new Request("https://example.test/api/admin/properties/1", {
@@ -123,6 +138,42 @@ describe("hotel publication release gate", () => {
       p_property_id: propertyId,
       p_active: true,
     });
+  });
+
+  it("rejects publication when the property has no linked verified hotel intake", async () => {
+    process.env.HOTEL_PUBLICATION_ENABLED = "true";
+    const maybeSingle = vi.fn(async () => ({
+      data: {
+        image_url: "https://images.example.test/hotel.jpg",
+        amenities: ["Pool"],
+        partners: { status: "approved" },
+        rooms: [readyRoom],
+      },
+      error: null,
+    }));
+    const eq = vi.fn(() => ({ maybeSingle }));
+    const select = vi.fn(() => ({ eq }));
+    const rpc = vi.fn();
+    const from = vi.fn()
+      .mockImplementationOnce(() => ({ select }))
+      .mockImplementationOnce(() => intakeEvidenceQuery({ count: 0, error: null }));
+    mocks.auth.mockResolvedValue({
+      user: { id: "admin-a" },
+      profile: { role: "admin" },
+      supabase: { from, rpc },
+    });
+
+    const response = await PATCH(new Request("https://example.test/api/admin/properties/1", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ active: true }),
+    }), { params: Promise.resolve({ id: propertyId }) });
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error: "A verified approved hotel application linked to this property is required before publication.",
+    });
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("rejects publication when the flag is enabled but another production gate is incomplete", async () => {
@@ -161,10 +212,13 @@ describe("hotel publication release gate", () => {
       data: null,
       error: { message: "An effective executed hotel commercial agreement and matching commercial review are required before publication" },
     }));
+    const from = vi.fn()
+      .mockImplementationOnce(() => ({ select }))
+      .mockImplementationOnce(() => intakeEvidenceQuery({ count: 1, error: null }));
     mocks.auth.mockResolvedValue({
       user: { id: "admin-a" },
       profile: { role: "admin" },
-      supabase: { from: vi.fn(() => ({ select })), rpc },
+      supabase: { from, rpc },
     });
 
     const response = await PATCH(new Request("https://example.test/api/admin/properties/1", {
@@ -202,6 +256,9 @@ describe("hotel publication release gate", () => {
         })),
       }))
       .mockImplementationOnce(() => ({
+        ...intakeEvidenceQuery({ data: [], error: null }),
+      }))
+      .mockImplementationOnce(() => ({
         select: vi.fn(() => ({ in: vi.fn(async () => ({ data: null, error: { message: "missing columns" } })) })),
       }));
     const rpc = vi.fn(async () => ({ data: null, error: { message: "missing function" } }));
@@ -216,6 +273,7 @@ describe("hotel publication release gate", () => {
 
     expect(response.status).toBe(200);
     expect(body.data).toHaveLength(1);
+    expect(body.data[0].intakeApproval).toEqual({ stateAvailable: true, verified: false });
     expect(body.data[0].commercialRelease).toEqual({
       stateAvailable: false,
       agreementEffective: false,
@@ -231,5 +289,7 @@ describe("hotel publication release gate", () => {
     expect(reviewUi).toContain("commercialReady && publicationEnabled");
     expect(reviewUi).toContain("a currently effective, executed hotel agreement is required");
     expect(reviewUi).toContain("complete the accountable commercial review");
+    expect(reviewUi).toContain("Excluded from production readiness");
+    expect(decisionRoute).toContain("A verified approved hotel application linked to this property is required before publication.");
   });
 });

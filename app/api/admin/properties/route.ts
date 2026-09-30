@@ -15,6 +15,27 @@ export async function GET() {
 
     const properties = data ?? [];
     const propertyIds = properties.map((property) => property.id);
+    const { data: intakeApprovals, error: intakeApprovalsError } = await auth.supabase
+      .from("partner_application_review_evidence")
+      .select("application_id,partner_applications!inner(property_id,status)")
+      .eq("decision", "approved")
+      .eq("legal_business_verified", true)
+      .eq("representative_authority_verified", true)
+      .eq("content_rights_verified", true)
+      .eq("commercial_terms_acknowledgement_verified", true)
+      .eq("inactive_draft_scope_confirmed", true)
+      .eq("partner_applications.status", "approved")
+      .not("partner_applications.property_id", "is", null);
+    const verifiedIntakePropertyIds = new Set(
+      (intakeApprovals ?? []).flatMap((approval) => {
+        const applications = Array.isArray(approval.partner_applications)
+          ? approval.partner_applications
+          : [approval.partner_applications];
+        return applications
+          .map((application) => application?.property_id)
+          .filter((propertyId): propertyId is string => Boolean(propertyId));
+      }),
+    );
     const commercialStateByProperty = new Map<string, boolean>();
     const commercialReviewByProperty = new Map<string, boolean>();
     let commercialStateAvailable = true;
@@ -65,6 +86,10 @@ export async function GET() {
         created_at: property.created_at,
         partners: property.partners,
         readiness: getPropertyReadiness(property as PropertyReadinessInput),
+        intakeApproval: {
+          stateAvailable: !intakeApprovalsError,
+          verified: !intakeApprovalsError && verifiedIntakePropertyIds.has(property.id),
+        },
         commercialRelease: {
           stateAvailable: commercialStateAvailable,
           agreementEffective: commercialStateByProperty.get(property.id) === true,
