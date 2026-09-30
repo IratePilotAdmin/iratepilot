@@ -24,9 +24,14 @@ type MarketplaceLaunchEvidence = {
   payoutExceptions: number;
 };
 
+type MarketplaceLaunchAuthorizationOptions = {
+  allowPayoutExceptionsForReconciliation?: boolean;
+};
+
 export function evaluateHotelMarketplaceLaunchAuthorization(
   env: Record<string, string | undefined>,
   evidence: MarketplaceLaunchEvidence,
+  options: MarketplaceLaunchAuthorizationOptions = {},
 ) {
   if (!isHotelPublicationEnabled(env) || !isEmailWorkerEnabled(env.EMAIL_WORKER_ENABLED)) return false;
   if (!evidence.releaseAuthorizationValid
@@ -36,8 +41,8 @@ export function evaluateHotelMarketplaceLaunchAuthorization(
   if (!buildPaymentReadiness(env).productionConfiguration.ready) return false;
   if (evidence.emailBacklog !== 0
     || evidence.emailDeadLetters !== 0
-    || evidence.deliveryFailures !== 0
-    || evidence.payoutExceptions !== 0) return false;
+    || evidence.deliveryFailures !== 0) return false;
+  if (!options.allowPayoutExceptionsForReconciliation && evidence.payoutExceptions !== 0) return false;
 
   const priorityPmsLive = auditPriorityPmsProductionReadiness(env, evidence.priorityPmsEvidence)
     .some(({ status }) => status === "live");
@@ -45,8 +50,9 @@ export function evaluateHotelMarketplaceLaunchAuthorization(
   return priorityPmsLive || synxisLive;
 }
 
-export async function isHotelMarketplaceLaunchAuthorized(
-  env: Record<string, string | undefined> = process.env,
+async function verifyHotelMarketplaceLaunchAuthorization(
+  env: Record<string, string | undefined>,
+  options: MarketplaceLaunchAuthorizationOptions,
 ) {
   if (!isHotelPublicationEnabled(env)) return false;
 
@@ -106,8 +112,22 @@ export async function isHotelMarketplaceLaunchAuthorized(
       emailDeadLetters: emailDeadLetters.count ?? 0,
       deliveryFailures: deliveryFailures.count ?? 0,
       payoutExceptions: payoutExceptions.count ?? 0,
-    });
+    }, options);
   } catch {
     return false;
   }
+}
+
+export function isHotelMarketplaceLaunchAuthorized(
+  env: Record<string, string | undefined> = process.env,
+) {
+  return verifyHotelMarketplaceLaunchAuthorization(env, {});
+}
+
+export function isHotelMarketplacePayoutReconciliationAuthorized(
+  env: Record<string, string | undefined> = process.env,
+) {
+  return verifyHotelMarketplaceLaunchAuthorization(env, {
+    allowPayoutExceptionsForReconciliation: true,
+  });
 }

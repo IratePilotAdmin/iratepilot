@@ -21,6 +21,7 @@ import { queueBookingNotification } from "@/lib/email/booking-notifications";
 import { getApprovedBookingMetadataMode, getStripeWebhookMode } from "@/lib/stripe/booking-payment-mode";
 import { reconcileStripeBookingRefund, type StripeRefundReconciliation } from "@/lib/bookings/stripe-refund-reconciliation";
 import { drainNativePmsEvents } from "@/services/hotel-suppliers/iratepilot-pms/native-delivery";
+import { isHotelMarketplaceLaunchAuthorized } from "@/lib/hotels/marketplace-launch-authorization";
 
 function deliverCancellationToNativePms() {
   after(async () => {
@@ -46,6 +47,15 @@ export async function POST(request: Request) {
 
   const webhookMode = getStripeWebhookMode();
   if (!webhookMode) return NextResponse.json({ error: "Stripe webhooks are disabled." }, { status: 503 });
+  if (
+    webhookMode === "live"
+    && event.type === "payment_intent.succeeded"
+    && !await isHotelMarketplaceLaunchAuthorized()
+  ) {
+    return NextResponse.json({
+      error: "Live payment completion requires every production launch gate to pass.",
+    }, { status: 503 });
+  }
 
   const admin = createAdminClient();
   const eventCreatedAt = new Date(event.created * 1000).toISOString();
