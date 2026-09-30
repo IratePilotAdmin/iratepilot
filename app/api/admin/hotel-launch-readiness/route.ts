@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { buildHotelLaunchReadiness, selectClosestSupplierCandidate } from "@/lib/admin/hotel-launch-readiness";
 import { buildPaymentReadiness } from "@/lib/admin/payment-readiness";
 import type { PaymentLaunchAuthorization } from "@/lib/admin/payment-readiness";
@@ -31,6 +32,32 @@ type CommercialReviewEvidence = {
   created_at: string;
 };
 
+type ReleaseAuthorization = {
+  id: string;
+  approvalReference: string;
+  approvedAt: string;
+  expiresAt: string;
+  revokedAt: string | null;
+};
+
+const timestampSchema = z.string().datetime({ offset: true });
+const releaseAuthorizationRequestSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("record"),
+    approvalReference: z.string().trim().min(8).max(160).regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{7,159}$/),
+    approvedAt: timestampSchema,
+    expiresAt: timestampSchema,
+    rollbackPlanVerified: z.literal(true),
+    reviewNotes: z.string().trim().min(20).max(2000),
+  }).strict(),
+  z.object({
+    action: z.literal("revoke"),
+    authorizationId: z.string().uuid(),
+    revocationReference: z.string().trim().min(8).max(160).regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{7,159}$/),
+    reasonSummary: z.string().trim().min(20).max(2000),
+  }).strict(),
+]);
+
 export async function GET() {
   try {
     const auth = await requireRole(["admin"]);
@@ -54,7 +81,7 @@ export async function GET() {
       if (linkedToProperty) query = query.not("partner_applications.property_id", "is", null);
       return query;
     };
-    const [properties, applications, applicationApprovalEvidence, applicationTotal, pendingApplications, declinedApplications, verifiedApprovals, verifiedLinkedApprovals, commercialControls, supplierEvidence, synxisEvidence, emailBacklog, emailDeadLetters, deliveryFailures, payoutExceptions, paymentApprovals, paymentRevocations, releaseAuthorizationValid] = await Promise.all([
+    const [properties, applications, applicationApprovalEvidence, applicationTotal, pendingApplications, declinedApplications, verifiedApprovals, verifiedLinkedApprovals, commercialControls, supplierEvidence, synxisEvidence, emailBacklog, emailDeadLetters, deliveryFailures, payoutExceptions, paymentApprovals, paymentRevocations, releaseAuthorizations, releaseRevocations, releaseAuthorizationValid] = await Promise.all([
       admin.from("properties").select("id,image_url,amenities,rooms(active,base_rate,max_guests,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount))"),
       admin.from("partner_applications").select("id,property_id,status"),
       auth.supabase.from("partner_application_review_evidence")
@@ -75,6 +102,11 @@ export async function GET() {
         .select("id,approval_reference,stripe_account_reference,approved_at,expires_at")
         .order("approved_at", { ascending: false }).limit(20),
       auth.supabase.from("hotel_payment_launch_authorization_revocations")
+        .select("authorization_id,revoked_at"),
+      auth.supabase.from("hotel_marketplace_release_authorizations")
+        .select("id,approval_reference,approved_at,expires_at")
+        .order("approved_at", { ascending: false }).limit(20),
+      auth.supabase.from("hotel_marketplace_release_authorization_revocations")
         .select("authorization_id,revoked_at"),
       hasCurrentHotelMarketplaceReleaseAuthorization(admin),
     ]);
@@ -317,7 +349,19 @@ export async function GET() {
       : null;
     const paymentReadiness = buildPaymentReadiness(process.env, currentPaymentAuthorization);
 
-    return NextResponse.json(buildHotelLaunchReadiness({
+    const releaseAuthorizationEvidenceAvailable = !releaseAuthorizations.error && !releaseRevocations.error;
+    const revokedReleaseAuthorizations = new Map((releaseRevocations.data ?? []).map((item) => [item.authorization_id, item.revoked_at]));
+    const currentReleaseAuthorization = releaseAuthorizationEvidenceAvailable
+      ? (releaseAuthorizations.data ?? []).map((item): ReleaseAuthorization => ({
+        id: item.id,
+        approvalReference: item.approval_reference,
+        approvedAt: item.approved_at,
+        expiresAt: item.expires_at,
+        revokedAt: revokedReleaseAuthorizations.get(item.id) ?? null,
+      })).find((item) => !item.revokedAt && Date.parse(item.approvedAt) <= Date.now() && Date.parse(item.expiresAt) > Date.now()) ?? null
+      : null;
+
+    const readiness = buildHotelLaunchReadiness({
       approvedHotelCount: verifiedLinkedApprovals.count ?? 0,
       approvedHotelStateAvailable,
       hotelApplicationCount,
@@ -348,9 +392,65 @@ export async function GET() {
       payoutExceptionCount,
       releaseAuthorizationValid,
       publicationEnabled: isHotelPublicationEnabled(),
-    }), { headers: { "Cache-Control": "private, no-store" } });
+    });
+    return NextResponse.json({
+      ...readiness,
+      releaseAuthorization: currentReleaseAuthorization,
+      releaseAuthorizationEvidenceAvailable,
+    }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("Hotel launch readiness failed", error);
     return NextResponse.json({ error: "Hotel launch readiness could not be verified." }, { status: 503 });
   }
+}
+
+export async function POST(request: Request) {
+  const auth = await requireRole(["admin"]);
+  if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+  const parsed = releaseAuthorizationRequestSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Complete every marketplace release authorization field with valid evidence." }, { status: 400 });
+  }
+  if (parsed.data.action === "revoke") {
+    const { data, error } = await auth.supabase.rpc("revoke_hotel_marketplace_release_authorization", {
+      p_authorization_id: parsed.data.authorizationId,
+      p_revocation_reference: parsed.data.revocationReference,
+      p_reason_summary: parsed.data.reasonSummary,
+    });
+    if (error) return NextResponse.json({ error: error.message }, { status: 409 });
+    return NextResponse.json({ data, message: "Marketplace release authorization was revoked. Runtime switches were not changed." });
+  }
+
+  const approvedAt = Date.parse(parsed.data.approvedAt);
+  const expiresAt = Date.parse(parsed.data.expiresAt);
+  if (approvedAt > Date.now() || expiresAt <= Date.now() || expiresAt <= approvedAt || expiresAt > approvedAt + 7 * 24 * 60 * 60 * 1000) {
+    return NextResponse.json({ error: "The authorization must be current and expire no more than seven days after approval." }, { status: 400 });
+  }
+
+  const readinessResponse = await GET();
+  const readiness = await readinessResponse.json();
+  if (!readinessResponse.ok) {
+    return NextResponse.json({ error: "Current launch readiness could not be verified." }, { status: 503 });
+  }
+  const prerequisiteGates = Array.isArray(readiness.gates) ? readiness.gates.slice(0, 6) : [];
+  if (prerequisiteGates.length !== 6 || prerequisiteGates.some((gate: { status?: string }) => gate.status !== "ready")) {
+    return NextResponse.json({ error: "All six production prerequisites must pass before release authorization can be recorded." }, { status: 409 });
+  }
+
+  const { data, error } = await auth.supabase.rpc("record_hotel_marketplace_release_authorization", {
+    p_approval_reference: parsed.data.approvalReference,
+    p_approved_at: parsed.data.approvedAt,
+    p_expires_at: parsed.data.expiresAt,
+    p_hotel_intake_verified: true,
+    p_inventory_verified: true,
+    p_commercial_review_verified: true,
+    p_supplier_connection_verified: true,
+    p_production_payments_verified: true,
+    p_support_operations_verified: true,
+    p_rollback_plan_verified: parsed.data.rollbackPlanVerified,
+    p_review_notes: parsed.data.reviewNotes,
+  });
+  if (error) return NextResponse.json({ error: error.message }, { status: 409 });
+  return NextResponse.json({ data, message: "Marketplace release authorization evidence was recorded. Runtime switches were not changed." });
 }
