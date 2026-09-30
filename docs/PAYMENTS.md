@@ -24,6 +24,16 @@ The reservation payment gate fails closed unless exactly one approved mode resol
 
 `getApprovedBookingPaymentMode` rejects mixed or incomplete configurations. Stripe webhook processing independently resolves through `getStripeWebhookMode` and always requires raw-body signature verification.
 
+Live credentials may be prepared before cutover in the server-only
+`STRIPE_LIVE_SECRET_KEY`, `STRIPE_LIVE_PUBLISHABLE_KEY`, and
+`STRIPE_LIVE_WEBHOOK_SECRET` staging slots. The readiness audit recognizes a
+complete staged set, but payment and webhook runtime code never reads those
+slots. The active test credentials therefore remain usable during the pilot.
+At an approved commercial cutover, promote the staged values to
+`STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, and
+`STRIPE_WEBHOOK_SECRET`, disable test checkout, and redeploy with every live
+gate enabled together.
+
 ## Reservation payment flow
 
 1. A hotel partner approves a reservation request.
