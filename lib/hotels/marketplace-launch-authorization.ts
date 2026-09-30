@@ -1,6 +1,7 @@
 import { buildPaymentReadiness } from "../admin/payment-readiness";
 import { isEmailWorkerEnabled } from "../email/worker-gate";
 import { isHotelPublicationEnabled } from "./publication-gate";
+import { hasCurrentHotelMarketplaceReleaseAuthorization } from "./marketplace-release-authorization";
 import { createAdminClient } from "../supabase/admin";
 import { hasCurrentLivePaymentAuthorization } from "../stripe/live-payment-authorization";
 import {
@@ -11,6 +12,7 @@ import {
 import { buildSynxisReadiness, type SynxisActivationEvidence } from "../../services/hotel-suppliers/synxis";
 
 type MarketplaceLaunchEvidence = {
+  releaseAuthorizationValid: boolean;
   paymentAuthorizationValid: boolean;
   supplierStateAvailable: boolean;
   priorityPmsEvidence: Partial<Record<PriorityPmsProviderId, PriorityPmsLaunchEvidence>>;
@@ -27,7 +29,10 @@ export function evaluateHotelMarketplaceLaunchAuthorization(
   evidence: MarketplaceLaunchEvidence,
 ) {
   if (!isHotelPublicationEnabled(env) || !isEmailWorkerEnabled(env.EMAIL_WORKER_ENABLED)) return false;
-  if (!evidence.paymentAuthorizationValid || !evidence.supplierStateAvailable || !evidence.operationsStateAvailable) return false;
+  if (!evidence.releaseAuthorizationValid
+    || !evidence.paymentAuthorizationValid
+    || !evidence.supplierStateAvailable
+    || !evidence.operationsStateAvailable) return false;
   if (!buildPaymentReadiness(env).productionConfiguration.ready) return false;
   if (evidence.emailBacklog !== 0
     || evidence.emailDeadLetters !== 0
@@ -51,7 +56,8 @@ export async function isHotelMarketplaceLaunchAuthorized(
       .from(table)
       .select("id", { count: "exact", head: true })
       .in(column, values);
-    const [paymentAuthorizationValid, supplierEvidence, synxisEvidence, emailBacklog, emailDeadLetters, deliveryFailures, payoutExceptions] = await Promise.all([
+    const [releaseAuthorizationValid, paymentAuthorizationValid, supplierEvidence, synxisEvidence, emailBacklog, emailDeadLetters, deliveryFailures, payoutExceptions] = await Promise.all([
+      hasCurrentHotelMarketplaceReleaseAuthorization(admin),
       hasCurrentLivePaymentAuthorization(admin),
       admin.from("priority_pms_launch_evidence").select("provider_id,vendor_approved,property_mapped,sandbox_validated,webhook_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact,verification_notes"),
       admin.from("synxis_crs_launch_evidence").select("vendor_approved,certification_environment_approved,property_mapped,sandbox_validated,production_smoke_validated,live_enabled").eq("provider_id", "sabre-synxis").maybeSingle(),
@@ -76,6 +82,7 @@ export async function isHotelMarketplaceLaunchAuthorized(
     }])) as Partial<Record<PriorityPmsProviderId, PriorityPmsLaunchEvidence>>;
 
     return evaluateHotelMarketplaceLaunchAuthorization(env, {
+      releaseAuthorizationValid,
       paymentAuthorizationValid,
       supplierStateAvailable: !supplierEvidence.error && !synxisEvidence.error,
       priorityPmsEvidence,

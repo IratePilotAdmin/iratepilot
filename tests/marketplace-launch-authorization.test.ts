@@ -25,6 +25,7 @@ const liveEnvironment = {
 };
 
 const liveEvidence = {
+  releaseAuthorizationValid: true,
   paymentAuthorizationValid: true,
   supplierStateAvailable: true,
   priorityPmsEvidence: {},
@@ -49,6 +50,10 @@ describe("hotel marketplace launch authorization", () => {
   });
 
   it("fails closed for a flag-only release", () => {
+    expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
+      ...liveEvidence,
+      releaseAuthorizationValid: false,
+    })).toBe(false);
     expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
       ...liveEvidence,
       paymentAuthorizationValid: false,

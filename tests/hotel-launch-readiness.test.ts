@@ -48,6 +48,7 @@ const empty: HotelLaunchReadinessInput = {
   emailDeadLetterCount: 1,
   deliveryFailureCount: 3,
   payoutExceptionCount: 1,
+  releaseAuthorizationValid: false,
   publicationEnabled: false,
 };
 
@@ -132,6 +133,7 @@ describe("hotel launch readiness", () => {
       emailDeadLetterCount: 0,
       deliveryFailureCount: 0,
       payoutExceptionCount: 0,
+      releaseAuthorizationValid: true,
       publicationEnabled: true,
     });
     expect(result).toMatchObject({ complete: 7, total: 7, percent: 100, launchReady: true });
@@ -147,6 +149,7 @@ describe("hotel launch readiness", () => {
       { label: "Live supplier or PMS connection", ready: false, value: "Required" },
       { label: "Production booking payments", ready: false, value: "Required" },
       { label: "Email and support operations", ready: false, value: "Required" },
+      { label: "Current production release authorization", ready: false, value: "Required" },
       { label: "Server publication gate", ready: false, value: "Disabled" },
     ]);
   });
@@ -162,6 +165,7 @@ describe("hotel launch readiness", () => {
       paymentConfigurationReady: true,
       paymentAuthorizationValid: true,
       operationsReady: true,
+      releaseAuthorizationValid: true,
       publicationEnabled: true,
     });
     const publication = result.gates.find(({ id }) => id === "production_release");
