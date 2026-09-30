@@ -5,6 +5,7 @@ import type { FormEvent } from "react";
 import type { ReadinessItem } from "@/lib/admin/platform-readiness";
 import { buildSupplierPhaseReadiness } from "@/services/hotel-suppliers/phase-readiness";
 import type { PmsProviderReadiness } from "@/services/hotel-suppliers/types";
+import type { InventorySupplierReadiness } from "@/services/hotel-suppliers/inventory-readiness";
 import type {
   PriorityPmsLaunchStatus,
   PriorityPmsProviderId,
@@ -93,6 +94,7 @@ export function AdminSettings() {
   const [emailTestBusy, setEmailTestBusy] = useState(false);
   const [emailTestMessage, setEmailTestMessage] = useState("");
   const [pmsProviders, setPmsProviders] = useState<PmsProviderReadiness[]>([]);
+  const [inventorySuppliers, setInventorySuppliers] = useState<InventorySupplierReadiness[]>([]);
   const [priorityPmsReadiness, setPriorityPmsReadiness] = useState<PriorityPmsProductionReadiness[]>([]);
   const [evidenceTrackingAvailable, setEvidenceTrackingAvailable] = useState(false);
   const [evidenceBusy, setEvidenceBusy] = useState("");
@@ -147,6 +149,7 @@ export function AdminSettings() {
         const body = await response.json();
         if (!response.ok) throw new Error(body.error);
         setPmsProviders(body.providers);
+        setInventorySuppliers(body.inventorySuppliers ?? []);
         setPriorityPmsReadiness(body.priorityProductionReadiness ?? []);
         setEvidenceTrackingAvailable(body.evidenceTrackingAvailable === true);
         setPmsConnections(body.connections ?? []);
@@ -299,6 +302,29 @@ export function AdminSettings() {
       </section>
 
       <SynxisCrsReadiness />
+
+      <section className="card mt-6 overflow-hidden">
+        <div className="border-b p-6">
+          <span className="text-xs uppercase tracking-wider text-slate-500">Aggregator inventory</span>
+          <h2 className="mt-2 text-xl font-semibold">Hotel inventory supplier readiness</h2>
+          <p className="mt-2 text-sm text-slate-600">This read-only audit tracks credential prerequisites for supplier applications. It cannot approve a partnership, contact a vendor, validate a sandbox, or enable traffic.</p>
+          <div className="mt-4 flex flex-wrap gap-5 text-sm">
+            <span><strong>{inventorySuppliers.length}</strong> suppliers tracked</span>
+            <span><strong>{inventorySuppliers.filter((supplier) => supplier.status === "ready_for_sandbox_validation").length}</strong> ready for sandbox validation</span>
+          </div>
+        </div>
+        <div className="grid gap-3 p-6 lg:grid-cols-3">
+          {inventorySuppliers.map((supplier) => <article className="rounded-lg border p-4" key={supplier.id}>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <strong>{supplier.name}</strong>
+              <span className={supplier.status === "ready_for_sandbox_validation" ? "text-sm font-semibold text-emerald-700" : "text-sm font-semibold text-amber-700"}>{supplier.status.replaceAll("_", " ")}</span>
+            </div>
+            <p className="mt-2 text-xs text-slate-600">{supplier.approvalNote}</p>
+            {supplier.missingEnvironmentKeys.length > 0 && <p className="mt-3 break-words text-xs text-amber-700">Missing: {supplier.missingEnvironmentKeys.join(", ")}</p>}
+            <a className="mt-3 inline-block text-xs font-semibold underline" href={supplier.documentationUrl} rel="noreferrer" target="_blank">Official integration documentation</a>
+          </article>)}
+        </div>
+      </section>
 
       <section className="card mt-6 overflow-hidden">
         <div className="border-b p-6">
