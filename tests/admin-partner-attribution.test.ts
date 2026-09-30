@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  requireRole: vi.fn(), from: vi.fn(), applicationSelect: vi.fn(), order: vi.fn(),
+  requireRole: vi.fn(), createAdminClient: vi.fn(), from: vi.fn(), applicationSelect: vi.fn(), order: vi.fn(),
   draftSelect: vi.fn(), inFilter: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/require-role", () => ({ requireRole: mocks.requireRole }));
 vi.mock("@/lib/partner/acquisition", () => import("../lib/partner/acquisition"));
+vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: mocks.createAdminClient }));
 
 import { GET } from "../app/api/admin/partner-applications/route";
 
@@ -18,7 +19,8 @@ const application = {
 describe("admin partner acquisition attribution", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    mocks.requireRole.mockResolvedValue({ supabase: { from: mocks.from } });
+    mocks.requireRole.mockResolvedValue({ user: { id: "admin" }, profile: { role: "admin" } });
+    mocks.createAdminClient.mockReturnValue({ from: mocks.from });
     mocks.from.mockImplementation((table: string) => table === "partner_applications"
       ? { select: mocks.applicationSelect }
       : { select: mocks.draftSelect });
@@ -42,6 +44,7 @@ describe("admin partner acquisition attribution", () => {
     const response = await GET();
     expect(response.status).toBe(200);
     expect(mocks.requireRole).toHaveBeenCalledWith(["admin"]);
+    expect(mocks.createAdminClient).toHaveBeenCalledOnce();
     expect(mocks.from).toHaveBeenNthCalledWith(1, "partner_applications");
     expect(mocks.from).toHaveBeenNthCalledWith(2, "partner_onboarding_drafts");
     expect(mocks.inFilter).toHaveBeenCalledWith("application_id", [application.id]);
