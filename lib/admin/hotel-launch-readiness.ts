@@ -70,6 +70,21 @@ function gate(
 }
 
 export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
+  const approvedHotelReady = input.approvedHotelStateAvailable && input.approvedHotelCount > 0;
+  const listingReady = input.listingStateAvailable && input.inventoryReadyHotelCount > 0;
+  const commercialReady = input.commercialStateAvailable && input.commerciallyReadyHotelCount > 0;
+  const supplierReady = input.supplierStateAvailable && input.liveSupplierCount > 0;
+  const paymentsReady = input.paymentAuthorizationStateAvailable
+    && input.paymentConfigurationReady
+    && input.paymentAuthorizationValid;
+  const operationsReady = input.operationsStateAvailable && input.operationsReady;
+  const productionReleaseReady = approvedHotelReady
+    && listingReady
+    && commercialReady
+    && supplierReady
+    && paymentsReady
+    && operationsReady
+    && input.publicationEnabled;
   const gates: HotelLaunchGate[] = [
     gate(
       "approved_hotel",
@@ -219,14 +234,7 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
     gate(
       "production_release",
       "Production publication release",
-      input.publicationEnabled
-        && input.commerciallyReadyHotelCount > 0
-        && input.liveSupplierCount > 0
-        && input.paymentConfigurationReady
-        && input.paymentAuthorizationValid
-        && input.operationsReady
-        ? "ready"
-        : "blocked",
+      productionReleaseReady ? "ready" : "blocked",
       input.publicationEnabled
         ? "The server publication gate is enabled, but every earlier launch gate must also remain ready."
         : "The server publication gate remains locked until every earlier gate passes and a controlled production release is approved.",
@@ -235,33 +243,33 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
       [
         {
           label: "Approved hotel intake",
-          ready: input.approvedHotelStateAvailable && input.approvedHotelCount > 0,
-          value: input.approvedHotelStateAvailable && input.approvedHotelCount > 0 ? "Complete" : "Required",
+          ready: approvedHotelReady,
+          value: approvedHotelReady ? "Complete" : "Required",
         },
         {
           label: "Listing and sellable inventory",
-          ready: input.listingStateAvailable && input.inventoryReadyHotelCount > 0,
-          value: input.listingStateAvailable && input.inventoryReadyHotelCount > 0 ? "Complete" : "Required",
+          ready: listingReady,
+          value: listingReady ? "Complete" : "Required",
         },
         {
           label: "Executed agreement and commercial review",
-          ready: input.commercialStateAvailable && input.commerciallyReadyHotelCount > 0,
-          value: input.commercialStateAvailable && input.commerciallyReadyHotelCount > 0 ? "Complete" : "Required",
+          ready: commercialReady,
+          value: commercialReady ? "Complete" : "Required",
         },
         {
           label: "Live supplier or PMS connection",
-          ready: input.supplierStateAvailable && input.liveSupplierCount > 0,
-          value: input.supplierStateAvailable && input.liveSupplierCount > 0 ? "Complete" : "Required",
+          ready: supplierReady,
+          value: supplierReady ? "Complete" : "Required",
         },
         {
           label: "Production booking payments",
-          ready: input.paymentAuthorizationStateAvailable && input.paymentConfigurationReady && input.paymentAuthorizationValid,
-          value: input.paymentAuthorizationStateAvailable && input.paymentConfigurationReady && input.paymentAuthorizationValid ? "Complete" : "Required",
+          ready: paymentsReady,
+          value: paymentsReady ? "Complete" : "Required",
         },
         {
           label: "Email and support operations",
-          ready: input.operationsStateAvailable && input.operationsReady,
-          value: input.operationsStateAvailable && input.operationsReady ? "Complete" : "Required",
+          ready: operationsReady,
+          value: operationsReady ? "Complete" : "Required",
         },
         {
           label: "Server publication gate",

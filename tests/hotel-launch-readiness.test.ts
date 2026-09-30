@@ -151,6 +151,28 @@ describe("hotel launch readiness", () => {
     ]);
   });
 
+  it("keeps the final gate blocked when any displayed prerequisite is unavailable", () => {
+    const result = buildHotelLaunchReadiness({
+      ...empty,
+      approvedHotelCount: 1,
+      approvedHotelStateAvailable: false,
+      inventoryReadyHotelCount: 1,
+      commerciallyReadyHotelCount: 1,
+      liveSupplierCount: 1,
+      paymentConfigurationReady: true,
+      paymentAuthorizationValid: true,
+      operationsReady: true,
+      publicationEnabled: true,
+    });
+    const publication = result.gates.find(({ id }) => id === "production_release");
+    expect(publication?.status).toBe("blocked");
+    expect(publication?.checks?.find(({ label }) => label === "Approved hotel intake")).toEqual({
+      label: "Approved hotel intake",
+      ready: false,
+      value: "Required",
+    });
+  });
+
   it("shows safe payment configuration and approval blockers", () => {
     const payments = buildHotelLaunchReadiness(empty).gates.find(({ id }) => id === "production_payments");
     expect(payments?.checks).toEqual([
