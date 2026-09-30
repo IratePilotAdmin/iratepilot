@@ -66,6 +66,11 @@ export async function GET() {
           && verifiedApprovalApplicationIds.has(application.id))
         .map((application) => application.property_id as string),
     );
+    const hotelApplicationCount = applications.data?.length ?? 0;
+    const pendingHotelApplicationCount = (applications.data ?? []).filter(({ status }) => status === "pending").length;
+    const declinedHotelApplicationCount = (applications.data ?? []).filter(({ status }) => status === "declined").length;
+    const verifiedHotelApprovalCount = (applications.data ?? []).filter((application) =>
+      application.status === "approved" && verifiedApprovalApplicationIds.has(application.id)).length;
     const inventoryReadyPropertyIds = new Set(
       (properties.data ?? [])
         .filter((property) => approvedPropertyIds.has(property.id)
@@ -163,6 +168,10 @@ export async function GET() {
     return NextResponse.json(buildHotelLaunchReadiness({
       approvedHotelCount: approvedPropertyIds.size,
       approvedHotelStateAvailable,
+      hotelApplicationCount,
+      pendingHotelApplicationCount,
+      declinedHotelApplicationCount,
+      verifiedHotelApprovalCount,
       inventoryReadyHotelCount: inventoryReadyPropertyIds.size,
       commerciallyReadyHotelCount,
       commercialStateAvailable,

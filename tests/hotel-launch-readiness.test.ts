@@ -5,6 +5,10 @@ import { buildHotelLaunchReadiness, type HotelLaunchReadinessInput } from "../li
 const empty: HotelLaunchReadinessInput = {
   approvedHotelCount: 0,
   approvedHotelStateAvailable: true,
+  hotelApplicationCount: 2,
+  pendingHotelApplicationCount: 1,
+  declinedHotelApplicationCount: 1,
+  verifiedHotelApprovalCount: 0,
   inventoryReadyHotelCount: 0,
   commerciallyReadyHotelCount: 0,
   commercialStateAvailable: true,
@@ -44,16 +48,30 @@ describe("hotel launch readiness", () => {
     const result = buildHotelLaunchReadiness({
       ...empty,
       approvedHotelCount: 1,
+      verifiedHotelApprovalCount: 1,
       inventoryReadyHotelCount: 1,
       commerciallyReadyHotelCount: 1,
     });
     expect(result).toMatchObject({ complete: 3, total: 7, percent: 43, launchReady: false });
   });
 
+  it("shows aggregate hotel application funnel counts without applicant details", () => {
+    const intake = buildHotelLaunchReadiness(empty).gates.find(({ id }) => id === "approved_hotel");
+    expect(intake?.checks).toEqual([
+      { label: "Applications received", ready: true, value: "2" },
+      { label: "Pending administrator review", ready: false, value: "1" },
+      { label: "Verified approval decisions", ready: false, value: "0" },
+      { label: "Approved hotels linked to a property", ready: false, value: "0" },
+      { label: "Declined applications", ready: true, value: "1" },
+    ]);
+    expect(JSON.stringify(intake)).not.toMatch(/email|phone|contact/i);
+  });
+
   it("requires all seven gates for launch readiness", () => {
     const result = buildHotelLaunchReadiness({
       ...empty,
       approvedHotelCount: 1,
+      verifiedHotelApprovalCount: 1,
       inventoryReadyHotelCount: 1,
       commerciallyReadyHotelCount: 1,
       liveSupplierCount: 1,
