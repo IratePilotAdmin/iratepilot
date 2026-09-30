@@ -16,6 +16,20 @@ import { buildSynxisReadiness, type SynxisActivationEvidence } from "@/services/
 
 export const dynamic = "force-dynamic";
 
+type CommercialReviewEvidence = {
+  id: string;
+  property_id: string;
+  commercial_agreement_evidence_id: string;
+  reviewer_id: string;
+  commercial_terms_version: string;
+  support_contact_email: string;
+  legal_business_verified: boolean;
+  sole_owner_conflict_acknowledged: boolean;
+  commercial_terms_evidence_verified: boolean;
+  support_contact_verified: boolean;
+  created_at: string;
+};
+
 export async function GET() {
   try {
     const auth = await requireRole(["admin"]);
@@ -121,23 +135,82 @@ export async function GET() {
     const commercialStates = propertyIds.length > 0
       ? await auth.supabase.rpc("get_hotel_commercial_agreement_admin_state", { p_property_ids: propertyIds })
       : { data: [], error: null };
-    const commercialStateAvailable = !commercialControls.error && !commercialStates.error;
+    const currentEvidenceIds = (commercialStates.data ?? [])
+      .map((state: { current_evidence_id?: string | null }) => state.current_evidence_id)
+      .filter((id: string | null | undefined): id is string => Boolean(id));
+    const commercialReviews = currentEvidenceIds.length > 0
+      ? await auth.supabase.from("property_commercial_review_evidence")
+        .select("id,property_id,commercial_agreement_evidence_id,reviewer_id,commercial_terms_version,support_contact_email,legal_business_verified,sole_owner_conflict_acknowledged,commercial_terms_evidence_verified,support_contact_verified,created_at")
+        .in("commercial_agreement_evidence_id", currentEvidenceIds)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+      : { data: [], error: null };
+    const commercialStateAvailable = !commercialControls.error && !commercialStates.error && !commercialReviews.error;
     const agreementReadyIds = new Set(
       (commercialStates.data ?? [])
         .filter((state: { commercial_agreement_effective?: boolean }) => state.commercial_agreement_effective === true)
         .map((state: { property_id: string }) => state.property_id),
     );
+    const commercialStateByProperty = new Map<string, { property_id: string; current_evidence_id?: string | null; commercial_agreement_effective?: boolean }>(
+      (commercialStates.data ?? []).map((state: { property_id: string; current_evidence_id?: string | null; commercial_agreement_effective?: boolean }) => [state.property_id, state]),
+    );
+    const commercialControlByProperty = new Map((commercialControls.data ?? []).map((control) => [control.id, control]));
+    const currentReviewByEvidence = new Map<string, CommercialReviewEvidence>();
+    for (const review of (commercialReviews.data ?? []) as CommercialReviewEvidence[]) {
+      if (!currentReviewByEvidence.has(review.commercial_agreement_evidence_id)) {
+        currentReviewByEvidence.set(review.commercial_agreement_evidence_id, review);
+      }
+    }
+    const hasCurrentAccountableReview = (propertyId: string) => {
+      const state = commercialStateByProperty.get(propertyId);
+      const control = commercialControlByProperty.get(propertyId);
+      const evidenceId = state?.current_evidence_id;
+      const review = evidenceId ? currentReviewByEvidence.get(evidenceId) : undefined;
+      return Boolean(review
+        && review.property_id === propertyId
+        && review.reviewer_id === control?.commercial_verified_by
+        && review.created_at === control?.commercial_verified_at
+        && review.commercial_terms_version === control?.commercial_terms_version
+        && review.support_contact_email.trim().toLowerCase() === control?.support_contact_email?.trim().toLowerCase()
+        && review.legal_business_verified
+        && review.sole_owner_conflict_acknowledged
+        && review.commercial_terms_evidence_verified
+        && review.support_contact_verified);
+    };
     const reviewReadyIds = new Set(
-      (commercialControls.data ?? [])
-        .filter((control) => control.listing_scope === "commercial"
+      propertyIds.filter((propertyId) => {
+        const control = commercialControlByProperty.get(propertyId);
+        return control?.listing_scope === "commercial"
           && control.direct_request_mode === "request_only"
           && control.commercial_terms_version === "hotel_partner_fee_disclosure_13_3_2026-08-22_v1"
-          && Boolean(control.commercial_verified_at)
-          && Boolean(control.commercial_verified_by)
-          && Boolean(control.support_contact_email?.trim()))
-        .map((control) => control.id),
+          && Boolean(control.support_contact_email?.trim())
+          && hasCurrentAccountableReview(propertyId);
+      }),
     );
     const commerciallyReadyHotelCount = propertyIds.filter((id) => agreementReadyIds.has(id) && reviewReadyIds.has(id)).length;
+    const closestCommercialCandidate = propertyIds
+      .map((propertyId) => {
+        const state = commercialStateByProperty.get(propertyId);
+        const control = commercialControlByProperty.get(propertyId);
+        const checks = [
+          state?.commercial_agreement_effective === true,
+          control?.listing_scope === "commercial",
+          control?.direct_request_mode === "request_only",
+          control?.commercial_terms_version === "hotel_partner_fee_disclosure_13_3_2026-08-22_v1",
+          hasCurrentAccountableReview(propertyId),
+          Boolean(control?.support_contact_email?.trim()),
+        ];
+        return { checks, score: checks.filter(Boolean).length };
+      })
+      .sort((left, right) => right.score - left.score)[0];
+    const commercialChecks = [
+      { label: "Effective executed hotel agreement", passed: closestCommercialCandidate?.checks[0] ?? false },
+      { label: "Commercial listing scope", passed: closestCommercialCandidate?.checks[1] ?? false },
+      { label: "Request-only booking mode", passed: closestCommercialCandidate?.checks[2] ?? false },
+      { label: "Current 13% + 3% fee disclosure", passed: closestCommercialCandidate?.checks[3] ?? false },
+      { label: "Accountable commercial verification", passed: closestCommercialCandidate?.checks[4] ?? false },
+      { label: "Hotel support contact", passed: closestCommercialCandidate?.checks[5] ?? false },
+    ];
 
     const supplierStateAvailable = !supplierEvidence.error && !synxisEvidence.error;
     const evidence = Object.fromEntries((supplierEvidence.data ?? []).map((item) => [item.provider_id, {
@@ -217,6 +290,8 @@ export async function GET() {
       listingChecks,
       commerciallyReadyHotelCount,
       commercialStateAvailable,
+      commercialCandidateAvailable: propertyIds.length > 0,
+      commercialChecks,
       liveSupplierCount,
       supplierStateAvailable,
       paymentConfigurationReady: paymentReadiness.productionConfiguration.ready,

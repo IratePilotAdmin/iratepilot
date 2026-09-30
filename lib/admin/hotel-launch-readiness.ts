@@ -23,6 +23,8 @@ export type HotelLaunchReadinessInput = {
   listingChecks: Array<{ label: string; passed: boolean }>;
   commerciallyReadyHotelCount: number;
   commercialStateAvailable: boolean;
+  commercialCandidateAvailable: boolean;
+  commercialChecks: Array<{ label: string; passed: boolean }>;
   liveSupplierCount: number;
   supplierStateAvailable: boolean;
   paymentConfigurationReady: boolean;
@@ -115,6 +117,14 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
           : "Waiting for a counsel-approved template, both parties' signatures, and the accountable commercial review for an inventory-ready hotel.",
       "/admin/agreements",
       "Review hotel agreements",
+      input.commercialStateAvailable ? [
+        { label: "Inventory-ready hotel available", ready: input.commercialCandidateAvailable, value: input.commercialCandidateAvailable ? "Complete" : "Required" },
+        ...input.commercialChecks.map((item) => ({
+          label: item.label,
+          ready: item.passed,
+          value: item.passed ? "Complete" : "Required",
+        })),
+      ] : undefined,
     ),
     gate(
       "supplier_connection",
