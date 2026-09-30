@@ -18,6 +18,11 @@ const empty: HotelLaunchReadinessInput = {
   ],
   commerciallyReadyHotelCount: 0,
   commercialStateAvailable: true,
+  commercialCandidateAvailable: false,
+  commercialChecks: [
+    { label: "Effective executed hotel agreement", passed: false },
+    { label: "Current 13% + 3% fee disclosure", passed: false },
+  ],
   liveSupplierCount: 0,
   supplierStateAvailable: true,
   paymentConfigurationReady: false,
@@ -59,8 +64,20 @@ describe("hotel launch readiness", () => {
       listingCandidateAvailable: true,
       listingChecks: empty.listingChecks.map((item) => ({ ...item, passed: true })),
       commerciallyReadyHotelCount: 1,
+      commercialCandidateAvailable: true,
+      commercialChecks: empty.commercialChecks.map((item) => ({ ...item, passed: true })),
     });
     expect(result).toMatchObject({ complete: 3, total: 7, percent: 43, launchReady: false });
+  });
+
+  it("shows safe commercial release requirements without agreement or contact data", () => {
+    const commercial = buildHotelLaunchReadiness(empty).gates.find(({ id }) => id === "commercial_release");
+    expect(commercial?.checks).toEqual([
+      { label: "Inventory-ready hotel available", ready: false, value: "Required" },
+      { label: "Effective executed hotel agreement", ready: false, value: "Required" },
+      { label: "Current 13% + 3% fee disclosure", ready: false, value: "Required" },
+    ]);
+    expect(JSON.stringify(commercial)).not.toMatch(/support_contact_email|commercial_verified_by/i);
   });
 
   it("shows safe listing requirements for the closest approved hotel candidate", () => {
@@ -94,6 +111,8 @@ describe("hotel launch readiness", () => {
       listingCandidateAvailable: true,
       listingChecks: empty.listingChecks.map((item) => ({ ...item, passed: true })),
       commerciallyReadyHotelCount: 1,
+      commercialCandidateAvailable: true,
+      commercialChecks: empty.commercialChecks.map((item) => ({ ...item, passed: true })),
       liveSupplierCount: 1,
       paymentConfigurationReady: true,
       paymentAuthorizationValid: true,

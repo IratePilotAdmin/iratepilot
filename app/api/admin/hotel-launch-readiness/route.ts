@@ -138,6 +138,33 @@ export async function GET() {
         .map((control) => control.id),
     );
     const commerciallyReadyHotelCount = propertyIds.filter((id) => agreementReadyIds.has(id) && reviewReadyIds.has(id)).length;
+    const commercialStateByProperty = new Map<string, { property_id: string; commercial_agreement_effective?: boolean }>(
+      (commercialStates.data ?? []).map((state: { property_id: string; commercial_agreement_effective?: boolean }) => [state.property_id, state]),
+    );
+    const commercialControlByProperty = new Map((commercialControls.data ?? []).map((control) => [control.id, control]));
+    const closestCommercialCandidate = propertyIds
+      .map((propertyId) => {
+        const state = commercialStateByProperty.get(propertyId);
+        const control = commercialControlByProperty.get(propertyId);
+        const checks = [
+          state?.commercial_agreement_effective === true,
+          control?.listing_scope === "commercial",
+          control?.direct_request_mode === "request_only",
+          control?.commercial_terms_version === "hotel_partner_fee_disclosure_13_3_2026-08-22_v1",
+          Boolean(control?.commercial_verified_at) && Boolean(control?.commercial_verified_by),
+          Boolean(control?.support_contact_email?.trim()),
+        ];
+        return { checks, score: checks.filter(Boolean).length };
+      })
+      .sort((left, right) => right.score - left.score)[0];
+    const commercialChecks = [
+      { label: "Effective executed hotel agreement", passed: closestCommercialCandidate?.checks[0] ?? false },
+      { label: "Commercial listing scope", passed: closestCommercialCandidate?.checks[1] ?? false },
+      { label: "Request-only booking mode", passed: closestCommercialCandidate?.checks[2] ?? false },
+      { label: "Current 13% + 3% fee disclosure", passed: closestCommercialCandidate?.checks[3] ?? false },
+      { label: "Accountable commercial verification", passed: closestCommercialCandidate?.checks[4] ?? false },
+      { label: "Hotel support contact", passed: closestCommercialCandidate?.checks[5] ?? false },
+    ];
 
     const supplierStateAvailable = !supplierEvidence.error && !synxisEvidence.error;
     const evidence = Object.fromEntries((supplierEvidence.data ?? []).map((item) => [item.provider_id, {
@@ -217,6 +244,8 @@ export async function GET() {
       listingChecks,
       commerciallyReadyHotelCount,
       commercialStateAvailable,
+      commercialCandidateAvailable: propertyIds.length > 0,
+      commercialChecks,
       liveSupplierCount,
       supplierStateAvailable,
       paymentConfigurationReady: paymentReadiness.productionConfiguration.ready,
