@@ -79,6 +79,9 @@ describe("hotel manager intake", () => {
     expect(adminReview).toContain("approval creates only an inactive private draft");
     expect(adminReview).toContain("Review evidence note");
     expect(adminReview).toContain("noteLength >= 20");
+    expect(adminReview).toContain("Unverified legacy approval");
+    expect(adminReview).toContain("Excluded from production readiness");
+    expect(adminReview).toContain("application.approval_evidence_verified");
   });
 
   it("creates one inactive property draft transactionally and leaves publication separate", () => {

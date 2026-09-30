@@ -23,6 +23,7 @@ export async function GET() {
     const applications = data ?? [];
     const applicationIds = applications.map((application) => application.id);
     const attributionByApplication = new Map<string, unknown>();
+    const verifiedApprovalApplicationIds = new Set<string>();
     if (applicationIds.length > 0) {
       // Drafts intentionally grant SELECT only to authenticated users. The
       // role check above and the draft RLS policy protect this attribution read.
@@ -39,11 +40,27 @@ export async function GET() {
         const parsed = partnerAcquisitionAttributionSchema.safeParse(registration?.attribution);
         if (parsed.success) attributionByApplication.set(draft.application_id, parsed.data);
       }
+
+      const { data: reviewEvidence } = await auth.supabase
+        .from("partner_application_review_evidence")
+        .select("application_id,decision,legal_business_verified,representative_authority_verified,content_rights_verified,commercial_terms_acknowledgement_verified,inactive_draft_scope_confirmed")
+        .in("application_id", applicationIds);
+      for (const evidence of reviewEvidence ?? []) {
+        if (evidence.decision === "approved"
+          && evidence.legal_business_verified
+          && evidence.representative_authority_verified
+          && evidence.content_rights_verified
+          && evidence.commercial_terms_acknowledgement_verified
+          && evidence.inactive_draft_scope_confirmed) {
+          verifiedApprovalApplicationIds.add(evidence.application_id);
+        }
+      }
     }
     return NextResponse.json({
       data: applications.map((application) => ({
         ...application,
         acquisition_attribution: attributionByApplication.get(application.id) ?? null,
+        approval_evidence_verified: verifiedApprovalApplicationIds.has(application.id),
       })),
     });
   } catch {
