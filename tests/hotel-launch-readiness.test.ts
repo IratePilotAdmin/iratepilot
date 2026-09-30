@@ -10,6 +10,7 @@ const empty: HotelLaunchReadinessInput = {
   declinedHotelApplicationCount: 1,
   verifiedHotelApprovalCount: 0,
   inventoryReadyHotelCount: 0,
+  listingStateAvailable: true,
   listingCandidateAvailable: false,
   listingChecks: [
     { label: "Safe primary photo", passed: false },
@@ -140,13 +141,14 @@ describe("hotel launch readiness", () => {
     const result = buildHotelLaunchReadiness({
       ...empty,
       approvedHotelStateAvailable: false,
+      listingStateAvailable: false,
       commercialStateAvailable: false,
       supplierStateAvailable: false,
       paymentAuthorizationStateAvailable: false,
       operationsStateAvailable: false,
     });
     expect(result.gates.filter(({ status }) => status === "unavailable").map(({ id }) => id)).toEqual([
-      "approved_hotel", "commercial_release", "supplier_connection", "production_payments", "support_operations",
+      "approved_hotel", "listing_inventory", "commercial_release", "supplier_connection", "production_payments", "support_operations",
     ]);
   });
 

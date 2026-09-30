@@ -212,6 +212,7 @@ export async function GET() {
       declinedHotelApplicationCount,
       verifiedHotelApprovalCount,
       inventoryReadyHotelCount: inventoryReadyPropertyIds.size,
+      listingStateAvailable: approvedHotelStateAvailable,
       listingCandidateAvailable: Boolean(closestListingCandidate),
       listingChecks,
       commerciallyReadyHotelCount,

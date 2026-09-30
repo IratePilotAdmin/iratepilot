@@ -18,6 +18,7 @@ export type HotelLaunchReadinessInput = {
   declinedHotelApplicationCount: number;
   verifiedHotelApprovalCount: number;
   inventoryReadyHotelCount: number;
+  listingStateAvailable: boolean;
   listingCandidateAvailable: boolean;
   listingChecks: Array<{ label: string; passed: boolean }>;
   commerciallyReadyHotelCount: number;
@@ -78,22 +79,26 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
     gate(
       "listing_inventory",
       "Listing and sellable inventory",
-      input.inventoryReadyHotelCount > 0 ? "ready" : "blocked",
-      input.inventoryReadyHotelCount > 0
+      !input.listingStateAvailable
+        ? "unavailable"
+        : input.inventoryReadyHotelCount > 0 ? "ready" : "blocked",
+      !input.listingStateAvailable
+        ? "Listing and inventory evidence could not be verified. This gate fails closed."
+        : input.inventoryReadyHotelCount > 0
         ? `${input.inventoryReadyHotelCount} approved hotel listing${input.inventoryReadyHotelCount === 1 ? " has" : "s have"} complete content, booking terms, and priced future inventory with taxes and fees.`
         : input.approvedHotelCount > 0
           ? "No approved hotel yet has complete content, booking terms, and priced future inventory with taxes and fees for every active room."
           : "A linked approved hotel is required before listing and inventory readiness can pass.",
       "/admin/properties",
       "Review properties",
-      [
+      input.listingStateAvailable ? [
         { label: "Approved linked hotel available", ready: input.listingCandidateAvailable, value: input.listingCandidateAvailable ? "Complete" : "Required" },
         ...input.listingChecks.map((item) => ({
           label: item.label,
           ready: item.passed,
           value: item.passed ? "Complete" : "Required",
         })),
-      ],
+      ] : undefined,
     ),
     gate(
       "commercial_release",
