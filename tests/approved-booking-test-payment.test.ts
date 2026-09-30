@@ -44,6 +44,9 @@ describe("approved reservation test payments", () => {
     expect(webhook).toContain("Live payment completion requires every production launch gate to pass.");
     expect(webhook.indexOf("isHotelMarketplaceLaunchAuthorized()"))
       .toBeLessThan(webhook.indexOf('from("stripe_financial_events")'));
+    expect(completionRoute).toContain('paymentMode === "live" && !await isHotelMarketplaceLaunchAuthorized()');
+    expect(completionRoute.indexOf("isHotelMarketplaceLaunchAuthorized()"))
+      .toBeLessThan(completionRoute.indexOf("paymentIntents.retrieve"));
   });
 
   it("atomically prevents duplicate or mismatched payments without changing inventory", () => {

@@ -4,7 +4,7 @@ import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe, isLivePartnerPayoutsEnabled, isStripeTestMode, stripeMode } from "@/lib/stripe";
 import { partnerTransferFailureStatus } from "@/lib/payments/partner-transfer-failure-status";
-import { isHotelMarketplaceLaunchAuthorized } from "@/lib/hotels/marketplace-launch-authorization";
+import { isHotelMarketplacePayoutReconciliationAuthorized } from "@/lib/hotels/marketplace-launch-authorization";
 
 export async function POST(
   _request: Request,
@@ -22,7 +22,7 @@ export async function POST(
     }
 
     const mode = stripeMode();
-    if (mode === "live" && !await isHotelMarketplaceLaunchAuthorized()) {
+    if (mode === "live" && !await isHotelMarketplacePayoutReconciliationAuthorized()) {
       return NextResponse.json({
         error: "Live partner payouts require every production launch gate to pass."
       }, { status: 503 });

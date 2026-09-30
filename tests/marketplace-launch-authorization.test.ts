@@ -70,4 +70,16 @@ describe("hotel marketplace launch authorization", () => {
       emailBacklog: 1,
     })).toBe(false);
   });
+
+  it("allows only payout reconciliation to proceed while a payout exception exists", () => {
+    const payoutExceptionEvidence = { ...liveEvidence, payoutExceptions: 1 };
+    expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, payoutExceptionEvidence)).toBe(false);
+    expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, payoutExceptionEvidence, {
+      allowPayoutExceptionsForReconciliation: true,
+    })).toBe(true);
+    expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
+      ...payoutExceptionEvidence,
+      deliveryFailures: 1,
+    }, { allowPayoutExceptionsForReconciliation: true })).toBe(false);
+  });
 });
