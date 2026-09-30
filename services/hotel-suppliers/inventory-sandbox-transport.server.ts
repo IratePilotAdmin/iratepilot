@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { InventorySupplierId } from "./inventory-readiness";
+import { evaluateInventorySandboxRuntimeGate } from "./inventory-runtime-gate.server";
 import {
   InventorySupplierResponseError,
   parseInventorySupplierResponse,
@@ -10,6 +11,8 @@ import type { InventorySandboxRequest } from "./inventory-sandbox-request.server
 
 export type InventorySandboxTransportErrorCode =
   | "disabled"
+  | "invalid_enablement"
+  | "credentials_not_ready"
   | "invalid_request"
   | "invalid_timeout"
   | "timeout"
@@ -107,13 +110,14 @@ async function readBoundedBody(
 export async function executeInventorySandboxRequest(
   request: InventorySandboxRequest,
   options: {
-    enabled: boolean;
+    environment: Record<string, string | undefined>;
     timeoutMs?: number;
     fetcher?: InventorySandboxFetch;
   },
 ): Promise<InventoryJsonValue> {
-  if (!options.enabled) {
-    throw new InventorySandboxTransportError(request.supplierId, "disabled");
+  const gate = evaluateInventorySandboxRuntimeGate(request.supplierId, options.environment);
+  if (gate.status !== "authorized") {
+    throw new InventorySandboxTransportError(request.supplierId, gate.status);
   }
   validateRequest(request);
   const timeoutMs = options.timeoutMs ?? 10_000;
