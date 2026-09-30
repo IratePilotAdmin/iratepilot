@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   auditPriorityPmsProductionReadiness,
+  buildInventorySupplierReadiness,
   buildPmsReadiness,
   pmsProviders,
   priorityPmsProviderIds,
@@ -85,6 +86,7 @@ export async function GET() {
     return NextResponse.json(
       {
         providers: buildPmsReadiness(process.env),
+        inventorySuppliers: buildInventorySupplierReadiness(process.env),
         priorityProductionReadiness: auditPriorityPmsProductionReadiness(process.env, evidence),
         evidenceTrackingAvailable,
         connections: (connectionsResult.data ?? []).map((connection) => ({
