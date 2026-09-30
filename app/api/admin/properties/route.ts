@@ -15,27 +15,10 @@ export async function GET() {
 
     const properties = data ?? [];
     const propertyIds = properties.map((property) => property.id);
-    const { data: intakeApprovals, error: intakeApprovalsError } = await auth.supabase
-      .from("partner_application_review_evidence")
-      .select("application_id,partner_applications!inner(property_id,status)")
-      .eq("decision", "approved")
-      .eq("legal_business_verified", true)
-      .eq("representative_authority_verified", true)
-      .eq("content_rights_verified", true)
-      .eq("commercial_terms_acknowledgement_verified", true)
-      .eq("inactive_draft_scope_confirmed", true)
-      .eq("partner_applications.status", "approved")
-      .not("partner_applications.property_id", "is", null);
-    const verifiedIntakePropertyIds = new Set(
-      (intakeApprovals ?? []).flatMap((approval) => {
-        const applications = Array.isArray(approval.partner_applications)
-          ? approval.partner_applications
-          : [approval.partner_applications];
-        return applications
-          .map((application) => application?.property_id)
-          .filter((propertyId): propertyId is string => Boolean(propertyId));
-      }),
-    );
+    const { data: intakePropertyIds, error: intakeApprovalsError } = propertyIds.length > 0
+      ? await auth.supabase.rpc("get_verified_hotel_intake_property_ids", { p_property_ids: propertyIds })
+      : { data: [], error: null };
+    const verifiedIntakePropertyIds = new Set<string>(intakePropertyIds ?? []);
     const commercialStateByProperty = new Map<string, boolean>();
     const commercialReviewByProperty = new Map<string, boolean>();
     let commercialStateAvailable = true;

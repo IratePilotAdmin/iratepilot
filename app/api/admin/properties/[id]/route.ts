@@ -39,24 +39,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
           error: "Approve the partner account before publishing this property."
         }, { status: 409 });
       }
-      const { count: verifiedIntakeCount, error: verifiedIntakeError } = await auth.supabase
-        .from("partner_application_review_evidence")
-        .select("application_id,partner_applications!inner(id)", { count: "exact", head: true })
-        .eq("decision", "approved")
-        .eq("legal_business_verified", true)
-        .eq("representative_authority_verified", true)
-        .eq("content_rights_verified", true)
-        .eq("commercial_terms_acknowledgement_verified", true)
-        .eq("inactive_draft_scope_confirmed", true)
-        .eq("partner_applications.status", "approved")
-        .eq("partner_applications.property_id", id)
-        .limit(1);
+      const { data: verifiedIntakePropertyIds, error: verifiedIntakeError } = await auth.supabase.rpc(
+        "get_verified_hotel_intake_property_ids",
+        { p_property_ids: [id] },
+      );
       if (verifiedIntakeError) {
         return NextResponse.json({
           error: "Hotel intake approval evidence could not be verified. Publication remains blocked."
         }, { status: 503 });
       }
-      if (!verifiedIntakeCount) {
+      if (!verifiedIntakePropertyIds?.includes(id)) {
         return NextResponse.json({
           error: "A verified approved hotel application linked to this property is required before publication."
         }, { status: 409 });

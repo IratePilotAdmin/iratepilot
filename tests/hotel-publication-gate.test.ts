@@ -34,18 +34,6 @@ const readyRoom = {
   }],
 };
 
-function intakeEvidenceQuery(result: { data?: unknown[] | null; count?: number | null; error: unknown }) {
-  const query = {
-    select: vi.fn(),
-    eq: vi.fn(),
-    not: vi.fn(async () => result),
-    limit: vi.fn(async () => result),
-  };
-  query.select.mockReturnValue(query);
-  query.eq.mockReturnValue(query);
-  return query;
-}
-
 beforeEach(() => {
   vi.resetAllMocks();
   delete process.env.HOTEL_PUBLICATION_ENABLED;
@@ -114,13 +102,10 @@ describe("hotel publication release gate", () => {
     }));
     const eq = vi.fn(() => ({ maybeSingle }));
     const select = vi.fn(() => ({ eq }));
-    const rpc = vi.fn(async () => ({
-      data: { id: propertyId, name: "Pilot Hotel", active: true },
-      error: null,
-    }));
-    const from = vi.fn()
-      .mockImplementationOnce(() => ({ select }))
-      .mockImplementationOnce(() => intakeEvidenceQuery({ count: 1, error: null }));
+    const rpc = vi.fn(async (name: string) => name === "get_verified_hotel_intake_property_ids"
+      ? { data: [propertyId], error: null }
+      : { data: { id: propertyId, name: "Pilot Hotel", active: true }, error: null });
+    const from = vi.fn(() => ({ select }));
     mocks.auth.mockResolvedValue({
       user: { id: "admin-a" },
       profile: { role: "admin" },
@@ -153,10 +138,8 @@ describe("hotel publication release gate", () => {
     }));
     const eq = vi.fn(() => ({ maybeSingle }));
     const select = vi.fn(() => ({ eq }));
-    const rpc = vi.fn();
-    const from = vi.fn()
-      .mockImplementationOnce(() => ({ select }))
-      .mockImplementationOnce(() => intakeEvidenceQuery({ count: 0, error: null }));
+    const rpc = vi.fn(async () => ({ data: [], error: null }));
+    const from = vi.fn(() => ({ select }));
     mocks.auth.mockResolvedValue({
       user: { id: "admin-a" },
       profile: { role: "admin" },
@@ -173,7 +156,10 @@ describe("hotel publication release gate", () => {
     expect(await response.json()).toEqual({
       error: "A verified approved hotel application linked to this property is required before publication.",
     });
-    expect(rpc).not.toHaveBeenCalled();
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledWith("get_verified_hotel_intake_property_ids", {
+      p_property_ids: [propertyId],
+    });
   });
 
   it("rejects publication when the flag is enabled but another production gate is incomplete", async () => {
@@ -208,13 +194,13 @@ describe("hotel publication release gate", () => {
     }));
     const eq = vi.fn(() => ({ maybeSingle }));
     const select = vi.fn(() => ({ eq }));
-    const rpc = vi.fn(async () => ({
-      data: null,
-      error: { message: "An effective executed hotel commercial agreement and matching commercial review are required before publication" },
-    }));
-    const from = vi.fn()
-      .mockImplementationOnce(() => ({ select }))
-      .mockImplementationOnce(() => intakeEvidenceQuery({ count: 1, error: null }));
+    const rpc = vi.fn(async (name: string) => name === "get_verified_hotel_intake_property_ids"
+      ? { data: [propertyId], error: null }
+      : {
+        data: null,
+        error: { message: "An effective executed hotel commercial agreement and matching commercial review are required before publication" },
+      });
+    const from = vi.fn(() => ({ select }));
     mocks.auth.mockResolvedValue({
       user: { id: "admin-a" },
       profile: { role: "admin" },
@@ -256,12 +242,11 @@ describe("hotel publication release gate", () => {
         })),
       }))
       .mockImplementationOnce(() => ({
-        ...intakeEvidenceQuery({ data: [], error: null }),
-      }))
-      .mockImplementationOnce(() => ({
         select: vi.fn(() => ({ in: vi.fn(async () => ({ data: null, error: { message: "missing columns" } })) })),
       }));
-    const rpc = vi.fn(async () => ({ data: null, error: { message: "missing function" } }));
+    const rpc = vi.fn(async (name: string) => name === "get_verified_hotel_intake_property_ids"
+      ? { data: [], error: null }
+      : { data: null, error: { message: "missing function" } });
     mocks.auth.mockResolvedValue({
       user: { id: "admin-a" },
       profile: { role: "admin" },
