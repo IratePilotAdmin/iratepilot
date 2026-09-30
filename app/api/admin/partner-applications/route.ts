@@ -24,7 +24,9 @@ export async function GET() {
     const applicationIds = applications.map((application) => application.id);
     const attributionByApplication = new Map<string, unknown>();
     if (applicationIds.length > 0) {
-      const { data: drafts, error: draftError } = await admin
+      // Drafts intentionally grant SELECT only to authenticated users. The
+      // role check above and the draft RLS policy protect this attribution read.
+      const { data: drafts, error: draftError } = await auth.supabase
         .from("partner_onboarding_drafts")
         .select("application_id,registration")
         .in("application_id", applicationIds);
