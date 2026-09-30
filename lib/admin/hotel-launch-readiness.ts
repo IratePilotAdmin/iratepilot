@@ -18,6 +18,8 @@ export type HotelLaunchReadinessInput = {
   declinedHotelApplicationCount: number;
   verifiedHotelApprovalCount: number;
   inventoryReadyHotelCount: number;
+  listingCandidateAvailable: boolean;
+  listingChecks: Array<{ label: string; passed: boolean }>;
   commerciallyReadyHotelCount: number;
   commercialStateAvailable: boolean;
   liveSupplierCount: number;
@@ -84,6 +86,14 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
           : "A linked approved hotel is required before listing and inventory readiness can pass.",
       "/admin/properties",
       "Review properties",
+      [
+        { label: "Approved linked hotel available", ready: input.listingCandidateAvailable, value: input.listingCandidateAvailable ? "Complete" : "Required" },
+        ...input.listingChecks.map((item) => ({
+          label: item.label,
+          ready: item.passed,
+          value: item.passed ? "Complete" : "Required",
+        })),
+      ],
     ),
     gate(
       "commercial_release",
