@@ -28,6 +28,7 @@ describe("supplier certification phase summary", () => {
       providerManifestCount: 22,
       priorityLaunchManifestCount: 22,
       priorityManifestCoverageCount: 22,
+      verifiedVendorApprovalCount: 0,
       controlledActivationCandidateCount: 0,
       liveProviderCount: 0,
       certificationPendingCount: 22,
@@ -60,6 +61,10 @@ describe("supplier certification phase summary", () => {
       ...provider,
       status: "activation_required" as const,
       readyForRealPropertyActivation: true,
+      activationChecklist: {
+        ...provider.activationChecklist,
+        vendorApprovalDocumented: true,
+      },
       evidence: {
         ...provider.evidence,
         vendorApproved: true,
@@ -74,7 +79,7 @@ describe("supplier certification phase summary", () => {
 
     expect(summary).toMatchObject({
       status: "controlled_activation_ready",
-      vendorApprovedCount: 1,
+      verifiedVendorApprovalCount: 1,
       propertyMappedCount: 1,
       sandboxValidatedCount: 1,
       webhookValidatedCount: 1,
@@ -105,6 +110,8 @@ describe("supplier certification phase summary", () => {
   it("labels the operator summary as read-only and preserves the independent SynXis gate", () => {
     expect(adminSettings).toContain("The software framework and external approvals are reported separately.");
     expect(adminSettings).toContain("This summary is read-only.");
+    expect(adminSettings).toContain("verified vendor approvals");
+    expect(adminSettings).toContain('provider.activationChecklist.vendorApprovalDocumented ? "verified"');
     expect(adminSettings).toContain("It cannot approve certification, send vendor traffic, or enable a provider.");
     expect(adminSettings).toContain("<SynxisCrsReadiness />");
   });

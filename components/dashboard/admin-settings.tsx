@@ -50,7 +50,9 @@ type PriorityPmsProductionReadiness = {
   missingEnvironmentKeys: string[];
   invalidEnvironmentKeys: string[];
   readyForRealPropertyActivation: boolean;
-  activationChecklist: Record<string, boolean>;
+  activationChecklist: Record<string, boolean> & {
+    vendorApprovalDocumented: boolean;
+  };
   evidence: {
     vendorApproved: boolean;
     propertyMapped: boolean;
@@ -319,7 +321,7 @@ export function AdminSettings() {
         <p className="mt-2 text-sm text-slate-600">The software framework and external approvals are reported separately. SynXis certification evidence and its independent traffic gate are shown in the dedicated panel below.</p>
         <div className="mt-5 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-lg bg-slate-50 p-3"><strong>{supplierPhase.priorityManifestCoverageCount}</strong> of <strong>{supplierPhase.priorityLaunchManifestCount}</strong><span className="mt-1 block text-xs text-slate-500">priority manifests covered</span></div>
-          <div className="rounded-lg bg-slate-50 p-3"><strong>{supplierPhase.vendorApprovedCount}</strong><span className="mt-1 block text-xs text-slate-500">vendor approvals recorded</span></div>
+          <div className="rounded-lg bg-slate-50 p-3"><strong>{supplierPhase.verifiedVendorApprovalCount}</strong><span className="mt-1 block text-xs text-slate-500">verified vendor approvals</span></div>
           <div className="rounded-lg bg-slate-50 p-3"><strong>{supplierPhase.controlledActivationCandidateCount}</strong><span className="mt-1 block text-xs text-slate-500">controlled-activation candidates</span></div>
           <div className="rounded-lg bg-slate-50 p-3"><strong>{supplierPhase.liveProviderCount}</strong><span className="mt-1 block text-xs text-slate-500">providers with live traffic recorded</span></div>
         </div>
@@ -393,7 +395,7 @@ export function AdminSettings() {
               {provider.missingEnvironmentKeys.length > 0 && <p className="mt-2 break-words text-xs text-amber-700">Missing: {provider.missingEnvironmentKeys.join(", ")}</p>}
               {provider.invalidEnvironmentKeys.length > 0 && <p className="mt-2 break-words text-xs text-red-700">Invalid: {provider.invalidEnvironmentKeys.join(", ")}</p>}
               <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                <span>Vendor: {provider.evidence.vendorApproved ? "approved" : "pending"}</span>
+                <span>Vendor: {provider.activationChecklist.vendorApprovalDocumented ? "verified" : provider.evidence.vendorApproved ? "unverified" : "pending"}</span>
                 <span>Mapping: {provider.evidence.propertyMapped ? "complete" : "pending"}</span>
                 <span>Sandbox: {provider.evidence.sandboxValidated ? "passed" : "pending"}</span>
                 <span>Webhook: {provider.evidence.webhookValidated ? "passed" : "pending"}</span>
