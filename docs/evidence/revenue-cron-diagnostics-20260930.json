@@ -1,0 +1,271 @@
+{
+  "environment": {
+    "branch_id": "865f1e17-0c10-4a40-8654-c3ffe0b66cd2",
+    "project_ref": "iwzyjhsugssgpvawckrh",
+    "parent_project_ref": "eiqmdldjnedqgbtoozqa",
+    "created_at": "2026-09-30T22:07:44.139278Z",
+    "postgresql": "17.11",
+    "initial_pms_tables": 0,
+    "initial_auth_users": 0,
+    "fixture": "Synthetic pricing slice only; no production records"
+  },
+  "jobs": [],
+  "runs": [
+    {
+      "jobid": 1,
+      "runid": 1,
+      "status": "succeeded",
+      "job_pid": 5557,
+      "end_time": "2026-09-30T22:09:12.387458+00:00",
+      "start_time": "2026-09-30T22:09:07.763081+00:00",
+      "return_message": "1 row"
+    },
+    {
+      "jobid": 1,
+      "runid": 2,
+      "status": "succeeded",
+      "job_pid": 5559,
+      "end_time": "2026-09-30T22:09:12.402283+00:00",
+      "start_time": "2026-09-30T22:09:12.400083+00:00",
+      "return_message": "1 row"
+    },
+    {
+      "jobid": 1,
+      "runid": 3,
+      "status": "succeeded",
+      "job_pid": 5560,
+      "end_time": "2026-09-30T22:09:13.412519+00:00",
+      "start_time": "2026-09-30T22:09:13.410135+00:00",
+      "return_message": "1 row"
+    },
+    {
+      "jobid": 1,
+      "runid": 4,
+      "status": "succeeded",
+      "job_pid": 5561,
+      "end_time": "2026-09-30T22:09:14.422949+00:00",
+      "start_time": "2026-09-30T22:09:14.420764+00:00",
+      "return_message": "1 row"
+    },
+    {
+      "jobid": 1,
+      "runid": 5,
+      "status": "succeeded",
+      "job_pid": 5562,
+      "end_time": "2026-09-30T22:09:15.433509+00:00",
+      "start_time": "2026-09-30T22:09:15.431131+00:00",
+      "return_message": "1 row"
+    },
+    {
+      "jobid": 1,
+      "runid": 6,
+      "status": "succeeded",
+      "job_pid": 5564,
+      "end_time": "2026-09-30T22:09:16.443959+00:00",
+      "start_time": "2026-09-30T22:09:16.441613+00:00",
+      "return_message": "1 row"
+    },
+    {
+      "jobid": 2,
+      "runid": 7,
+      "status": "succeeded",
+      "job_pid": 5574,
+      "end_time": "2026-09-30T22:09:47.481551+00:00",
+      "start_time": "2026-09-30T22:09:44.478687+00:00",
+      "return_message": "1 row"
+    },
+    {
+      "jobid": 2,
+      "runid": 8,
+      "status": "succeeded",
+      "job_pid": 5583,
+      "end_time": "2026-09-30T22:09:47.497391+00:00",
+      "start_time": "2026-09-30T22:09:47.494724+00:00",
+      "return_message": "1 row"
+    },
+    {
+      "jobid": 2,
+      "runid": 9,
+      "status": "succeeded",
+      "job_pid": 5584,
+      "end_time": "2026-09-30T22:09:48.510139+00:00",
+      "start_time": "2026-09-30T22:09:48.507408+00:00",
+      "return_message": "1 row"
+    },
+    {
+      "jobid": 2,
+      "runid": 10,
+      "status": "succeeded",
+      "job_pid": 5585,
+      "end_time": "2026-09-30T22:09:49.521783+00:00",
+      "start_time": "2026-09-30T22:09:49.518145+00:00",
+      "return_message": "1 row"
+    },
+    {
+      "jobid": 2,
+      "runid": 11,
+      "status": "succeeded",
+      "job_pid": 5586,
+      "end_time": "2026-09-30T22:09:50.531738+00:00",
+      "start_time": "2026-09-30T22:09:50.529074+00:00",
+      "return_message": "1 row"
+    },
+    {
+      "jobid": 2,
+      "runid": 12,
+      "status": "succeeded",
+      "job_pid": 5587,
+      "end_time": "2026-09-30T22:09:51.542461+00:00",
+      "start_time": "2026-09-30T22:09:51.539662+00:00",
+      "return_message": "1 row"
+    },
+    {
+      "jobid": 2,
+      "runid": 13,
+      "status": "succeeded",
+      "job_pid": 5588,
+      "end_time": "2026-09-30T22:09:52.554005+00:00",
+      "start_time": "2026-09-30T22:09:52.550993+00:00",
+      "return_message": "1 row"
+    },
+    {
+      "jobid": 3,
+      "runid": 14,
+      "status": "succeeded",
+      "job_pid": 5602,
+      "end_time": "2026-09-30T22:10:33.497905+00:00",
+      "start_time": "2026-09-30T22:10:16.586908+00:00",
+      "return_message": "1 row"
+    },
+    {
+      "jobid": 3,
+      "runid": 15,
+      "status": "succeeded",
+      "job_pid": 5607,
+      "end_time": "2026-09-30T22:10:33.517972+00:00",
+      "start_time": "2026-09-30T22:10:33.514643+00:00",
+      "return_message": "1 row"
+    },
+    {
+      "jobid": 3,
+      "runid": 16,
+      "status": "succeeded",
+      "job_pid": 5608,
+      "end_time": "2026-09-30T22:10:34.529628+00:00",
+      "start_time": "2026-09-30T22:10:34.526702+00:00",
+      "return_message": "1 row"
+    },
+    {
+      "jobid": 3,
+      "runid": 17,
+      "status": "succeeded",
+      "job_pid": 5609,
+      "end_time": "2026-09-30T22:10:35.544057+00:00",
+      "start_time": "2026-09-30T22:10:35.540901+00:00",
+      "return_message": "1 row"
+    },
+    {
+      "jobid": 3,
+      "runid": 18,
+      "status": "succeeded",
+      "job_pid": 5610,
+      "end_time": "2026-09-30T22:10:36.555321+00:00",
+      "start_time": "2026-09-30T22:10:36.552485+00:00",
+      "return_message": "1 row"
+    },
+    {
+      "jobid": 3,
+      "runid": 19,
+      "status": "succeeded",
+      "job_pid": 5611,
+      "end_time": "2026-09-30T22:10:37.568711+00:00",
+      "start_time": "2026-09-30T22:10:37.564881+00:00",
+      "return_message": "1 row"
+    },
+    {
+      "jobid": 3,
+      "runid": 20,
+      "status": "succeeded",
+      "job_pid": 5612,
+      "end_time": "2026-09-30T22:10:38.578867+00:00",
+      "start_time": "2026-09-30T22:10:38.575961+00:00",
+      "return_message": "1 row"
+    }
+  ],
+  "control": [
+    {
+      "phase": "capacity",
+      "finished": true,
+      "worker_pid": 5557,
+      "completed_at": "2026-09-30T22:09:12.38669+00:00"
+    },
+    {
+      "phase": "membership",
+      "finished": true,
+      "worker_pid": 5574,
+      "completed_at": "2026-09-30T22:09:47.480487+00:00"
+    },
+    {
+      "phase": "demotion_before_save",
+      "finished": true,
+      "worker_pid": 5602,
+      "completed_at": "2026-09-30T22:10:33.495586+00:00"
+    }
+  ],
+  "observations": [
+    {
+      "phase": "capacity",
+      "blockers": [
+        5558
+      ],
+      "holder_pid": 5558,
+      "wait_event": "transactionid",
+      "waiter_pid": 5557,
+      "observed_at": "2026-09-30T22:09:12.383395+00:00"
+    },
+    {
+      "phase": "membership",
+      "blockers": [
+        5582
+      ],
+      "holder_pid": 5582,
+      "wait_event": "transactionid",
+      "waiter_pid": 5574,
+      "observed_at": "2026-09-30T22:09:47.47836+00:00"
+    },
+    {
+      "phase": "demotion_before_save",
+      "blockers": [
+        5602
+      ],
+      "holder_pid": 5602,
+      "wait_event": "transactionid",
+      "waiter_pid": 5606,
+      "observed_at": "2026-09-30T22:10:33.49529+00:00"
+    }
+  ],
+  "final_state": {
+    "plans": [
+      {
+        "version": 3
+      }
+    ],
+    "rates": [
+      {
+        "stay_date": "2026-10-01",
+        "amount_minor": 18515
+      }
+    ],
+    "roles": [
+      "staff"
+    ],
+    "actions": 2,
+    "decisions": 2,
+    "failed_runs": 0,
+    "completed_at": "2026-09-30T22:11:23.72586+00:00",
+    "active_workers": 0,
+    "remaining_jobs": 0,
+    "unfinished_runs": 0
+  },
+  "limitation": "Prior failed run did not recur; its missing error details prevent root-cause attribution."
+}
