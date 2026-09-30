@@ -27,6 +27,7 @@ export type HotelLaunchReadinessInput = {
   commercialChecks: Array<{ label: string; passed: boolean }>;
   liveSupplierCount: number;
   supplierStateAvailable: boolean;
+  supplierChecks: Array<{ label: string; passed: boolean; value?: string }>;
   paymentConfigurationReady: boolean;
   paymentAuthorizationValid: boolean;
   paymentAuthorizationStateAvailable: boolean;
@@ -141,6 +142,11 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
           : "Waiting for vendor approval, real property mapping, sandbox and webhook validation, a production smoke test, and controlled activation.",
       "/admin/settings",
       "Review PMS readiness",
+      input.supplierStateAvailable ? input.supplierChecks.map((item) => ({
+        label: item.label,
+        ready: item.passed,
+        value: item.value ?? (item.passed ? "Complete" : "Required"),
+      })) : undefined,
     ),
     gate(
       "production_payments",
