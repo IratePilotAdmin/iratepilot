@@ -2,13 +2,25 @@ import {readFileSync} from 'node:fs';
 import {PGlite} from '@electric-sql/pglite';
 import {expect,test} from 'vitest';
 
-test('audited approval recomputes prices, rejects stale facts, replays and rolls back failed audits',async()=>{
+for(const actualSchema of [false,true])test(`audited approval rejects drift, replays and rolls back using ${actualSchema?'actual pricing schema':'reduced schema'}`,async()=>{
  const db=new PGlite();
  try{
   await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
    CREATE SCHEMA auth; CREATE SCHEMA irp_pms;
    CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
-   CREATE TABLE irp_pms.tenants(id uuid PRIMARY KEY,name text);
+   CREATE TABLE auth.users(id uuid PRIMARY KEY);`);
+  if(actualSchema){
+   await db.exec(readFileSync('tests/fixtures/revenue-pms-pricing-schema.sql','utf8'));
+   const shape=(await db.query<{tables:number;constraints:number;triggers:number;indexes:number;identity:string}>(`SELECT
+    (SELECT count(*)::integer FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='irp_pms' AND c.relkind='r') tables,
+    (SELECT count(*)::integer FROM pg_constraint c JOIN pg_namespace n ON n.oid=c.connamespace WHERE n.nspname='irp_pms' AND c.contype IN('p','u','c','f','x')) constraints,
+    (SELECT count(*)::integer FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='irp_pms' AND NOT t.tgisinternal) triggers,
+    (SELECT count(*)::integer FROM pg_index i JOIN pg_class c ON c.oid=i.indrelid JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='irp_pms' AND NOT EXISTS(SELECT 1 FROM pg_constraint k WHERE k.conindid=i.indexrelid)) indexes,
+    (SELECT attidentity::text FROM pg_attribute WHERE attrelid='irp_pms.activity'::regclass AND attname='id') identity`)).rows[0];
+   expect(shape).toEqual({tables:18,constraints:127,triggers:17,indexes:8,identity:'a'});
+  }
+  else{
+   await db.exec(`   CREATE TABLE irp_pms.tenants(id uuid PRIMARY KEY,name text);
    CREATE TABLE irp_pms.properties(tenant_id uuid,id uuid,name text,currency text,time_zone text DEFAULT 'America/Chicago',PRIMARY KEY(tenant_id,id));
    CREATE TABLE irp_pms.memberships(tenant_id uuid,user_id uuid,role text,PRIMARY KEY(tenant_id,user_id));
    CREATE TABLE irp_pms.room_types(tenant_id uuid,property_id uuid,id uuid,name text);
@@ -19,14 +31,17 @@ test('audited approval recomputes prices, rejects stale facts, replays and rolls
    CREATE TABLE irp_pms.nightly_rates(tenant_id uuid,property_id uuid,plan_id uuid,stay_date date,amount_minor bigint);
    CREATE TABLE irp_pms.reservations(tenant_id uuid,property_id uuid,source text,source_booking_id text,source_version bigint,payload_hash text,status text,room_type_id uuid,arrival date,departure date,guests integer,accommodation_minor bigint,taxes_minor bigint,ota_fees_minor bigint,guest_total_minor bigint);
    CREATE TABLE irp_pms.rate_actions(tenant_id uuid);
-   INSERT INTO irp_pms.memberships VALUES('faa76112-c793-43db-92bd-f9faecd8d93a',gen_random_uuid(),'owner');`);
+`);
+
   await db.exec(`ALTER TABLE irp_pms.rate_plans ADD updated_at timestamptz DEFAULT clock_timestamp();
    ALTER TABLE irp_pms.nightly_rates ADD PRIMARY KEY(tenant_id,property_id,plan_id,stay_date);
    ALTER TABLE irp_pms.rate_actions ADD property_id uuid,ADD request_id uuid,ADD actor_id uuid,ADD payload jsonb,ADD result jsonb;
    CREATE TABLE irp_pms.activity(tenant_id uuid,property_id uuid,actor_id uuid,action text,target_id uuid,details jsonb);`);
+  }
   for(const file of ['scripts/revenue-preflight-test-dependencies.sql','scripts/revenue-atomic-test-nightly-rpc.sql','pms-migrations/20260930183205_revenue_capacity_preflight_lock.sql','pms-candidates/20260930184425_revenue_atomic_approval_candidate.sql'])await db.exec(readFileSync(file,'utf8'));
   const t='00000000-0000-4000-8000-000000000001',p='00000000-0000-4000-8000-000000000002',rt='00000000-0000-4000-8000-000000000003',plan='00000000-0000-4000-8000-000000000004',user='00000000-0000-4000-8000-000000000005';
-  await db.exec(`INSERT INTO irp_pms.tenants VALUES('${t}','Local atomic fixture');
+  await db.exec(`INSERT INTO auth.users(id) VALUES('${user}');
+   INSERT INTO irp_pms.tenants VALUES('${t}','Local atomic fixture');
    INSERT INTO irp_pms.properties(tenant_id,id,name,currency) VALUES('${t}','${p}','Local property','USD');
    INSERT INTO irp_pms.memberships VALUES('${t}','${user}','owner');
    INSERT INTO irp_pms.room_types VALUES('${t}','${p}','${rt}','Test');
@@ -34,7 +49,7 @@ test('audited approval recomputes prices, rejects stale facts, replays and rolls
    INSERT INTO irp_pms.rate_plans(tenant_id,property_id,id,room_type_id,name,tax_basis_points,active) VALUES('${t}','${p}','${plan}','${rt}','Test',0,true);
    INSERT INTO irp_pms.nightly_capacity SELECT '${t}','${p}','${rt}',(clock_timestamp() AT TIME ZONE 'America/Chicago')::date+1,10;
    INSERT INTO irp_pms.nightly_rates SELECT '${t}','${p}','${plan}',stay_date,14000 FROM irp_pms.nightly_capacity;
-   INSERT INTO irp_pms.reservations(tenant_id,property_id,room_type_id,status,arrival,departure) SELECT '${t}','${p}','${rt}','Confirmed',stay_date,stay_date+1 FROM irp_pms.nightly_capacity CROSS JOIN generate_series(1,8);
+   INSERT INTO irp_pms.reservations(tenant_id,property_id,room_type_id,status,arrival,departure,source,source_booking_id,source_version,payload_hash,guests,accommodation_minor,taxes_minor,ota_fees_minor,guest_total_minor) SELECT '${t}','${p}','${rt}','Confirmed',stay_date,stay_date+1,'direct','initial-'||n::text,1,repeat('a',64),1,14000,0,0,14000 FROM irp_pms.nightly_capacity CROSS JOIN generate_series(1,8) n;
    SELECT set_config('request.jwt.claim.sub','${user}',false);`);
   const day=(await db.query<{stay_day:string}>('SELECT stay_date::text AS stay_day FROM irp_pms.nightly_rates')).rows[0].stay_day;
   const request='00000000-0000-4000-8000-000000000006';
@@ -49,7 +64,7 @@ test('audited approval recomputes prices, rejects stale facts, replays and rolls
   await db.exec('UPDATE irp_pms.nightly_rates SET amount_minor=14000;UPDATE irp_pms.nightly_capacity SET units=9');
   await expect(apply()).rejects.toMatchObject({code:'40001'});
   await db.exec(`UPDATE irp_pms.nightly_capacity SET units=10;
-   INSERT INTO irp_pms.reservations(tenant_id,property_id,room_type_id,status,arrival,departure) SELECT '${t}','${p}','${rt}','Confirmed',stay_date,stay_date+1 FROM irp_pms.nightly_capacity;`);
+   INSERT INTO irp_pms.reservations(tenant_id,property_id,room_type_id,status,arrival,departure,source,source_booking_id,source_version,payload_hash,guests,accommodation_minor,taxes_minor,ota_fees_minor,guest_total_minor) SELECT '${t}','${p}','${rt}','Confirmed',stay_date,stay_date+1,'direct','extra',1,repeat('b',64),1,14000,0,0,14000 FROM irp_pms.nightly_capacity;`);
   await expect(apply()).rejects.toMatchObject({code:'40001'});
   await db.exec("UPDATE irp_pms.reservations SET status='Cancelled' WHERE ctid=(SELECT ctid FROM irp_pms.reservations ORDER BY ctid DESC LIMIT 1)");
   await db.exec('UPDATE irp_pms.rate_plans SET active=false,version=2');
