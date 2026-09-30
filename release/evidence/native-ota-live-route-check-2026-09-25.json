@@ -1,0 +1,37 @@
+{
+  "format": "iratepilot-native-ota-live-route-check-v1",
+  "checkedAt": "2026-09-25T04:14:20.575Z",
+  "scope": "Read-only public GET probes. No authentication credentials, database changes, deployment changes, reservations, or provider traffic.",
+  "observations": [
+    {
+      "url": "https://www.iratepilot.com/api/health",
+      "status": 200,
+      "contentType": "application/json",
+      "result": "Production iRatePilot application and database are reachable."
+    },
+    {
+      "url": "https://www.iratepilot.com/api/ota/capabilities",
+      "status": 404,
+      "result": "The OTA capability route is absent from the current www.iratepilot.com production deployment."
+    },
+    {
+      "url": "https://www.iratepilot.com/api/pms/ari",
+      "status": 404,
+      "result": "The native PMS ARI receiver is absent from the current www.iratepilot.com production deployment."
+    },
+    {
+      "url": "https://pms.iratepilot.com/api/ota/capabilities",
+      "status": 401,
+      "result": "The PMS host rejected the unauthenticated request; connector capability was not verified."
+    }
+  ],
+  "interpretation": "No public evidence shows that production OTA endpoints are deployed. A 401 from the PMS host is not evidence that an OTA connector exists or works.",
+  "changes": {
+    "production": "none",
+    "database": "none",
+    "reservations": "none",
+    "payments": "none",
+    "credentials": "none",
+    "externalProviderTraffic": "none"
+  }
+}

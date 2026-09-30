@@ -7,10 +7,12 @@ export type BookingComReservationKind = "new" | "modified_or_cancelled";
 export type BookingComReservationRequest = {
   method: "GET" | "POST";
   url: string;
-  headers: { "Accept-Version": "1.1"; "Content-Type": "application/xml" };
+  headers: { "Accept-Version": "1.1"; "Content-Type": "application/xml"; Features?: "payment_clarity_package_v2" };
   body?: string;
   kind: BookingComReservationKind;
 };
+
+export type BookingComReservationId = { value: string; source?: string; type?: string };
 
 async function readBoundedResponse(response: Response) {
   if (!response.body) return "";
@@ -51,7 +53,11 @@ export function buildBookingComReservationPoll(propertyId: string, kind: Booking
   if (!PROPERTY_ID.test(propertyId) || !["new", "modified_or_cancelled"].includes(kind)) throw new Error("invalid_reservation_poll");
   const url = new URL(endpoint(kind));
   url.searchParams.set("hotel_ids", propertyId);
-  return { method: "GET", url: url.toString(), headers: { "Accept-Version": "1.1", "Content-Type": "application/xml" }, kind };
+  return {
+    method: "GET", url: url.toString(),
+    headers: { "Accept-Version": "1.1", "Content-Type": "application/xml", Features: "payment_clarity_package_v2" },
+    kind,
+  };
 }
 
 /**
@@ -61,26 +67,38 @@ export function buildBookingComReservationPoll(propertyId: string, kind: Booking
  */
 export function buildBookingComReservationAcknowledgement(input: {
   kind: BookingComReservationKind;
-  reservationId: string;
+  reservationId?: string;
+  reservationIds?: BookingComReservationId[];
   persisted: boolean;
   timestamp: string;
   failureCode?: string;
   failureMessage?: string;
 }): BookingComReservationRequest {
+  const ids = input?.reservationIds ?? (input?.reservationId ? [{ value: input.reservationId }] : []);
+  const hasOneIdentityForm = Boolean(input?.reservationIds) !== Boolean(input?.reservationId);
+  const hasResponseToken = ids.some((id) => id?.type === "18");
+  const hasBaseReservationId = ids.some((id) => id?.type !== "18");
   if (!input || !["new", "modified_or_cancelled"].includes(input.kind)
-    || !IDENTIFIER.test(input.reservationId)
+    || !hasOneIdentityForm || ids.length < 1 || ids.length > 4
+    || (hasResponseToken && !hasBaseReservationId)
+    || !ids.every((id) => id && typeof id === "object" && IDENTIFIER.test(id.value)
+      && (id.source === undefined || /^[A-Za-z0-9_.-]{1,40}$/.test(id.source))
+      && (id.type === undefined || /^[A-Za-z0-9_-]{1,16}$/.test(id.type)))
+    || new Set(ids.map((id) => id.value)).size !== ids.length
     || !Number.isFinite(Date.parse(input.timestamp))
     || new Date(input.timestamp).toISOString() !== input.timestamp) throw new Error("invalid_reservation_acknowledgement");
   const rootTag = input.kind === "new" ? "OTA_HotelResNotifRS" : "OTA_HotelResModifyNotifRS";
+  const reservationId = ids.find((id) => id.type !== "18")?.value ?? ids[0]!.value;
+  const reservationIdElements = ids.map((id) => `<HotelReservationID ResID_Value="${xml(id.value)}"${id.source ? ` ResID_Source="${xml(id.source)}"` : ""}${id.type ? ` ResID_Type="${xml(id.type)}"` : ""}/>`).join("");
   let body: string;
   if (input.persisted === true) {
-    body = `<?xml version="1.0" encoding="UTF-8"?><${rootTag} TimeStamp="${xml(input.timestamp)}" Target="Test"><Success/><HotelReservations><HotelReservation><ResGlobalInfo><HotelReservationIDs><HotelReservationID ResID_Value="${xml(input.reservationId)}"/></HotelReservationIDs></ResGlobalInfo></HotelReservation></HotelReservations></${rootTag}>`;
+    body = `<?xml version="1.0" encoding="UTF-8"?><${rootTag} TimeStamp="${xml(input.timestamp)}" Target="Test"><Success/><HotelReservations><HotelReservation><ResGlobalInfo><HotelReservationIDs>${reservationIdElements}</HotelReservationIDs></ResGlobalInfo></HotelReservation></HotelReservations></${rootTag}>`;
   } else {
     const message = input.failureMessage?.trim();
     if (input.failureCode !== "193" || !message || message.length > 160 || /[\u0000-\u001f\u007f]/.test(message)) {
       throw new Error("reservation_failure_reason_required");
     }
-    body = `<?xml version="1.0" encoding="UTF-8"?><${rootTag} TimeStamp="${xml(input.timestamp)}" Target="Test"><Errors><Error Code="193" RecordID="${xml(input.reservationId)}" ShortText="${xml(message)}"/></Errors></${rootTag}>`;
+    body = `<?xml version="1.0" encoding="UTF-8"?><${rootTag} TimeStamp="${xml(input.timestamp)}" Target="Test"><Errors><Error Code="193" RecordID="${xml(reservationId)}" ShortText="${xml(message)}"/></Errors></${rootTag}>`;
   }
   return { method: "POST", url: endpoint(input.kind), headers: { "Accept-Version": "1.1", "Content-Type": "application/xml" }, body, kind: input.kind };
 }
@@ -113,6 +131,8 @@ export async function callBookingComReservationTestApi(
       : endpoint(request.kind))
     || request.headers["Accept-Version"] !== "1.1"
     || request.headers["Content-Type"] !== "application/xml"
+    || (request.method === "GET" && request.headers.Features !== "payment_clarity_package_v2")
+    || (request.method === "POST" && request.headers.Features !== undefined)
     || (request.method === "GET" && request.body !== undefined)
     || (request.method === "POST" && (typeof request.body !== "string" || request.body.length > 100_000
       || /<!\s*(?:DOCTYPE|ENTITY)\b/i.test(request.body)

@@ -30,6 +30,12 @@ describe("partner PMS manual download", () => {
     expect(response.headers.get("content-disposition")).toContain("iRatePilot-PMS-Operating-Manual.md");
     expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(manual).toContain("Status:** Pilot draft");
+    expect(manual).toContain("supported USD, pay-at-property reservations");
+    expect(manual).toContain("plain-language reason groups");
+    expect(manual).toContain("Expedia Group | Not implemented");
+    expect(manual).toContain("Do not assume a quote, test inbox entry, or enabled property listing is a PMS booking.");
+    expect(manual).toContain("AI Hotel Assistant");
+    expect(manual).toContain("it does not include guest details, reservation identifiers, or full queue history");
     expect(manual).toContain("Supervised pilot acceptance checklist");
   });
 });

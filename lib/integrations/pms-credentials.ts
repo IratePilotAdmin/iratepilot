@@ -9,8 +9,7 @@ export type EncryptedPmsCredentials = {
   keyVersion: number;
 };
 
-function encryptionKey() {
-  const encoded = process.env.PMS_CREDENTIAL_ENCRYPTION_KEY;
+function encryptionKey(encoded = process.env.PMS_CREDENTIAL_ENCRYPTION_KEY) {
   if (!encoded) throw new Error("PMS credential encryption is not configured.");
   const key = Buffer.from(encoded, "base64");
   if (key.length !== 32) throw new Error("PMS credential encryption key must be 32 bytes.");
@@ -37,10 +36,11 @@ export function encryptPmsCredentials(
 
 export function decryptPmsCredentials(
   encrypted: EncryptedPmsCredentials,
+  encodedKey?: string,
 ): Record<string, string> {
   const decipher = createDecipheriv(
     ALGORITHM,
-    encryptionKey(),
+    encryptionKey(encodedKey),
     Buffer.from(encrypted.initializationVector, "base64"),
   );
   decipher.setAuthTag(Buffer.from(encrypted.authenticationTag, "base64"));

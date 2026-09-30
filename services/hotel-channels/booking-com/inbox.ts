@@ -1,12 +1,12 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes, timingSafeEqual } from "node:crypto";
-import type { BookingComInboundReservation } from "./reservation-parser";
+import { getBookingComReservationId, type BookingComInboundReservation, type BookingComReservationEventKind } from "./reservation-parser";
 import type { BookingComReservationKind } from "./reservations";
 
 const envelopeVersion = 1;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-function keyMaterial() {
-  const encoded = process.env.OTA_RESERVATION_PII_ENCRYPTION_KEY;
+function keyMaterial(encodedOverride?: string) {
+  const encoded = encodedOverride ?? process.env.OTA_RESERVATION_PII_ENCRYPTION_KEY;
   if (!encoded || !/^[A-Za-z0-9+/]{43}=$/.test(encoded)) throw new Error("ota_reservation_encryption_unavailable");
   const key = Buffer.from(encoded, "base64");
   if (key.length !== 32) throw new Error("ota_reservation_encryption_unavailable");
@@ -21,10 +21,32 @@ function exactKeys(value: object, allowed: string[]) {
   return Object.keys(value).sort().join(",") === [...allowed].sort().join(",");
 }
 
+function validPriceView(value: unknown, currency: string) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const view = value as Record<string, unknown>;
+  if (!exactKeys(view, ["taxes", ...(view.totalMinor !== undefined ? ["totalMinor"] : []), ...(view.netPriceMinor !== undefined ? ["netPriceMinor"] : [])])
+    || (view.totalMinor !== undefined && (!Number.isSafeInteger(view.totalMinor) || (view.totalMinor as number) < 0))
+    || (view.netPriceMinor !== undefined && (!Number.isSafeInteger(view.netPriceMinor) || (view.netPriceMinor as number) < 0))
+    || !Array.isArray(view.taxes) || view.taxes.length > 100) return false;
+  return view.taxes.every((rawTax) => {
+    if (!rawTax || typeof rawTax !== "object" || Array.isArray(rawTax)) return false;
+    const tax = rawTax as Record<string, unknown>;
+    return exactKeys(tax, ["amountMinor", "currency", "type", ...(tax.classification !== undefined ? ["classification"] : []), ...(tax.code !== undefined ? ["code"] : []), ...(tax.chargeFrequency !== undefined ? ["chargeFrequency"] : []), ...(tax.description !== undefined ? ["description"] : [])])
+      && Number.isSafeInteger(tax.amountMinor) && (tax.amountMinor as number) >= 0
+      && tax.currency === currency
+      && (tax.type === "inclusive" || tax.type === "exclusive")
+      && (tax.classification === undefined || tax.classification === "tax" || tax.classification === "fee" || tax.classification === "unknown")
+      && (tax.code === undefined || typeof tax.code === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(tax.code))
+      && (tax.chargeFrequency === undefined || typeof tax.chargeFrequency === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(tax.chargeFrequency))
+      && (tax.description === undefined || typeof tax.description === "string" && tax.description.length <= 200 && !/[\u0000-\u001f\u007f]/.test(tax.description));
+  });
+}
+
 function validateNormalizedReservation(value: BookingComInboundReservation) {
-  if (!value || typeof value !== "object" || !exactKeys(value, ["reservationIds", "providerPropertyId", "status", "guest", "rooms"])
+  if (!value || typeof value !== "object" || !exactKeys(value, ["reservationIds", "providerPropertyId", "status", "guest", "rooms", ...(value.paymentMode !== undefined ? ["paymentMode"] : [])])
     || !/^[A-Za-z0-9_-]{1,80}$/.test(value.providerPropertyId)
     || typeof value.status !== "string" || !/^[A-Za-z0-9 _-]{1,40}$/.test(value.status)
+    || (value.paymentMode !== undefined && !["payments_by_booking", "pay_at_property", "unknown"].includes(value.paymentMode))
     || !Array.isArray(value.reservationIds) || value.reservationIds.length < 1 || value.reservationIds.length > 4
     || !value.reservationIds.every((id) => id && typeof id === "object"
       && exactKeys(id, ["value", ...(id.source !== undefined ? ["source"] : []), ...(id.type !== undefined ? ["type"] : [])])
@@ -39,7 +61,8 @@ function validateNormalizedReservation(value: BookingComInboundReservation) {
     || (value.guest.phone !== undefined && (typeof value.guest.phone !== "string" || value.guest.phone.length > 40 || /[\u0000-\u001f\u007f]/.test(value.guest.phone)))
     || !Array.isArray(value.rooms) || value.rooms.length < 1 || value.rooms.length > 20
     || !value.rooms.every((room) => room && typeof room === "object"
-      && exactKeys(room, ["providerRoomTypeId", "providerRatePlanId", "checkIn", "checkOut", "guests", "totalMinor", "currency"])
+      && exactKeys(room, ["providerRoomIndex", "providerRoomTypeId", "providerRatePlanId", "checkIn", "checkOut", "guests", "totalMinor", "totalBasis", "currency", ...(room.businessModel !== undefined ? ["businessModel"] : []), ...(room.priceDetails !== undefined ? ["priceDetails"] : [])])
+      && Number.isSafeInteger(room.providerRoomIndex) && room.providerRoomIndex >= 1 && room.providerRoomIndex <= 1000
       && typeof room.providerRoomTypeId === "string" && /^[A-Za-z0-9_-]{1,80}$/.test(room.providerRoomTypeId)
       && typeof room.providerRatePlanId === "string" && /^[A-Za-z0-9_-]{1,80}$/.test(room.providerRatePlanId)
       && typeof room.checkIn === "string" && typeof room.checkOut === "string"
@@ -47,7 +70,16 @@ function validateNormalizedReservation(value: BookingComInboundReservation) {
       && room.checkOut > room.checkIn
       && Number.isInteger(room.guests) && room.guests >= 1 && room.guests <= 30
       && Number.isSafeInteger(room.totalMinor) && room.totalMinor >= 0
-      && typeof room.currency === "string" && /^[A-Z]{3}$/.test(room.currency))) {
+      && ["after_tax", "before_tax"].includes(room.totalBasis)
+      && typeof room.currency === "string" && /^[A-Z]{3}$/.test(room.currency)
+      && (room.businessModel === undefined || ["commission_rate", "net_rate", "unknown"].includes(room.businessModel))
+      && (room.priceDetails === undefined || room.priceDetails && typeof room.priceDetails === "object" && !Array.isArray(room.priceDetails)
+        && exactKeys(room.priceDetails, ["guestView", "hotelView"])
+        && validPriceView(room.priceDetails.guestView, room.currency)
+        && validPriceView(room.priceDetails.hotelView, room.currency)))) {
+    throw new Error("invalid_ota_reservation_inbox_input");
+  }
+  if (new Set(value.rooms.map((room) => room.providerRoomIndex)).size !== value.rooms.length) {
     throw new Error("invalid_ota_reservation_inbox_input");
   }
 }
@@ -86,10 +118,10 @@ export async function stageBookingComReservation(
     throw new Error("invalid_ota_reservation_inbox_input");
   }
   validateNormalizedReservation(input.reservation);
-  const primaryId = input.reservation.reservationIds[0]!.value;
+  const primaryId = getBookingComReservationId(input.reservation.reservationIds);
   if (!/^[A-Za-z0-9_-]{1,80}$/.test(primaryId)) throw new Error("invalid_ota_reservation_identity");
   const providerStatus = input.reservation.status.toLowerCase();
-  const eventKind = providerStatus.includes("cancel") ? "cancelled"
+  const eventKind: BookingComReservationEventKind | null = providerStatus.includes("cancel") ? "cancelled"
     : providerStatus.includes("modify") ? "modified"
       : providerStatus === "book" || providerStatus === "new" ? "new" : null;
   if (!eventKind || (input.eventKind === "new" && eventKind === "cancelled")
@@ -145,12 +177,12 @@ export function decryptBookingComReservation(input: {
   ciphertext: string;
   iv: string;
   tag: string;
-}) {
+}, encryptionKey?: string) {
   if (!input || !/^[A-Za-z0-9_-]{1,80}$/.test(input.connectionId) || !uuidPattern.test(input.propertyId)
     || !/^[a-f0-9]{64}$/.test(input.reservationIdDigest) || !/^[a-f0-9]{64}$/.test(input.payloadDigest)
     || !/^[A-Za-z0-9+/]+={0,2}$/.test(input.ciphertext) || !/^[A-Za-z0-9+/]{16}$/.test(input.iv)
     || !/^[A-Za-z0-9+/]{22}==$/.test(input.tag)) throw new Error("ota_reservation_envelope_invalid");
-  const decipher = createDecipheriv("aes-256-gcm", keyMaterial(), Buffer.from(input.iv, "base64"));
+  const decipher = createDecipheriv("aes-256-gcm", keyMaterial(encryptionKey), Buffer.from(input.iv, "base64"));
   decipher.setAAD(associatedData({ connectionId: input.connectionId, propertyId: input.propertyId, reservationIdDigest: input.reservationIdDigest, payloadDigest: input.payloadDigest }));
   decipher.setAuthTag(Buffer.from(input.tag, "base64"));
   const clear = Buffer.concat([decipher.update(Buffer.from(input.ciphertext, "base64")), decipher.final()]);
@@ -161,25 +193,25 @@ export function decryptBookingComReservation(input: {
   if (!decoded || typeof decoded !== "object" || Array.isArray(decoded)) throw new Error("ota_reservation_envelope_invalid");
   const record = decoded as Record<string, unknown>;
   if (record.version !== envelopeVersion || record.provider !== "booking_com"
-    || !["new", "modified_or_cancelled"].includes(String(record.eventKind))
+    || !["new", "modified", "cancelled"].includes(String(record.eventKind))
     || !record.reservation || typeof record.reservation !== "object" || Array.isArray(record.reservation)) {
     throw new Error("ota_reservation_envelope_invalid");
   }
   const reservation = record.reservation as BookingComInboundReservation;
   validateNormalizedReservation(reservation);
-  const reservationIdDigest = sha256(`booking_com\u0000${reservation.providerPropertyId}\u0000${reservation.reservationIds[0]!.value}`);
+  const reservationIdDigest = sha256(`booking_com\u0000${reservation.providerPropertyId}\u0000${getBookingComReservationId(reservation.reservationIds)}`);
   if (!timingSafeEqual(Buffer.from(reservationIdDigest, "hex"), Buffer.from(input.reservationIdDigest, "hex"))) {
     throw new Error("ota_reservation_envelope_invalid");
   }
   return {
     version: envelopeVersion,
     provider: "booking_com" as const,
-    eventKind: record.eventKind as BookingComReservationKind,
+    eventKind: record.eventKind as BookingComReservationEventKind,
     reservation,
   } as {
     version: typeof envelopeVersion;
     provider: "booking_com";
-    eventKind: BookingComReservationKind;
+    eventKind: BookingComReservationEventKind;
     reservation: BookingComInboundReservation;
   };
 }

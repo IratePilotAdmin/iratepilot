@@ -10,6 +10,7 @@ import {
   assertPreviewLedger,
   buildSupabaseChildEnv,
   listRepositoryMigrations,
+  NATIVE_BOOKING_COM_MIGRATIONS,
   NATIVE_PMS_MIGRATIONS,
   parseInvocationMode,
   CANONICAL_FLIGHT_MIGRATION_VERSIONS,
@@ -1456,7 +1457,16 @@ describe("flight Preview migration gate", () => {
     expect(repositoryVersions.slice(-19)).toEqual(pinnedPlan.flightVersions);
     expect(listRepositoryMigrations().filter(({ filename }: { filename: string }) => filename.includes("_iratepilot_pms_")))
       .toEqual(NATIVE_PMS_MIGRATIONS);
+    expect(listRepositoryMigrations().filter(({ filename }: { filename: string }) => filename.includes("_iratepilot_booking_com_")))
+      .toEqual(NATIVE_BOOKING_COM_MIGRATIONS);
     expect(pinnedPlan.migrations.some(({ filename }: { filename: string }) => filename.includes("_iratepilot_pms_"))).toBe(false);
+    expect(pinnedPlan.migrations.some(({ filename }: { filename: string }) => filename.includes("_iratepilot_booking_com_"))).toBe(false);
+    expect(() => assertPinnedFlightMigrations({
+      repositoryMigrations: [
+        ...listRepositoryMigrations(),
+        { version: "202609250155", filename: "202609250155_iratepilot_booking_com_unregistered.sql" },
+      ],
+    })).toThrow("The native Booking.com migration set must match its exact registered files and versions.");
     expect(RETIRED_FLIGHT_MIGRATION_VERSIONS).toHaveLength(18);
     expect(pinnedPlan.sharedHotelMigrationPresent).toBe(true);
   });

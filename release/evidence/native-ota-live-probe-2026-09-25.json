@@ -1,0 +1,44 @@
+{
+  "format": "iratepilot-native-ota-live-probe-v1",
+  "checkedAt": "2026-09-25T01:05:06Z",
+  "scope": "Read-only public HTTP probes and Vercel deployment metadata. No production deployment, database migration, credential change, booking, or traffic activation.",
+  "productionDeployment": {
+    "id": "dpl_CgLUV9bxXnmnqvVF869nL3iCafR5",
+    "target": "production",
+    "branch": "agent/flight-live-foundation-20260823",
+    "commit": "3d293b9e6a9c25450475e78775ee1c380e92d4aa",
+    "aliases": ["www.iratepilot.com", "iratepilot.com"]
+  },
+  "connectorPreview": {
+    "id": "dpl_6cgzrZVu4tZc7Q34dpT8ietwpznG",
+    "target": null,
+    "state": "READY",
+    "branch": "codex/native-ota-production-port",
+    "commit": "62e1c419cf49a5a7add41d4b30c4fff5c633f7cb"
+  },
+  "publicProbes": [
+    {
+      "url": "https://www.iratepilot.com/api/health",
+      "method": "GET",
+      "status": 200,
+      "result": "Production application is reachable."
+    },
+    {
+      "url": "https://www.iratepilot.com/api/pms/ari",
+      "method": "GET",
+      "status": 404,
+      "result": "Native ARI receiver is absent from production deployment."
+    },
+    {
+      "url": "https://www.iratepilot.com/api/ota/capabilities",
+      "method": "GET",
+      "status": 404,
+      "result": "Connector capability route is absent from production deployment."
+    }
+  ],
+  "limitations": [
+    "The live domain points to the stable production deployment; the connector branch is only a READY Preview.",
+    "The Preview is protected by Vercel authentication; its application route responses were not verified in this probe.",
+    "Hosted production migrations, required environment variables, marketplace property mapping, and an end-to-end reservation round trip remain unverified."
+  ]
+}

@@ -16,7 +16,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
     if (parsed.data.active) {
       const { data: property, error: propertyError } = await auth.supabase.from("properties")
-        .select("image_url,amenities,partners!inner(status),rooms(active,inventory(stay_date,available_units))")
+        .select("image_url,amenities,partners!inner(status),rooms(active,base_rate,max_guests,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount))")
         .eq("id", id).maybeSingle();
       if (propertyError) throw propertyError;
       if (!property) return NextResponse.json({ error: "Property not found." }, { status: 404 });

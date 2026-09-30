@@ -12,7 +12,7 @@ const onboardingUi = readFileSync(new URL("../components/partner/partner-onboard
 
 const property = (overrides: Partial<OnboardingProperty> = {}): OnboardingProperty => ({
   id: "property-1", name: "Pilot Hotel", active: false,
-  readiness: { ready: true, missing: [], requirements: { primaryPhoto: true, amenities: true, activeRoom: true, futureInventory: true } },
+  readiness: { ready: true, missing: [], requirements: { primaryPhoto: true, amenities: true, activeRoom: true, roomCommercialTerms: true, futureInventory: true } },
   ...overrides,
 });
 
@@ -31,7 +31,7 @@ describe("live partner onboarding progress", () => {
   });
 
   it("uses one strongest property for content, room, inventory, and publication steps", () => {
-    const incomplete = property({ id: "p1", name: "Incomplete", readiness: { ready: false, missing: ["future sellable inventory"], requirements: { primaryPhoto: true, amenities: true, activeRoom: true, futureInventory: false } } });
+    const incomplete = property({ id: "p1", name: "Incomplete", readiness: { ready: false, missing: ["future sellable inventory"], requirements: { primaryPhoto: true, amenities: true, activeRoom: true, roomCommercialTerms: true, futureInventory: false } } });
     const stronger = property({ id: "p2", name: "Stronger" });
     const progress = buildPartnerOnboarding({ status: "approved", stripe_connect_status: "pending", software_plan: "starter", subscription_status: "active" }, [incomplete, stronger]);
     expect(progress.primaryProperty?.id).toBe("p2");

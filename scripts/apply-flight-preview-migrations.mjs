@@ -21,6 +21,16 @@ export const NATIVE_PMS_MIGRATIONS = Object.freeze([
   { version: "202609240145", filename: "202609240145_iratepilot_pms_revenue_recommendation_generation.sql" },
   { version: "202609240146", filename: "202609240146_iratepilot_pms_ota_reservation_inbox.sql" },
 ]);
+export const NATIVE_BOOKING_COM_MIGRATIONS = Object.freeze([
+  { version: "202609250147", filename: "202609250147_iratepilot_booking_com_machine_account_vault.sql" },
+  { version: "202609250148", filename: "202609250148_iratepilot_booking_com_ari_outbox.sql" },
+  { version: "202609250149", filename: "202609250149_iratepilot_booking_com_inbox_provider_guard.sql" },
+  { version: "202609250150", filename: "202609250150_iratepilot_booking_com_reservation_inbox_lifecycle.sql" },
+  { version: "202609250151", filename: "202609250151_iratepilot_booking_com_reservation_source_order.sql" },
+  { version: "202609250152", filename: "202609250152_iratepilot_booking_com_token_refresh_lease.sql" },
+  { version: "202609250153", filename: "202609250153_iratepilot_booking_com_credential_rotation.sql" },
+  { version: "202609250154", filename: "202609250154_iratepilot_booking_com_reservation_pii_retention.sql" },
+]);
 export const REQUIRED_REMOTE_FLIGHT_BASELINE_TIP = "202608250080";
 export const APPLY_CONFIRMATION_FLAG =
   "--apply-confirmation=PREVIEW_eiqmdldjnedqgbtoozqa_FLIGHT_120_138";
@@ -338,8 +348,16 @@ export function assertPinnedFlightMigrations({
   if (JSON.stringify(pmsMigrations) !== JSON.stringify(expectedPmsMigrations)) {
     throw new Error("The native PMS migration set must match its exact registered files and versions.");
   }
-  const pmsFilenames = new Set(NATIVE_PMS_MIGRATIONS.map(({ filename }) => filename));
-  const flightRepositoryMigrations = repositoryMigrations.filter(({ filename }) => !pmsFilenames.has(filename));
+  const bookingComMigrations = repositoryMigrations.filter(({ filename }) => filename.includes("_iratepilot_booking_com_"));
+  const expectedBookingComMigrations = NATIVE_BOOKING_COM_MIGRATIONS.map(({ version, filename }) => ({ version, filename }));
+  if (JSON.stringify(bookingComMigrations) !== JSON.stringify(expectedBookingComMigrations)) {
+    throw new Error("The native Booking.com migration set must match its exact registered files and versions.");
+  }
+  const nativeConnectorFilenames = new Set([
+    ...NATIVE_PMS_MIGRATIONS.map(({ filename }) => filename),
+    ...NATIVE_BOOKING_COM_MIGRATIONS.map(({ filename }) => filename),
+  ]);
+  const flightRepositoryMigrations = repositoryMigrations.filter(({ filename }) => !nativeConnectorFilenames.has(filename));
   const baselineTipIndex = flightRepositoryMigrations.findIndex(
     ({ version }) => version === REQUIRED_BASELINE_TIP,
   );

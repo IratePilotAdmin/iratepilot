@@ -58,7 +58,7 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
     const versions = listMigrationVersions();
     expect(versions).toEqual(expect.arrayContaining(REQUIRED_PREVIEW_BASELINE));
     expect(versions).toContain("202609240145");
-    expect(versions.at(-1)).toBe("202609240146");
+    expect(versions).toContain("202609240146");
     expect(APPROVED_PREVIEW_PENDING).toEqual([
       "202608170064",
       "202608170065",

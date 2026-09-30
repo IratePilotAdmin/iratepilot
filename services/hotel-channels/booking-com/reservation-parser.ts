@@ -5,16 +5,73 @@ export type BookingComInboundReservation = {
   providerPropertyId: string;
   status: string;
   guest: { name: string; email?: string; phone?: string };
+  paymentMode?: "payments_by_booking" | "pay_at_property" | "unknown";
   rooms: Array<{
+    providerRoomIndex: number;
     providerRoomTypeId: string;
     providerRatePlanId: string;
     checkIn: string;
     checkOut: string;
     guests: number;
     totalMinor: number;
+    totalBasis: "after_tax" | "before_tax";
     currency: string;
+    businessModel?: "commission_rate" | "net_rate" | "unknown";
+    priceDetails?: {
+      guestView: BookingComPriceView;
+      hotelView: BookingComPriceView;
+    };
   }>;
 };
+
+type BookingComPriceView = {
+  totalMinor?: number;
+  netPriceMinor?: number;
+  taxes: Array<{
+    amountMinor: number;
+    currency: string;
+    type: "inclusive" | "exclusive";
+    classification: "tax" | "fee" | "unknown";
+    code?: string;
+    chargeFrequency?: string;
+    description?: string;
+  }>;
+};
+
+// Booking.com returns both tax and fee components under the XML `Tax` element.
+// Classify only documented FTT codes; code 41 and future codes stay explicit
+// unknowns so the PMS importer cannot silently post them as taxes.
+const TAX_FTT_CODES = new Set([
+  "3", "13", "17", "18", "19", "35", "46",
+  "5000", "5001", "5002", "5003", "5004", "5005", "5006", "5007", "5008",
+  "5032", "5039", "5041", "5042", "5043",
+]);
+const FEE_FTT_CODES = new Set([
+  "12", "14", "37", "38", "44", "55", "63", "65",
+  "5009", "5010", "5011", "5012", "5013", "5014", "5015", "5016", "5017",
+  "5018", "5019", "5020", "5021", "5022", "5023", "5024", "5025", "5026",
+  "5028", "5029", "5030", "5031", "5034", "5035", "5036", "5038", "5040",
+  "5044", "5045", "5046", "5047", "5048",
+]);
+
+function classifyFttCode(code: string | undefined): "tax" | "fee" | "unknown" {
+  if (!code || !/^\d{1,4}$/.test(code)) return "unknown";
+  if (TAX_FTT_CODES.has(code)) return "tax";
+  if (FEE_FTT_CODES.has(code)) return "fee";
+  return "unknown";
+}
+
+export type BookingComReservationEventKind = "new" | "modified" | "cancelled";
+
+/** A type-18 value is the changed-message response token, not the booking identity. */
+export function getBookingComReservationId(ids: BookingComInboundReservation["reservationIds"]) {
+  if (ids.some((id) => id.type === "18") && !ids.some((id) => id.type !== "18")) {
+    throw new Error("reservation_id_invalid");
+  }
+  const reservationId = ids.find((id) => id.type !== "18") ?? ids[0];
+  if (!reservationId) throw new Error("reservation_id_invalid");
+  return reservationId.value;
+}
 
 const MAX_XML_BYTES = 1_000_000;
 const MAX_XML_NODES = 50_000;
@@ -138,6 +195,16 @@ function parseXml(xml: string): XmlNode {
   return root;
 }
 
+/** A success acknowledgement is valid only when the expected response root has a direct Success and no Errors. */
+export function bookingComAcknowledgementSucceeded(xml: string, kind: "new" | "modified_or_cancelled") {
+  const root = parseXml(xml);
+  const expectedRoot = kind === "new" ? "OTA_HotelResNotifRS" : "OTA_HotelResModifyNotifRS";
+  if (localName(root.name) !== expectedRoot) return false;
+  const directSuccesses = root.children.filter((child) => localName(child.name) === "Success");
+  const errors = descendants(root, "Error");
+  return directSuccesses.length === 1 && errors.length === 0;
+}
+
 function descendants(node: XmlNode, name: string): XmlNode[] {
   return node.children.flatMap((child) => [ ...(localName(child.name) === name ? [child] : []), ...descendants(child, name) ]);
 }
@@ -153,7 +220,7 @@ function validDate(value: string) {
   return Number.isFinite(date.valueOf()) && date.toISOString().slice(0, 10) === value;
 }
 function amountMinor(amount: string, currency: string, decimalPlaces?: string) {
-  if (!/^[A-Z]{3}$/.test(currency) || !/^(?:0|[1-9]\d{0,8})(?:\.\d{1,3})?$/.test(amount)) throw new Error("reservation_amount_invalid");
+  if (!/^[A-Z]{3}$/.test(currency) || !/^(?:0|[1-9]\d{0,11})(?:\.\d{1,3})?$/.test(amount)) throw new Error("reservation_amount_invalid");
   let digits: number;
   try {
     const supportedValuesOf = (Intl as unknown as { supportedValuesOf?: (key: "currency") => string[] }).supportedValuesOf;
@@ -163,10 +230,55 @@ function amountMinor(amount: string, currency: string, decimalPlaces?: string) {
     digits = precision;
   }
   catch { throw new Error("reservation_currency_invalid"); }
-  if (decimalPlaces !== undefined && Number(decimalPlaces) !== digits) throw new Error("reservation_amount_precision_mismatch");
+  if (decimalPlaces !== undefined && (!/^\d$/.test(decimalPlaces) || Number(decimalPlaces) !== digits)) {
+    throw new Error("reservation_amount_precision_mismatch");
+  }
+  // Booking.com encodes OTA amounts as integer values plus DecimalPlaces;
+  // treating the integer as major units would multiply it by currency scale.
+  if (decimalPlaces !== undefined) {
+    if (!/^\d+$/.test(amount)) throw new Error("reservation_amount_invalid");
+    const minor = Number(amount);
+    if (!Number.isSafeInteger(minor)) throw new Error("reservation_amount_invalid");
+    return minor;
+  }
   const scaled = Number(amount) * 10 ** digits;
   if (!Number.isSafeInteger(Math.round(scaled)) || Math.abs(scaled - Math.round(scaled)) > 1e-6) throw new Error("reservation_amount_invalid");
   return Math.round(scaled);
+}
+
+function parsePriceView(view: XmlNode, currencyFallback: string, decimalPlacesFallback: string | undefined): BookingComPriceView {
+  const taxesNode = first(view, "Taxes");
+  const taxes = taxesNode ? descendants(taxesNode, "Tax").map((tax) => {
+    const currency = tax.attributes.CurrencyCode ?? currencyFallback;
+    if (currency !== currencyFallback) throw new Error("reservation_price_currency_mismatch");
+    const amount = requiredAttr(tax, "Amount");
+    const type = requiredAttr(tax, "Type");
+    if (type !== "Inclusive" && type !== "Exclusive") throw new Error("reservation_tax_type_invalid");
+    const description = first(tax, "TaxDescription");
+    const text = description ? first(description, "Text")?.text.trim() : undefined;
+    return {
+      amountMinor: amountMinor(amount, currency, tax.attributes.DecimalPlaces ?? decimalPlacesFallback),
+      currency,
+      type: type === "Inclusive" ? "inclusive" as const : "exclusive" as const,
+      classification: classifyFttCode(tax.attributes.Code),
+      ...(tax.attributes.Code ? { code: requiredAttr(tax, "Code") } : {}),
+      ...(tax.attributes.ChargeFrequency ? { chargeFrequency: requiredAttr(tax, "ChargeFrequency") } : {}),
+      ...(text ? { description: text.slice(0, 200) } : {}),
+    };
+  }) : [];
+  if (taxes.length > 100) throw new Error("reservation_tax_count_invalid");
+  const result: BookingComPriceView = { taxes };
+  const total = first(view, "Total");
+  const netPrice = first(view, "NetPrice");
+  for (const [name, amountNode] of [["totalMinor", total], ["netPriceMinor", netPrice]] as const) {
+    if (!amountNode) continue;
+    const currency = amountNode.attributes.CurrencyCode ?? currencyFallback;
+    if (currency !== currencyFallback) throw new Error("reservation_price_currency_mismatch");
+    const amount = amountNode.attributes.Amount;
+    if (!amount) throw new Error("reservation_price_amount_missing");
+    result[name] = amountMinor(amount, currency, amountNode.attributes.DecimalPlaces ?? decimalPlacesFallback);
+  }
+  return result;
 }
 
 /** Parse only operationally needed fields. Card data and unrelated provider fields are ignored. */
@@ -186,6 +298,7 @@ export function parseBookingComReservationBatch(xml: string): BookingComInboundR
       ...(id.attributes.ResID_Type ? { type: id.attributes.ResID_Type.slice(0, 16) } : {}),
     }));
     if (!reservationIds.length || new Set(reservationIds.map((id) => id.value)).size !== reservationIds.length) throw new Error("reservation_id_invalid");
+    getBookingComReservationId(reservationIds);
 
     const roomStayNodes = descendants(record, "RoomStay");
     if (!roomStayNodes.length || roomStayNodes.length > 20) throw new Error("reservation_room_count_invalid");
@@ -201,19 +314,42 @@ export function parseBookingComReservationBatch(xml: string): BookingComInboundR
       const guestCountNodes = descendants(room, "GuestCount");
       const guests = guestCountNodes.reduce((sum, item) => sum + Number(item.attributes.Count ?? 0), 0);
       if (!Number.isInteger(guests) || guests < 1 || guests > 30) throw new Error("reservation_guest_count_invalid");
+      const providerRoomIndex = Number(requiredAttr(room, "IndexNumber"));
+      if (!Number.isSafeInteger(providerRoomIndex) || providerRoomIndex < 1 || providerRoomIndex > 1000) throw new Error("reservation_room_index_invalid");
+      const businessModels = descendants(room, "PropertyBusinessModel").map((item) => item.attributes.BusinessModel);
+      if (businessModels.length > 1) throw new Error("reservation_business_model_ambiguous");
+      const businessModel: BookingComInboundReservation["rooms"][number]["businessModel"] = businessModels.length === 0 ? undefined
+        : businessModels[0] === "net_rate" || businessModels[0] === "commission_rate" ? businessModels[0]
+          : "unknown" as const;
       const currency = requiredAttr(total, "CurrencyCode");
       const rawAmount = total.attributes.AmountAfterTax ?? total.attributes.AmountBeforeTax;
       if (!rawAmount) throw new Error("reservation_total_missing");
+      const priceDetails = first(room, "PriceDetails");
+      let priceBreakdown: { guestView: BookingComPriceView; hotelView: BookingComPriceView } | undefined;
+      if (priceDetails) {
+        const guestView = first(priceDetails, "GuestView");
+        const hotelView = first(priceDetails, "HotelView");
+        if (!guestView || !hotelView) throw new Error("reservation_price_views_missing");
+        priceBreakdown = {
+          guestView: parsePriceView(guestView, currency, total.attributes.DecimalPlaces),
+          hotelView: parsePriceView(hotelView, currency, total.attributes.DecimalPlaces),
+        };
+      }
       return {
+        providerRoomIndex,
         providerRoomTypeId: requiredAttr(roomType, "RoomTypeCode"),
         providerRatePlanId: requiredAttr(ratePlan, "RatePlanCode"),
         checkIn,
         checkOut,
         guests,
         totalMinor: amountMinor(rawAmount, currency, total.attributes.DecimalPlaces),
+        totalBasis: total.attributes.AmountAfterTax !== undefined ? "after_tax" as const : "before_tax" as const,
         currency,
+        ...(businessModel ? { businessModel } : {}),
+        ...(priceBreakdown ? { priceDetails: priceBreakdown } : {}),
       };
     });
+    if (new Set(rooms.map((room) => room.providerRoomIndex)).size !== rooms.length) throw new Error("reservation_room_index_invalid");
     const propertyIds = new Set(roomStayNodes.map((room) => {
       const property = first(room, "BasicPropertyInfo");
       if (!property) throw new Error("reservation_property_missing");
@@ -222,6 +358,12 @@ export function parseBookingComReservationBatch(xml: string): BookingComInboundR
     if (propertyIds.size !== 1) throw new Error("reservation_property_mismatch");
 
     const globalInfo = first(record, "ResGlobalInfo");
+    const guaranteePayment = globalInfo ? first(globalInfo, "GuaranteePayment") : undefined;
+    const guaranteeType = guaranteePayment?.attributes.GuaranteeType;
+    const paymentDescription = guaranteePayment ? first(guaranteePayment, "Text")?.text.trim().toLowerCase() : undefined;
+    const paymentMode = guaranteeType === "PrePay" ? "payments_by_booking" as const
+      : paymentDescription === "guests pay at the property" ? "pay_at_property" as const
+        : guaranteePayment ? "unknown" as const : undefined;
     const customer = globalInfo ? first(globalInfo, "Customer") : undefined;
     const personName = customer ? first(customer, "PersonName") : undefined;
     const given = personName ? first(personName, "GivenName")?.text.trim() : "";
@@ -241,6 +383,7 @@ export function parseBookingComReservationBatch(xml: string): BookingComInboundR
       providerPropertyId: [...propertyIds][0]!,
       status: reservationStatus,
       guest: { name, ...(email ? { email } : {}), ...(phone ? { phone } : {}) },
+      ...(paymentMode ? { paymentMode } : {}),
       rooms,
     };
   });

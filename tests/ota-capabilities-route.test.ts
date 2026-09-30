@@ -32,6 +32,22 @@ describe("public OTA capabilities route", () => {
         { id: "google_hotel", status: "not_implemented" },
       ],
     });
+    const bookingCom = body.externalOtaProviders.providers[0];
+    expect(bookingCom.implemented).toContain("reservation parsing and encrypted inbox staging");
+    expect(bookingCom.implemented).toContain("account-scoped database lease for serialized token refresh across app instances");
+    expect(bookingCom.implemented).toContain("bearer-protected, disabled-by-default test poll-and-stage worker");
+    expect(bookingCom.implemented).toContain("service-role leased inbox processing with bounded retry and review states");
+    expect(bookingCom.implemented).toContain("guarded cancellation-to-PMS worker that does not acknowledge review-required events");
+    expect(bookingCom.missing).toContain("recurring reservation-poll schedule at a cadence suitable for channel operations");
+    expect(bookingCom.missing).toContain("recurring PMS-import schedule at a cadence suitable for channel operations");
+    expect(bookingCom.missing).toContain("acknowledgement after confirmed PMS persistence");
+    expect(bookingCom.missing).toContain("atomic import of new, modified, and cancelled reservations into hotel bookings and PMS");
+    expect(bookingCom.missing).toContain("provider certification and authorized end-to-end acceptance");
+    expect(bookingCom.implemented).toContain("versioned credential encryption and single-envelope re-encryption helper");
+    expect(bookingCom.implemented).toContain("bounded service-role credential rotation worker with per-account leases and compare-and-swap writes");
+    expect(bookingCom.implemented).toContain("bounded 30-day PII purge for successfully imported reservation messages with a daily Vercel schedule (feature-flagged off by default)");
+    expect(bookingCom.missing).toContain("rotation inventory and recovery-copy verification before old-key removal");
+    expect(bookingCom.missing).toContain("property-specific retention policy and deployment/runtime enablement of the scheduled purge");
     expect(response.headers.get("access-control-allow-origin")).toBe("*");
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(JSON.stringify(body)).not.toContain("SIGNING_SECRET");

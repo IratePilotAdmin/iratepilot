@@ -8,7 +8,7 @@ const reservation: BookingComInboundReservation = {
   reservationIds: [{ value: "booking-9001", source: "BOOKING.COM", type: "14" }],
   providerPropertyId: "12345", status: "Book",
   guest: { name: "Guest Example", email: "guest@example.com", phone: "+1 555 0100" },
-  rooms: [{ providerRoomTypeId: "room-1", providerRatePlanId: "bar", checkIn: "2026-10-02", checkOut: "2026-10-04", guests: 2, totalMinor: 32550, currency: "USD" }],
+  rooms: [{ providerRoomIndex: 1, providerRoomTypeId: "room-1", providerRatePlanId: "bar", checkIn: "2026-10-02", checkOut: "2026-10-04", guests: 2, totalMinor: 32550, totalBasis: "after_tax", currency: "USD" }],
 };
 const input = {
   connectionId: "booking-test-1", propertyId: "10000000-0000-4000-8000-000000000001",
@@ -66,6 +66,37 @@ describe("encrypted OTA reservation inbox staging", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
+  it("keeps validated Payments Clarity v2 amounts inside the encrypted inbox", async () => {
+    process.env.OTA_RESERVATION_PII_ENCRYPTION_KEY = key;
+    let captured: Record<string, unknown> | undefined;
+    const reservationWithPriceDetails: BookingComInboundReservation = {
+      ...reservation,
+      rooms: [{
+        ...reservation.rooms[0]!,
+        priceDetails: {
+          guestView: { totalMinor: 33100, taxes: [{ amountMinor: 550, currency: "USD", type: "exclusive", classification: "unknown", code: "15", description: "City tax" }] },
+          hotelView: { totalMinor: 32550, netPriceMinor: 30000, taxes: [{ amountMinor: 250, currency: "USD", type: "exclusive", classification: "tax", code: "18", description: "Withheld lodging tax" }] },
+        },
+      }],
+    };
+    await stageBookingComReservation(async (_name, args) => {
+      captured = args;
+      return { data: { outcome: "received", inboxId: "20000000-0000-4000-8000-000000000001" }, error: null };
+    }, { ...input, reservation: reservationWithPriceDetails });
+    const clear = decryptBookingComReservation({
+      connectionId: input.connectionId, propertyId: input.propertyId,
+      reservationIdDigest: String(captured?.p_reservation_id_sha256), payloadDigest: String(captured?.p_payload_sha256),
+      ciphertext: String(captured?.p_ciphertext), iv: String(captured?.p_iv), tag: String(captured?.p_tag),
+    });
+    expect(clear.reservation.rooms[0]?.priceDetails).toEqual(reservationWithPriceDetails.rooms[0]?.priceDetails);
+
+    const badCurrency = structuredClone(reservationWithPriceDetails);
+    badCurrency.rooms[0]!.priceDetails!.guestView.taxes[0]!.currency = "EUR";
+    const rpc = vi.fn(async () => ({ data: null, error: null }));
+    await expect(stageBookingComReservation(rpc, { ...input, reservation: badCurrency })).rejects.toThrow("invalid_ota_reservation_inbox_input");
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
   it("uses the provider reservation status to distinguish changes and cancellations", async () => {
     process.env.OTA_RESERVATION_PII_ENCRYPTION_KEY = key;
     const rpc = vi.fn(async (_name: string, args: Record<string, unknown>) => ({
@@ -77,6 +108,55 @@ describe("encrypted OTA reservation inbox staging", () => {
     expect(rpc.mock.calls[1]?.[1].p_event_kind).toBe("cancelled");
     await expect(stageBookingComReservation(rpc, { ...input, eventKind: "modified_or_cancelled" }))
       .rejects.toThrow("unsupported_ota_reservation_status");
+  });
+
+  it("deduplicates a changed message by its reservation ID regardless of response-token order", async () => {
+    process.env.OTA_RESERVATION_PII_ENCRYPTION_KEY = key;
+    let captured: Record<string, unknown> | undefined;
+    await stageBookingComReservation(async (_name, args) => {
+      captured = args;
+      return { data: { outcome: "received", inboxId: "20000000-0000-4000-8000-000000000001" }, error: null };
+    }, {
+      ...input,
+      eventKind: "modified_or_cancelled",
+      reservation: {
+        ...reservation,
+        status: "Modify",
+        reservationIds: [
+          { value: "message-token-18", source: "BOOKING.COM", type: "18" },
+          { value: "booking-9001", source: "BOOKING.COM", type: "14" },
+        ],
+      },
+    });
+
+    expect(captured?.p_reservation_id_sha256)
+      .toBe(createHash("sha256").update("booking_com\u000012345\u0000booking-9001").digest("hex"));
+    expect(decryptBookingComReservation({
+      connectionId: input.connectionId,
+      propertyId: input.propertyId,
+      reservationIdDigest: String(captured?.p_reservation_id_sha256),
+      payloadDigest: String(captured?.p_payload_sha256),
+      ciphertext: String(captured?.p_ciphertext),
+      iv: String(captured?.p_iv),
+      tag: String(captured?.p_tag),
+    })).toMatchObject({ eventKind: "modified", reservation: { reservationIds: [
+      { value: "message-token-18", type: "18" }, { value: "booking-9001", type: "14" },
+    ] } });
+  });
+
+  it("rejects a response token without its base reservation ID before database staging", async () => {
+    process.env.OTA_RESERVATION_PII_ENCRYPTION_KEY = key;
+    const rpc = vi.fn(async () => ({ data: null, error: null }));
+    await expect(stageBookingComReservation(rpc, {
+      ...input,
+      eventKind: "modified_or_cancelled",
+      reservation: {
+        ...reservation,
+        status: "Modify",
+        reservationIds: [{ value: "message-token-18", source: "BOOKING.COM", type: "18" }],
+      },
+    })).rejects.toThrow("reservation_id_invalid");
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("binds ciphertext to connection/property identity and surfaces no raw database error", async () => {

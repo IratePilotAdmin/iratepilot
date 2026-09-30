@@ -37,6 +37,17 @@ describe("partner-before-property approval order", () => {
     expect(reviewUi).toContain("Partner pending");
   });
 
+  it("loads and enforces the commercial fields required by the publication database guard", () => {
+    for (const route of [listRoute, reviewRoute]) {
+      for (const field of [
+        "direct_rate_plan_code", "direct_rate_plan_name", "direct_currency_code",
+        "direct_cancellation_policy", "direct_cancellation_policy_version",
+        "direct_tax_amount", "direct_mandatory_fee_amount"
+      ]) expect(route).toContain(field);
+      expect(route).toContain("getPropertyReadiness");
+    }
+  });
+
   it("repairs and prevents invalid active-property states in the database", () => {
     expect(migration).toContain("update public.properties");
     expect(migration).toContain("set active = false");

@@ -17,9 +17,12 @@ describe("Booking.com reservation queue protocol", () => {
   it("builds property-scoped polls for new and modified/cancelled reservation queues", () => {
     expect(buildBookingComReservationPoll("12345", "new")).toMatchObject({
       method: "GET", kind: "new", url: "https://secure-supply-xml.booking.com/hotels/ota/OTA_HotelResNotif?hotel_ids=12345",
+      headers: { Features: "payment_clarity_package_v2" },
     });
-    expect(buildBookingComReservationPoll("12345", "modified_or_cancelled").url)
-      .toBe("https://secure-supply-xml.booking.com/hotels/ota/OTA_HotelResModifyNotif?hotel_ids=12345");
+    expect(buildBookingComReservationPoll("12345", "modified_or_cancelled")).toMatchObject({
+      url: "https://secure-supply-xml.booking.com/hotels/ota/OTA_HotelResModifyNotif?hotel_ids=12345",
+      headers: { Features: "payment_clarity_package_v2" },
+    });
     expect(() => buildBookingComReservationPoll("12345&hotel_ids=999", "new")).toThrow("invalid_reservation_poll");
   });
 
@@ -32,8 +35,29 @@ describe("Booking.com reservation queue protocol", () => {
     expect(ack.body).toContain('Target="Test"');
     expect(buildBookingComReservationAcknowledgement({ kind: "modified_or_cancelled", reservationId: "abc-1", persisted: true, timestamp }).body)
       .toContain("OTA_HotelResModifyNotifRS");
+    const changedReservationIds = [
+      { value: "987654", source: "BOOKING.COM", type: "14" },
+      { value: "change-token-1", source: "BOOKING.COM", type: "18" },
+    ];
+    const modifiedAck = buildBookingComReservationAcknowledgement({
+      kind: "modified_or_cancelled", reservationIds: changedReservationIds, persisted: true, timestamp,
+    });
+    expect(modifiedAck.body).toContain('HotelReservationID ResID_Value="987654" ResID_Source="BOOKING.COM" ResID_Type="14"');
+    expect(modifiedAck.body).toContain('HotelReservationID ResID_Value="change-token-1" ResID_Source="BOOKING.COM" ResID_Type="18"');
+    const modifiedError = buildBookingComReservationAcknowledgement({
+      kind: "modified_or_cancelled", reservationIds: changedReservationIds, persisted: false, timestamp,
+      failureCode: "193", failureMessage: "PMS is temporarily unavailable",
+    });
+    expect(modifiedError.body).toContain('RecordID="987654"');
+    expect(modifiedError.body).not.toContain('RecordID="change-token-1"');
     expect(() => buildBookingComReservationAcknowledgement({ kind: "new", reservationId: "987654", persisted: false, timestamp }))
       .toThrow("reservation_failure_reason_required");
+    expect(() => buildBookingComReservationAcknowledgement({
+      kind: "new", reservationId: "987654", reservationIds: changedReservationIds, persisted: true, timestamp,
+    })).toThrow("invalid_reservation_acknowledgement");
+    expect(() => buildBookingComReservationAcknowledgement({
+      kind: "modified_or_cancelled", reservationIds: [{ value: "token-only", type: "18" }], persisted: true, timestamp,
+    })).toThrow("invalid_reservation_acknowledgement");
     expect(buildBookingComReservationAcknowledgement({ kind: "new", reservationId: "987654", persisted: false, timestamp, failureCode: "193", failureMessage: "PMS write failed" }).body)
       .toContain('Error Code="193" RecordID="987654"');
   });
@@ -47,6 +71,7 @@ describe("Booking.com reservation queue protocol", () => {
     expect(url).toBe(request.url);
     expect(init.redirect).toBe("error");
     expect(new Headers(init.headers).get("authorization")).toBe(`Bearer ${"b".repeat(40)}`);
+    expect(new Headers(init.headers).get("features")).toBe("payment_clarity_package_v2");
 
     const transient = await callBookingComReservationTestApi(request, approval, {
       bearerToken: "b".repeat(40), fetcher: vi.fn(async () => new Response("", { status: 503 })),
@@ -73,6 +98,9 @@ describe("Booking.com reservation queue protocol", () => {
       ...buildBookingComReservationAcknowledgement({ kind: "new", reservationId: "456", persisted: true, timestamp }),
       body: '<OTA_HotelResNotifRS Target="Production"><Success/></OTA_HotelResNotifRS>',
     }, approval, { bearerToken: "b".repeat(40), fetcher })).rejects.toThrow("invalid_reservation_transport");
+    await expect(callBookingComReservationTestApi({
+      ...request, headers: { ...request.headers, Features: undefined },
+    } as never, approval, { bearerToken: "b".repeat(40), fetcher })).rejects.toThrow("invalid_reservation_transport");
     expect(fetcher).not.toHaveBeenCalled();
 
     const tooLarge = await callBookingComReservationTestApi(request, approval, {

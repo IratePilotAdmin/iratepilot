@@ -13,7 +13,17 @@ const completeProperty = (overrides: Partial<ContentQualityProperty> = {}): Cont
   description: "A premium hotel description with enough editorial detail to help travelers understand the stay, location, atmosphere, and distinctive hospitality experience.",
   image_url: "https://images.example.com/hotel.jpg", amenities: ["Pool", "Spa", "Wi-Fi"], city: "Austin", country: "US", active: true,
   partners: { business_name: "Pilot Hospitality", status: "approved" },
-  rooms: [{ active: true, inventory: [{ stay_date: "2026-09-01", available_units: 2 }] }], ...overrides,
+  rooms: [{
+    active: true,
+    base_rate: 145,
+    max_guests: 2,
+    direct_rate_plan_code: "BAR",
+    direct_rate_plan_name: "Best Available Rate",
+    direct_currency_code: "USD",
+    direct_cancellation_policy: "Free cancellation until one day before arrival.",
+    direct_cancellation_policy_version: "2026-01",
+    inventory: [{ stay_date: "2026-09-01", available_units: 2, rate: 145, direct_tax_amount: 12, direct_mandatory_fee_amount: 0 }]
+  }], ...overrides,
 });
 
 describe("admin marketplace content quality", () => {

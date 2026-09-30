@@ -1,5 +1,8 @@
 import { PartnerPmsConnections } from "@/components/dashboard/partner-pms-connections";
 import { PartnerOtaDistribution } from "@/components/dashboard/partner-ota-distribution";
+import { PartnerBookingComOnboarding } from "@/components/dashboard/partner-booking-com-onboarding";
+import { PartnerBookingComMappings } from "@/components/dashboard/partner-booking-com-mappings";
+import { PartnerBookingComHealth } from "@/components/dashboard/partner-booking-com-health";
 import { PartnerSynxisOnboarding } from "@/components/dashboard/partner-synxis-onboarding";
 import { PartnerTeamInvitations } from "@/components/dashboard/partner-team-invitations";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
@@ -10,6 +13,9 @@ export default function Page() {
     <h1 className="text-3xl font-bold">Hotel system connections</h1>
     <p className="mt-2 text-slate-600">Map each hotel to its PMS and separately request CRS distribution onboarding.</p>
     <PartnerOtaDistribution />
+    <PartnerBookingComOnboarding />
+    <PartnerBookingComMappings />
+    <PartnerBookingComHealth />
     <section className="card mt-6 flex flex-wrap items-center justify-between gap-4 p-5">
       <div>
         <h2 className="font-semibold">PMS operating manual</h2>
