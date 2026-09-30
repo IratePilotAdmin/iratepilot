@@ -18,4 +18,17 @@ Two models are stored independently: `on-books-v1` retains current booked rooms 
 
 Initial live recording produced 90 on-books baseline forecasts and 90 insufficient-history pace records covering October 1–30, 2026, across three room types with positive capacity. The database repeat capture inserted zero duplicates. Anonymous, authenticated and service-role clients cannot read this table or execute its recording function; it is an internal cron operation. RLS without a policy is intentional for this internal table.
 
-Actual-results integration and the authenticated board reader remain pending. PMS contains `service_day_closes` with a close timestamp and JSON snapshot; the occupancy contents, correction handling and room-type attribution still need verification before using those closes as scoring evidence. No real pilot accuracy score has been calculated. Live rate writeback remains disabled.
+The manager-only database evidence reader and finalized-close adapter are implemented below. Authenticated board display remains pending. No real pilot accuracy score has been calculated. Live rate writeback remains disabled.
+
+
+## Finalized occupancy connection
+
+Applied PMS-only migration `20260930133921_revenue_forecast_evidence_reader.sql`. Authenticated owners/managers can call `irp_pms_pilot_forecast_evidence` with `p_tenant`, `p_property`, `p_from`, and `p_to`. It reuses PMS property membership authorization and restricts access to this private pilot. Date ranges are at most 31 calendar nights, and more than 1000 forecasts raises an error rather than silently truncating. It returns the latest issued forecast per room type, stay date and model; reports based on this selection are not all historical forecast vintages.
+
+The reader projects closed-day occupancy fields without guest names, reservation IDs or financial amounts. It includes the captured inventory configuration and physical-room identities needed to reject double counting. Direct table permissions stay revoked. Anonymous and service-role execution are revoked. The security advisor flags authenticated SECURITY DEFINER execution; this is intentional for this membership-guarded API with fixed search_path, not unrestricted table access. Missing identity and a signed-in nonmember were both denied in database verification.
+
+`evaluatePmsForecastEvidence` connects the reader payload to offline scoring. Only complete, untruncated service-day closes count. It verifies matching service dates, local calendar-midnight boundaries (including DST), room-type capacity and total overnight counts. Same-day use and unoccupied reservations do not add overnight occupancy. Duplicate physical rooms, unresolved blockers, inconsistent totals, missing capacity, changed capacity and closes before the night ends or after the evaluation cutoff are excluded. Forward financial corrections do not add occupied nights in the existing PMS service-day v2 implementation.
+
+Twelve unit tests and focused TypeScript checks passed. An additional temporary integration check passed using the actual database reader response: 180 forecast records, no closed days, 90 pending-history records, zero eligible accuracy samples, and 90 baseline forecasts excluded for missing actuals. No synthetic closed days were inserted into the PMS and no service ledger was initialized or closed by this work.
+
+Board integration is the next implementation step. The database reader is active; the adapter is published for review in draft PR #322 and is not yet wired into the live PMS PWA. Live readiness and signed native ARI validation remain pending; no pricing certification or writeback is enabled.
