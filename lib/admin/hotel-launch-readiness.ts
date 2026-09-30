@@ -21,6 +21,7 @@ export type HotelLaunchReadinessInput = {
   paymentConfigurationReady: boolean;
   paymentAuthorizationValid: boolean;
   paymentAuthorizationStateAvailable: boolean;
+  paymentChecks: Array<{ label: string; passed: boolean }>;
   operationsReady: boolean;
   operationsStateAvailable: boolean;
   emailWorkerEnabled: boolean;
@@ -122,6 +123,18 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
             : "Live Stripe keys, webhook verification, payment and payout flags, or commercial operating mode are incomplete.",
       "/admin/settings",
       "Review payment readiness",
+      input.paymentAuthorizationStateAvailable ? [
+        ...input.paymentChecks.map((item) => ({
+          label: item.label,
+          ready: item.passed,
+          value: item.passed ? "Complete" : "Required",
+        })),
+        {
+          label: "Current production payment approval",
+          ready: input.paymentAuthorizationValid,
+          value: input.paymentAuthorizationValid ? "Recorded" : "Required",
+        },
+      ] : undefined,
     ),
     gate(
       "support_operations",
