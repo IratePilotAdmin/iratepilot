@@ -77,6 +77,12 @@ export function AdminHotelLaunchReadiness() {
                     <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${presentation.classes}`}>{presentation.label}</span>
                   </div>
                   <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{item.detail}</p>
+                  {item.checks && <dl className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {item.checks.map((check) => <div className="rounded-lg border bg-white p-3" key={check.label}>
+                      <dt className="text-xs text-slate-500">{check.label}</dt>
+                      <dd className={`mt-1 text-sm font-semibold ${check.ready ? "text-emerald-700" : "text-amber-800"}`}>{check.value}</dd>
+                    </div>)}
+                  </dl>}
                 </div>
                 <Link className="btn-secondary whitespace-nowrap" href={item.actionHref}>{item.actionLabel}</Link>
               </article>

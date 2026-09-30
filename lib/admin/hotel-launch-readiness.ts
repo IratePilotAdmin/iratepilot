@@ -7,6 +7,7 @@ export type HotelLaunchGate = {
   detail: string;
   actionHref: string;
   actionLabel: string;
+  checks?: Array<{ label: string; ready: boolean; value: string }>;
 };
 
 export type HotelLaunchReadinessInput = {
@@ -22,6 +23,11 @@ export type HotelLaunchReadinessInput = {
   paymentAuthorizationStateAvailable: boolean;
   operationsReady: boolean;
   operationsStateAvailable: boolean;
+  emailWorkerEnabled: boolean;
+  emailBacklogCount: number;
+  emailDeadLetterCount: number;
+  deliveryFailureCount: number;
+  payoutExceptionCount: number;
   publicationEnabled: boolean;
 };
 
@@ -32,8 +38,9 @@ function gate(
   detail: string,
   actionHref: string,
   actionLabel: string,
+  checks?: HotelLaunchGate["checks"],
 ): HotelLaunchGate {
-  return { id, label, status, detail, actionHref, actionLabel };
+  return { id, label, status, detail, actionHref, actionLabel, ...(checks ? { checks } : {}) };
 }
 
 export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
@@ -131,6 +138,13 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
           : "Resolve the email queue, delivery failures, payout exceptions, or disabled worker before launch.",
       "/admin/operations",
       "Review operations",
+      input.operationsStateAvailable ? [
+        { label: "Email worker", ready: input.emailWorkerEnabled, value: input.emailWorkerEnabled ? "Enabled" : "Disabled" },
+        { label: "Queued email work", ready: input.emailBacklogCount === 0, value: String(input.emailBacklogCount) },
+        { label: "Email dead letters", ready: input.emailDeadLetterCount === 0, value: String(input.emailDeadLetterCount) },
+        { label: "Delivery failures", ready: input.deliveryFailureCount === 0, value: String(input.deliveryFailureCount) },
+        { label: "Payout exceptions", ready: input.payoutExceptionCount === 0, value: String(input.payoutExceptionCount) },
+      ] : undefined,
     ),
     gate(
       "production_release",

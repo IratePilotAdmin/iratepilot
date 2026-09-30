@@ -129,13 +129,22 @@ export async function GET() {
     const operationsStateAvailable = !emailBacklog.error
       && !emailDeadLetters.error
       && !deliveryFailures.error
-      && !payoutExceptions.error;
+      && !payoutExceptions.error
+      && typeof emailBacklog.count === "number"
+      && typeof emailDeadLetters.count === "number"
+      && typeof deliveryFailures.count === "number"
+      && typeof payoutExceptions.count === "number";
+    const emailWorkerEnabled = isEmailWorkerEnabled();
+    const emailBacklogCount = emailBacklog.count ?? 0;
+    const emailDeadLetterCount = emailDeadLetters.count ?? 0;
+    const deliveryFailureCount = deliveryFailures.count ?? 0;
+    const payoutExceptionCount = payoutExceptions.count ?? 0;
     const operationsReady = operationsStateAvailable
-      && (emailBacklog.count ?? 0) === 0
-      && (emailDeadLetters.count ?? 0) === 0
-      && (deliveryFailures.count ?? 0) === 0
-      && (payoutExceptions.count ?? 0) === 0
-      && isEmailWorkerEnabled();
+      && emailBacklogCount === 0
+      && emailDeadLetterCount === 0
+      && deliveryFailureCount === 0
+      && payoutExceptionCount === 0
+      && emailWorkerEnabled;
 
     const paymentAuthorizationStateAvailable = !paymentApprovals.error && !paymentRevocations.error;
     const revokedPaymentApprovals = new Map((paymentRevocations.data ?? []).map((item) => [item.authorization_id, item.revoked_at]));
@@ -164,6 +173,11 @@ export async function GET() {
       paymentAuthorizationStateAvailable,
       operationsReady,
       operationsStateAvailable,
+      emailWorkerEnabled,
+      emailBacklogCount,
+      emailDeadLetterCount,
+      deliveryFailureCount,
+      payoutExceptionCount,
       publicationEnabled: isHotelPublicationEnabled(),
     }), { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
