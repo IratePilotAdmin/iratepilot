@@ -279,6 +279,7 @@ describe("hotel launch readiness", () => {
     expect(routeSource).toContain("readiness.gates.slice(0, 6)");
     expect(routeSource).toContain('gate.status !== "ready"');
     expect(routeSource).toContain("All six production prerequisites must pass");
+    expect(routeSource).toContain('value.replace(/\\s+/g, " ").trim()');
     expect(routeSource).toContain('rpc("revoke_hotel_marketplace_release_authorization"');
     expect(routeSource).not.toContain("export async function PATCH");
     expect(uiSource).toContain("Marketplace release authorization");

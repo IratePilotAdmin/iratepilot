@@ -41,6 +41,9 @@ type ReleaseAuthorization = {
 };
 
 const timestampSchema = z.string().datetime({ offset: true });
+const evidenceTextSchema = z.string()
+  .transform((value) => value.replace(/\s+/g, " ").trim())
+  .pipe(z.string().min(20).max(2000));
 const releaseAuthorizationRequestSchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("record"),
@@ -48,13 +51,13 @@ const releaseAuthorizationRequestSchema = z.discriminatedUnion("action", [
     approvedAt: timestampSchema,
     expiresAt: timestampSchema,
     rollbackPlanVerified: z.literal(true),
-    reviewNotes: z.string().trim().min(20).max(2000),
+    reviewNotes: evidenceTextSchema,
   }).strict(),
   z.object({
     action: z.literal("revoke"),
     authorizationId: z.string().uuid(),
     revocationReference: z.string().trim().min(8).max(160).regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{7,159}$/),
-    reasonSummary: z.string().trim().min(20).max(2000),
+    reasonSummary: evidenceTextSchema,
   }).strict(),
 ]);
 
