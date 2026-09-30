@@ -15,6 +15,11 @@ const empty: HotelLaunchReadinessInput = {
   paymentAuthorizationStateAvailable: true,
   operationsReady: false,
   operationsStateAvailable: true,
+  emailWorkerEnabled: false,
+  emailBacklogCount: 2,
+  emailDeadLetterCount: 1,
+  deliveryFailureCount: 3,
+  payoutExceptionCount: 1,
   publicationEnabled: false,
 };
 
@@ -51,10 +56,28 @@ describe("hotel launch readiness", () => {
       paymentConfigurationReady: true,
       paymentAuthorizationValid: true,
       operationsReady: true,
+      emailWorkerEnabled: true,
+      emailBacklogCount: 0,
+      emailDeadLetterCount: 0,
+      deliveryFailureCount: 0,
+      payoutExceptionCount: 0,
       publicationEnabled: true,
     });
     expect(result).toMatchObject({ complete: 7, total: 7, percent: 100, launchReady: true });
     expect(result.gates.every(({ status }) => status === "ready")).toBe(true);
+  });
+
+  it("shows actionable aggregate operations checks without exposing queue records", () => {
+    const operations = buildHotelLaunchReadiness(empty).gates.find(({ id }) => id === "support_operations");
+    expect(operations?.checks).toEqual([
+      { label: "Email worker", ready: false, value: "Disabled" },
+      { label: "Queued email work", ready: false, value: "2" },
+      { label: "Email dead letters", ready: false, value: "1" },
+      { label: "Delivery failures", ready: false, value: "3" },
+      { label: "Payout exceptions", ready: false, value: "1" },
+    ]);
+    expect(JSON.stringify(operations)).not.toContain("recipient");
+    expect(JSON.stringify(operations)).not.toContain("message");
   });
 
   it("marks unavailable evidence checks as fail-closed", () => {
@@ -92,6 +115,7 @@ describe("hotel launch readiness", () => {
     expect(routeSource).not.toContain("export async function POST");
     expect(routeSource).not.toContain("export async function PATCH");
     expect(uiSource).toContain("This page is read-only.");
+    expect(uiSource).toContain("item.checks.map");
     expect(navigationSource).toContain('{ href: "/admin/launch-readiness", label: "Launch readiness" }');
   });
 });
