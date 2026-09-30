@@ -138,6 +138,19 @@ describe("hotel launch readiness", () => {
     expect(result.gates.every(({ status }) => status === "ready")).toBe(true);
   });
 
+  it("shows every prerequisite on the final publication gate", () => {
+    const publication = buildHotelLaunchReadiness(empty).gates.find(({ id }) => id === "production_release");
+    expect(publication?.checks).toEqual([
+      { label: "Approved hotel intake", ready: false, value: "Required" },
+      { label: "Listing and sellable inventory", ready: false, value: "Required" },
+      { label: "Executed agreement and commercial review", ready: false, value: "Required" },
+      { label: "Live supplier or PMS connection", ready: false, value: "Required" },
+      { label: "Production booking payments", ready: false, value: "Required" },
+      { label: "Email and support operations", ready: false, value: "Required" },
+      { label: "Server publication gate", ready: false, value: "Disabled" },
+    ]);
+  });
+
   it("shows safe payment configuration and approval blockers", () => {
     const payments = buildHotelLaunchReadiness(empty).gates.find(({ id }) => id === "production_payments");
     expect(payments?.checks).toEqual([

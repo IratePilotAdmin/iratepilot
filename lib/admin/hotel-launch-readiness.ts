@@ -232,6 +232,43 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
         : "The server publication gate remains locked until every earlier gate passes and a controlled production release is approved.",
       "/admin/properties",
       "Review release candidates",
+      [
+        {
+          label: "Approved hotel intake",
+          ready: input.approvedHotelStateAvailable && input.approvedHotelCount > 0,
+          value: input.approvedHotelStateAvailable && input.approvedHotelCount > 0 ? "Complete" : "Required",
+        },
+        {
+          label: "Listing and sellable inventory",
+          ready: input.listingStateAvailable && input.inventoryReadyHotelCount > 0,
+          value: input.listingStateAvailable && input.inventoryReadyHotelCount > 0 ? "Complete" : "Required",
+        },
+        {
+          label: "Executed agreement and commercial review",
+          ready: input.commercialStateAvailable && input.commerciallyReadyHotelCount > 0,
+          value: input.commercialStateAvailable && input.commerciallyReadyHotelCount > 0 ? "Complete" : "Required",
+        },
+        {
+          label: "Live supplier or PMS connection",
+          ready: input.supplierStateAvailable && input.liveSupplierCount > 0,
+          value: input.supplierStateAvailable && input.liveSupplierCount > 0 ? "Complete" : "Required",
+        },
+        {
+          label: "Production booking payments",
+          ready: input.paymentAuthorizationStateAvailable && input.paymentConfigurationReady && input.paymentAuthorizationValid,
+          value: input.paymentAuthorizationStateAvailable && input.paymentConfigurationReady && input.paymentAuthorizationValid ? "Complete" : "Required",
+        },
+        {
+          label: "Email and support operations",
+          ready: input.operationsStateAvailable && input.operationsReady,
+          value: input.operationsStateAvailable && input.operationsReady ? "Complete" : "Required",
+        },
+        {
+          label: "Server publication gate",
+          ready: input.publicationEnabled,
+          value: input.publicationEnabled ? "Enabled" : "Disabled",
+        },
+      ],
     ),
   ];
 
