@@ -123,7 +123,10 @@ BEGIN
   FROM irp_pms.revenue_rate_decisions d WHERE d.tenant_id=p_tenant AND d.property_id=p_property
    AND (p_before_time IS NULL OR (d.saved_at,d.request_id)<(p_before_time,p_before_id))
   ORDER BY d.saved_at DESC,d.request_id DESC LIMIT 25
- ) SELECT coalesce(jsonb_agg(to_jsonb(page) ORDER BY saved_at DESC,request_id DESC),'[]'::jsonb),min(saved_at),min(request_id) FILTER(WHERE saved_at=(SELECT min(saved_at) FROM page)) INTO items,cursor_time,cursor_id FROM page;
+ ) SELECT coalesce(jsonb_agg(to_jsonb(page) ORDER BY saved_at DESC,request_id DESC),'[]'::jsonb) INTO items FROM page;
+ -- Use the final ordered item: PostgreSQL has no built-in min(uuid) aggregate.
+ cursor_time:=(items->-1->>'saved_at')::timestamptz;
+ cursor_id:=(items->-1->>'request_id')::uuid;
  IF cursor_id IS NULL OR NOT EXISTS(SELECT 1 FROM irp_pms.revenue_rate_decisions d WHERE d.tenant_id=p_tenant AND d.property_id=p_property AND (d.saved_at,d.request_id)<(cursor_time,cursor_id)) THEN cursor_time:=NULL;cursor_id:=NULL; END IF;
  RETURN jsonb_build_object('tenant_id',p_tenant,'property_id',p_property,'items',items,'next',CASE WHEN cursor_id IS NULL THEN NULL ELSE jsonb_build_object('saved_at',cursor_time,'request_id',cursor_id) END);
 END $$;

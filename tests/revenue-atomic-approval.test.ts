@@ -85,6 +85,25 @@ for(const actualSchema of [false,true])test(`audited approval rejects drift, rep
   await expect(apply(changed(17,JSON.stringify(['Different review'])))).rejects.toMatchObject({code:'23505'});
   const counts=(await db.query<{audits:number;actions:number;rate:number;version:number}>('SELECT (SELECT count(*)::integer FROM irp_pms.revenue_rate_decisions) audits,(SELECT count(*)::integer FROM irp_pms.rate_actions) actions,(SELECT amount_minor::integer FROM irp_pms.nightly_rates) rate,(SELECT version::integer FROM irp_pms.rate_plans) version')).rows[0];
   expect(counts).toEqual({audits:1,actions:1,rate:16100,version:2});
+  // Tied timestamps across a page boundary must neither skip nor repeat UUIDs.
+  await db.exec(`BEGIN;
+   INSERT INTO irp_pms.revenue_rate_decisions
+   SELECT (jsonb_populate_record(NULL::irp_pms.revenue_rate_decisions,to_jsonb(d)||jsonb_build_object('request_id','00000000-0000-4000-8000-'||lpad(n::text,12,'0')))).*
+   FROM irp_pms.revenue_rate_decisions d CROSS JOIN generate_series(100,126)n WHERE d.request_id='${request}';`);
+  type History={items:{request_id:string}[];next:{saved_at:string;request_id:string}|null};
+  const history=async(time:string|null=null,id:string|null=null)=>(await db.query<{page:History}>('SELECT public.irp_pms_pilot_revenue_decisions($1,$2,$3,$4) page',[t,p,time,id])).rows[0].page;
+  const page1=await history();
+  expect(page1.items).toHaveLength(25);
+  expect(page1.next?.request_id).toBe(page1.items.at(-1)?.request_id);
+  const page2=await history(page1.next!.saved_at,page1.next!.request_id);
+  expect(page2.items).toHaveLength(3);
+  expect(page2.next).toBeNull();
+  const expected=[request,...Array.from({length:27},(_,i)=>'00000000-0000-4000-8000-'+String(i+100).padStart(12,'0'))].sort().reverse();
+  expect([...page1.items,...page2.items].map(x=>x.request_id)).toEqual(expected);
+  const empty=(await db.query<{page:History}>('SELECT public.irp_pms_pilot_revenue_decisions($1,$2) page',[t,'7d9add80-216e-435c-86e9-58e17cdcbb6d'])).rows[0].page;
+  expect(empty).toMatchObject({items:[],next:null});
+  await expect(history(page1.next!.saved_at,null)).rejects.toMatchObject({code:'22023'});
+  await db.exec('ROLLBACK');
   await db.exec(`CREATE FUNCTION irp_pms.reject_test_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'Isolated audit failure';END $$;
    CREATE TRIGGER reject_test_audit BEFORE INSERT ON irp_pms.revenue_rate_decisions FOR EACH ROW EXECUTE FUNCTION irp_pms.reject_test_audit();`);
   const second=[...args];second[2]='00000000-0000-4000-8000-000000000007';second[4]=2;second[6]=16100;second[7]=18515;
