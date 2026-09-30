@@ -39,6 +39,7 @@ export const PINNED_NON_FLIGHT_MIGRATIONS = Object.freeze([
   ["202609180159", "202609180159_hotel_payment_launch_authorization.sql"],
   ["202609200160", "202609200160_live_payment_authorization_runtime_gate.sql"],
   ["202609270159", "202609270159_pms_only_properties.sql"],
+  ["20260930122401", "20260930122401_native_ari_shadow_validation.sql"],
 ].map(([version, filename]) => Object.freeze({ version, filename })));
 
 export const RETIRED_FLIGHT_MIGRATION_VERSIONS = Object.freeze([
@@ -315,7 +316,7 @@ export function listRepositoryMigrations() {
     .filter((name) => name.endsWith(".sql"))
     .sort()
     .map((filename) => {
-      const match = /^(\d{12})_[a-z0-9_]+\.sql$/.exec(filename);
+      const match = /^(\d{12}(?:\d{2})?)_[a-z0-9_]+\.sql$/.exec(filename);
       if (!match) {
         throw new Error("The migration directory contains a non-canonical SQL filename.");
       }
@@ -548,7 +549,7 @@ export function parseMigrationListOutput(output) {
 
     const parseCell = (cell) => {
       if (!cell) return undefined;
-      if (/^\d{12}$/.test(cell)) return cell;
+      if (/^\d{12}$/.test(cell) || PINNED_NON_FLIGHT_MIGRATIONS.some(({ version }) => version === cell)) return cell;
       throw new Error("The Preview migration ledger contains a malformed version cell.");
     };
     const local = parseCell(localCell);
@@ -636,7 +637,7 @@ export function assertExactFlightDryRun(
   output,
   expectedVersions = CANONICAL_FLIGHT_MIGRATION_VERSIONS,
 ) {
-  const mentionedVersions = [...output.matchAll(/(?<!\d)(\d{12})(?!\d)/g)]
+  const mentionedVersions = [...output.matchAll(/(?<!\d)(\d{12}(?:\d{2})?)(?!\d)/g)]
     .map((match) => match[1]);
   const expectedSet = new Set(expectedVersions);
   const canonicalSet = new Set(CANONICAL_FLIGHT_MIGRATION_VERSIONS);
@@ -644,7 +645,7 @@ export function assertExactFlightDryRun(
     ({ version }) => canonicalSet.has(version) && expectedSet.has(version),
   );
   const expected = expectedMigrations.map(({ version }) => version);
-  const mentionedFiles = [...output.matchAll(/(?<![a-z0-9_])(\d{12}_[a-z0-9_]+\.sql)(?![a-z0-9_])/gi)]
+  const mentionedFiles = [...output.matchAll(/(?<![a-z0-9_])(\d{12}(?:\d{2})?_[a-z0-9_]+\.sql)(?![a-z0-9_])/gi)]
     .map((match) => match[1]);
   const expectedFiles = expectedMigrations.map(({ filename }) => filename);
   if (
