@@ -9,6 +9,9 @@ type PriorityProviderReadiness = {
   id: PriorityPmsProviderId;
   status: PriorityPmsLaunchStatus;
   readyForRealPropertyActivation: boolean;
+  activationChecklist: {
+    vendorApprovalDocumented: boolean;
+  };
   evidence: Required<Pick<PriorityPmsLaunchEvidence,
     | "vendorApproved"
     | "propertyMapped"
@@ -33,7 +36,7 @@ export type SupplierPhaseReadiness = {
   priorityLaunchManifestCount: number;
   priorityManifestCoverageCount: number;
   readyForValidationCount: number;
-  vendorApprovedCount: number;
+  verifiedVendorApprovalCount: number;
   propertyMappedCount: number;
   sandboxValidatedCount: number;
   webhookValidatedCount: number;
@@ -86,7 +89,9 @@ export function buildSupplierPhaseReadiness(
     priorityLaunchManifestCount: priorityProviders.length,
     priorityManifestCoverageCount,
     readyForValidationCount: providers.filter(({ status: providerStatus }) => providerStatus === "ready_for_validation").length,
-    vendorApprovedCount: priorityProviders.filter(({ evidence }) => evidence.vendorApproved).length,
+    verifiedVendorApprovalCount: priorityProviders.filter(
+      ({ activationChecklist }) => activationChecklist.vendorApprovalDocumented,
+    ).length,
     propertyMappedCount: priorityProviders.filter(({ evidence }) => evidence.propertyMapped).length,
     sandboxValidatedCount: priorityProviders.filter(({ evidence }) => evidence.sandboxValidated).length,
     webhookValidatedCount: priorityProviders.filter(({ evidence }) => evidence.webhookValidated).length,
