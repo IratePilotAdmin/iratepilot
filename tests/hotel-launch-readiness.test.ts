@@ -138,6 +138,41 @@ describe("hotel launch readiness", () => {
     expect(result.gates.every(({ status }) => status === "ready")).toBe(true);
   });
 
+  it("shows every prerequisite on the final publication gate", () => {
+    const publication = buildHotelLaunchReadiness(empty).gates.find(({ id }) => id === "production_release");
+    expect(publication?.checks).toEqual([
+      { label: "Approved hotel intake", ready: false, value: "Required" },
+      { label: "Listing and sellable inventory", ready: false, value: "Required" },
+      { label: "Executed agreement and commercial review", ready: false, value: "Required" },
+      { label: "Live supplier or PMS connection", ready: false, value: "Required" },
+      { label: "Production booking payments", ready: false, value: "Required" },
+      { label: "Email and support operations", ready: false, value: "Required" },
+      { label: "Server publication gate", ready: false, value: "Disabled" },
+    ]);
+  });
+
+  it("keeps the final gate blocked when any displayed prerequisite is unavailable", () => {
+    const result = buildHotelLaunchReadiness({
+      ...empty,
+      approvedHotelCount: 1,
+      approvedHotelStateAvailable: false,
+      inventoryReadyHotelCount: 1,
+      commerciallyReadyHotelCount: 1,
+      liveSupplierCount: 1,
+      paymentConfigurationReady: true,
+      paymentAuthorizationValid: true,
+      operationsReady: true,
+      publicationEnabled: true,
+    });
+    const publication = result.gates.find(({ id }) => id === "production_release");
+    expect(publication?.status).toBe("blocked");
+    expect(publication?.checks?.find(({ label }) => label === "Approved hotel intake")).toEqual({
+      label: "Approved hotel intake",
+      ready: false,
+      value: "Required",
+    });
+  });
+
   it("shows safe payment configuration and approval blockers", () => {
     const payments = buildHotelLaunchReadiness(empty).gates.find(({ id }) => id === "production_payments");
     expect(payments?.checks).toEqual([
