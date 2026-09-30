@@ -56,7 +56,9 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
   it("recognizes the repository migration chain through the OTA delivery migrations before reconciling Preview", () => {
     const versions = listMigrationVersions();
     expect(versions).toEqual(expect.arrayContaining(REQUIRED_PREVIEW_BASELINE));
-    expect(versions.at(-1)).toBe("202609270159");
+    expect(versions).toEqual(expect.arrayContaining([
+      "202609270159", "20260930122401",
+    ]));
     expect(assertPreviewMigrationTarget({
       PREVIEW_SUPABASE_DB_URL: previewUrl,
       PREVIEW_SUPABASE_PROJECT_REF: previewRef,
