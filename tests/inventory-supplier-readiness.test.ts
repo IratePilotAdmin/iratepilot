@@ -57,5 +57,6 @@ describe("inventory supplier readiness", () => {
     expect(route).toContain('"Cache-Control": "no-store"');
     expect(adminSettings).toContain("Hotel inventory supplier readiness");
     expect(adminSettings).toContain("ready for sandbox validation");
+    expect(adminSettings).toContain("Checking hotel inventory suppliers…");
   });
 });

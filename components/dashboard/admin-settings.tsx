@@ -94,7 +94,7 @@ export function AdminSettings() {
   const [emailTestBusy, setEmailTestBusy] = useState(false);
   const [emailTestMessage, setEmailTestMessage] = useState("");
   const [pmsProviders, setPmsProviders] = useState<PmsProviderReadiness[]>([]);
-  const [inventorySuppliers, setInventorySuppliers] = useState<InventorySupplierReadiness[]>([]);
+  const [inventorySuppliers, setInventorySuppliers] = useState<InventorySupplierReadiness[] | null>(null);
   const [priorityPmsReadiness, setPriorityPmsReadiness] = useState<PriorityPmsProductionReadiness[]>([]);
   const [evidenceTrackingAvailable, setEvidenceTrackingAvailable] = useState(false);
   const [evidenceBusy, setEvidenceBusy] = useState("");
@@ -308,13 +308,13 @@ export function AdminSettings() {
           <span className="text-xs uppercase tracking-wider text-slate-500">Aggregator inventory</span>
           <h2 className="mt-2 text-xl font-semibold">Hotel inventory supplier readiness</h2>
           <p className="mt-2 text-sm text-slate-600">This read-only audit tracks credential prerequisites for supplier applications. It cannot approve a partnership, contact a vendor, validate a sandbox, or enable traffic.</p>
-          <div className="mt-4 flex flex-wrap gap-5 text-sm">
+          {inventorySuppliers ? <div className="mt-4 flex flex-wrap gap-5 text-sm">
             <span><strong>{inventorySuppliers.length}</strong> suppliers tracked</span>
             <span><strong>{inventorySuppliers.filter((supplier) => supplier.status === "ready_for_sandbox_validation").length}</strong> ready for sandbox validation</span>
-          </div>
+          </div> : <p className="mt-4 text-sm text-slate-500" role="status">{pmsMessage || "Checking hotel inventory suppliers…"}</p>}
         </div>
         <div className="grid gap-3 p-6 lg:grid-cols-3">
-          {inventorySuppliers.map((supplier) => <article className="rounded-lg border p-4" key={supplier.id}>
+          {inventorySuppliers?.map((supplier) => <article className="rounded-lg border p-4" key={supplier.id}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <strong>{supplier.name}</strong>
               <span className={supplier.status === "ready_for_sandbox_validation" ? "text-sm font-semibold text-emerald-700" : "text-sm font-semibold text-amber-700"}>{supplier.status.replaceAll("_", " ")}</span>
