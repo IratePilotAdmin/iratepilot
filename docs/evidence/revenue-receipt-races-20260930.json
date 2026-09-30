@@ -1,0 +1,220 @@
+{
+  "scope": "Synthetic isolated 19-table pricing slice; PostgreSQL backend JWT context, not authenticated HTTP/RLS or real-browser qualification",
+  "branch": {
+    "id": "6ca7c38e-18ff-4e04-80fa-b83aa5e54c68",
+    "name": "revenue-receipt-races-20260930",
+    "project_ref": "zaqaptgroluvesuwtlol",
+    "is_default": false,
+    "persistent": false,
+    "status": "CREATING_PROJECT",
+    "created_at": "2026-09-30T22:51:29.518467+00:00",
+    "updated_at": "2026-09-30T22:51:29.518467+00:00",
+    "parent_project_ref": "eiqmdldjnedqgbtoozqa",
+    "with_data": false
+  },
+  "evidence": {
+    "final": {
+      "jobs": 0,
+      "plans": [
+        {
+          "id": "00000000-0000-4000-8000-000000000004",
+          "version": 3
+        }
+      ],
+      "rates": [
+        {
+          "plan_id": "00000000-0000-4000-8000-000000000004",
+          "stay_date": "2026-10-01",
+          "tenant_id": "00000000-0000-4000-8000-000000000001",
+          "property_id": "00000000-0000-4000-8000-000000000002",
+          "amount_minor": 18515
+        }
+      ],
+      "activity": 2,
+      "decisions": 2,
+      "unfinished": 0,
+      "failed_runs": 0,
+      "rate_actions": 2,
+      "active_workers": 0
+    },
+    "controls": [
+      {
+        "phase": "conflict",
+        "result": {
+          "message": "Rate decision request conflicts with its saved result",
+          "sqlstate": "23505"
+        },
+        "finished": true,
+        "worker_pid": 6213,
+        "completed_at": "2026-09-30T22:55:33.66158+00:00"
+      },
+      {
+        "phase": "duplicate",
+        "result": {
+          "plan_id": "00000000-0000-4000-8000-000000000004",
+          "replayed": true,
+          "saved_at": "2026-09-30T22:55:10.939432+00:00",
+          "stay_date": "2026-10-01",
+          "tenant_id": "00000000-0000-4000-8000-000000000001",
+          "request_id": "00000000-0000-4000-8000-000000000006",
+          "property_id": "00000000-0000-4000-8000-000000000002",
+          "recommended_rate_minor": 16100
+        },
+        "finished": true,
+        "worker_pid": 6200,
+        "completed_at": "2026-09-30T22:55:11.049926+00:00"
+      }
+    ],
+    "cron_runs": [
+      {
+        "jobid": 1,
+        "runid": 1,
+        "status": "succeeded",
+        "job_pid": 6200,
+        "end_time": "2026-09-30T22:55:11.051204+00:00",
+        "start_time": "2026-09-30T22:55:04.800557+00:00",
+        "return_message": "1 row"
+      },
+      {
+        "jobid": 1,
+        "runid": 2,
+        "status": "succeeded",
+        "job_pid": 6203,
+        "end_time": "2026-09-30T22:55:11.066543+00:00",
+        "start_time": "2026-09-30T22:55:11.063853+00:00",
+        "return_message": "1 row"
+      },
+      {
+        "jobid": 1,
+        "runid": 3,
+        "status": "succeeded",
+        "job_pid": 6205,
+        "end_time": "2026-09-30T22:55:12.078515+00:00",
+        "start_time": "2026-09-30T22:55:12.075705+00:00",
+        "return_message": "1 row"
+      },
+      {
+        "jobid": 1,
+        "runid": 4,
+        "status": "succeeded",
+        "job_pid": 6206,
+        "end_time": "2026-09-30T22:55:13.0896+00:00",
+        "start_time": "2026-09-30T22:55:13.086844+00:00",
+        "return_message": "1 row"
+      },
+      {
+        "jobid": 1,
+        "runid": 5,
+        "status": "succeeded",
+        "job_pid": 6207,
+        "end_time": "2026-09-30T22:55:14.102146+00:00",
+        "start_time": "2026-09-30T22:55:14.098965+00:00",
+        "return_message": "1 row"
+      },
+      {
+        "jobid": 1,
+        "runid": 6,
+        "status": "succeeded",
+        "job_pid": 6208,
+        "end_time": "2026-09-30T22:55:15.136463+00:00",
+        "start_time": "2026-09-30T22:55:15.122438+00:00",
+        "return_message": "1 row"
+      },
+      {
+        "jobid": 1,
+        "runid": 7,
+        "status": "succeeded",
+        "job_pid": 6210,
+        "end_time": "2026-09-30T22:55:16.138494+00:00",
+        "start_time": "2026-09-30T22:55:16.135482+00:00",
+        "return_message": "1 row"
+      },
+      {
+        "jobid": 2,
+        "runid": 8,
+        "status": "succeeded",
+        "job_pid": 6213,
+        "end_time": "2026-09-30T22:55:33.663207+00:00",
+        "start_time": "2026-09-30T22:55:30.160502+00:00",
+        "return_message": "1 row"
+      },
+      {
+        "jobid": 2,
+        "runid": 9,
+        "status": "succeeded",
+        "job_pid": 6216,
+        "end_time": "2026-09-30T22:55:33.680032+00:00",
+        "start_time": "2026-09-30T22:55:33.677205+00:00",
+        "return_message": "1 row"
+      },
+      {
+        "jobid": 2,
+        "runid": 10,
+        "status": "succeeded",
+        "job_pid": 6217,
+        "end_time": "2026-09-30T22:55:34.691854+00:00",
+        "start_time": "2026-09-30T22:55:34.688985+00:00",
+        "return_message": "1 row"
+      },
+      {
+        "jobid": 2,
+        "runid": 11,
+        "status": "succeeded",
+        "job_pid": 6218,
+        "end_time": "2026-09-30T22:55:35.703427+00:00",
+        "start_time": "2026-09-30T22:55:35.700543+00:00",
+        "return_message": "1 row"
+      },
+      {
+        "jobid": 2,
+        "runid": 12,
+        "status": "succeeded",
+        "job_pid": 6219,
+        "end_time": "2026-09-30T22:55:36.715065+00:00",
+        "start_time": "2026-09-30T22:55:36.712147+00:00",
+        "return_message": "1 row"
+      },
+      {
+        "jobid": 2,
+        "runid": 13,
+        "status": "succeeded",
+        "job_pid": 6220,
+        "end_time": "2026-09-30T22:55:37.726409+00:00",
+        "start_time": "2026-09-30T22:55:37.723459+00:00",
+        "return_message": "1 row"
+      },
+      {
+        "jobid": 2,
+        "runid": 14,
+        "status": "succeeded",
+        "job_pid": 6221,
+        "end_time": "2026-09-30T22:55:38.737411+00:00",
+        "start_time": "2026-09-30T22:55:38.734709+00:00",
+        "return_message": "1 row"
+      }
+    ],
+    "captured_at": "2026-09-30T22:55:53.317017+00:00",
+    "observations": [
+      {
+        "phase": "conflict",
+        "blockers": [
+          6215
+        ],
+        "holder_pid": 6215,
+        "wait_event": "transactionid",
+        "waiter_pid": 6213,
+        "observed_at": "2026-09-30T22:55:33.654694+00:00"
+      },
+      {
+        "phase": "duplicate",
+        "blockers": [
+          6202
+        ],
+        "holder_pid": 6202,
+        "wait_event": "transactionid",
+        "waiter_pid": 6200,
+        "observed_at": "2026-09-30T22:55:11.043121+00:00"
+      }
+    ]
+  }
+}
