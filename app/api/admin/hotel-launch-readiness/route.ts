@@ -26,11 +26,29 @@ export async function GET() {
       .from(table)
       .select("id", { count: "exact", head: true })
       .in(column, values);
-    const [properties, applications, applicationApprovalEvidence, commercialControls, supplierEvidence, synxisEvidence, emailBacklog, emailDeadLetters, deliveryFailures, payoutExceptions, paymentApprovals, paymentRevocations] = await Promise.all([
+    const verifiedApprovalCount = (linkedToProperty: boolean) => {
+      let query = auth.supabase.from("partner_application_review_evidence")
+        .select("application_id,partner_applications!inner(id)", { count: "exact", head: true })
+        .eq("decision", "approved")
+        .eq("legal_business_verified", true)
+        .eq("representative_authority_verified", true)
+        .eq("content_rights_verified", true)
+        .eq("commercial_terms_acknowledgement_verified", true)
+        .eq("inactive_draft_scope_confirmed", true)
+        .eq("partner_applications.status", "approved");
+      if (linkedToProperty) query = query.not("partner_applications.property_id", "is", null);
+      return query;
+    };
+    const [properties, applications, applicationApprovalEvidence, applicationTotal, pendingApplications, declinedApplications, verifiedApprovals, verifiedLinkedApprovals, commercialControls, supplierEvidence, synxisEvidence, emailBacklog, emailDeadLetters, deliveryFailures, payoutExceptions, paymentApprovals, paymentRevocations] = await Promise.all([
       admin.from("properties").select("id,image_url,amenities,rooms(active,base_rate,max_guests,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount))"),
       admin.from("partner_applications").select("id,property_id,status"),
       auth.supabase.from("partner_application_review_evidence")
         .select("application_id,decision,legal_business_verified,representative_authority_verified,content_rights_verified,commercial_terms_acknowledgement_verified,inactive_draft_scope_confirmed"),
+      admin.from("partner_applications").select("id", { count: "exact", head: true }),
+      count("partner_applications", "status", ["pending"]),
+      count("partner_applications", "status", ["declined"]),
+      verifiedApprovalCount(false),
+      verifiedApprovalCount(true),
       auth.supabase.from("properties").select("id,listing_scope,direct_request_mode,commercial_terms_version,commercial_verified_at,commercial_verified_by,support_contact_email"),
       admin.from("priority_pms_launch_evidence").select("provider_id,vendor_approved,property_mapped,sandbox_validated,webhook_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact,verification_notes"),
       admin.from("synxis_crs_launch_evidence").select("vendor_approved,certification_environment_approved,property_mapped,sandbox_validated,production_smoke_validated,live_enabled").eq("provider_id", "sabre-synxis").maybeSingle(),
@@ -48,7 +66,17 @@ export async function GET() {
       throw properties.error ?? applications.error;
     }
 
-    const approvedHotelStateAvailable = !applicationApprovalEvidence.error;
+    const approvedHotelStateAvailable = !applicationApprovalEvidence.error
+      && !applicationTotal.error
+      && !pendingApplications.error
+      && !declinedApplications.error
+      && !verifiedApprovals.error
+      && !verifiedLinkedApprovals.error
+      && typeof applicationTotal.count === "number"
+      && typeof pendingApplications.count === "number"
+      && typeof declinedApplications.count === "number"
+      && typeof verifiedApprovals.count === "number"
+      && typeof verifiedLinkedApprovals.count === "number";
     const verifiedApprovalApplicationIds = new Set(
       (applicationApprovalEvidence.data ?? [])
         .filter((evidence) => evidence.decision === "approved"
@@ -66,11 +94,10 @@ export async function GET() {
           && verifiedApprovalApplicationIds.has(application.id))
         .map((application) => application.property_id as string),
     );
-    const hotelApplicationCount = applications.data?.length ?? 0;
-    const pendingHotelApplicationCount = (applications.data ?? []).filter(({ status }) => status === "pending").length;
-    const declinedHotelApplicationCount = (applications.data ?? []).filter(({ status }) => status === "declined").length;
-    const verifiedHotelApprovalCount = (applications.data ?? []).filter((application) =>
-      application.status === "approved" && verifiedApprovalApplicationIds.has(application.id)).length;
+    const hotelApplicationCount = applicationTotal.count ?? 0;
+    const pendingHotelApplicationCount = pendingApplications.count ?? 0;
+    const declinedHotelApplicationCount = declinedApplications.count ?? 0;
+    const verifiedHotelApprovalCount = verifiedApprovals.count ?? 0;
     const inventoryReadyPropertyIds = new Set(
       (properties.data ?? [])
         .filter((property) => approvedPropertyIds.has(property.id)
@@ -166,7 +193,7 @@ export async function GET() {
     const paymentReadiness = buildPaymentReadiness(process.env, currentPaymentAuthorization);
 
     return NextResponse.json(buildHotelLaunchReadiness({
-      approvedHotelCount: approvedPropertyIds.size,
+      approvedHotelCount: verifiedLinkedApprovals.count ?? 0,
       approvedHotelStateAvailable,
       hotelApplicationCount,
       pendingHotelApplicationCount,
