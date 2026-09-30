@@ -119,6 +119,7 @@ export function AdminSettings() {
   const [evidenceTrackingAvailable, setEvidenceTrackingAvailable] = useState(false);
   const [evidenceBusy, setEvidenceBusy] = useState("");
   const [evidenceMessage, setEvidenceMessage] = useState("");
+  const [liveConfirmations, setLiveConfirmations] = useState<Record<string, string>>({});
   const [pmsConnections, setPmsConnections] = useState<PmsConnection[]>([]);
   const [selectedConnectionId, setSelectedConnectionId] = useState("");
   const [pmsMessage, setPmsMessage] = useState("Checking PMS connections…");
@@ -182,6 +183,7 @@ export function AdminSettings() {
   async function updateLaunchEvidence(
     providerId: string,
     evidence: Partial<PriorityPmsProductionReadiness["evidence"]>,
+    confirmation?: string,
   ) {
     setEvidenceBusy(providerId);
     setEvidenceMessage("");
@@ -189,11 +191,14 @@ export function AdminSettings() {
       const response = await fetch("/api/admin/integrations/pms", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ providerId, evidence }),
+        body: JSON.stringify({ providerId, evidence, confirmation }),
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Launch evidence could not be updated.");
       setPriorityPmsReadiness((items) => items.map((item) => item.id === providerId ? body.readiness : item));
+      if (evidence.liveEnabled === true) {
+        setLiveConfirmations((current) => ({ ...current, [providerId]: "" }));
+      }
       setEvidenceMessage(`${body.readiness.name} launch evidence was updated.`);
     } catch (error) {
       setEvidenceMessage(error instanceof Error ? error.message : "Launch evidence could not be updated.");
@@ -422,7 +427,30 @@ export function AdminSettings() {
                 <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id || !provider.evidence.webhookValidated} onClick={() => updateLaunchEvidence(provider.id, { productionSmokeValidated: !provider.evidence.productionSmokeValidated })} type="button">
                   {provider.evidence.productionSmokeValidated ? "Reset production smoke test" : "Confirm production smoke test"}
                 </button>
-                <button className={provider.evidence.liveEnabled ? "btn-secondary text-xs" : "btn-primary text-xs"} disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id || !provider.evidence.productionSmokeValidated} onClick={() => updateLaunchEvidence(provider.id, { liveEnabled: !provider.evidence.liveEnabled })} type="button">
+                {!provider.evidence.liveEnabled && provider.evidence.productionSmokeValidated && <label className="w-full text-xs font-medium">
+                  Type <strong>{`ENABLE ${provider.id.toUpperCase()} LIVE TRAFFIC`}</strong> to authorize real provider traffic.
+                  <input
+                    autoComplete="off"
+                    className="input mt-2"
+                    onChange={(event) => setLiveConfirmations((current) => ({ ...current, [provider.id]: event.target.value }))}
+                    value={liveConfirmations[provider.id] ?? ""}
+                  />
+                </label>}
+                <button
+                  className={provider.evidence.liveEnabled ? "btn-secondary text-xs" : "btn-primary text-xs"}
+                  disabled={!evidenceTrackingAvailable
+                    || evidenceBusy === provider.id
+                    || !provider.evidence.productionSmokeValidated
+                    || (!provider.evidence.liveEnabled
+                      && (provider.status !== "activation_required"
+                        || liveConfirmations[provider.id] !== `ENABLE ${provider.id.toUpperCase()} LIVE TRAFFIC`))}
+                  onClick={() => updateLaunchEvidence(
+                    provider.id,
+                    { liveEnabled: !provider.evidence.liveEnabled },
+                    provider.evidence.liveEnabled ? undefined : liveConfirmations[provider.id],
+                  )}
+                  type="button"
+                >
                   {provider.evidence.liveEnabled ? "Disable live traffic" : "Enable live traffic"}
                 </button>
               </div>
