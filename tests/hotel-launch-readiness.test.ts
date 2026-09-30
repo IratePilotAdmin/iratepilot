@@ -78,6 +78,10 @@ describe("hotel launch readiness", () => {
     ]);
     expect(JSON.stringify(operations)).not.toContain("recipient");
     expect(JSON.stringify(operations)).not.toContain("message");
+    expect(routeSource).toContain('typeof emailBacklog.count === "number"');
+    expect(routeSource).toContain('typeof emailDeadLetters.count === "number"');
+    expect(routeSource).toContain('typeof deliveryFailures.count === "number"');
+    expect(routeSource).toContain('typeof payoutExceptions.count === "number"');
   });
 
   it("marks unavailable evidence checks as fail-closed", () => {

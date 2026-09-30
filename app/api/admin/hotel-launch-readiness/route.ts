@@ -129,7 +129,11 @@ export async function GET() {
     const operationsStateAvailable = !emailBacklog.error
       && !emailDeadLetters.error
       && !deliveryFailures.error
-      && !payoutExceptions.error;
+      && !payoutExceptions.error
+      && typeof emailBacklog.count === "number"
+      && typeof emailDeadLetters.count === "number"
+      && typeof deliveryFailures.count === "number"
+      && typeof payoutExceptions.count === "number";
     const emailWorkerEnabled = isEmailWorkerEnabled();
     const emailBacklogCount = emailBacklog.count ?? 0;
     const emailDeadLetterCount = emailDeadLetters.count ?? 0;
