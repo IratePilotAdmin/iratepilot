@@ -36,4 +36,3 @@ All three temporary jobs were unscheduled. Native branch deletion succeeded and 
 5. **Before deleting**, collect all matching cron.job_run_details fields (jobid/runid/status/return_message/start_time/end_time), observation rows and control rows. Investigate any failed run. Verify no active jobs remain, then delete the branch.
 
 Open: failed-background-run reproduction; supported reservation/nightly-rate writer races and receipt conflicts under observed overlap; complete PMS schema/functions/RLS/grants parity; authenticated HTTP/browser timeout recovery and real storage/Web Locks; broader prospective forecast/phone/portfolio/delivery/restore gates. These three narrowly scoped lock scenarios do not establish comprehensive live readiness.
-

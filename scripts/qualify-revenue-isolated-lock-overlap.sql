@@ -73,4 +73,3 @@ END $$;
 REVOKE ALL ON SCHEMA revenue_qualification FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON ALL TABLES IN SCHEMA revenue_qualification FROM PUBLIC,anon,authenticated,service_role;
 REVOKE ALL ON ALL FUNCTIONS IN SCHEMA revenue_qualification FROM PUBLIC,anon,authenticated,service_role;
-
