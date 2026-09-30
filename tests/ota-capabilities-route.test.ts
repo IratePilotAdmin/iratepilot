@@ -37,11 +37,13 @@ describe("public OTA capabilities route", () => {
     expect(bookingCom.implemented).toContain("account-scoped database lease for serialized token refresh across app instances");
     expect(bookingCom.implemented).toContain("bearer-protected, disabled-by-default test poll-and-stage worker");
     expect(bookingCom.implemented).toContain("service-role leased inbox processing with bounded retry and review states");
-    expect(bookingCom.implemented).toContain("guarded cancellation-to-PMS worker that does not acknowledge review-required events");
+    expect(bookingCom.implemented).toContain("guarded single-room and atomic multi-room create/modify imports for supported USD pay-at-property folios");
+    expect(bookingCom.implemented).toContain("guarded cancellation handling and provider acknowledgement only after a matching durable PMS receipt");
+    expect(bookingCom.implemented).toContain("fail-closed review for unsupported payment modes, currencies, tax/fee lines, and multi-room changes or cancellations");
     expect(bookingCom.missing).toContain("recurring reservation-poll schedule at a cadence suitable for channel operations");
     expect(bookingCom.missing).toContain("recurring PMS-import schedule at a cadence suitable for channel operations");
-    expect(bookingCom.missing).toContain("acknowledgement after confirmed PMS persistence");
-    expect(bookingCom.missing).toContain("atomic import of new, modified, and cancelled reservations into hotel bookings and PMS");
+    expect(bookingCom.missing).toContain("operator tooling to resolve held OTA financial and mapping cases");
+    expect(bookingCom.missing).toContain("hosted rehearsal migration verification and deployed worker schedules");
     expect(bookingCom.missing).toContain("provider certification and authorized end-to-end acceptance");
     expect(bookingCom.implemented).toContain("versioned credential encryption and single-envelope re-encryption helper");
     expect(bookingCom.implemented).toContain("bounded service-role credential rotation worker with per-account leases and compare-and-swap writes");
