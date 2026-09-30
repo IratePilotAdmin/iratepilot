@@ -1,6 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { buildHotelLaunchReadiness, type HotelLaunchReadinessInput } from "../lib/admin/hotel-launch-readiness";
+import {
+  buildHotelLaunchReadiness,
+  selectClosestSupplierCandidate,
+  type HotelLaunchReadinessInput,
+} from "../lib/admin/hotel-launch-readiness";
 
 const empty: HotelLaunchReadinessInput = {
   approvedHotelCount: 0,
@@ -25,6 +29,11 @@ const empty: HotelLaunchReadinessInput = {
   ],
   liveSupplierCount: 0,
   supplierStateAvailable: true,
+  supplierChecks: [
+    { label: "Closest production connector", passed: false, value: "RateHawk" },
+    { label: "Vendor approval", passed: false },
+    { label: "Sandbox validation", passed: true },
+  ],
   paymentConfigurationReady: false,
   paymentAuthorizationValid: false,
   paymentAuthorizationStateAvailable: true,
@@ -139,6 +148,32 @@ describe("hotel launch readiness", () => {
     expect(JSON.stringify(payments)).not.toMatch(/sk_live_|pk_live_|whsec_/);
   });
 
+  it("shows actionable supplier blockers without exposing configuration values", () => {
+    const supplier = buildHotelLaunchReadiness(empty).gates.find(({ id }) => id === "supplier_connection");
+    expect(supplier?.checks).toEqual([
+      { label: "Closest production connector", ready: false, value: "RateHawk" },
+      { label: "Vendor approval", ready: false, value: "Required" },
+      { label: "Sandbox validation", ready: true, value: "Complete" },
+    ]);
+    expect(JSON.stringify(supplier)).not.toMatch(/API_KEY|SECRET|PASSWORD|credential value/i);
+    expect(routeSource).toContain("provider.activationChecklist.productionConfigurationValid");
+    expect(routeSource).toContain("synxisActivationEvidence.certificationEnvironmentApproved === true");
+  });
+
+  it("prefers a live connector over a longer incomplete checklist", () => {
+    const incompletePms = {
+      name: "Incomplete PMS",
+      live: false,
+      checks: Array.from({ length: 10 }, (_, index) => ({ label: `PMS ${index}`, passed: index < 8 })),
+    };
+    const liveCrs = {
+      name: "Live CRS",
+      live: true,
+      checks: Array.from({ length: 7 }, (_, index) => ({ label: `CRS ${index}`, passed: true })),
+    };
+    expect(selectClosestSupplierCandidate([incompletePms, liveCrs])?.name).toBe("Live CRS");
+  });
+
   it("shows actionable aggregate operations checks without exposing queue records", () => {
     const operations = buildHotelLaunchReadiness(empty).gates.find(({ id }) => id === "support_operations");
     expect(operations?.checks).toEqual([
@@ -185,7 +220,8 @@ describe("hotel launch readiness", () => {
     expect(routeSource).toContain('from("synxis_crs_launch_evidence")');
     expect(routeSource).toContain('eq("provider_id", "sabre-synxis")');
     expect(routeSource).toContain("!supplierEvidence.error && !synxisEvidence.error");
-    expect(routeSource).toContain("buildSynxisReadiness(process.env, synxisActivationEvidence).status === \"live\"");
+    expect(routeSource).toContain("const synxisReadiness = buildSynxisReadiness(process.env, synxisActivationEvidence)");
+    expect(routeSource).toContain('synxisReadiness.status === "live"');
     expect(routeSource).toContain("priorityPmsLiveCount + synxisLiveCount");
   });
 

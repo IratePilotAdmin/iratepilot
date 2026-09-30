@@ -27,6 +27,7 @@ export type HotelLaunchReadinessInput = {
   commercialChecks: Array<{ label: string; passed: boolean }>;
   liveSupplierCount: number;
   supplierStateAvailable: boolean;
+  supplierChecks: Array<{ label: string; passed: boolean; value?: string }>;
   paymentConfigurationReady: boolean;
   paymentAuthorizationValid: boolean;
   paymentAuthorizationStateAvailable: boolean;
@@ -40,6 +41,21 @@ export type HotelLaunchReadinessInput = {
   payoutExceptionCount: number;
   publicationEnabled: boolean;
 };
+
+export type SupplierReadinessCandidate = {
+  name: string;
+  live: boolean;
+  checks: Array<{ label: string; passed: boolean }>;
+};
+
+export function selectClosestSupplierCandidate(candidates: SupplierReadinessCandidate[]) {
+  return [...candidates].sort((left, right) => {
+    if (left.live !== right.live) return Number(right.live) - Number(left.live);
+    const leftCompletion = left.checks.filter(({ passed }) => passed).length / Math.max(left.checks.length, 1);
+    const rightCompletion = right.checks.filter(({ passed }) => passed).length / Math.max(right.checks.length, 1);
+    return rightCompletion - leftCompletion;
+  })[0];
+}
 
 function gate(
   id: string,
@@ -141,6 +157,11 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
           : "Waiting for vendor approval, real property mapping, sandbox and webhook validation, a production smoke test, and controlled activation.",
       "/admin/settings",
       "Review PMS readiness",
+      input.supplierStateAvailable ? input.supplierChecks.map((item) => ({
+        label: item.label,
+        ready: item.passed,
+        value: item.value ?? (item.passed ? "Complete" : "Required"),
+      })) : undefined,
     ),
     gate(
       "production_payments",

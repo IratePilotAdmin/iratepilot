@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { buildHotelLaunchReadiness } from "@/lib/admin/hotel-launch-readiness";
+import { buildHotelLaunchReadiness, selectClosestSupplierCandidate } from "@/lib/admin/hotel-launch-readiness";
 import { buildPaymentReadiness } from "@/lib/admin/payment-readiness";
 import type { PaymentLaunchAuthorization } from "@/lib/admin/payment-readiness";
 import { requireRole } from "@/lib/auth/require-role";
@@ -226,8 +226,9 @@ export async function GET() {
       supportContact: item.support_contact ?? "",
       verificationNotes: item.verification_notes ?? "",
     }])) as Partial<Record<PriorityPmsProviderId, PriorityPmsLaunchEvidence>>;
+    const priorityPmsReadiness = auditPriorityPmsProductionReadiness(process.env, evidence);
     const priorityPmsLiveCount = supplierStateAvailable
-      ? auditPriorityPmsProductionReadiness(process.env, evidence).filter(({ status }) => status === "live").length
+      ? priorityPmsReadiness.filter(({ status }) => status === "live").length
       : 0;
     const synxisActivationEvidence: SynxisActivationEvidence = {
       vendorApproved: synxisEvidence.data?.vendor_approved ?? false,
@@ -237,11 +238,48 @@ export async function GET() {
       productionSmokeValidated: synxisEvidence.data?.production_smoke_validated ?? false,
       liveEnabled: synxisEvidence.data?.live_enabled ?? false,
     };
+    const synxisReadiness = buildSynxisReadiness(process.env, synxisActivationEvidence);
     const synxisLiveCount = supplierStateAvailable
-      && buildSynxisReadiness(process.env, synxisActivationEvidence).status === "live"
+      && synxisReadiness.status === "live"
       ? 1
       : 0;
     const liveSupplierCount = priorityPmsLiveCount + synxisLiveCount;
+    const supplierCandidates = [
+      ...priorityPmsReadiness.map((provider) => ({
+        name: provider.name,
+        live: provider.status === "live",
+        checks: [
+          { label: "Production configuration", passed: provider.activationChecklist.productionConfigurationValid },
+          { label: "Vendor approval", passed: provider.activationChecklist.vendorApprovalDocumented },
+          { label: "Approved provider environment", passed: provider.activationChecklist.approvedEnvironmentDocumented },
+          { label: "Real property code", passed: provider.activationChecklist.realPropertyCodeDocumented },
+          { label: "Provider support contact", passed: provider.activationChecklist.supportContactDocumented },
+          { label: "Property mapping", passed: provider.activationChecklist.propertyMappingConfirmed },
+          { label: "Sandbox validation", passed: provider.activationChecklist.sandboxValidationPassed },
+          { label: "Webhook validation", passed: provider.activationChecklist.webhookValidationPassed },
+          { label: "Production smoke test", passed: provider.activationChecklist.productionSmokePassed },
+          { label: "Live supplier traffic", passed: provider.activationChecklist.liveTrafficEnabled },
+        ],
+      })),
+      {
+        name: "Sabre SynXis Central Reservation System",
+        live: synxisReadiness.status === "live",
+        checks: [
+          { label: "Production configuration", passed: synxisReadiness.missingEnvironmentKeys.length === 0 && synxisReadiness.invalidEnvironmentKeys.length === 0 },
+          { label: "Vendor approval", passed: synxisActivationEvidence.vendorApproved === true },
+          { label: "Certification environment", passed: synxisActivationEvidence.certificationEnvironmentApproved === true },
+          { label: "Property mapping", passed: synxisActivationEvidence.propertyMapped === true },
+          { label: "Sandbox validation", passed: synxisActivationEvidence.sandboxValidated === true },
+          { label: "Production smoke test", passed: synxisActivationEvidence.productionSmokeValidated === true },
+          { label: "Live supplier traffic", passed: synxisActivationEvidence.liveEnabled === true },
+        ],
+      },
+    ];
+    const closestSupplierCandidate = selectClosestSupplierCandidate(supplierCandidates);
+    const supplierChecks = closestSupplierCandidate ? [
+      { label: "Closest production connector", passed: closestSupplierCandidate.live, value: closestSupplierCandidate.name },
+      ...closestSupplierCandidate.checks,
+    ] : [];
 
     const operationsStateAvailable = !emailBacklog.error
       && !emailDeadLetters.error
@@ -294,6 +332,7 @@ export async function GET() {
       commercialChecks,
       liveSupplierCount,
       supplierStateAvailable,
+      supplierChecks,
       paymentConfigurationReady: paymentReadiness.productionConfiguration.ready,
       paymentAuthorizationValid: paymentReadiness.productionConfiguration.launchAuthorized,
       paymentAuthorizationStateAvailable,
