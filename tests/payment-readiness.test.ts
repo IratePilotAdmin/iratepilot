@@ -49,6 +49,22 @@ describe("payment readiness audit", () => {
     expect(readiness.activeWebhookMode).toBe("live");
   });
 
+  it("recognizes staged live credentials without disrupting the active test runtime", () => {
+    const readiness = buildPaymentReadiness({
+      ...testEnvironment,
+      STRIPE_LIVE_SECRET_KEY: "sk_live_staged_do_not_serialize_this_value",
+      STRIPE_LIVE_PUBLISHABLE_KEY: "pk_live_staged_example",
+      STRIPE_LIVE_WEBHOOK_SECRET: "whsec_live_staged_do_not_serialize_this_value",
+    });
+
+    expect(readiness.testMode.ready).toBe(true);
+    expect(readiness.activePaymentMode).toBe("test");
+    expect(readiness.activeWebhookMode).toBe("test");
+    expect(readiness.productionConfiguration.checks.find((item) => item.id === "live_key_pair")?.passed).toBe(true);
+    expect(readiness.productionConfiguration.checks.find((item) => item.id === "webhook_secret")?.passed).toBe(true);
+    expect(readiness.productionConfiguration.ready).toBe(false);
+  });
+
   it("requires a current, unrevoked approval receipt in addition to live configuration", () => {
     const authorization = {
       id: "approval-1",
@@ -78,9 +94,16 @@ describe("payment readiness audit", () => {
   });
 
   it("never returns Stripe secret values", () => {
-    const serialized = JSON.stringify(buildPaymentReadiness(testEnvironment));
+    const environment = {
+      ...testEnvironment,
+      STRIPE_LIVE_SECRET_KEY: "sk_live_staged_do_not_serialize_this_value",
+      STRIPE_LIVE_WEBHOOK_SECRET: "whsec_live_staged_do_not_serialize_this_value",
+    };
+    const serialized = JSON.stringify(buildPaymentReadiness(environment));
     expect(serialized).not.toContain(testEnvironment.STRIPE_SECRET_KEY);
     expect(serialized).not.toContain(testEnvironment.STRIPE_WEBHOOK_SECRET);
+    expect(serialized).not.toContain(environment.STRIPE_LIVE_SECRET_KEY);
+    expect(serialized).not.toContain(environment.STRIPE_LIVE_WEBHOOK_SECRET);
   });
 
   it("keeps the readiness endpoint admin-only and exposes a read-only dashboard", () => {
