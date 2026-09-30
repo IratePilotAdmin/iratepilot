@@ -115,11 +115,15 @@ describe("inventory supplier readiness", () => {
 
   it("exposes the read-only audit through the admin-only no-store endpoint", () => {
     expect(route).toContain("buildInventorySupplierReadiness(process.env)");
+    expect(route).toContain("evaluateInventorySandboxRuntimeGate(supplier.id, process.env)");
     expect(route).toContain("inventorySuppliers");
     expect(route).toContain('requireRole(["admin"])');
     expect(route).toContain('"Cache-Control": "no-store"');
     expect(adminSettings).toContain("Hotel inventory supplier readiness");
     expect(adminSettings).toContain("ready for sandbox validation");
+    expect(adminSettings).toContain("sandbox transports authorized");
+    expect(adminSettings).toContain("Sandbox traffic");
+    expect(adminSettings).toContain("Authorized for sandbox only");
     expect(adminSettings).toContain("Checking hotel inventory suppliers…");
   });
 });

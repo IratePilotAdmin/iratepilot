@@ -10,6 +10,7 @@ import {
   isVerifiedActivationDetail,
 } from "@/services/hotel-suppliers";
 import type { PriorityPmsLaunchEvidence, PriorityPmsProviderId } from "@/services/hotel-suppliers";
+import { evaluateInventorySandboxRuntimeGate } from "@/services/hotel-suppliers/inventory-runtime-gate.server";
 
 export const dynamic = "force-dynamic";
 
@@ -82,11 +83,15 @@ export async function GET() {
       supportContact: item.support_contact ?? "",
       verificationNotes: item.verification_notes ?? "",
     }])) as Partial<Record<PriorityPmsProviderId, PriorityPmsLaunchEvidence>>;
+    const inventorySuppliers = buildInventorySupplierReadiness(process.env);
 
     return NextResponse.json(
       {
         providers: buildPmsReadiness(process.env),
-        inventorySuppliers: buildInventorySupplierReadiness(process.env),
+        inventorySuppliers: inventorySuppliers.map((supplier) => ({
+          ...supplier,
+          sandboxRuntime: evaluateInventorySandboxRuntimeGate(supplier.id, process.env),
+        })),
         priorityProductionReadiness: auditPriorityPmsProductionReadiness(process.env, evidence),
         evidenceTrackingAvailable,
         connections: (connectionsResult.data ?? []).map((connection) => ({

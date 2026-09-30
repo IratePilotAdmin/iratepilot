@@ -7,6 +7,10 @@ import { buildSupplierPhaseReadiness } from "@/services/hotel-suppliers/phase-re
 import type { PmsProviderReadiness } from "@/services/hotel-suppliers/types";
 import type { InventorySupplierReadiness } from "@/services/hotel-suppliers/inventory-readiness";
 import type {
+  InventorySandboxRuntimeGate,
+  InventorySandboxGateStatus,
+} from "@/services/hotel-suppliers/inventory-runtime-gate.server";
+import type {
   PriorityPmsLaunchStatus,
   PriorityPmsProviderId,
 } from "@/services/hotel-suppliers/priority-readiness";
@@ -87,6 +91,22 @@ const supplierPhaseStatusCopy = {
   controlled_activation_ready: "Provider certified; activation decision pending",
   live_provider_present: "At least one provider has recorded live authorization",
 } as const;
+const inventorySandboxStatusCopy: Record<InventorySandboxGateStatus, string> = {
+  disabled: "Disabled",
+  invalid_enablement: "Invalid enablement value",
+  credentials_not_ready: "Blocked by credentials",
+  authorized: "Authorized for sandbox only",
+};
+const inventorySandboxStatusStyle: Record<InventorySandboxGateStatus, string> = {
+  disabled: "text-slate-600",
+  invalid_enablement: "text-red-700",
+  credentials_not_ready: "text-amber-700",
+  authorized: "text-emerald-700",
+};
+
+type InventorySupplierAdminReadiness = InventorySupplierReadiness & {
+  sandboxRuntime: InventorySandboxRuntimeGate;
+};
 
 export function AdminSettings() {
   const [data, setData] = useState<Response | null>(null);
@@ -94,7 +114,7 @@ export function AdminSettings() {
   const [emailTestBusy, setEmailTestBusy] = useState(false);
   const [emailTestMessage, setEmailTestMessage] = useState("");
   const [pmsProviders, setPmsProviders] = useState<PmsProviderReadiness[]>([]);
-  const [inventorySuppliers, setInventorySuppliers] = useState<InventorySupplierReadiness[] | null>(null);
+  const [inventorySuppliers, setInventorySuppliers] = useState<InventorySupplierAdminReadiness[] | null>(null);
   const [priorityPmsReadiness, setPriorityPmsReadiness] = useState<PriorityPmsProductionReadiness[]>([]);
   const [evidenceTrackingAvailable, setEvidenceTrackingAvailable] = useState(false);
   const [evidenceBusy, setEvidenceBusy] = useState("");
@@ -311,6 +331,7 @@ export function AdminSettings() {
           {inventorySuppliers ? <div className="mt-4 flex flex-wrap gap-5 text-sm">
             <span><strong>{inventorySuppliers.length}</strong> suppliers tracked</span>
             <span><strong>{inventorySuppliers.filter((supplier) => supplier.status === "ready_for_sandbox_validation").length}</strong> ready for sandbox validation</span>
+            <span><strong>{inventorySuppliers.filter((supplier) => supplier.sandboxRuntime.status === "authorized").length}</strong> sandbox transports authorized</span>
           </div> : <p className="mt-4 text-sm text-slate-500" role="status">{pmsMessage || "Checking hotel inventory suppliers…"}</p>}
         </div>
         <div className="grid gap-3 p-6 lg:grid-cols-3">
@@ -322,6 +343,13 @@ export function AdminSettings() {
             <p className="mt-2 text-xs text-slate-600">{supplier.approvalNote}</p>
             {supplier.missingEnvironmentKeys.length > 0 && <p className="mt-3 break-words text-xs text-amber-700">Missing: {supplier.missingEnvironmentKeys.join(", ")}</p>}
             {supplier.invalidEnvironmentKeys.length > 0 && <p className="mt-3 break-words text-xs text-red-700">Invalid: {supplier.invalidEnvironmentKeys.join(", ")}</p>}
+            <div className="mt-3 rounded-lg bg-slate-50 p-3 text-xs">
+              <span className="text-slate-500">Sandbox traffic</span>
+              <strong className={`mt-1 block ${inventorySandboxStatusStyle[supplier.sandboxRuntime.status]}`}>
+                {inventorySandboxStatusCopy[supplier.sandboxRuntime.status]}
+              </strong>
+              <span className="mt-1 block break-words text-slate-500">Flag: {supplier.sandboxRuntime.enablementKey}</span>
+            </div>
             <a className="mt-3 inline-block text-xs font-semibold underline" href={supplier.documentationUrl} rel="noreferrer" target="_blank">Official integration documentation</a>
           </article>)}
         </div>
