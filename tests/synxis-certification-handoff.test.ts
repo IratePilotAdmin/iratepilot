@@ -11,6 +11,18 @@ const completePacket = {
     invalidEnvironmentKeys: [],
     liveTrafficAllowed: false,
   },
+  evidence: {
+    vendorApproved: true,
+    certificationEnvironmentApproved: true,
+    propertyMapped: true,
+    sandboxValidated: true,
+    productionSmokeValidated: true,
+    liveEnabled: false,
+    vendorApprovalReference: "SABRE-APPROVAL-2026",
+    approvedEnvironment: "SynXis production certification",
+    propertyCode: "HOTEL-12345",
+    supportContact: "synxis-support@sabre.com",
+  },
   evidenceHistory: { truncated: false },
   requestJournal: { truncated: false },
 };
@@ -30,6 +42,7 @@ describe("SynXis certification handoff eligibility", () => {
     expect(assessSynxisCertificationHandoff({
       packet: {
         readiness: completePacket.readiness,
+        evidence: completePacket.evidence,
         evidenceHistory: { truncated: true },
         requestJournal: { truncated: true },
       },
@@ -62,9 +75,29 @@ describe("SynXis certification handoff eligibility", () => {
     })).toMatchObject({ eligible: false, blockers: ["readiness_unverified"] });
   });
 
+  it("rejects a legacy issued packet that claimed readiness from booleans alone", () => {
+    expect(assessSynxisCertificationHandoff({
+      packet: {
+        ...completePacket,
+        evidence: {
+          vendorApproved: true,
+          certificationEnvironmentApproved: true,
+          propertyMapped: true,
+          sandboxValidated: true,
+          productionSmokeValidated: true,
+          liveEnabled: false,
+        },
+      },
+      checksumValid: true,
+      schemaVersion: 2,
+      issuanceRecorded: true,
+      freshness: { assessed: true, current: true },
+    })).toMatchObject({ eligible: false, blockers: ["readiness_unverified"] });
+  });
+
   it("fails closed for invalid packet sections and exposes the decision in admin UI", () => {
     expect(assessSynxisCertificationHandoff({
-      packet: { readiness: completePacket.readiness },
+      packet: { readiness: completePacket.readiness, evidence: completePacket.evidence },
       checksumValid: true,
       schemaVersion: 2,
       issuanceRecorded: true,
