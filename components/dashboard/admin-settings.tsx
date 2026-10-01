@@ -396,11 +396,11 @@ export function AdminSettings() {
               {provider.invalidEnvironmentKeys.length > 0 && <p className="mt-2 break-words text-xs text-red-700">Invalid: {provider.invalidEnvironmentKeys.join(", ")}</p>}
               <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
                 <span>Vendor: {provider.activationChecklist.vendorApprovalDocumented ? "verified" : provider.evidence.vendorApproved ? "unverified" : "pending"}</span>
-                <span>Mapping: {provider.evidence.propertyMapped ? "complete" : "pending"}</span>
-                <span>Sandbox: {provider.evidence.sandboxValidated ? "passed" : "pending"}</span>
-                <span>Webhook: {provider.evidence.webhookValidated ? "passed" : "pending"}</span>
-                <span>Production smoke: {provider.evidence.productionSmokeValidated ? "passed" : "pending"}</span>
-                <span>Traffic: {provider.evidence.liveEnabled ? "enabled" : "disabled"}</span>
+                <span>Mapping: {provider.activationChecklist.propertyMappingConfirmed ? "verified" : provider.evidence.propertyMapped ? "unverified" : "pending"}</span>
+                <span>Sandbox: {provider.activationChecklist.sandboxValidationPassed ? "verified" : provider.evidence.sandboxValidated ? "unverified" : "pending"}</span>
+                <span>Webhook: {provider.activationChecklist.webhookValidationPassed ? "verified" : provider.evidence.webhookValidated ? "unverified" : "pending"}</span>
+                <span>Production smoke: {provider.activationChecklist.productionSmokePassed ? "verified" : provider.evidence.productionSmokeValidated ? "unverified" : "pending"}</span>
+                <span>Traffic: {provider.activationChecklist.liveTrafficEnabled ? "verified live" : provider.evidence.liveEnabled ? "unverified" : "disabled"}</span>
               </div>
               <div className="mt-4 rounded-lg bg-slate-50 p-3">
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Real-property activation checklist</p>

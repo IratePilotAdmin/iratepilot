@@ -101,6 +101,38 @@ describe("unified PMS production readiness", () => {
     });
   });
 
+  it("does not present downstream checkboxes as verified without their dependencies", () => {
+    const [oracle] = auditPriorityPmsProductionReadiness({}, {
+      "oracle-opera": {
+        vendorApproved: true,
+        propertyMapped: true,
+        sandboxValidated: true,
+        webhookValidated: true,
+        productionSmokeValidated: true,
+        liveEnabled: true,
+      },
+    });
+
+    expect(oracle.evidence).toMatchObject({
+      vendorApproved: true,
+      propertyMapped: true,
+      sandboxValidated: true,
+      webhookValidated: true,
+      productionSmokeValidated: true,
+      liveEnabled: true,
+    });
+    expect(oracle.activationChecklist).toMatchObject({
+      productionConfigurationValid: false,
+      vendorApprovalDocumented: false,
+      propertyMappingConfirmed: false,
+      sandboxValidationPassed: false,
+      webhookValidationPassed: false,
+      productionSmokePassed: false,
+      liveTrafficEnabled: false,
+    });
+    expect(oracle.readyForRealPropertyActivation).toBe(false);
+  });
+
   it("rejects insecure and malformed URLs before declaring a provider live-ready", () => {
     const environment = configuredEnvironment();
     environment.PMS_HILTON_PEP_BASE_URL = "http://pep.example.com";
