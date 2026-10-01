@@ -237,6 +237,21 @@ export async function PATCH(request: Request) {
         liveEnabled: false,
       },
     }).find((provider) => provider.id === providerId);
+    if (patch.vendorApproved === true && !preActivationReadiness?.activationChecklist.vendorApprovalDocumented) {
+      return NextResponse.json({ error: "A verified vendor approval reference is required before vendor approval can be confirmed." }, { status: 409 });
+    }
+    if (patch.propertyMapped === true && !preActivationReadiness?.activationChecklist.propertyMappingConfirmed) {
+      return NextResponse.json({ error: "Verified vendor approval, environment, property code, and support contact details are required before property mapping can be confirmed." }, { status: 409 });
+    }
+    if (patch.sandboxValidated === true && !preActivationReadiness?.activationChecklist.sandboxValidationPassed) {
+      return NextResponse.json({ error: "Verified property mapping is required before sandbox validation can be confirmed." }, { status: 409 });
+    }
+    if (patch.webhookValidated === true && !preActivationReadiness?.activationChecklist.webhookValidationPassed) {
+      return NextResponse.json({ error: "Verified sandbox validation is required before webhook validation can be confirmed." }, { status: 409 });
+    }
+    if (patch.productionSmokeValidated === true && !preActivationReadiness?.activationChecklist.productionSmokePassed) {
+      return NextResponse.json({ error: "Valid production configuration and verified webhook validation are required before the production smoke test can be confirmed." }, { status: 409 });
+    }
     if (patch.liveEnabled === true && preActivationReadiness?.status !== "activation_required") {
       return NextResponse.json({ error: "Production configuration must be complete and valid before live traffic is enabled." }, { status: 409 });
     }
