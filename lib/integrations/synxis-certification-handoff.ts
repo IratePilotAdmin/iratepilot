@@ -4,6 +4,7 @@ export type SynxisCertificationHandoffBlocker =
   | "issuance_unverified"
   | "freshness_unverified"
   | "superseded"
+  | "readiness_unverified"
   | "packet_sections_invalid"
   | "evidence_history_incomplete"
   | "request_journal_incomplete";
@@ -29,6 +30,46 @@ function truncatedState(packet: unknown, section: "evidenceHistory" | "requestJo
   return typeof truncated === "boolean" ? truncated : null;
 }
 
+function hasVerifiedCertificationReadiness(packet: unknown) {
+  if (!packet || typeof packet !== "object" || Array.isArray(packet)) return false;
+  const readiness = (packet as Record<string, unknown>).readiness;
+  if (!readiness || typeof readiness !== "object" || Array.isArray(readiness)) return false;
+  const value = readiness as Record<string, unknown>;
+  const evidence = (packet as Record<string, unknown>).evidence;
+  if (!evidence || typeof evidence !== "object" || Array.isArray(evidence)) return false;
+  const evidenceValue = evidence as Record<string, unknown>;
+  const verifiedReadiness = buildVerifiedSynxisReadiness({
+    CRS_SYNXIS_BASE_URL: "https://verified-configuration.invalid",
+    CRS_SYNXIS_USERNAME: "verified",
+    CRS_SYNXIS_PASSWORD: "verified",
+    CRS_SYNXIS_HOTEL_ID: "verified",
+    CRS_SYNXIS_RATE_SOAP_ACTION: "verified",
+    CRS_SYNXIS_INVENTORY_SOAP_ACTION: "verified",
+  }, {
+    vendorApproved: evidenceValue.vendorApproved === true,
+    certificationEnvironmentApproved: evidenceValue.certificationEnvironmentApproved === true,
+    propertyMapped: evidenceValue.propertyMapped === true,
+    sandboxValidated: evidenceValue.sandboxValidated === true,
+    productionSmokeValidated: evidenceValue.productionSmokeValidated === true,
+    liveEnabled: evidenceValue.liveEnabled === true,
+    vendorApprovalReference: typeof evidenceValue.vendorApprovalReference === "string" ? evidenceValue.vendorApprovalReference : "",
+    approvedEnvironment: typeof evidenceValue.approvedEnvironment === "string" ? evidenceValue.approvedEnvironment : "",
+    propertyCode: typeof evidenceValue.propertyCode === "string" ? evidenceValue.propertyCode : "",
+    supportContact: typeof evidenceValue.supportContact === "string" ? evidenceValue.supportContact : "",
+  });
+  const status = value.status;
+  return value.id === "sabre-synxis"
+    && value.category === "crs"
+    && Array.isArray(value.missingEnvironmentKeys)
+    && value.missingEnvironmentKeys.length === 0
+    && Array.isArray(value.invalidEnvironmentKeys)
+    && value.invalidEnvironmentKeys.length === 0
+    && (status === "activation_required" || status === "live")
+    && value.liveTrafficAllowed === (status === "live")
+    && verifiedReadiness.status === status
+    && verifiedReadiness.liveTrafficAllowed === value.liveTrafficAllowed;
+}
+
 export function assessSynxisCertificationHandoff(
   input: AssessmentInput,
 ): SynxisCertificationHandoffAssessment {
@@ -40,6 +81,9 @@ export function assessSynxisCertificationHandoff(
   else if (input.freshness.current !== true) blockers.push("superseded");
 
   if (input.checksumValid) {
+    if (!hasVerifiedCertificationReadiness(input.packet)) {
+      blockers.push("readiness_unverified");
+    }
     const evidenceHistoryTruncated = truncatedState(input.packet, "evidenceHistory");
     const requestJournalTruncated = truncatedState(input.packet, "requestJournal");
     if (evidenceHistoryTruncated === null || requestJournalTruncated === null) {
@@ -52,3 +96,4 @@ export function assessSynxisCertificationHandoff(
 
   return { eligible: blockers.length === 0, blockers };
 }
+import { buildVerifiedSynxisReadiness } from "../../services/hotel-suppliers/synxis";

@@ -13,6 +13,7 @@ type Evidence = Required<SynxisActivationEvidence> & {
 
 type SynxisResponse = {
   evidence: Evidence;
+  verifiedGates: Record<(typeof gates)[number]["key"], boolean>;
   readiness: SynxisReadiness;
   evidenceTrackingAvailable: boolean;
   activationDetailsComplete: boolean;
@@ -113,6 +114,7 @@ const handoffBlockerLabels: Record<string, string> = {
   issuance_unverified: "no matching iRatePilot issuance receipt exists",
   freshness_unverified: "freshness could not be verified",
   superseded: "newer certification activity superseded this packet",
+  readiness_unverified: "verified certification readiness is incomplete",
   packet_sections_invalid: "required packet sections are invalid",
   evidence_history_incomplete: "evidence history is truncated",
   request_journal_incomplete: "request history is truncated",
@@ -279,18 +281,19 @@ export function SynxisCrsReadiness() {
 
       <ol className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
         {gates.map((gate, index) => {
-          const complete = data.evidence[gate.key];
-          const prerequisiteComplete = gate.requires.every((key) => data.evidence[key]);
+          const recorded = data.evidence[gate.key];
+          const complete = data.verifiedGates[gate.key];
+          const prerequisiteComplete = gate.requires.every((key) => data.verifiedGates[key]);
           return <li className={`rounded-lg border p-4 ${complete ? "border-emerald-200 bg-emerald-50" : "bg-slate-50"}`} key={gate.key}>
             <span className="text-xs uppercase tracking-wider text-slate-500">Gate {index + 1}</span>
             <strong className="mt-2 block text-sm">{gate.label}</strong>
-            <p className={`mt-2 text-xs ${complete ? "text-emerald-700" : "text-amber-700"}`}>{complete ? "Complete" : "Pending"}</p>
+            <p className={`mt-2 text-xs ${complete ? "text-emerald-700" : "text-amber-700"}`}>{complete ? "Verified" : recorded ? "Unverified" : "Pending"}</p>
             <button
               className="btn-secondary mt-3 text-xs"
-              disabled={busy || !data.evidenceTrackingAvailable || (!complete && !prerequisiteComplete)}
-              onClick={() => void patch({ evidence: { [gate.key]: !complete } }, `${gate.label} was ${complete ? "reset" : "confirmed"}.`)}
+              disabled={busy || !data.evidenceTrackingAvailable || (!recorded && !prerequisiteComplete)}
+              onClick={() => void patch({ evidence: { [gate.key]: !recorded } }, `${gate.label} was ${recorded ? "cleared" : "confirmed"}.`)}
               type="button"
-            >{complete ? "Reset gate" : "Confirm gate"}</button>
+            >{recorded ? complete ? "Reset verified gate" : "Clear unverified gate" : "Confirm gate"}</button>
           </li>;
         })}
       </ol>

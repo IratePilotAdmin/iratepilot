@@ -36,6 +36,10 @@ const liveEvidence = {
     sandboxValidated: true,
     productionSmokeValidated: true,
     liveEnabled: true,
+    vendorApprovalReference: "SABRE-APPROVAL-2026",
+    approvedEnvironment: "SynXis production certification",
+    propertyCode: "HOTEL-12345",
+    supportContact: "synxis-support@sabre.com",
   },
   operationsStateAvailable: true,
   emailBacklog: 0,
@@ -68,6 +72,20 @@ describe("hotel marketplace launch authorization", () => {
     expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
       ...liveEvidence,
       emailBacklog: 1,
+    })).toBe(false);
+  });
+
+  it("does not authorize stale SynXis booleans without verified details", () => {
+    expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
+      ...liveEvidence,
+      synxisEvidence: {
+        vendorApproved: true,
+        certificationEnvironmentApproved: true,
+        propertyMapped: true,
+        sandboxValidated: true,
+        productionSmokeValidated: true,
+        liveEnabled: true,
+      },
     })).toBe(false);
   });
 

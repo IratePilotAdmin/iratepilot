@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { createSynxisRuntimeAuthorizer } from "../lib/integrations/synxis-runtime-authorizer";
+import {
+  buildVerifiedSynxisRuntimeEvidence,
+  createSynxisRuntimeAuthorizer,
+} from "../lib/integrations/synxis-runtime-authorizer";
 import {
   assertSynxisTrafficAuthorized,
   type SynxisRuntimeEvidence,
@@ -15,6 +18,15 @@ const complete: SynxisRuntimeEvidence = {
 };
 
 describe("SynXis persisted runtime gate", () => {
+  const configuredEnvironment = {
+    CRS_SYNXIS_BASE_URL: "https://example.test",
+    CRS_SYNXIS_USERNAME: "user",
+    CRS_SYNXIS_PASSWORD: "password",
+    CRS_SYNXIS_HOTEL_ID: "hotel",
+    CRS_SYNXIS_RATE_SOAP_ACTION: "rate",
+    CRS_SYNXIS_INVENTORY_SOAP_ACTION: "inventory",
+  };
+
   it("allows certification only after approval, environment provisioning, and mapping", () => {
     expect(() => assertSynxisTrafficAuthorized({
       ...complete,
@@ -62,5 +74,37 @@ describe("SynXis persisted runtime gate", () => {
     await authorize("certification");
     await authorize("live");
     expect(reader).toHaveBeenCalledTimes(2);
+  });
+
+  it("converts persisted booleans to false until their details are verified", () => {
+    const booleansOnly = buildVerifiedSynxisRuntimeEvidence(configuredEnvironment, {
+      vendor_approved: true,
+      certification_environment_approved: true,
+      property_mapped: true,
+      sandbox_validated: true,
+      production_smoke_validated: true,
+      live_enabled: true,
+    });
+    expect(booleansOnly).toEqual({
+      vendorApproved: false,
+      certificationEnvironmentApproved: false,
+      propertyMapped: false,
+      sandboxValidated: false,
+      productionSmokeValidated: false,
+      liveEnabled: false,
+    });
+
+    expect(buildVerifiedSynxisRuntimeEvidence(configuredEnvironment, {
+      vendor_approved: true,
+      certification_environment_approved: true,
+      property_mapped: true,
+      sandbox_validated: true,
+      production_smoke_validated: true,
+      live_enabled: true,
+      vendor_approval_reference: "SABRE-APPROVAL-2026",
+      approved_environment: "SynXis production certification",
+      property_code: "HOTEL-12345",
+      support_contact: "synxis-support@sabre.com",
+    })).toEqual(complete);
   });
 });
