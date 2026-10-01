@@ -9,14 +9,14 @@ import {
   type PriorityPmsLaunchEvidence,
   type PriorityPmsProviderId,
 } from "../../services/hotel-suppliers/priority-readiness";
-import { buildSynxisReadiness, type SynxisActivationEvidence } from "../../services/hotel-suppliers/synxis";
+import { buildVerifiedSynxisReadiness, type SynxisVerifiedEvidence } from "../../services/hotel-suppliers/synxis";
 
 type MarketplaceLaunchEvidence = {
   releaseAuthorizationValid: boolean;
   paymentAuthorizationValid: boolean;
   supplierStateAvailable: boolean;
   priorityPmsEvidence: Partial<Record<PriorityPmsProviderId, PriorityPmsLaunchEvidence>>;
-  synxisEvidence: SynxisActivationEvidence;
+  synxisEvidence: SynxisVerifiedEvidence;
   operationsStateAvailable: boolean;
   emailBacklog: number;
   emailDeadLetters: number;
@@ -46,7 +46,7 @@ export function evaluateHotelMarketplaceLaunchAuthorization(
 
   const priorityPmsLive = auditPriorityPmsProductionReadiness(env, evidence.priorityPmsEvidence)
     .some(({ status }) => status === "live");
-  const synxisLive = buildSynxisReadiness(env, evidence.synxisEvidence).status === "live";
+  const synxisLive = buildVerifiedSynxisReadiness(env, evidence.synxisEvidence).status === "live";
   return priorityPmsLive || synxisLive;
 }
 
@@ -66,7 +66,7 @@ async function verifyHotelMarketplaceLaunchAuthorization(
       hasCurrentHotelMarketplaceReleaseAuthorization(admin),
       hasCurrentLivePaymentAuthorization(admin),
       admin.from("priority_pms_launch_evidence").select("provider_id,vendor_approved,property_mapped,sandbox_validated,webhook_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact,verification_notes"),
-      admin.from("synxis_crs_launch_evidence").select("vendor_approved,certification_environment_approved,property_mapped,sandbox_validated,production_smoke_validated,live_enabled").eq("provider_id", "sabre-synxis").maybeSingle(),
+      admin.from("synxis_crs_launch_evidence").select("vendor_approved,certification_environment_approved,property_mapped,sandbox_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact").eq("provider_id", "sabre-synxis").maybeSingle(),
       count("email_outbox", "status", ["pending", "failed", "processing"]),
       count("email_outbox", "status", ["dead_letter"]),
       count("email_delivery_events", "processing_status", ["failed"]),
@@ -99,6 +99,10 @@ async function verifyHotelMarketplaceLaunchAuthorization(
         sandboxValidated: synxisEvidence.data?.sandbox_validated ?? false,
         productionSmokeValidated: synxisEvidence.data?.production_smoke_validated ?? false,
         liveEnabled: synxisEvidence.data?.live_enabled ?? false,
+        vendorApprovalReference: synxisEvidence.data?.vendor_approval_reference ?? "",
+        approvedEnvironment: synxisEvidence.data?.approved_environment ?? "",
+        propertyCode: synxisEvidence.data?.property_code ?? "",
+        supportContact: synxisEvidence.data?.support_contact ?? "",
       },
       operationsStateAvailable: !emailBacklog.error
         && !emailDeadLetters.error

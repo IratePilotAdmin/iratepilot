@@ -196,7 +196,7 @@ describe("hotel launch readiness", () => {
     ]);
     expect(JSON.stringify(supplier)).not.toMatch(/API_KEY|SECRET|PASSWORD|credential value/i);
     expect(routeSource).toContain("provider.activationChecklist.productionConfigurationValid");
-    expect(routeSource).toContain("synxisActivationEvidence.certificationEnvironmentApproved === true");
+    expect(routeSource).toContain("verifiedSynxisGates.certificationEnvironmentApproved");
   });
 
   it("prefers a live connector over a longer incomplete checklist", () => {
@@ -259,7 +259,7 @@ describe("hotel launch readiness", () => {
     expect(routeSource).toContain('from("synxis_crs_launch_evidence")');
     expect(routeSource).toContain('eq("provider_id", "sabre-synxis")');
     expect(routeSource).toContain("!supplierEvidence.error && !synxisEvidence.error");
-    expect(routeSource).toContain("const synxisReadiness = buildSynxisReadiness(process.env, synxisActivationEvidence)");
+    expect(routeSource).toContain("const synxisReadiness = buildVerifiedSynxisReadiness(process.env, synxisActivationEvidence)");
     expect(routeSource).toContain('synxisReadiness.status === "live"');
     expect(routeSource).toContain("priorityPmsLiveCount + synxisLiveCount");
   });

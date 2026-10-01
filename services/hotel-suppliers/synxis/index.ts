@@ -153,6 +153,17 @@ export function buildVerifiedSynxisGates(
   };
 }
 
+export function buildVerifiedSynxisReadiness(
+  environment: Record<string, string | undefined>,
+  evidence: SynxisVerifiedEvidence = {},
+) {
+  const verifiedGates = buildVerifiedSynxisGates(environment, evidence);
+  return buildSynxisReadiness(environment, {
+    ...verifiedGates,
+    liveEnabled: verifiedGates.productionSmokeValidated && evidence.liveEnabled === true,
+  });
+}
+
 const placeholderEvidencePattern = /(?:^|\b)(?:test hotel|example|placeholder|tbd|unknown|n\/a)(?:\b|$)/i;
 
 function isVerifiedSynxisDetail(value: string | undefined) {

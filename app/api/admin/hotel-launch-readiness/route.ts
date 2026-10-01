@@ -14,7 +14,11 @@ import {
   type PriorityPmsLaunchEvidence,
   type PriorityPmsProviderId,
 } from "@/services/hotel-suppliers";
-import { buildSynxisReadiness, type SynxisActivationEvidence } from "@/services/hotel-suppliers/synxis";
+import {
+  buildVerifiedSynxisGates,
+  buildVerifiedSynxisReadiness,
+  type SynxisVerifiedEvidence,
+} from "@/services/hotel-suppliers/synxis";
 
 export const dynamic = "force-dynamic";
 
@@ -96,7 +100,7 @@ export async function GET() {
       verifiedApprovalCount(true),
       auth.supabase.from("properties").select("id,listing_scope,direct_request_mode,commercial_terms_version,commercial_verified_at,commercial_verified_by,support_contact_email"),
       admin.from("priority_pms_launch_evidence").select("provider_id,vendor_approved,property_mapped,sandbox_validated,webhook_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact,verification_notes"),
-      admin.from("synxis_crs_launch_evidence").select("vendor_approved,certification_environment_approved,property_mapped,sandbox_validated,production_smoke_validated,live_enabled").eq("provider_id", "sabre-synxis").maybeSingle(),
+      admin.from("synxis_crs_launch_evidence").select("vendor_approved,certification_environment_approved,property_mapped,sandbox_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact").eq("provider_id", "sabre-synxis").maybeSingle(),
       count("email_outbox", "status", ["pending", "failed", "processing"]),
       count("email_outbox", "status", ["dead_letter"]),
       count("email_delivery_events", "processing_status", ["failed"]),
@@ -267,15 +271,20 @@ export async function GET() {
     const priorityPmsLiveCount = supplierStateAvailable
       ? priorityPmsReadiness.filter(({ status }) => status === "live").length
       : 0;
-    const synxisActivationEvidence: SynxisActivationEvidence = {
+    const synxisActivationEvidence: SynxisVerifiedEvidence = {
       vendorApproved: synxisEvidence.data?.vendor_approved ?? false,
       certificationEnvironmentApproved: synxisEvidence.data?.certification_environment_approved ?? false,
       propertyMapped: synxisEvidence.data?.property_mapped ?? false,
       sandboxValidated: synxisEvidence.data?.sandbox_validated ?? false,
       productionSmokeValidated: synxisEvidence.data?.production_smoke_validated ?? false,
       liveEnabled: synxisEvidence.data?.live_enabled ?? false,
+      vendorApprovalReference: synxisEvidence.data?.vendor_approval_reference ?? "",
+      approvedEnvironment: synxisEvidence.data?.approved_environment ?? "",
+      propertyCode: synxisEvidence.data?.property_code ?? "",
+      supportContact: synxisEvidence.data?.support_contact ?? "",
     };
-    const synxisReadiness = buildSynxisReadiness(process.env, synxisActivationEvidence);
+    const verifiedSynxisGates = buildVerifiedSynxisGates(process.env, synxisActivationEvidence);
+    const synxisReadiness = buildVerifiedSynxisReadiness(process.env, synxisActivationEvidence);
     const synxisLiveCount = supplierStateAvailable
       && synxisReadiness.status === "live"
       ? 1
@@ -303,12 +312,12 @@ export async function GET() {
         live: synxisReadiness.status === "live",
         checks: [
           { label: "Production configuration", passed: synxisReadiness.missingEnvironmentKeys.length === 0 && synxisReadiness.invalidEnvironmentKeys.length === 0 },
-          { label: "Vendor approval", passed: synxisActivationEvidence.vendorApproved === true },
-          { label: "Certification environment", passed: synxisActivationEvidence.certificationEnvironmentApproved === true },
-          { label: "Property mapping", passed: synxisActivationEvidence.propertyMapped === true },
-          { label: "Sandbox validation", passed: synxisActivationEvidence.sandboxValidated === true },
-          { label: "Production smoke test", passed: synxisActivationEvidence.productionSmokeValidated === true },
-          { label: "Live supplier traffic", passed: synxisActivationEvidence.liveEnabled === true },
+          { label: "Vendor approval", passed: verifiedSynxisGates.vendorApproved },
+          { label: "Certification environment", passed: verifiedSynxisGates.certificationEnvironmentApproved },
+          { label: "Property mapping", passed: verifiedSynxisGates.propertyMapped },
+          { label: "Sandbox validation", passed: verifiedSynxisGates.sandboxValidated },
+          { label: "Production smoke test", passed: verifiedSynxisGates.productionSmokeValidated },
+          { label: "Live supplier traffic", passed: synxisReadiness.liveTrafficAllowed },
         ],
       },
     ];

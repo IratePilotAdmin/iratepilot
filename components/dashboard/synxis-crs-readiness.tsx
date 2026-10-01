@@ -114,6 +114,7 @@ const handoffBlockerLabels: Record<string, string> = {
   issuance_unverified: "no matching iRatePilot issuance receipt exists",
   freshness_unverified: "freshness could not be verified",
   superseded: "newer certification activity superseded this packet",
+  readiness_unverified: "verified certification readiness is incomplete",
   packet_sections_invalid: "required packet sections are invalid",
   evidence_history_incomplete: "evidence history is truncated",
   request_journal_incomplete: "request history is truncated",

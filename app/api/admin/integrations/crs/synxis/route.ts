@@ -7,8 +7,8 @@ import {
 } from "@/lib/integrations/synxis-request-monitor";
 import { isVerifiedActivationDetail } from "@/services/hotel-suppliers/priority-readiness";
 import {
-  buildSynxisReadiness,
   buildVerifiedSynxisGates,
+  buildVerifiedSynxisReadiness,
   type SynxisActivationEvidence,
 } from "@/services/hotel-suppliers/synxis";
 
@@ -168,10 +168,7 @@ function buildResponse(
   propertyOperations: Awaited<ReturnType<typeof loadPropertyOperationsReadiness>> = unavailablePropertyOperations,
 ) {
   const verifiedGates = buildVerifiedSynxisGates(process.env, evidence);
-  const readiness = buildSynxisReadiness(process.env, {
-    ...verifiedGates,
-    liveEnabled: verifiedGates.productionSmokeValidated && evidence.liveEnabled,
-  });
+  const readiness = buildVerifiedSynxisReadiness(process.env, evidence);
   const activationDetailsComplete = [
     evidence.vendorApprovalReference,
     evidence.approvedEnvironment,
@@ -400,8 +397,10 @@ export async function PATCH(request: Request) {
       && Object.values(nextDetails).some((value) => !isVerifiedActivationDetail(value))) {
       return noStore({ error: "Verified vendor approval, certification environment, real property code, and support contact details are required before live traffic is enabled." }, { status: 409 });
     }
-    const preActivationReadiness = buildSynxisReadiness(process.env, {
+    const preActivationReadiness = buildVerifiedSynxisReadiness(process.env, {
+      ...current,
       ...next,
+      ...nextDetails,
       liveEnabled: false,
     });
     const verifiedGates = buildVerifiedSynxisGates(process.env, {
