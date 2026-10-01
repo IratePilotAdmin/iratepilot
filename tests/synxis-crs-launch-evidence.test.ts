@@ -48,7 +48,7 @@ describe("SynXis CRS launch evidence persistence", () => {
     expect(route).toContain('from("synxis_crs_launch_evidence")');
     expect(route).toContain("export async function PATCH");
     expect(route).toContain("updated_by: auth.user.id");
-    expect(route).toContain("buildSynxisReadiness(process.env, evidence)");
+    expect(route).toContain("buildVerifiedSynxisGates(process.env, evidence)");
   });
 
   it("blocks activation until verified evidence is complete", () => {
@@ -59,6 +59,10 @@ describe("SynXis CRS launch evidence persistence", () => {
     expect(route).toContain("The production smoke test must pass before live traffic is enabled.");
     expect(route).toContain("ENABLE SABRE SYNXIS LIVE TRAFFIC");
     expect(route).toContain("Production configuration must be complete and valid before live traffic is enabled.");
+    expect(route).toContain("A verified Sabre approval reference is required before vendor approval can be confirmed.");
+    expect(route).toContain("Verified vendor approval and certification-environment details are required before the environment can be confirmed.");
+    expect(route).toContain("Valid production configuration and verified sandbox validation are required before the production smoke test can be confirmed.");
+    expect(route).toContain("buildVerifiedSynxisGates");
     expect(route).toContain("isVerifiedActivationDetail");
     expect(route).toContain("Apply SynXis CRS launch-evidence migration 040");
   });

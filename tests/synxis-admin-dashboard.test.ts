@@ -30,6 +30,9 @@ describe("SynXis admin certification dashboard", () => {
     expect(dashboard).toContain('key: "propertyMapped"');
     expect(dashboard).toContain('key: "sandboxValidated"');
     expect(dashboard).toContain('key: "productionSmokeValidated"');
+    expect(dashboard).toContain("data.verifiedGates[gate.key]");
+    expect(dashboard).toContain("Clear unverified gate");
+    expect(dashboard).toContain("Reset verified gate");
   });
 
   it("keeps activation locked behind all prerequisites and an exact phrase", () => {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildSynxisReadiness,
+  buildVerifiedSynxisGates,
   synxisCrsProvider,
   synxisRequiredEnvironmentKeys,
 } from "../services/hotel-suppliers/synxis";
@@ -117,6 +118,39 @@ describe("Sabre SynXis CRS readiness", () => {
     })).toMatchObject({
       status: "live",
       liveTrafficAllowed: true,
+    });
+  });
+
+  it("does not treat legacy booleans as verified certification evidence", () => {
+    const rawEvidence = {
+      vendorApproved: true,
+      certificationEnvironmentApproved: true,
+      propertyMapped: true,
+      sandboxValidated: true,
+      productionSmokeValidated: true,
+    };
+    expect(buildVerifiedSynxisGates(configuredEnvironment(), rawEvidence)).toEqual({
+      vendorApproved: false,
+      certificationEnvironmentApproved: false,
+      propertyMapped: false,
+      sandboxValidated: false,
+      productionSmokeValidated: false,
+    });
+
+    const documentedEvidence = {
+      ...rawEvidence,
+      vendorApprovalReference: "SABRE-CERT-2026-42",
+      approvedEnvironment: "SynXis certification environment",
+      propertyCode: "PNS-425",
+      supportContact: "Sabre certification desk case 4815",
+    };
+    expect(buildVerifiedSynxisGates({}, documentedEvidence).productionSmokeValidated).toBe(false);
+    expect(buildVerifiedSynxisGates(configuredEnvironment(), documentedEvidence)).toEqual({
+      vendorApproved: true,
+      certificationEnvironmentApproved: true,
+      propertyMapped: true,
+      sandboxValidated: true,
+      productionSmokeValidated: true,
     });
   });
 });
