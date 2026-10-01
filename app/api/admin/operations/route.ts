@@ -43,6 +43,12 @@ import {
   type AutomationSandboxExecutionEvent,
 } from "@/lib/admin/automation-executor";
 import { logOperationalEvent, reportOperationalError } from "@/lib/monitoring/operational";
+import { buildVerifiedSupplierConnectionCounts } from "@/lib/admin/verified-supplier-connection-counts";
+import type {
+  PriorityPmsLaunchEvidence,
+  PriorityPmsProviderId,
+} from "@/services/hotel-suppliers/priority-readiness";
+import type { SynxisVerifiedEvidence } from "@/services/hotel-suppliers/synxis";
 
 export const dynamic = "force-dynamic";
 
@@ -526,8 +532,8 @@ export async function GET() {
         count("pms_connection_test_events", "result", ["failed"]),
         count("synxis_request_journal", "status", ["started"]),
         count("synxis_request_journal", "status", ["failed"]),
-        count("priority_pms_launch_evidence", "live_enabled", [true]),
-        count("synxis_crs_launch_evidence", "live_enabled", [true]),
+        admin.from("priority_pms_launch_evidence").select("provider_id,vendor_approved,property_mapped,sandbox_validated,webhook_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact,verification_notes"),
+        admin.from("synxis_crs_launch_evidence").select("vendor_approved,certification_environment_approved,property_mapped,sandbox_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact").eq("provider_id", "sabre-synxis").maybeSingle(),
         admin.from("email_outbox").select("id,status,template_name,updated_at").order("updated_at", { ascending: false }).limit(4),
         admin.from("stripe_financial_events").select("id,event_type,processing_status,updated_at").order("updated_at", { ascending: false }).limit(4),
         admin.from("pms_connection_test_events").select("id,validation_mode,result,detail_code,created_at").order("created_at", { ascending: false }).limit(3),
@@ -596,6 +602,62 @@ export async function GET() {
     const stripeRows = (results[19].data || []) as Array<{ id: string; event_type: string; processing_status: string; updated_at: string }>;
     const pmsRows = (results[20].data || []) as Array<{ id: string; validation_mode: string; result: string; detail_code: string; created_at: string }>;
     const synxisRows = (results[21].data || []) as Array<{ id: string; operation: string; traffic_mode: string; status: string; started_at: string; completed_at: string | null }>;
+    const priorityPmsRows = (results[16].data || []) as Array<{
+      provider_id: PriorityPmsProviderId;
+      vendor_approved: boolean;
+      property_mapped: boolean;
+      sandbox_validated: boolean;
+      webhook_validated: boolean;
+      production_smoke_validated: boolean;
+      live_enabled: boolean;
+      vendor_approval_reference: string | null;
+      approved_environment: string | null;
+      property_code: string | null;
+      support_contact: string | null;
+      verification_notes: string | null;
+    }>;
+    const priorityPmsEvidence = Object.fromEntries(priorityPmsRows.map((row) => [row.provider_id, {
+      vendorApproved: row.vendor_approved,
+      propertyMapped: row.property_mapped,
+      sandboxValidated: row.sandbox_validated,
+      webhookValidated: row.webhook_validated,
+      productionSmokeValidated: row.production_smoke_validated,
+      liveEnabled: row.live_enabled,
+      vendorApprovalReference: row.vendor_approval_reference ?? "",
+      approvedEnvironment: row.approved_environment ?? "",
+      propertyCode: row.property_code ?? "",
+      supportContact: row.support_contact ?? "",
+      verificationNotes: row.verification_notes ?? "",
+    }])) as Partial<Record<PriorityPmsProviderId, PriorityPmsLaunchEvidence>>;
+    const synxisRow = results[17].data as {
+      vendor_approved?: boolean;
+      certification_environment_approved?: boolean;
+      property_mapped?: boolean;
+      sandbox_validated?: boolean;
+      production_smoke_validated?: boolean;
+      live_enabled?: boolean;
+      vendor_approval_reference?: string | null;
+      approved_environment?: string | null;
+      property_code?: string | null;
+      support_contact?: string | null;
+    } | null;
+    const synxisEvidence: SynxisVerifiedEvidence = {
+      vendorApproved: synxisRow?.vendor_approved === true,
+      certificationEnvironmentApproved: synxisRow?.certification_environment_approved === true,
+      propertyMapped: synxisRow?.property_mapped === true,
+      sandboxValidated: synxisRow?.sandbox_validated === true,
+      productionSmokeValidated: synxisRow?.production_smoke_validated === true,
+      liveEnabled: synxisRow?.live_enabled === true,
+      vendorApprovalReference: synxisRow?.vendor_approval_reference ?? "",
+      approvedEnvironment: synxisRow?.approved_environment ?? "",
+      propertyCode: synxisRow?.property_code ?? "",
+      supportContact: synxisRow?.support_contact ?? "",
+    };
+    const verifiedSupplierConnections = buildVerifiedSupplierConnectionCounts(
+      process.env,
+      priorityPmsEvidence,
+      synxisEvidence,
+    );
 
     const activity: AutomationActivity[] = [
       ...emailRows.map((row) => ({
@@ -649,8 +711,8 @@ export async function GET() {
       pmsTestFailures: value(13),
       synxisStarted: value(14),
       synxisFailures: value(15),
-      livePmsConnections: value(16),
-      liveSynxisConnections: value(17),
+      livePmsConnections: verifiedSupplierConnections.livePmsConnections,
+      liveSynxisConnections: verifiedSupplierConnections.liveSynxisConnections,
     }, {
       pilotMode: process.env.PILOT_MODE === "true",
       publicBookingEnabled: process.env.NEXT_PUBLIC_PUBLIC_BOOKING === "true",
