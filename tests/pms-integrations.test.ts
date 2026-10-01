@@ -260,10 +260,13 @@ describe("PMS integration foundation", () => {
     expect(adminSettings).toContain("to authorize real provider traffic.");
     expect(adminSettings).toContain('!provider.evidence.liveEnabled && provider.status === "activation_required"');
     expect(adminSettings).toContain('provider.status !== "activation_required"');
-    expect(adminSettings).toContain("!provider.activationChecklist.vendorApprovalDocumented");
-    expect(adminSettings).toContain("!provider.activationChecklist.propertyMappingConfirmed");
-    expect(adminSettings).toContain("!provider.activationChecklist.sandboxValidationPassed");
-    expect(adminSettings).toContain("!provider.activationChecklist.webhookValidationPassed");
+    expect(adminSettings).toContain("Clear unverified vendor approval");
+    expect(adminSettings).toContain("Clear unverified property mapping");
+    expect(adminSettings).toContain("Clear unverified sandbox validation");
+    expect(adminSettings).toContain("Clear unverified webhook validation");
+    expect(adminSettings).toContain("Clear unverified production smoke test");
+    expect(adminSettings).toContain("!provider.evidence.propertyMapped && !provider.activationChecklist.vendorApprovalDocumented");
+    expect(adminSettings).toContain("!provider.evidence.sandboxValidated && !provider.activationChecklist.propertyMappingConfirmed");
     expect(adminSettings).toContain("migrations 034, 035, 036, and 038");
   });
 
