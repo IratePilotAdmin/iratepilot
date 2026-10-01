@@ -21,3 +21,17 @@ Configuration is validated before any client creation or sign-in. The known live
 Nine configuration cases and seventeen simulated transport cases passed locally (26 total). The five real signed-session cases were explicitly skipped. The workspace has no isolated user credentials/branch manifest, and the connector has no isolated-user sign-in operation. No branch was created, no password entered, no real token copied, no live request made and no browser policy workaround attempted for this preparation.
 
 This suite qualifies only the listed read-only HTTP behaviors when actually executed. It does not establish full-schema parity, controller/browser persistence, cross-tab Web Locks, revoked-token guarantees, audited write behavior, sustained concurrency or live readiness. Red Roof remains shadow-only and live rate writeback stays disabled.
+
+## Manual runner candidate (2026-10-01)
+
+The draft adds `.github/workflows/revenue-signed-http-qualification.yml`. It has only a manual `workflow_dispatch` trigger and read-only repository permissions. No HTTP qualification has been executed by adding this workflow. GitHub must recognize the workflow on the default branch before manual dispatch; this draft does not merge or enable it.
+
+Before execution, create and independently verify a no-data, non-default `revenue-auth-` Supabase branch under the PMS project. Install the candidate SQL and synthetic fixture, provision three distinct real Auth test accounts with the fixture memberships, and verify the branch and actor IDs against Supabase. Do not use production hotel accounts or copy hotel records. The manifest is an operator assertion, not independent proof of the branch.
+
+Configure GitHub environment `revenue-http-qualification` with required reviewers and a deployment branch restriction for the reviewed candidate. Store the nonsecret JSON manifest as environment variable `IRP_HTTP_QUALIFICATION_MANIFEST`. It must match `lib/revenue-http-qualification-config.ts`; supply only the five named branch fields, with no extra branch metadata. Store the six `IRP_HTTP_TEST_{OWNER,MANAGER,STAFF}_{EMAIL,PASSWORD}` values as environment secrets. Never paste credentials in chat or commit them. No service-role or administrator key belongs in this runner.
+
+The manifest is validated before credentials are exposed to the test step. All six credentials are checked before any sign-in. Dependencies install from the lockfile with lifecycle scripts disabled. Tests use only the locked local Vitest executable; no artifact containing credentials, tokens, manifest or raw Auth responses is uploaded. Missing setup fails preflight rather than silently skipping the suite.
+
+The suite attempts local session sign-out; this does not guarantee access-token invalidation. The final workflow step removes its local manifest but does not delete the Supabase branch. An operator must review failures, delete the temporary branch and test accounts after qualification, and record the five-case result plus cleanup evidence before declaring this gate passed. A canceled or timed-out job requires independent cleanup review. Hotel rate writeback remains disabled.
+
+Local preflight tests reject known production destinations, copied-data metadata, repeated actors, secret API keys, unexpected metadata, malformed input and missing credentials. These are synthetic guard tests, not signed HTTP evidence.
