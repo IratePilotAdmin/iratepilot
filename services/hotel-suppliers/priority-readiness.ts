@@ -302,23 +302,34 @@ export function auditPriorityPmsProductionReadiness(
       return value ? !isValidConfiguredValue(environment, key, value) : false;
     });
     const providerEvidence = evidence[provider.id] ?? {};
+    const productionConfigurationValid = missingEnvironmentKeys.length === 0 && invalidEnvironmentKeys.length === 0;
+    const vendorApprovalDocumented = providerEvidence.vendorApproved === true
+      && isVerifiedActivationDetail(providerEvidence.vendorApprovalReference);
+    const approvedEnvironmentDocumented = isVerifiedActivationDetail(providerEvidence.approvedEnvironment);
+    const realPropertyCodeDocumented = isVerifiedActivationDetail(providerEvidence.propertyCode);
+    const supportContactDocumented = isVerifiedActivationDetail(providerEvidence.supportContact);
+    const activationDetailsComplete = vendorApprovalDocumented
+      && approvedEnvironmentDocumented
+      && realPropertyCodeDocumented
+      && supportContactDocumented;
+    const propertyMappingConfirmed = activationDetailsComplete && providerEvidence.propertyMapped === true;
+    const sandboxValidationPassed = propertyMappingConfirmed && providerEvidence.sandboxValidated === true;
+    const webhookValidationPassed = sandboxValidationPassed && providerEvidence.webhookValidated === true;
+    const productionSmokePassed = productionConfigurationValid
+      && webhookValidationPassed
+      && providerEvidence.productionSmokeValidated === true;
     const activationChecklist = {
-      productionConfigurationValid: missingEnvironmentKeys.length === 0 && invalidEnvironmentKeys.length === 0,
-      vendorApprovalDocumented: providerEvidence.vendorApproved === true
-        && isVerifiedActivationDetail(providerEvidence.vendorApprovalReference),
-      approvedEnvironmentDocumented: isVerifiedActivationDetail(providerEvidence.approvedEnvironment),
-      realPropertyCodeDocumented: isVerifiedActivationDetail(providerEvidence.propertyCode),
-      supportContactDocumented: isVerifiedActivationDetail(providerEvidence.supportContact),
-      propertyMappingConfirmed: providerEvidence.propertyMapped === true,
-      sandboxValidationPassed: providerEvidence.sandboxValidated === true,
-      webhookValidationPassed: providerEvidence.webhookValidated === true,
-      productionSmokePassed: providerEvidence.productionSmokeValidated === true,
-      liveTrafficEnabled: providerEvidence.liveEnabled === true,
+      productionConfigurationValid,
+      vendorApprovalDocumented,
+      approvedEnvironmentDocumented,
+      realPropertyCodeDocumented,
+      supportContactDocumented,
+      propertyMappingConfirmed,
+      sandboxValidationPassed,
+      webhookValidationPassed,
+      productionSmokePassed,
+      liveTrafficEnabled: productionSmokePassed && providerEvidence.liveEnabled === true,
     };
-    const activationDetailsComplete = activationChecklist.vendorApprovalDocumented
-      && activationChecklist.approvedEnvironmentDocumented
-      && activationChecklist.realPropertyCodeDocumented
-      && activationChecklist.supportContactDocumented;
     const readyForRealPropertyActivation = activationChecklist.productionConfigurationValid
       && activationDetailsComplete
       && activationChecklist.propertyMappingConfirmed
