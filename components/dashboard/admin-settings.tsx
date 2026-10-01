@@ -429,7 +429,7 @@ export function AdminSettings() {
                 <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id || !provider.evidence.webhookValidated} onClick={() => updateLaunchEvidence(provider.id, { productionSmokeValidated: !provider.evidence.productionSmokeValidated })} type="button">
                   {provider.evidence.productionSmokeValidated ? "Reset production smoke test" : "Confirm production smoke test"}
                 </button>
-                {!provider.evidence.liveEnabled && provider.evidence.productionSmokeValidated && <label className="w-full text-xs font-medium">
+                {!provider.evidence.liveEnabled && provider.status === "activation_required" && <label className="w-full text-xs font-medium">
                   Type <strong>{`ENABLE ${provider.id.toUpperCase()} LIVE TRAFFIC`}</strong> to authorize real provider traffic.
                   <input
                     autoComplete="off"

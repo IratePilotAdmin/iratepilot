@@ -255,6 +255,7 @@ describe("PMS integration foundation", () => {
     expect(adminSettings).toContain("Confirm production smoke test");
     expect(adminSettings).toContain("Enable live traffic");
     expect(adminSettings).toContain("to authorize real provider traffic.");
+    expect(adminSettings).toContain('!provider.evidence.liveEnabled && provider.status === "activation_required"');
     expect(adminSettings).toContain('provider.status !== "activation_required"');
     expect(adminSettings).toContain("migrations 034, 035, 036, and 038");
   });
