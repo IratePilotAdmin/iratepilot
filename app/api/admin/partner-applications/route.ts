@@ -3,6 +3,8 @@ import { requireRole } from "@/lib/auth/require-role";
 import { partnerAcquisitionAttributionSchema } from "@/lib/partner/acquisition";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const auth = await requireRole(["admin"]);
@@ -56,13 +58,16 @@ export async function GET() {
         }
       }
     }
-    return NextResponse.json({
-      data: applications.map((application) => ({
-        ...application,
-        acquisition_attribution: attributionByApplication.get(application.id) ?? null,
-        approval_evidence_verified: verifiedApprovalApplicationIds.has(application.id),
-      })),
-    });
+    return NextResponse.json(
+      {
+        data: applications.map((application) => ({
+          ...application,
+          acquisition_attribution: attributionByApplication.get(application.id) ?? null,
+          approval_evidence_verified: verifiedApprovalApplicationIds.has(application.id),
+        })),
+      },
+      { headers: { "Cache-Control": "private, no-store" } },
+    );
   } catch {
     return NextResponse.json(
       { error: "Partner applications could not be loaded." },

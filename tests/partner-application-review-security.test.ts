@@ -13,6 +13,10 @@ const listRoute = readFileSync(
   new URL("../app/api/admin/partner-applications/route.ts", import.meta.url),
   "utf8",
 );
+const reviewQueue = readFileSync(
+  new URL("../components/dashboard/admin-partner-applications.tsx", import.meta.url),
+  "utf8",
+);
 
 describe("partner application review transitions", () => {
   it("replaces broad admin table management with select-only review access", () => {
@@ -41,5 +45,11 @@ describe("partner application review transitions", () => {
     expect(reviewRoute).toContain("p_content_rights_verified:");
     expect(reviewRoute).toContain("p_commercial_terms_acknowledgement_verified:");
     expect(reviewRoute).toContain("p_inactive_draft_scope_confirmed:");
+  });
+
+  it("does not reuse a stale hotel intake review queue", () => {
+    expect(listRoute).toContain('export const dynamic = "force-dynamic"');
+    expect(listRoute).toContain('"Cache-Control": "private, no-store"');
+    expect(reviewQueue).toContain('fetch("/api/admin/partner-applications", { cache: "no-store" })');
   });
 });

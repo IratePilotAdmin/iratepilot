@@ -89,7 +89,7 @@ export function AdminPartnerApplications() {
   const [busy, setBusy] = useState("");
 
   const load = useCallback(async () => {
-    const response = await fetch("/api/admin/partner-applications");
+    const response = await fetch("/api/admin/partner-applications", { cache: "no-store" });
     const body = await response.json();
     if (response.ok) setApplications(body.data ?? []);
     else setMessage(body.error || "Applications could not be loaded.");
