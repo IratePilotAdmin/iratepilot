@@ -36,7 +36,7 @@ describe.runIf(process.env.IRP_RUN_SIGNED_HTTP_WRITE_QUALIFICATION==='1').sequen
  const apply=(role:Role,patch:Parameters<typeof writeCommand>[1]={})=>post(role,'apply',writeCommand(day,patch));
  async function reject(role:Role,code:string,patch:Parameters<typeof writeCommand>[1]={}){
   const result=await apply(role,patch);
-  expect(!result.ok&&result.code===code).toBe(true); // Never dump raw Auth/RPC replies.
+  expect(!result.ok&&result.code===code&&(code!=='PT409'||result.status===409)).toBe(true); // Never dump raw Auth/RPC replies.
  }
  function receiptMatches(value:Record<string,unknown>,request:string,rate:number,replayed:boolean,savedAt?:string){
   return value.request_id===request&&value.tenant_id===config.tenantId&&value.property_id===writeProperty
@@ -80,10 +80,10 @@ describe.runIf(process.env.IRP_RUN_SIGNED_HTTP_WRITE_QUALIFICATION==='1').sequen
  it('denies the live shadow property at the fixture guard',()=>reject('owner','42501',{p_property:'7d9add80-216e-435c-86e9-58e17cdcbb6d'}),30000);
  it('denies request IDs outside the fixture',()=>reject('owner','42501',{p_request:'00000000-0000-4000-8000-000000000099'}),30000);
  it('rejects a tampered calculation',()=>reject('owner','22023',{p_recommended_rate_minor:16200}),30000);
- it('rejects a stale plan version',()=>reject('owner','40001',{p_expected_version:2}),30000);
- it('rejects a stale current price',()=>reject('owner','40001',{p_current_rate_minor:14100,p_recommended_rate_minor:16215}),30000);
- it('rejects stale capacity',()=>reject('owner','40001',{p_effective_units:11,p_occupancy_tenths_percent:727,p_adjustment_basis_points:800,p_recommended_rate_minor:15120}),30000);
- it('rejects stale reserved occupancy',()=>reject('owner','40001',{p_reserved_units:7,p_occupancy_tenths_percent:700,p_adjustment_basis_points:800,p_recommended_rate_minor:15120}),30000);
+ it('rejects a stale plan version',()=>reject('owner','PT409',{p_expected_version:2}),30000);
+ it('rejects a stale current price',()=>reject('owner','PT409',{p_current_rate_minor:14100,p_recommended_rate_minor:16215}),30000);
+ it('rejects stale capacity',()=>reject('owner','PT409',{p_effective_units:11,p_occupancy_tenths_percent:727,p_adjustment_basis_points:800,p_recommended_rate_minor:15120}),30000);
+ it('rejects stale reserved occupancy',()=>reject('owner','PT409',{p_reserved_units:7,p_occupancy_tenths_percent:700,p_adjustment_basis_points:800,p_recommended_rate_minor:15120}),30000);
  it('saves the owner reviewed rate and audit receipt',async()=>{
   const r=await apply('owner');expect(r.ok&&receiptMatches(r.value,ownerRequest,16100,false)).toBe(true);ownerSavedAt=r.value.saved_at as string;
  },30000);

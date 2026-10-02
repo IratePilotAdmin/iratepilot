@@ -93,7 +93,8 @@ BEGIN
   RETURN jsonb_build_object('request_id',prior.request_id,'tenant_id',prior.tenant_id,'property_id',prior.property_id,'plan_id',prior.plan_id,'stay_date',prior.stay_date,'recommended_rate_minor',prior.recommended_rate_minor,'saved_at',prior.saved_at,'replayed',true);
  END IF;
  checked:=public.irp_pms_pilot_revenue_facts_preflight(p_tenant,p_property,p_plan,p_expected_version,p_stay_date,p_current_rate_minor,p_effective_units,p_reserved_units);
- IF checked->>'facts_match' IS DISTINCT FROM 'true' THEN RAISE EXCEPTION 'Pricing facts changed; refresh before approval' USING ERRCODE='40001';END IF;
+ -- Stale reviewed inputs are terminal HTTP 409 conflicts, not serialization failures.
+ IF checked->>'facts_match' IS DISTINCT FROM 'true' THEN RAISE EXCEPTION 'Pricing facts changed; refresh before approval' USING ERRCODE='PT409';END IF;
  rate_result:=public.irp_pms_pilot_set_nightly_rate(p_tenant,p_property,p_request,p_plan,p_expected_version,p_stay_date,p_stay_date+1,p_recommended_rate_minor);
  IF rate_result IS NULL THEN RAISE EXCEPTION 'Nightly rate save returned no receipt'; END IF;
  INSERT INTO irp_pms.revenue_rate_decisions(request_id,tenant_id,property_id,actor_id,plan_id,reviewed_plan_version,stay_date,current_rate_minor,recommended_rate_minor,minimum_rate_minor,maximum_rate_minor,competitor_rate_minor,event_uplift_basis_points,effective_units,reserved_units,occupancy_tenths_percent,adjustment_basis_points,guardrail,explanations)
