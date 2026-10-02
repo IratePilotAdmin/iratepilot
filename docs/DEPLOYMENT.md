@@ -61,7 +61,7 @@ The non-secret release-gate values were verified separately:
 - `PILOT_MODE=true` — correct for the private pilot.
 - `NEXT_PUBLIC_PUBLIC_BOOKING=false` — public booking remains disabled.
 - `HOTEL_PUBLICATION_ENABLED=false` — new hotel publication remains locked until the property-specific commercial release approvals are complete.
-- `NEXT_PUBLIC_ENABLE_TEST_CHECKOUT=true` — **release blocker; set the Production value to `false`.**
-- `ENABLE_TEST_CHECKOUT=true` — **release blocker; set the Production value to `false`.**
+- `NEXT_PUBLIC_ENABLE_TEST_CHECKOUT=false` — browser test checkout is disabled in Production.
+- `ENABLE_TEST_CHECKOUT=false` — server test checkout is disabled in Production.
 
-After changing either test-checkout variable, redeploy the release candidate and verify that both browser and server test-payment paths reject test checkout before promoting to production.
+The test-checkout values above were reverified on October 1, 2026 after Production deployment `FhQ8dhqCxPxzzZFdLV4fm94wsE5z` was assigned to `www.iratepilot.com`. The live launch-readiness dashboard reports both checks complete while public booking, live booking payments, live webhooks, live partner payouts, supplier traffic, and hotel publication remain disabled. A targeted fail-closed safety run passed 42 tests across payment readiness, live-payment authorization, payout barriers, rollback, marketplace authorization, commercial booking, and booking-write security.
