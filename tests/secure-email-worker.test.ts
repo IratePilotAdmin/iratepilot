@@ -63,6 +63,10 @@ describe("secure transactional email worker", () => {
         path: "/api/cron/pms-outbox",
         schedule: "30 8 * * *",
       },
+      {
+        path: "/api/cron/booking-com-reservation-retention",
+        schedule: "20 5 * * *",
+      },
     ]);
   });
 });
