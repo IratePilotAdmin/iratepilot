@@ -14,6 +14,8 @@ export type HotelLaunchReadinessInput = {
   approvedHotelCount: number;
   approvedHotelStateAvailable: boolean;
   hotelApplicationCount: number;
+  completeHotelApplicationCount: number;
+  incompleteLegacyHotelApplicationCount: number;
   pendingHotelApplicationCount: number;
   declinedHotelApplicationCount: number;
   verifiedHotelApprovalCount: number;
@@ -104,7 +106,9 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
       "/admin/partners",
       "Review hotel applications",
       input.approvedHotelStateAvailable ? [
-        { label: "Applications received", ready: input.hotelApplicationCount > 0, value: String(input.hotelApplicationCount) },
+        { label: "Complete current applications", ready: input.completeHotelApplicationCount > 0, value: String(input.completeHotelApplicationCount) },
+        { label: "Incomplete legacy records safely excluded", ready: true, value: String(input.incompleteLegacyHotelApplicationCount) },
+        { label: "All application records", ready: true, value: String(input.hotelApplicationCount) },
         { label: "Pending administrator review", ready: input.pendingHotelApplicationCount === 0, value: String(input.pendingHotelApplicationCount) },
         { label: "Verified approval decisions", ready: input.verifiedHotelApprovalCount > 0, value: String(input.verifiedHotelApprovalCount) },
         { label: "Approved hotels linked to a property", ready: input.approvedHotelCount > 0, value: String(input.approvedHotelCount) },

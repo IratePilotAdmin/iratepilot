@@ -8,6 +8,7 @@ import { isEmailWorkerEnabled } from "@/lib/email/worker-gate";
 import { isHotelPublicationEnabled } from "@/lib/hotels/publication-gate";
 import { hasCurrentHotelMarketplaceReleaseAuthorization } from "@/lib/hotels/marketplace-release-authorization";
 import { getPropertyReadiness, type PropertyReadinessInput } from "@/lib/property-readiness";
+import { hasCompleteHotelApplication } from "@/lib/partner/application-readiness";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   auditPriorityPmsProductionReadiness,
@@ -90,7 +91,7 @@ export async function GET() {
     };
     const [properties, applications, applicationApprovalEvidence, applicationTotal, pendingApplications, declinedApplications, verifiedApprovals, verifiedLinkedApprovals, commercialControls, supplierEvidence, synxisEvidence, emailBacklog, emailDeadLetters, deliveryFailures, payoutExceptions, paymentApprovals, paymentRevocations, releaseAuthorizations, releaseRevocations, releaseAuthorizationValid] = await Promise.all([
       admin.from("properties").select("id,image_url,amenities,rooms(active,base_rate,max_guests,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount))"),
-      admin.from("partner_applications").select("id,property_id,status"),
+      admin.from("partner_applications").select("id,property_id,status,star_rating,contact_role,phone,website_url,address_line1,city,postal_code,country,description,amenities,photo_source_url,hotel_authorized,content_rights_confirmed,information_accurate,commercial_terms_acknowledged,commercial_terms_version_acknowledged"),
       auth.supabase.from("partner_application_review_evidence")
         .select("application_id,decision,legal_business_verified,representative_authority_verified,content_rights_verified,commercial_terms_acknowledgement_verified,inactive_draft_scope_confirmed"),
       admin.from("partner_applications").select("id", { count: "exact", head: true }),
@@ -150,6 +151,8 @@ export async function GET() {
         .map((application) => application.property_id as string),
     );
     const hotelApplicationCount = applicationTotal.count ?? 0;
+    const completeHotelApplicationCount = (applications.data ?? []).filter(hasCompleteHotelApplication).length;
+    const incompleteLegacyHotelApplicationCount = Math.max(hotelApplicationCount - completeHotelApplicationCount, 0);
     const pendingHotelApplicationCount = pendingApplications.count ?? 0;
     const declinedHotelApplicationCount = declinedApplications.count ?? 0;
     const verifiedHotelApprovalCount = verifiedApprovals.count ?? 0;
@@ -377,6 +380,8 @@ export async function GET() {
       approvedHotelCount: verifiedLinkedApprovals.count ?? 0,
       approvedHotelStateAvailable,
       hotelApplicationCount,
+      completeHotelApplicationCount,
+      incompleteLegacyHotelApplicationCount,
       pendingHotelApplicationCount,
       declinedHotelApplicationCount,
       verifiedHotelApprovalCount,

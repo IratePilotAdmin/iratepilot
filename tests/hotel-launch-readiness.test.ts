@@ -10,6 +10,8 @@ const empty: HotelLaunchReadinessInput = {
   approvedHotelCount: 0,
   approvedHotelStateAvailable: true,
   hotelApplicationCount: 2,
+  completeHotelApplicationCount: 1,
+  incompleteLegacyHotelApplicationCount: 1,
   pendingHotelApplicationCount: 1,
   declinedHotelApplicationCount: 1,
   verifiedHotelApprovalCount: 0,
@@ -103,7 +105,9 @@ describe("hotel launch readiness", () => {
   it("shows aggregate hotel application funnel counts without applicant details", () => {
     const intake = buildHotelLaunchReadiness(empty).gates.find(({ id }) => id === "approved_hotel");
     expect(intake?.checks).toEqual([
-      { label: "Applications received", ready: true, value: "2" },
+      { label: "Complete current applications", ready: true, value: "1" },
+      { label: "Incomplete legacy records safely excluded", ready: true, value: "1" },
+      { label: "All application records", ready: true, value: "2" },
       { label: "Pending administrator review", ready: false, value: "1" },
       { label: "Verified approval decisions", ready: false, value: "0" },
       { label: "Approved hotels linked to a property", ready: false, value: "0" },
