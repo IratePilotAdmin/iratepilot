@@ -2,6 +2,15 @@ name: Revenue Auth audited-write HTTP release gate
 
 on:
   workflow_dispatch:
+    inputs:
+      gate:
+        description: Isolated qualification suite (fresh fixture required)
+        type: choice
+        required: true
+        default: audited-http
+        options:
+          - audited-http
+          - browser-recovery
 
 permissions:
   contents: read
@@ -20,7 +29,7 @@ jobs:
       - name: Check out reviewed candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: af2553cfa20e08956852b26cf37b67988fba5bd3
+          ref: 5e13a225d325df6eaf814ecc1f40c8bbaefbfa50
           persist-credentials: false
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
@@ -29,11 +38,17 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
+      - name: Install isolated browser tools
+        if: inputs.gate == 'browser-recovery'
+        run: |
+          npm ci --ignore-scripts --prefix scripts/revenue-browser-tools
+          node scripts/revenue-browser-tools/node_modules/playwright/cli.js install --with-deps chromium
       - name: Validate isolated branch manifest
         env:
           IRP_HTTP_QUALIFICATION_MANIFEST: ${{ vars.IRP_HTTP_QUALIFICATION_MANIFEST }}
         run: node scripts/revenue-http-qualification-preflight.mjs
       - name: Run 21 Auth-issued isolated audited-write HTTP cases
+        if: inputs.gate == 'audited-http'
         env:
           IRP_RUN_SIGNED_HTTP_WRITE_QUALIFICATION: "1"
           IRP_HTTP_TEST_OWNER_EMAIL: ${{ secrets.IRP_HTTP_TEST_OWNER_EMAIL }}
@@ -45,6 +60,19 @@ jobs:
         run: |
           node scripts/revenue-http-qualification-preflight.mjs --credentials
           node node_modules/vitest/vitest.mjs run tests/revenue-signed-write-http.integration.test.ts
+      - name: Run 12 Auth-issued isolated Chromium recovery cases
+        if: inputs.gate == 'browser-recovery'
+        env:
+          IRP_RUN_AUTH_BROWSER_RECOVERY: "1"
+          IRP_HTTP_TEST_OWNER_EMAIL: ${{ secrets.IRP_HTTP_TEST_OWNER_EMAIL }}
+          IRP_HTTP_TEST_OWNER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_OWNER_PASSWORD }}
+          IRP_HTTP_TEST_MANAGER_EMAIL: ${{ secrets.IRP_HTTP_TEST_MANAGER_EMAIL }}
+          IRP_HTTP_TEST_MANAGER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_MANAGER_PASSWORD }}
+          IRP_HTTP_TEST_STAFF_EMAIL: ${{ secrets.IRP_HTTP_TEST_STAFF_EMAIL }}
+          IRP_HTTP_TEST_STAFF_PASSWORD: ${{ secrets.IRP_HTTP_TEST_STAFF_PASSWORD }}
+        run: |
+          node scripts/revenue-http-qualification-preflight.mjs --credentials
+          node scripts/qualify-revenue-auth-browser-recovery.mjs
       - name: Remove local manifest
         if: always()
         run: rm -f -- "$RUNNER_TEMP/revenue-http-qualification.json"
@@ -52,4 +80,3 @@ jobs:
 # Install the pinned expiring fixture only on the isolated branch before approval.
 # Operator must run scripts/revenue-audited-http-fixture-cleanup.sql after any result.
 # Runner has no database admin credentials; removal above is only the local manifest.
-
