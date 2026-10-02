@@ -36,6 +36,13 @@ The summary is read-only. It cannot mark evidence complete, approve a certificat
 - TypeScript passed after the Phase 4 implementation.
 - The complete repository gate passed after these changes: ESLint, TypeScript, 941 tests across 221 files, and the optimized 110-route Next.js build.
 
+### October 1, 2026 targeted revalidation
+
+- 56 supplier and PMS tests passed across 10 focused files.
+- Hotelbeds and RateHawk authentication builders, credential-shape validation, sandbox request construction, network transport failure handling, response normalization, and runtime kill switches passed.
+- Verified supplier counting and priority-PMS readiness still require durable vendor approval, a real property mapping, sandbox and webhook validation, a production smoke test, and controlled live authorization.
+- No supplier credential, property identifier, endpoint, approval record, traffic flag, or production configuration was added or changed during this revalidation.
+
 ## Actions deliberately not performed
 
 - No vendor, PMS, CRS, SynXis, hotel, or supplier endpoint was contacted.
