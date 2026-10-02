@@ -5,6 +5,8 @@ on:
       - lib/revenue-approval-recovery.ts
       - scripts/revenue-browser-recovery.fixture.ts
       - scripts/qualify-revenue-browser-recovery.mjs
+      - scripts/revenue-auth-browser-recovery.fixture.ts
+      - scripts/qualify-revenue-auth-browser-recovery.mjs
       - scripts/revenue-browser-tools/**
       - .github/workflows/revenue-browser-recovery-gate.yml
 permissions:
@@ -22,5 +24,6 @@ jobs:
           node-version: 24
       - run: npm ci --ignore-scripts
       - run: npm ci --ignore-scripts --prefix scripts/revenue-browser-tools
+      - run: node scripts/qualify-revenue-auth-browser-recovery.mjs --build-only
       - run: node scripts/revenue-browser-tools/node_modules/playwright/cli.js install --with-deps chromium
       - run: node scripts/qualify-revenue-browser-recovery.mjs
