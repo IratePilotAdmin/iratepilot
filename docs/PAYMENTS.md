@@ -66,6 +66,10 @@ Administrators can inspect `/admin/settings`, which calls `/api/admin/payment-re
 
 The audit returns booleans and safe descriptions only. It never returns credential values and never creates Stripe objects. Even when every production configuration check passes, the dashboard reports that launch remains unauthorized until external approvals are recorded.
 
+## Connected-account legal notices
+
+Stripe's October 1, 2026 correction requires the platform to review connected accounts with Express Dashboard access and connected accounts with no Dashboard access for a Services Agreement notice due by November 7, 2026. The current review, unresolved account-count check, and evidence checklist are recorded in `docs/STRIPE_CONNECTED_ACCOUNT_TERMS_NOTICE_2026-10-01.md`. This notice obligation does not authorize payments or satisfy a hotel launch gate.
+
 ## Test-mode acceptance required
 
 Before any commercial activation, run the separately approved Stripe sandbox scenarios in `docs/COMMERCIAL_SANDBOX_TEST_PLAN.md`:
