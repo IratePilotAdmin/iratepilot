@@ -7,6 +7,10 @@ import { buildSupplierPhaseReadiness } from "@/services/hotel-suppliers/phase-re
 import type { PmsProviderReadiness } from "@/services/hotel-suppliers/types";
 import type { InventorySupplierReadiness } from "@/services/hotel-suppliers/inventory-readiness";
 import type {
+  InventorySandboxRuntimeGate,
+  InventorySandboxGateStatus,
+} from "@/services/hotel-suppliers/inventory-runtime-gate.server";
+import type {
   PriorityPmsLaunchStatus,
   PriorityPmsProviderId,
 } from "@/services/hotel-suppliers/priority-readiness";
@@ -46,7 +50,9 @@ type PriorityPmsProductionReadiness = {
   missingEnvironmentKeys: string[];
   invalidEnvironmentKeys: string[];
   readyForRealPropertyActivation: boolean;
-  activationChecklist: Record<string, boolean>;
+  activationChecklist: Record<string, boolean> & {
+    vendorApprovalDocumented: boolean;
+  };
   evidence: {
     vendorApproved: boolean;
     propertyMapped: boolean;
@@ -87,6 +93,22 @@ const supplierPhaseStatusCopy = {
   controlled_activation_ready: "Provider certified; activation decision pending",
   live_provider_present: "At least one provider has recorded live authorization",
 } as const;
+const inventorySandboxStatusCopy: Record<InventorySandboxGateStatus, string> = {
+  disabled: "Disabled",
+  invalid_enablement: "Invalid enablement value",
+  credentials_not_ready: "Blocked by credentials",
+  authorized: "Authorized for sandbox only",
+};
+const inventorySandboxStatusStyle: Record<InventorySandboxGateStatus, string> = {
+  disabled: "text-slate-600",
+  invalid_enablement: "text-red-700",
+  credentials_not_ready: "text-amber-700",
+  authorized: "text-emerald-700",
+};
+
+type InventorySupplierAdminReadiness = InventorySupplierReadiness & {
+  sandboxRuntime: InventorySandboxRuntimeGate;
+};
 
 export function AdminSettings() {
   const [data, setData] = useState<Response | null>(null);
@@ -94,11 +116,12 @@ export function AdminSettings() {
   const [emailTestBusy, setEmailTestBusy] = useState(false);
   const [emailTestMessage, setEmailTestMessage] = useState("");
   const [pmsProviders, setPmsProviders] = useState<PmsProviderReadiness[]>([]);
-  const [inventorySuppliers, setInventorySuppliers] = useState<InventorySupplierReadiness[] | null>(null);
+  const [inventorySuppliers, setInventorySuppliers] = useState<InventorySupplierAdminReadiness[] | null>(null);
   const [priorityPmsReadiness, setPriorityPmsReadiness] = useState<PriorityPmsProductionReadiness[]>([]);
   const [evidenceTrackingAvailable, setEvidenceTrackingAvailable] = useState(false);
   const [evidenceBusy, setEvidenceBusy] = useState("");
   const [evidenceMessage, setEvidenceMessage] = useState("");
+  const [liveConfirmations, setLiveConfirmations] = useState<Record<string, string>>({});
   const [pmsConnections, setPmsConnections] = useState<PmsConnection[]>([]);
   const [selectedConnectionId, setSelectedConnectionId] = useState("");
   const [pmsMessage, setPmsMessage] = useState("Checking PMS connections…");
@@ -162,6 +185,7 @@ export function AdminSettings() {
   async function updateLaunchEvidence(
     providerId: string,
     evidence: Partial<PriorityPmsProductionReadiness["evidence"]>,
+    confirmation?: string,
   ) {
     setEvidenceBusy(providerId);
     setEvidenceMessage("");
@@ -169,11 +193,14 @@ export function AdminSettings() {
       const response = await fetch("/api/admin/integrations/pms", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ providerId, evidence }),
+        body: JSON.stringify({ providerId, evidence, confirmation }),
       });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Launch evidence could not be updated.");
       setPriorityPmsReadiness((items) => items.map((item) => item.id === providerId ? body.readiness : item));
+      if (evidence.liveEnabled === true) {
+        setLiveConfirmations((current) => ({ ...current, [providerId]: "" }));
+      }
       setEvidenceMessage(`${body.readiness.name} launch evidence was updated.`);
     } catch (error) {
       setEvidenceMessage(error instanceof Error ? error.message : "Launch evidence could not be updated.");
@@ -294,7 +321,7 @@ export function AdminSettings() {
         <p className="mt-2 text-sm text-slate-600">The software framework and external approvals are reported separately. SynXis certification evidence and its independent traffic gate are shown in the dedicated panel below.</p>
         <div className="mt-5 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-lg bg-slate-50 p-3"><strong>{supplierPhase.priorityManifestCoverageCount}</strong> of <strong>{supplierPhase.priorityLaunchManifestCount}</strong><span className="mt-1 block text-xs text-slate-500">priority manifests covered</span></div>
-          <div className="rounded-lg bg-slate-50 p-3"><strong>{supplierPhase.vendorApprovedCount}</strong><span className="mt-1 block text-xs text-slate-500">vendor approvals recorded</span></div>
+          <div className="rounded-lg bg-slate-50 p-3"><strong>{supplierPhase.verifiedVendorApprovalCount}</strong><span className="mt-1 block text-xs text-slate-500">verified vendor approvals</span></div>
           <div className="rounded-lg bg-slate-50 p-3"><strong>{supplierPhase.controlledActivationCandidateCount}</strong><span className="mt-1 block text-xs text-slate-500">controlled-activation candidates</span></div>
           <div className="rounded-lg bg-slate-50 p-3"><strong>{supplierPhase.liveProviderCount}</strong><span className="mt-1 block text-xs text-slate-500">providers with live traffic recorded</span></div>
         </div>
@@ -311,6 +338,7 @@ export function AdminSettings() {
           {inventorySuppliers ? <div className="mt-4 flex flex-wrap gap-5 text-sm">
             <span><strong>{inventorySuppliers.length}</strong> suppliers tracked</span>
             <span><strong>{inventorySuppliers.filter((supplier) => supplier.status === "ready_for_sandbox_validation").length}</strong> ready for sandbox validation</span>
+            <span><strong>{inventorySuppliers.filter((supplier) => supplier.sandboxRuntime.status === "authorized").length}</strong> sandbox transports authorized</span>
           </div> : <p className="mt-4 text-sm text-slate-500" role="status">{pmsMessage || "Checking hotel inventory suppliers…"}</p>}
         </div>
         <div className="grid gap-3 p-6 lg:grid-cols-3">
@@ -322,6 +350,13 @@ export function AdminSettings() {
             <p className="mt-2 text-xs text-slate-600">{supplier.approvalNote}</p>
             {supplier.missingEnvironmentKeys.length > 0 && <p className="mt-3 break-words text-xs text-amber-700">Missing: {supplier.missingEnvironmentKeys.join(", ")}</p>}
             {supplier.invalidEnvironmentKeys.length > 0 && <p className="mt-3 break-words text-xs text-red-700">Invalid: {supplier.invalidEnvironmentKeys.join(", ")}</p>}
+            <div className="mt-3 rounded-lg bg-slate-50 p-3 text-xs">
+              <span className="text-slate-500">Sandbox traffic</span>
+              <strong className={`mt-1 block ${inventorySandboxStatusStyle[supplier.sandboxRuntime.status]}`}>
+                {inventorySandboxStatusCopy[supplier.sandboxRuntime.status]}
+              </strong>
+              <span className="mt-1 block break-words text-slate-500">Flag: {supplier.sandboxRuntime.enablementKey}</span>
+            </div>
             <a className="mt-3 inline-block text-xs font-semibold underline" href={supplier.documentationUrl} rel="noreferrer" target="_blank">Official integration documentation</a>
           </article>)}
         </div>
@@ -360,12 +395,12 @@ export function AdminSettings() {
               {provider.missingEnvironmentKeys.length > 0 && <p className="mt-2 break-words text-xs text-amber-700">Missing: {provider.missingEnvironmentKeys.join(", ")}</p>}
               {provider.invalidEnvironmentKeys.length > 0 && <p className="mt-2 break-words text-xs text-red-700">Invalid: {provider.invalidEnvironmentKeys.join(", ")}</p>}
               <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                <span>Vendor: {provider.evidence.vendorApproved ? "approved" : "pending"}</span>
-                <span>Mapping: {provider.evidence.propertyMapped ? "complete" : "pending"}</span>
-                <span>Sandbox: {provider.evidence.sandboxValidated ? "passed" : "pending"}</span>
-                <span>Webhook: {provider.evidence.webhookValidated ? "passed" : "pending"}</span>
-                <span>Production smoke: {provider.evidence.productionSmokeValidated ? "passed" : "pending"}</span>
-                <span>Traffic: {provider.evidence.liveEnabled ? "enabled" : "disabled"}</span>
+                <span>Vendor: {provider.activationChecklist.vendorApprovalDocumented ? "verified" : provider.evidence.vendorApproved ? "unverified" : "pending"}</span>
+                <span>Mapping: {provider.activationChecklist.propertyMappingConfirmed ? "verified" : provider.evidence.propertyMapped ? "unverified" : "pending"}</span>
+                <span>Sandbox: {provider.activationChecklist.sandboxValidationPassed ? "verified" : provider.evidence.sandboxValidated ? "unverified" : "pending"}</span>
+                <span>Webhook: {provider.activationChecklist.webhookValidationPassed ? "verified" : provider.evidence.webhookValidated ? "unverified" : "pending"}</span>
+                <span>Production smoke: {provider.activationChecklist.productionSmokePassed ? "verified" : provider.evidence.productionSmokeValidated ? "unverified" : "pending"}</span>
+                <span>Traffic: {provider.activationChecklist.liveTrafficEnabled ? "verified live" : provider.evidence.liveEnabled ? "unverified" : "disabled"}</span>
               </div>
               <div className="mt-4 rounded-lg bg-slate-50 p-3">
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Real-property activation checklist</p>
@@ -380,21 +415,54 @@ export function AdminSettings() {
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id} onClick={() => updateLaunchEvidence(provider.id, { vendorApproved: !provider.evidence.vendorApproved })} type="button">
-                  {provider.evidence.vendorApproved ? "Revoke vendor approval" : "Confirm vendor approval"}
+                  {provider.evidence.vendorApproved
+                    ? provider.activationChecklist.vendorApprovalDocumented ? "Revoke vendor approval" : "Clear unverified vendor approval"
+                    : "Confirm vendor approval"}
                 </button>
-                <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id || !provider.evidence.vendorApproved} onClick={() => updateLaunchEvidence(provider.id, { propertyMapped: !provider.evidence.propertyMapped })} type="button">
-                  {provider.evidence.propertyMapped ? "Reset property mapping" : "Confirm property mapping"}
+                <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id || (!provider.evidence.propertyMapped && !provider.activationChecklist.vendorApprovalDocumented)} onClick={() => updateLaunchEvidence(provider.id, { propertyMapped: !provider.evidence.propertyMapped })} type="button">
+                  {provider.evidence.propertyMapped
+                    ? provider.activationChecklist.propertyMappingConfirmed ? "Reset property mapping" : "Clear unverified property mapping"
+                    : "Confirm property mapping"}
                 </button>
-                <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id || !provider.evidence.vendorApproved || !provider.evidence.propertyMapped} onClick={() => updateLaunchEvidence(provider.id, { sandboxValidated: !provider.evidence.sandboxValidated })} type="button">
-                  {provider.evidence.sandboxValidated ? "Reset sandbox validation" : "Confirm sandbox validation"}
+                <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id || (!provider.evidence.sandboxValidated && !provider.activationChecklist.propertyMappingConfirmed)} onClick={() => updateLaunchEvidence(provider.id, { sandboxValidated: !provider.evidence.sandboxValidated })} type="button">
+                  {provider.evidence.sandboxValidated
+                    ? provider.activationChecklist.sandboxValidationPassed ? "Reset sandbox validation" : "Clear unverified sandbox validation"
+                    : "Confirm sandbox validation"}
                 </button>
-                <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id || !provider.evidence.sandboxValidated} onClick={() => updateLaunchEvidence(provider.id, { webhookValidated: !provider.evidence.webhookValidated })} type="button">
-                  {provider.evidence.webhookValidated ? "Reset webhook validation" : "Confirm webhook validation"}
+                <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id || (!provider.evidence.webhookValidated && !provider.activationChecklist.sandboxValidationPassed)} onClick={() => updateLaunchEvidence(provider.id, { webhookValidated: !provider.evidence.webhookValidated })} type="button">
+                  {provider.evidence.webhookValidated
+                    ? provider.activationChecklist.webhookValidationPassed ? "Reset webhook validation" : "Clear unverified webhook validation"
+                    : "Confirm webhook validation"}
                 </button>
-                <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id || !provider.evidence.webhookValidated} onClick={() => updateLaunchEvidence(provider.id, { productionSmokeValidated: !provider.evidence.productionSmokeValidated })} type="button">
-                  {provider.evidence.productionSmokeValidated ? "Reset production smoke test" : "Confirm production smoke test"}
+                <button className="btn-secondary text-xs" disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id || (!provider.evidence.productionSmokeValidated && !provider.activationChecklist.webhookValidationPassed)} onClick={() => updateLaunchEvidence(provider.id, { productionSmokeValidated: !provider.evidence.productionSmokeValidated })} type="button">
+                  {provider.evidence.productionSmokeValidated
+                    ? provider.activationChecklist.productionSmokePassed ? "Reset production smoke test" : "Clear unverified production smoke test"
+                    : "Confirm production smoke test"}
                 </button>
-                <button className={provider.evidence.liveEnabled ? "btn-secondary text-xs" : "btn-primary text-xs"} disabled={!evidenceTrackingAvailable || evidenceBusy === provider.id || !provider.evidence.productionSmokeValidated} onClick={() => updateLaunchEvidence(provider.id, { liveEnabled: !provider.evidence.liveEnabled })} type="button">
+                {!provider.evidence.liveEnabled && provider.status === "activation_required" && <label className="w-full text-xs font-medium">
+                  Type <strong>{`ENABLE ${provider.id.toUpperCase()} LIVE TRAFFIC`}</strong> to authorize real provider traffic.
+                  <input
+                    autoComplete="off"
+                    className="input mt-2"
+                    onChange={(event) => setLiveConfirmations((current) => ({ ...current, [provider.id]: event.target.value }))}
+                    value={liveConfirmations[provider.id] ?? ""}
+                  />
+                </label>}
+                <button
+                  className={provider.evidence.liveEnabled ? "btn-secondary text-xs" : "btn-primary text-xs"}
+                  disabled={!evidenceTrackingAvailable
+                    || evidenceBusy === provider.id
+                    || !provider.evidence.productionSmokeValidated
+                    || (!provider.evidence.liveEnabled
+                      && (provider.status !== "activation_required"
+                        || liveConfirmations[provider.id] !== `ENABLE ${provider.id.toUpperCase()} LIVE TRAFFIC`))}
+                  onClick={() => updateLaunchEvidence(
+                    provider.id,
+                    { liveEnabled: !provider.evidence.liveEnabled },
+                    provider.evidence.liveEnabled ? undefined : liveConfirmations[provider.id],
+                  )}
+                  type="button"
+                >
                   {provider.evidence.liveEnabled ? "Disable live traffic" : "Enable live traffic"}
                 </button>
               </div>

@@ -244,6 +244,12 @@ describe("PMS integration foundation", () => {
     expect(route).toContain("Sandbox validation is required before webhook validation.");
     expect(route).toContain("Webhook validation is required before the production smoke test.");
     expect(route).toContain("The production smoke test must pass before live traffic is enabled.");
+    expect(route).toContain("to confirm live traffic activation.");
+    expect(route).toContain('preActivationReadiness?.status !== "activation_required"');
+    expect(route).toContain("Production configuration must be complete and valid before live traffic is enabled.");
+    expect(route).toContain("A verified vendor approval reference is required before vendor approval can be confirmed.");
+    expect(route).toContain("Verified vendor approval, environment, property code, and support contact details are required before property mapping can be confirmed.");
+    expect(route).toContain("Valid production configuration and verified webhook validation are required before the production smoke test can be confirmed.");
     expect(route).toContain("updated_by: auth.user.id");
     expect(adminSettings).toContain("Confirm vendor approval");
     expect(adminSettings).toContain("Confirm property mapping");
@@ -251,6 +257,16 @@ describe("PMS integration foundation", () => {
     expect(adminSettings).toContain("Confirm webhook validation");
     expect(adminSettings).toContain("Confirm production smoke test");
     expect(adminSettings).toContain("Enable live traffic");
+    expect(adminSettings).toContain("to authorize real provider traffic.");
+    expect(adminSettings).toContain('!provider.evidence.liveEnabled && provider.status === "activation_required"');
+    expect(adminSettings).toContain('provider.status !== "activation_required"');
+    expect(adminSettings).toContain("Clear unverified vendor approval");
+    expect(adminSettings).toContain("Clear unverified property mapping");
+    expect(adminSettings).toContain("Clear unverified sandbox validation");
+    expect(adminSettings).toContain("Clear unverified webhook validation");
+    expect(adminSettings).toContain("Clear unverified production smoke test");
+    expect(adminSettings).toContain("!provider.evidence.propertyMapped && !provider.activationChecklist.vendorApprovalDocumented");
+    expect(adminSettings).toContain("!provider.evidence.sandboxValidated && !provider.activationChecklist.propertyMappingConfirmed");
     expect(adminSettings).toContain("migrations 034, 035, 036, and 038");
   });
 

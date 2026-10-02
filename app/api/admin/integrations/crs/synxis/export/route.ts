@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildSynxisCertificationPacket } from "@/lib/integrations/synxis-certification-packet";
-import { buildSynxisReadiness } from "@/services/hotel-suppliers/synxis";
+import { buildVerifiedSynxisReadiness } from "@/services/hotel-suppliers/synxis";
 
 export const dynamic = "force-dynamic";
 
@@ -64,7 +64,7 @@ export async function GET() {
     const packet = buildSynxisCertificationPacket({
       generatedAt: new Date().toISOString(),
       issuanceReceiptId,
-      readiness: buildSynxisReadiness(process.env, evidence),
+      readiness: buildVerifiedSynxisReadiness(process.env, evidence),
       evidence,
       evidenceHistory: historyResult.data ?? [],
       evidenceHistoryTotal: historyResult.count ?? 0,

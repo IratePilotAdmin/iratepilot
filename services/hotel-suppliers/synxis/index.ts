@@ -44,6 +44,13 @@ export type SynxisActivationEvidence = {
   liveEnabled?: boolean;
 };
 
+export type SynxisVerifiedEvidence = SynxisActivationEvidence & {
+  vendorApprovalReference?: string;
+  approvedEnvironment?: string;
+  propertyCode?: string;
+  supportContact?: string;
+};
+
 export type SynxisReadiness = {
   id: typeof synxisCrsProvider.id;
   category: typeof synxisCrsProvider.category;
@@ -116,6 +123,52 @@ export function buildSynxisReadiness(
     invalidEnvironmentKeys,
     liveTrafficAllowed: status === "live",
   };
+}
+
+export function buildVerifiedSynxisGates(
+  environment: Record<string, string | undefined>,
+  evidence: SynxisVerifiedEvidence = {},
+) {
+  const readiness = buildSynxisReadiness(environment, evidence);
+  const vendorApproved = evidence.vendorApproved === true
+    && isVerifiedSynxisDetail(evidence.vendorApprovalReference);
+  const certificationEnvironmentApproved = vendorApproved
+    && evidence.certificationEnvironmentApproved === true
+    && isVerifiedSynxisDetail(evidence.approvedEnvironment);
+  const propertyMapped = certificationEnvironmentApproved
+    && evidence.propertyMapped === true
+    && isVerifiedSynxisDetail(evidence.propertyCode)
+    && isVerifiedSynxisDetail(evidence.supportContact);
+  const sandboxValidated = propertyMapped && evidence.sandboxValidated === true;
+  const productionConfigurationValid = readiness.missingEnvironmentKeys.length === 0
+    && readiness.invalidEnvironmentKeys.length === 0;
+  return {
+    vendorApproved,
+    certificationEnvironmentApproved,
+    propertyMapped,
+    sandboxValidated,
+    productionSmokeValidated: productionConfigurationValid
+      && sandboxValidated
+      && evidence.productionSmokeValidated === true,
+  };
+}
+
+export function buildVerifiedSynxisReadiness(
+  environment: Record<string, string | undefined>,
+  evidence: SynxisVerifiedEvidence = {},
+) {
+  const verifiedGates = buildVerifiedSynxisGates(environment, evidence);
+  return buildSynxisReadiness(environment, {
+    ...verifiedGates,
+    liveEnabled: verifiedGates.productionSmokeValidated && evidence.liveEnabled === true,
+  });
+}
+
+const placeholderEvidencePattern = /(?:^|\b)(?:test hotel|example|placeholder|tbd|unknown|n\/a)(?:\b|$)/i;
+
+function isVerifiedSynxisDetail(value: string | undefined) {
+  const normalized = value?.trim() ?? "";
+  return normalized.length > 1 && !placeholderEvidencePattern.test(normalized);
 }
 
 export { buildSynxisInventoryXml, buildSynxisRateAmountXml } from "./ari";

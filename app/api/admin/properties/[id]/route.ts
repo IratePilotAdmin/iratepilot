@@ -39,6 +39,20 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
           error: "Approve the partner account before publishing this property."
         }, { status: 409 });
       }
+      const { data: verifiedIntakePropertyIds, error: verifiedIntakeError } = await auth.supabase.rpc(
+        "get_verified_hotel_intake_property_ids",
+        { p_property_ids: [id] },
+      );
+      if (verifiedIntakeError) {
+        return NextResponse.json({
+          error: "Hotel intake approval evidence could not be verified. Publication remains blocked."
+        }, { status: 503 });
+      }
+      if (!verifiedIntakePropertyIds?.includes(id)) {
+        return NextResponse.json({
+          error: "A verified approved hotel application linked to this property is required before publication."
+        }, { status: 409 });
+      }
       const readiness = getPropertyReadiness(property as PropertyReadinessInput);
       if (!readiness.ready) {
         return NextResponse.json({

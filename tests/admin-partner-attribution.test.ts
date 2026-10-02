@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  requireRole: vi.fn(), from: vi.fn(), applicationSelect: vi.fn(), order: vi.fn(),
-  draftSelect: vi.fn(), inFilter: vi.fn(),
+  requireRole: vi.fn(), createAdminClient: vi.fn(), adminFrom: vi.fn(), authFrom: vi.fn(), applicationSelect: vi.fn(), order: vi.fn(),
+  draftSelect: vi.fn(), inFilter: vi.fn(), evidenceSelect: vi.fn(), evidenceIn: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/require-role", () => ({ requireRole: mocks.requireRole }));
 vi.mock("@/lib/partner/acquisition", () => import("../lib/partner/acquisition"));
+vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: mocks.createAdminClient }));
 
 import { GET } from "../app/api/admin/partner-applications/route";
 
@@ -18,10 +19,14 @@ const application = {
 describe("admin partner acquisition attribution", () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    mocks.requireRole.mockResolvedValue({ supabase: { from: mocks.from } });
-    mocks.from.mockImplementation((table: string) => table === "partner_applications"
-      ? { select: mocks.applicationSelect }
-      : { select: mocks.draftSelect });
+    mocks.requireRole.mockResolvedValue({
+      user: { id: "admin" }, profile: { role: "admin" }, supabase: { from: mocks.authFrom },
+    });
+    mocks.createAdminClient.mockReturnValue({ from: mocks.adminFrom });
+    mocks.adminFrom.mockReturnValue({ select: mocks.applicationSelect });
+    mocks.authFrom.mockImplementation((table: string) => table === "partner_onboarding_drafts"
+      ? { select: mocks.draftSelect }
+      : { select: mocks.evidenceSelect });
     mocks.applicationSelect.mockReturnValue({ order: mocks.order });
     mocks.order.mockResolvedValue({ data: [application], error: null });
     mocks.draftSelect.mockReturnValue({ in: mocks.inFilter });
@@ -36,19 +41,35 @@ describe("admin partner acquisition attribution", () => {
       }],
       error: null,
     });
+    mocks.evidenceSelect.mockReturnValue({ in: mocks.evidenceIn });
+    mocks.evidenceIn.mockResolvedValue({
+      data: [{
+        application_id: application.id,
+        decision: "approved",
+        legal_business_verified: true,
+        representative_authority_verified: true,
+        content_rights_verified: true,
+        commercial_terms_acknowledgement_verified: true,
+        inactive_draft_scope_confirmed: true,
+      }],
+      error: null,
+    });
   });
 
   it("returns only validated campaign labels from the linked private draft", async () => {
     const response = await GET();
     expect(response.status).toBe(200);
     expect(mocks.requireRole).toHaveBeenCalledWith(["admin"]);
-    expect(mocks.from).toHaveBeenNthCalledWith(1, "partner_applications");
-    expect(mocks.from).toHaveBeenNthCalledWith(2, "partner_onboarding_drafts");
+    expect(mocks.createAdminClient).toHaveBeenCalledOnce();
+    expect(mocks.adminFrom).toHaveBeenCalledExactlyOnceWith("partner_applications");
+    expect(mocks.authFrom).toHaveBeenNthCalledWith(1, "partner_onboarding_drafts");
+    expect(mocks.authFrom).toHaveBeenNthCalledWith(2, "partner_application_review_evidence");
     expect(mocks.inFilter).toHaveBeenCalledWith("application_id", [application.id]);
     const body = await response.json();
     expect(body.data[0].acquisition_attribution).toEqual({
       source: "facebook", medium: "paid-social", campaign: "hotel-partners",
     });
+    expect(body.data[0].approval_evidence_verified).toBe(true);
     expect(JSON.stringify(body)).not.toContain("+15555550100");
   });
 

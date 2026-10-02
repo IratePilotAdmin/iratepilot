@@ -25,6 +25,7 @@ const liveEnvironment = {
 };
 
 const liveEvidence = {
+  releaseAuthorizationValid: true,
   paymentAuthorizationValid: true,
   supplierStateAvailable: true,
   priorityPmsEvidence: {},
@@ -35,6 +36,10 @@ const liveEvidence = {
     sandboxValidated: true,
     productionSmokeValidated: true,
     liveEnabled: true,
+    vendorApprovalReference: "SABRE-APPROVAL-2026",
+    approvedEnvironment: "SynXis production certification",
+    propertyCode: "HOTEL-12345",
+    supportContact: "synxis-support@sabre.com",
   },
   operationsStateAvailable: true,
   emailBacklog: 0,
@@ -51,6 +56,10 @@ describe("hotel marketplace launch authorization", () => {
   it("fails closed for a flag-only release", () => {
     expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
       ...liveEvidence,
+      releaseAuthorizationValid: false,
+    })).toBe(false);
+    expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
+      ...liveEvidence,
       paymentAuthorizationValid: false,
     })).toBe(false);
   });
@@ -64,5 +73,31 @@ describe("hotel marketplace launch authorization", () => {
       ...liveEvidence,
       emailBacklog: 1,
     })).toBe(false);
+  });
+
+  it("does not authorize stale SynXis booleans without verified details", () => {
+    expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
+      ...liveEvidence,
+      synxisEvidence: {
+        vendorApproved: true,
+        certificationEnvironmentApproved: true,
+        propertyMapped: true,
+        sandboxValidated: true,
+        productionSmokeValidated: true,
+        liveEnabled: true,
+      },
+    })).toBe(false);
+  });
+
+  it("allows only payout reconciliation to proceed while a payout exception exists", () => {
+    const payoutExceptionEvidence = { ...liveEvidence, payoutExceptions: 1 };
+    expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, payoutExceptionEvidence)).toBe(false);
+    expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, payoutExceptionEvidence, {
+      allowPayoutExceptionsForReconciliation: true,
+    })).toBe(true);
+    expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
+      ...payoutExceptionEvidence,
+      deliveryFailures: 1,
+    }, { allowPayoutExceptionsForReconciliation: true })).toBe(false);
   });
 });

@@ -1,6 +1,7 @@
 import { buildPaymentReadiness } from "../admin/payment-readiness";
 import { isEmailWorkerEnabled } from "../email/worker-gate";
 import { isHotelPublicationEnabled } from "./publication-gate";
+import { hasCurrentHotelMarketplaceReleaseAuthorization } from "./marketplace-release-authorization";
 import { createAdminClient } from "../supabase/admin";
 import { hasCurrentLivePaymentAuthorization } from "../stripe/live-payment-authorization";
 import {
@@ -8,13 +9,14 @@ import {
   type PriorityPmsLaunchEvidence,
   type PriorityPmsProviderId,
 } from "../../services/hotel-suppliers/priority-readiness";
-import { buildSynxisReadiness, type SynxisActivationEvidence } from "../../services/hotel-suppliers/synxis";
+import { buildVerifiedSynxisReadiness, type SynxisVerifiedEvidence } from "../../services/hotel-suppliers/synxis";
 
 type MarketplaceLaunchEvidence = {
+  releaseAuthorizationValid: boolean;
   paymentAuthorizationValid: boolean;
   supplierStateAvailable: boolean;
   priorityPmsEvidence: Partial<Record<PriorityPmsProviderId, PriorityPmsLaunchEvidence>>;
-  synxisEvidence: SynxisActivationEvidence;
+  synxisEvidence: SynxisVerifiedEvidence;
   operationsStateAvailable: boolean;
   emailBacklog: number;
   emailDeadLetters: number;
@@ -22,26 +24,35 @@ type MarketplaceLaunchEvidence = {
   payoutExceptions: number;
 };
 
+type MarketplaceLaunchAuthorizationOptions = {
+  allowPayoutExceptionsForReconciliation?: boolean;
+};
+
 export function evaluateHotelMarketplaceLaunchAuthorization(
   env: Record<string, string | undefined>,
   evidence: MarketplaceLaunchEvidence,
+  options: MarketplaceLaunchAuthorizationOptions = {},
 ) {
   if (!isHotelPublicationEnabled(env) || !isEmailWorkerEnabled(env.EMAIL_WORKER_ENABLED)) return false;
-  if (!evidence.paymentAuthorizationValid || !evidence.supplierStateAvailable || !evidence.operationsStateAvailable) return false;
+  if (!evidence.releaseAuthorizationValid
+    || !evidence.paymentAuthorizationValid
+    || !evidence.supplierStateAvailable
+    || !evidence.operationsStateAvailable) return false;
   if (!buildPaymentReadiness(env).productionConfiguration.ready) return false;
   if (evidence.emailBacklog !== 0
     || evidence.emailDeadLetters !== 0
-    || evidence.deliveryFailures !== 0
-    || evidence.payoutExceptions !== 0) return false;
+    || evidence.deliveryFailures !== 0) return false;
+  if (!options.allowPayoutExceptionsForReconciliation && evidence.payoutExceptions !== 0) return false;
 
   const priorityPmsLive = auditPriorityPmsProductionReadiness(env, evidence.priorityPmsEvidence)
     .some(({ status }) => status === "live");
-  const synxisLive = buildSynxisReadiness(env, evidence.synxisEvidence).status === "live";
+  const synxisLive = buildVerifiedSynxisReadiness(env, evidence.synxisEvidence).status === "live";
   return priorityPmsLive || synxisLive;
 }
 
-export async function isHotelMarketplaceLaunchAuthorized(
-  env: Record<string, string | undefined> = process.env,
+async function verifyHotelMarketplaceLaunchAuthorization(
+  env: Record<string, string | undefined>,
+  options: MarketplaceLaunchAuthorizationOptions,
 ) {
   if (!isHotelPublicationEnabled(env)) return false;
 
@@ -51,10 +62,11 @@ export async function isHotelMarketplaceLaunchAuthorized(
       .from(table)
       .select("id", { count: "exact", head: true })
       .in(column, values);
-    const [paymentAuthorizationValid, supplierEvidence, synxisEvidence, emailBacklog, emailDeadLetters, deliveryFailures, payoutExceptions] = await Promise.all([
+    const [releaseAuthorizationValid, paymentAuthorizationValid, supplierEvidence, synxisEvidence, emailBacklog, emailDeadLetters, deliveryFailures, payoutExceptions] = await Promise.all([
+      hasCurrentHotelMarketplaceReleaseAuthorization(admin),
       hasCurrentLivePaymentAuthorization(admin),
       admin.from("priority_pms_launch_evidence").select("provider_id,vendor_approved,property_mapped,sandbox_validated,webhook_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact,verification_notes"),
-      admin.from("synxis_crs_launch_evidence").select("vendor_approved,certification_environment_approved,property_mapped,sandbox_validated,production_smoke_validated,live_enabled").eq("provider_id", "sabre-synxis").maybeSingle(),
+      admin.from("synxis_crs_launch_evidence").select("vendor_approved,certification_environment_approved,property_mapped,sandbox_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact").eq("provider_id", "sabre-synxis").maybeSingle(),
       count("email_outbox", "status", ["pending", "failed", "processing"]),
       count("email_outbox", "status", ["dead_letter"]),
       count("email_delivery_events", "processing_status", ["failed"]),
@@ -76,6 +88,7 @@ export async function isHotelMarketplaceLaunchAuthorized(
     }])) as Partial<Record<PriorityPmsProviderId, PriorityPmsLaunchEvidence>>;
 
     return evaluateHotelMarketplaceLaunchAuthorization(env, {
+      releaseAuthorizationValid,
       paymentAuthorizationValid,
       supplierStateAvailable: !supplierEvidence.error && !synxisEvidence.error,
       priorityPmsEvidence,
@@ -86,6 +99,10 @@ export async function isHotelMarketplaceLaunchAuthorized(
         sandboxValidated: synxisEvidence.data?.sandbox_validated ?? false,
         productionSmokeValidated: synxisEvidence.data?.production_smoke_validated ?? false,
         liveEnabled: synxisEvidence.data?.live_enabled ?? false,
+        vendorApprovalReference: synxisEvidence.data?.vendor_approval_reference ?? "",
+        approvedEnvironment: synxisEvidence.data?.approved_environment ?? "",
+        propertyCode: synxisEvidence.data?.property_code ?? "",
+        supportContact: synxisEvidence.data?.support_contact ?? "",
       },
       operationsStateAvailable: !emailBacklog.error
         && !emailDeadLetters.error
@@ -99,8 +116,22 @@ export async function isHotelMarketplaceLaunchAuthorized(
       emailDeadLetters: emailDeadLetters.count ?? 0,
       deliveryFailures: deliveryFailures.count ?? 0,
       payoutExceptions: payoutExceptions.count ?? 0,
-    });
+    }, options);
   } catch {
     return false;
   }
+}
+
+export function isHotelMarketplaceLaunchAuthorized(
+  env: Record<string, string | undefined> = process.env,
+) {
+  return verifyHotelMarketplaceLaunchAuthorization(env, {});
+}
+
+export function isHotelMarketplacePayoutReconciliationAuthorized(
+  env: Record<string, string | undefined> = process.env,
+) {
+  return verifyHotelMarketplaceLaunchAuthorization(env, {
+    allowPayoutExceptionsForReconciliation: true,
+  });
 }

@@ -30,6 +30,7 @@ type Application = {
   commercial_terms_acknowledged: boolean;
   commercial_terms_version_acknowledged: string | null;
   property_id: string | null;
+  approval_evidence_verified: boolean;
   acquisition_attribution: {
     source?: string;
     medium?: string;
@@ -153,6 +154,9 @@ export function AdminPartnerApplications() {
         )}
         {applications.map((application) => {
           const complete = hasCompleteIntake(application);
+          const verifiedApproval = application.status === "approved"
+            && application.approval_evidence_verified
+            && Boolean(application.property_id);
           const noteLength = reviewNotes[application.id]?.trim().length ?? 0;
           const canApprove = complete && hasCompletedReview(reviewChecks[application.id]) && noteLength >= 20 && busy !== application.id;
           const canRecordOtherDecision = noteLength >= 3 && busy !== application.id;
@@ -166,6 +170,7 @@ export function AdminPartnerApplications() {
                       {application.status}
                     </span>
                     {!complete && <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">Incomplete legacy intake</span>}
+                    {application.status === "approved" && !verifiedApproval && <span className="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-800">Unverified legacy approval</span>}
                   </div>
                   <p className="mt-2 text-sm capitalize text-slate-600">
                     {application.star_rating ? `${application.star_rating}-star ` : ""}{formatLabel(application.property_type)} · {application.city || "City missing"}, {application.country || "Country missing"}
@@ -261,8 +266,13 @@ export function AdminPartnerApplications() {
               )}
 
               <div className="flex flex-wrap gap-2">
-                {application.status === "approved" ? (
+                {verifiedApproval ? (
                   <button className="btn-primary" disabled>Verified &amp; draft created</button>
+                ) : application.status === "approved" ? (
+                  <>
+                    <button className="btn-secondary" disabled>Excluded from production readiness</button>
+                    <p className="w-full text-xs text-rose-800">This historical approval has no complete verification receipt and linked property. Keep it excluded and use a complete current intake for a real hotel.</p>
+                  </>
                 ) : (
                   <button className="btn-primary" disabled={!canApprove} onClick={() => decide(application.id, "approved")}>
                     {busy === application.id ? "Saving…" : "Verify, approve & create inactive draft"}

@@ -3,6 +3,26 @@ import { describe, expect, it } from "vitest";
 import { assessSynxisCertificationHandoff } from "../lib/integrations/synxis-certification-handoff";
 
 const completePacket = {
+  readiness: {
+    id: "sabre-synxis",
+    category: "crs",
+    status: "activation_required",
+    missingEnvironmentKeys: [],
+    invalidEnvironmentKeys: [],
+    liveTrafficAllowed: false,
+  },
+  evidence: {
+    vendorApproved: true,
+    certificationEnvironmentApproved: true,
+    propertyMapped: true,
+    sandboxValidated: true,
+    productionSmokeValidated: true,
+    liveEnabled: false,
+    vendorApprovalReference: "SABRE-APPROVAL-2026",
+    approvedEnvironment: "SynXis production certification",
+    propertyCode: "HOTEL-12345",
+    supportContact: "synxis-support@sabre.com",
+  },
   evidenceHistory: { truncated: false },
   requestJournal: { truncated: false },
 };
@@ -21,6 +41,8 @@ describe("SynXis certification handoff eligibility", () => {
   it("reports every blocker without treating validity as eligibility", () => {
     expect(assessSynxisCertificationHandoff({
       packet: {
+        readiness: completePacket.readiness,
+        evidence: completePacket.evidence,
         evidenceHistory: { truncated: true },
         requestJournal: { truncated: true },
       },
@@ -40,9 +62,42 @@ describe("SynXis certification handoff eligibility", () => {
     });
   });
 
+  it("rejects an intact packet whose verified certification gates are incomplete", () => {
+    expect(assessSynxisCertificationHandoff({
+      packet: {
+        ...completePacket,
+        readiness: { ...completePacket.readiness, status: "vendor_approval_required" },
+      },
+      checksumValid: true,
+      schemaVersion: 2,
+      issuanceRecorded: true,
+      freshness: { assessed: true, current: true },
+    })).toMatchObject({ eligible: false, blockers: ["readiness_unverified"] });
+  });
+
+  it("rejects a legacy issued packet that claimed readiness from booleans alone", () => {
+    expect(assessSynxisCertificationHandoff({
+      packet: {
+        ...completePacket,
+        evidence: {
+          vendorApproved: true,
+          certificationEnvironmentApproved: true,
+          propertyMapped: true,
+          sandboxValidated: true,
+          productionSmokeValidated: true,
+          liveEnabled: false,
+        },
+      },
+      checksumValid: true,
+      schemaVersion: 2,
+      issuanceRecorded: true,
+      freshness: { assessed: true, current: true },
+    })).toMatchObject({ eligible: false, blockers: ["readiness_unverified"] });
+  });
+
   it("fails closed for invalid packet sections and exposes the decision in admin UI", () => {
     expect(assessSynxisCertificationHandoff({
-      packet: {},
+      packet: { readiness: completePacket.readiness, evidence: completePacket.evidence },
       checksumValid: true,
       schemaVersion: 2,
       issuanceRecorded: true,

@@ -7,23 +7,56 @@ export type HotelLaunchGate = {
   detail: string;
   actionHref: string;
   actionLabel: string;
+  checks?: Array<{ label: string; ready: boolean; value: string }>;
 };
 
 export type HotelLaunchReadinessInput = {
   approvedHotelCount: number;
   approvedHotelStateAvailable: boolean;
+  hotelApplicationCount: number;
+  pendingHotelApplicationCount: number;
+  declinedHotelApplicationCount: number;
+  verifiedHotelApprovalCount: number;
   inventoryReadyHotelCount: number;
+  listingStateAvailable: boolean;
+  listingCandidateAvailable: boolean;
+  listingChecks: Array<{ label: string; passed: boolean }>;
   commerciallyReadyHotelCount: number;
   commercialStateAvailable: boolean;
+  commercialCandidateAvailable: boolean;
+  commercialChecks: Array<{ label: string; passed: boolean }>;
   liveSupplierCount: number;
   supplierStateAvailable: boolean;
+  supplierChecks: Array<{ label: string; passed: boolean; value?: string }>;
   paymentConfigurationReady: boolean;
   paymentAuthorizationValid: boolean;
   paymentAuthorizationStateAvailable: boolean;
+  paymentChecks: Array<{ label: string; passed: boolean }>;
   operationsReady: boolean;
   operationsStateAvailable: boolean;
+  emailWorkerEnabled: boolean;
+  emailBacklogCount: number;
+  emailDeadLetterCount: number;
+  deliveryFailureCount: number;
+  payoutExceptionCount: number;
+  releaseAuthorizationValid: boolean;
   publicationEnabled: boolean;
 };
+
+export type SupplierReadinessCandidate = {
+  name: string;
+  live: boolean;
+  checks: Array<{ label: string; passed: boolean }>;
+};
+
+export function selectClosestSupplierCandidate(candidates: SupplierReadinessCandidate[]) {
+  return [...candidates].sort((left, right) => {
+    if (left.live !== right.live) return Number(right.live) - Number(left.live);
+    const leftCompletion = left.checks.filter(({ passed }) => passed).length / Math.max(left.checks.length, 1);
+    const rightCompletion = right.checks.filter(({ passed }) => passed).length / Math.max(right.checks.length, 1);
+    return rightCompletion - leftCompletion;
+  })[0];
+}
 
 function gate(
   id: string,
@@ -32,11 +65,28 @@ function gate(
   detail: string,
   actionHref: string,
   actionLabel: string,
+  checks?: HotelLaunchGate["checks"],
 ): HotelLaunchGate {
-  return { id, label, status, detail, actionHref, actionLabel };
+  return { id, label, status, detail, actionHref, actionLabel, ...(checks ? { checks } : {}) };
 }
 
 export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
+  const approvedHotelReady = input.approvedHotelStateAvailable && input.approvedHotelCount > 0;
+  const listingReady = input.listingStateAvailable && input.inventoryReadyHotelCount > 0;
+  const commercialReady = input.commercialStateAvailable && input.commerciallyReadyHotelCount > 0;
+  const supplierReady = input.supplierStateAvailable && input.liveSupplierCount > 0;
+  const paymentsReady = input.paymentAuthorizationStateAvailable
+    && input.paymentConfigurationReady
+    && input.paymentAuthorizationValid;
+  const operationsReady = input.operationsStateAvailable && input.operationsReady;
+  const productionReleaseReady = approvedHotelReady
+    && listingReady
+    && commercialReady
+    && supplierReady
+    && paymentsReady
+    && operationsReady
+    && input.releaseAuthorizationValid
+    && input.publicationEnabled;
   const gates: HotelLaunchGate[] = [
     gate(
       "approved_hotel",
@@ -53,18 +103,37 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
         : "Waiting for the first real 4- or 5-star hotel application to be approved and linked to a property.",
       "/admin/partners",
       "Review hotel applications",
+      input.approvedHotelStateAvailable ? [
+        { label: "Applications received", ready: input.hotelApplicationCount > 0, value: String(input.hotelApplicationCount) },
+        { label: "Pending administrator review", ready: input.pendingHotelApplicationCount === 0, value: String(input.pendingHotelApplicationCount) },
+        { label: "Verified approval decisions", ready: input.verifiedHotelApprovalCount > 0, value: String(input.verifiedHotelApprovalCount) },
+        { label: "Approved hotels linked to a property", ready: input.approvedHotelCount > 0, value: String(input.approvedHotelCount) },
+        { label: "Declined applications", ready: true, value: String(input.declinedHotelApplicationCount) },
+      ] : undefined,
     ),
     gate(
       "listing_inventory",
       "Listing and sellable inventory",
-      input.inventoryReadyHotelCount > 0 ? "ready" : "blocked",
-      input.inventoryReadyHotelCount > 0
+      !input.listingStateAvailable
+        ? "unavailable"
+        : input.inventoryReadyHotelCount > 0 ? "ready" : "blocked",
+      !input.listingStateAvailable
+        ? "Listing and inventory evidence could not be verified. This gate fails closed."
+        : input.inventoryReadyHotelCount > 0
         ? `${input.inventoryReadyHotelCount} approved hotel listing${input.inventoryReadyHotelCount === 1 ? " has" : "s have"} complete content, booking terms, and priced future inventory with taxes and fees.`
         : input.approvedHotelCount > 0
           ? "No approved hotel yet has complete content, booking terms, and priced future inventory with taxes and fees for every active room."
           : "A linked approved hotel is required before listing and inventory readiness can pass.",
       "/admin/properties",
       "Review properties",
+      input.listingStateAvailable ? [
+        { label: "Approved linked hotel available", ready: input.listingCandidateAvailable, value: input.listingCandidateAvailable ? "Complete" : "Required" },
+        ...input.listingChecks.map((item) => ({
+          label: item.label,
+          ready: item.passed,
+          value: item.passed ? "Complete" : "Required",
+        })),
+      ] : undefined,
     ),
     gate(
       "commercial_release",
@@ -81,6 +150,14 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
           : "Waiting for a counsel-approved template, both parties' signatures, and the accountable commercial review for an inventory-ready hotel.",
       "/admin/agreements",
       "Review hotel agreements",
+      input.commercialStateAvailable ? [
+        { label: "Inventory-ready hotel available", ready: input.commercialCandidateAvailable, value: input.commercialCandidateAvailable ? "Complete" : "Required" },
+        ...input.commercialChecks.map((item) => ({
+          label: item.label,
+          ready: item.passed,
+          value: item.passed ? "Complete" : "Required",
+        })),
+      ] : undefined,
     ),
     gate(
       "supplier_connection",
@@ -97,6 +174,11 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
           : "Waiting for vendor approval, real property mapping, sandbox and webhook validation, a production smoke test, and controlled activation.",
       "/admin/settings",
       "Review PMS readiness",
+      input.supplierStateAvailable ? input.supplierChecks.map((item) => ({
+        label: item.label,
+        ready: item.passed,
+        value: item.value ?? (item.passed ? "Complete" : "Required"),
+      })) : undefined,
     ),
     gate(
       "production_payments",
@@ -115,6 +197,18 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
             : "Live Stripe keys, webhook verification, payment and payout flags, or commercial operating mode are incomplete.",
       "/admin/settings",
       "Review payment readiness",
+      input.paymentAuthorizationStateAvailable ? [
+        ...input.paymentChecks.map((item) => ({
+          label: item.label,
+          ready: item.passed,
+          value: item.passed ? "Complete" : "Required",
+        })),
+        {
+          label: "Current production payment approval",
+          ready: input.paymentAuthorizationValid,
+          value: input.paymentAuthorizationValid ? "Recorded" : "Required",
+        },
+      ] : undefined,
     ),
     gate(
       "support_operations",
@@ -131,23 +225,65 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
           : "Resolve the email queue, delivery failures, payout exceptions, or disabled worker before launch.",
       "/admin/operations",
       "Review operations",
+      input.operationsStateAvailable ? [
+        { label: "Email worker", ready: input.emailWorkerEnabled, value: input.emailWorkerEnabled ? "Enabled" : "Disabled" },
+        { label: "Queued email work", ready: input.emailBacklogCount === 0, value: String(input.emailBacklogCount) },
+        { label: "Email dead letters", ready: input.emailDeadLetterCount === 0, value: String(input.emailDeadLetterCount) },
+        { label: "Delivery failures", ready: input.deliveryFailureCount === 0, value: String(input.deliveryFailureCount) },
+        { label: "Payout exceptions", ready: input.payoutExceptionCount === 0, value: String(input.payoutExceptionCount) },
+      ] : undefined,
     ),
     gate(
       "production_release",
       "Production publication release",
-      input.publicationEnabled
-        && input.commerciallyReadyHotelCount > 0
-        && input.liveSupplierCount > 0
-        && input.paymentConfigurationReady
-        && input.paymentAuthorizationValid
-        && input.operationsReady
-        ? "ready"
-        : "blocked",
+      productionReleaseReady ? "ready" : "blocked",
       input.publicationEnabled
         ? "The server publication gate is enabled, but every earlier launch gate must also remain ready."
         : "The server publication gate remains locked until every earlier gate passes and a controlled production release is approved.",
       "/admin/properties",
       "Review release candidates",
+      [
+        {
+          label: "Approved hotel intake",
+          ready: approvedHotelReady,
+          value: approvedHotelReady ? "Complete" : "Required",
+        },
+        {
+          label: "Listing and sellable inventory",
+          ready: listingReady,
+          value: listingReady ? "Complete" : "Required",
+        },
+        {
+          label: "Executed agreement and commercial review",
+          ready: commercialReady,
+          value: commercialReady ? "Complete" : "Required",
+        },
+        {
+          label: "Live supplier or PMS connection",
+          ready: supplierReady,
+          value: supplierReady ? "Complete" : "Required",
+        },
+        {
+          label: "Production booking payments",
+          ready: paymentsReady,
+          value: paymentsReady ? "Complete" : "Required",
+        },
+        {
+          label: "Email and support operations",
+          ready: operationsReady,
+          value: operationsReady ? "Complete" : "Required",
+        },
+        {
+          label: "Current production release authorization",
+          ready: input.releaseAuthorizationValid,
+          value: input.releaseAuthorizationValid ? "Recorded" : "Required",
+        },
+        {
+          label: "Server publication gate",
+          ready: input.publicationEnabled,
+          value: input.publicationEnabled ? "Enabled" : "Disabled",
+        },
+      ],
     ),
   ];
 

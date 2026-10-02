@@ -49,6 +49,9 @@ describe("Automation Operations Center Phase 1", () => {
     expect(route).toContain('.select("*", { count: "exact", head: true })');
     expect(route).not.toContain('.select("id", { count: "exact", head: true })');
     expect(route).toContain('"Cache-Control": "private, no-store"');
+    expect(route).toContain("buildVerifiedSupplierConnectionCounts");
+    expect(route).not.toContain('count("priority_pms_launch_evidence", "live_enabled", [true])');
+    expect(route).not.toContain('count("synxis_crs_launch_evidence", "live_enabled", [true])');
     expect(route).not.toContain("export async function POST");
     expect(route).not.toContain("export async function PATCH");
     expect(route).not.toContain("export async function DELETE");

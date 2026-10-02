@@ -69,6 +69,10 @@ describe("live partner payout safeguards", () => {
       .toBeLessThan(transferRetry.indexOf("stripe.transfers.create"));
     expect(transferRetry).toContain('idempotencyKey: `booking-transfer-${financial.booking_id}`');
     expect(transferRetry).toContain('booking.stripe_payment_mode ?? (isStripeTestMode() ? "test" : null)');
+    expect(transferRetry).toContain('mode === "live" && !await isHotelMarketplacePayoutReconciliationAuthorized()');
+    expect(transferRetry).toContain("Live partner payouts require every production launch gate to pass.");
+    expect(transferRetry.indexOf("isHotelMarketplacePayoutReconciliationAuthorized()"))
+      .toBeLessThan(transferRetry.indexOf("stripe.transfers.list"));
   });
 
   it("surfaces stalled pending payouts to admins after a reconciliation delay", () => {
