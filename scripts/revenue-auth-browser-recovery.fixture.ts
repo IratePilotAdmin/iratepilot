@@ -69,7 +69,7 @@ function controller(role:Role='owner',propertyId=writeProperty){
    },status:async scope=>{const result=await post(role,'status',scope);if(!result.ok)throw Error('Qualification status unavailable');return result.value;},
   }});
 }
-const qualification={
+export const qualification={
  initialize,signOut,
  secure:()=>({secure:isSecureContext,locks:typeof navigator.locks?.request==='function'}),
  fresh:async()=>{for(const role of ['owner','manager'] as const){const result=await post(role,'status',{p_tenant:config.tenantId,p_property:writeProperty,p_request:ownerRequest});

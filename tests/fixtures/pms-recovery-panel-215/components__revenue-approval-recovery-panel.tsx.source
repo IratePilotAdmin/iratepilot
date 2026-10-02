@@ -1,0 +1,46 @@
+'use client';
+import {useEffect,useRef,useState} from 'react';
+import {createRevenueApprovalRecovery,type RevenueApprovalRecord} from '@/lib/revenue-approval-recovery';
+import {hotelRpc,usd} from '@/lib/pilot';
+
+export function RevenueApprovalRecoveryPanel({actor,tenant,property}:{actor:string;tenant:string;property:string}){
+ const [record,setRecord]=useState<RevenueApprovalRecord|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[ready,setReady]=useState(false);
+ const scope=actor+'|'+tenant+'|'+property;
+ const activeScope=useRef(scope);activeScope.current=scope;
+ const [loadedScope,setLoadedScope]=useState('');
+ function controller(){
+  if(!navigator.locks)throw Error('This browser cannot safely coordinate approval recovery. Use a browser with exclusive lock support.');
+  return createRevenueApprovalRecovery({actorId:actor,tenantId:tenant,propertyId:property,storage:localStorage,
+   lock:async(key,work)=>await navigator.locks.request(key,{mode:'exclusive'},work),
+   transport:{
+    // This release has no write path. Integration does not activate the candidate RPC.
+    apply:async()=>{throw Error('Audited recommendation saving is not yet enabled.');},
+    status:async args=>{
+     let timer:ReturnType<typeof setTimeout>|undefined;
+     try{return await Promise.race([
+      hotelRpc('revenue_decision_status',args),
+      new Promise<never>((_resolve,reject)=>{timer=setTimeout(()=>reject(Error('Saved-status check timed out. Your approval remains unresolved. Check saved status again before taking another action.')),30000)}),
+     ])}finally{if(timer!==undefined)clearTimeout(timer)}
+    },
+   }});
+ }
+ useEffect(()=>{
+  setRecord(null);setError('');setBusy(false);setReady(false);setLoadedScope(scope);
+  try{setRecord(controller().read());setReady(true)}catch(reason){setError(reason instanceof Error?reason.message:'Approval recovery could not load.')}
+  // Scope changes recreate the controller; old account/property receipts are hidden immediately.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[scope]);
+ async function recover(){
+  if(!navigator.onLine){setError('Reconnect before checking saved status.');return;}
+  setBusy(true);setError('');
+  try{const next=await controller().recover();if(activeScope.current===scope)setRecord(next)}catch(reason){if(activeScope.current===scope)setError(reason instanceof Error?reason.message:'Saved status could not be verified.')}
+  finally{if(activeScope.current===scope)setBusy(false)}
+ }
+ const current=loadedScope===scope?record:null;
+ return <section className="card revenue-approval-recovery" aria-label="Approval recovery"><h2>Saved-status recovery</h2>
+ {error&&<p className="pilot-error" role="alert">{error}</p>}
+ {current?<><p>Reviewed night: {current.command.p_stay_date} · {usd(current.command.p_recommended_rate_minor)}.</p>
+ {current.phase==='saved'?<p className="pilot-notice">A matching server receipt confirms this request was saved at {new Date(current.receipt!.saved_at).toLocaleString()}. This does not confirm OTA delivery.</p>:<><p>A reviewed request remains on this device. Check its saved status before taking another action. A missing receipt does not prove a delayed request has stopped.</p><button className="secondary" disabled={busy||!ready||loadedScope!==scope} onClick={()=>void recover()}>{busy?'Checking saved status…':'Check saved status'}</button></>}</>:ready&&loadedScope===scope?<p>No unresolved audited approval is stored for this account and property on this device.</p>:<p>Loading approval recovery…</p>}
+ <p>Audited recommendation saving and retry are not yet enabled. Red Roof remains in shadow testing.</p>
+ </section>;
+}
