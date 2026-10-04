@@ -1,0 +1,497 @@
+{
+  "recorded_at": "2026-10-04 03:25:56.77851+00",
+  "scope": "isolated real-Auth supervisor review HTTP qualification after PT409 candidate repair",
+  "qualified": true,
+  "overall_release_qualified": false,
+  "live_migration_applied": false,
+  "project_ref": "ybehrayzwzyufxbxcysq",
+  "parent_ref": "eiqmdldjnedqgbtoozqa",
+  "source_commit": "17c291b24b7460678acfae4e78af72fbd0c20250",
+  "user_authorization": "User explicitly replied Approve to saved test credentials, protected GitHub environment, isolated branch and scoped audit/cleanup.",
+  "prior_attempts": [
+    {
+      "run_id": 37173303644,
+      "job_id": 111350568000,
+      "conclusion": "failure",
+      "checks": [
+        {
+          "status": "preflight-passed",
+          "project_ref": "ybehrayzwzyufxbxcysq",
+          "cleanup_required": true
+        },
+        {
+          "status": "failed",
+          "passed_checks": [
+            "staff review denied"
+          ],
+          "cleanup_required": true
+        }
+      ],
+      "audit": {
+        "issue": {
+          "status": "in_review",
+          "revision": 2,
+          "assigned_to": "7e3ac7b8-3286-4fcb-aaa9-a850390d787c"
+        },
+        "events": [
+          {
+            "action": "claim",
+            "actor_id": "7e3ac7b8-3286-4fcb-aaa9-a850390d787c",
+            "request_id": "e2ec62ae-9aaf-47eb-b3ec-7d04f79567c2",
+            "receipt_revision": 2,
+            "expected_revision": 1
+          }
+        ],
+        "rate_apply_disabled": true
+      },
+      "fixture": {
+        "project_ref": "ybehrayzwzyufxbxcysq",
+        "purpose": "isolated-supervisor-review-race",
+        "tenant_id": "3df9f7a3-a92b-4a78-99f6-2643d4aabec5",
+        "property_id": "a28ef7cd-c898-4ff3-9858-1850a37b94ad",
+        "issue_id": "8b2d65de-938e-4d2a-8d52-86e5c6dc0b45",
+        "owner_id": "7e3ac7b8-3286-4fcb-aaa9-a850390d787c",
+        "manager_id": "fe6502af-b9a2-478d-abad-bfbec8539df6",
+        "staff_id": "451c631e-2e3f-4293-b78c-e1bb92087f20",
+        "initial_revision": 1,
+        "initial_status": "open",
+        "initial_assignee": null,
+        "generated_at": "2026-10-04T03:08:37.311Z",
+        "expires_at": "2026-10-04T03:38:37.311Z"
+      }
+    },
+    {
+      "run_id": 37173580689,
+      "job_id": 111351472296,
+      "conclusion": "failure",
+      "checks": [
+        {
+          "status": "preflight-passed",
+          "project_ref": "ybehrayzwzyufxbxcysq",
+          "cleanup_required": true
+        },
+        {
+          "status": "failed",
+          "passed_checks": [
+            "staff review denied"
+          ],
+          "phase": "concurrent-claims",
+          "claim_summaries": null,
+          "transport_failure": {
+            "phase": "concurrent-claims",
+            "operation": "review",
+            "kind": "TimeoutError"
+          },
+          "failure_kind": "request-or-runtime",
+          "cleanup_required": true
+        }
+      ],
+      "audit": {
+        "issue": {
+          "status": "in_review",
+          "revision": 2,
+          "assigned_to": "7e3ac7b8-3286-4fcb-aaa9-a850390d787c"
+        },
+        "events": [
+          {
+            "action": "claim",
+            "actor_id": "7e3ac7b8-3286-4fcb-aaa9-a850390d787c",
+            "request_id": "d12c2103-e916-4c91-b236-1c1ef82f905b",
+            "receipt_revision": 2,
+            "expected_revision": 1
+          }
+        ],
+        "rate_apply_disabled": true
+      },
+      "fixture": {
+        "project_ref": "ybehrayzwzyufxbxcysq",
+        "purpose": "isolated-supervisor-review-race",
+        "tenant_id": "c62cea75-419d-4b99-b878-715ef3a4fea4",
+        "property_id": "403e913b-a8ab-4b17-9020-fb7f3660f648",
+        "issue_id": "1649067f-77e8-4b17-ac7d-19e346c995c0",
+        "owner_id": "7e3ac7b8-3286-4fcb-aaa9-a850390d787c",
+        "manager_id": "fe6502af-b9a2-478d-abad-bfbec8539df6",
+        "staff_id": "451c631e-2e3f-4293-b78c-e1bb92087f20",
+        "initial_revision": 1,
+        "initial_status": "open",
+        "initial_assignee": null,
+        "generated_at": "2026-10-04T03:14:16.923Z",
+        "expires_at": "2026-10-04T03:44:16.923Z"
+      }
+    }
+  ],
+  "repair": {
+    "old_review_fingerprint": "c4249df6f9d6a485d5805fb3ae347d91",
+    "new_review_fingerprint": "ae12f9df71b5335f86614494ff07dff8",
+    "change": "Only deterministic revision mismatch SQLSTATE changed from 40001 to PT409; locks, revision rejection, authorization, audit and ACL retained.",
+    "mechanism_inference": "Documented PostgREST retry behavior fits the repeated timeout; changing only the conflict code resolved the HTTP test. Project PostgREST version was not measured.",
+    "documentation": "https://supabase.com/docs/guides/troubleshooting/high-cpu-and-infinite-transaction-retries-when-using-custom-error-codes-in-rpc-functions-77326b",
+    "failed_migration_attempt": "First DDL attempt omitted pg_get_functiondef terminator; transaction rolled back, original fingerprint verified, corrected DDL succeeded."
+  },
+  "passed_attempt": {
+    "run_id": 37173953707,
+    "job_id": 111352549323,
+    "url": "https://github.com/IratePilotAdmin/iratepilot/actions/runs/37173953707",
+    "conclusion": "success",
+    "checks": [
+      {
+        "status": "preflight-passed",
+        "project_ref": "ybehrayzwzyufxbxcysq",
+        "cleanup_required": true
+      },
+      {
+        "status": "http-assertions-passed",
+        "project_ref": "ybehrayzwzyufxbxcysq",
+        "checks": [
+          "staff review denied",
+          "two concurrent clients produce one claim and one revision conflict",
+          "winner exact retry returns original receipt",
+          "second supervisor cannot displace the assignee or replay another actor receipt",
+          "winner releases at revision three without an extra replay mutation"
+        ],
+        "cleanup_required": true,
+        "database_receipt_audit_required": true,
+        "limits": "Concurrent HTTP requests only; no browser, queue refresh, membership revocation or 500-property qualification."
+      }
+    ],
+    "initial_audit": {
+      "issue": {
+        "status": "open",
+        "revision": 1,
+        "assigned_to": null
+      },
+      "events": null,
+      "rate_apply_disabled": true
+    },
+    "post_run_audit": {
+      "issue": {
+        "status": "open",
+        "revision": 3,
+        "assigned_to": null
+      },
+      "events": [
+        {
+          "action": "claim",
+          "actor_id": "7e3ac7b8-3286-4fcb-aaa9-a850390d787c",
+          "request_id": "024decb4-f876-41c6-be4a-f1b50001524e",
+          "receipt_revision": 2,
+          "expected_revision": 1
+        },
+        {
+          "action": "release",
+          "actor_id": "7e3ac7b8-3286-4fcb-aaa9-a850390d787c",
+          "request_id": "1d4dcb5f-e1a2-4670-ab12-b8e904e9fc25",
+          "receipt_revision": 3,
+          "expected_revision": 2
+        }
+      ],
+      "rate_apply_disabled": true
+    },
+    "fixture": {
+      "project_ref": "ybehrayzwzyufxbxcysq",
+      "purpose": "isolated-supervisor-review-race",
+      "tenant_id": "683d4577-b843-4c40-b16d-8783ee48af77",
+      "property_id": "0f067a68-7e75-47d6-9c1a-478bdca5ff3b",
+      "issue_id": "3c1827dd-79b0-43b0-9a2e-9ebaf8340edc",
+      "owner_id": "7e3ac7b8-3286-4fcb-aaa9-a850390d787c",
+      "manager_id": "fe6502af-b9a2-478d-abad-bfbec8539df6",
+      "staff_id": "451c631e-2e3f-4293-b78c-e1bb92087f20",
+      "initial_revision": 1,
+      "initial_status": "open",
+      "initial_assignee": null,
+      "generated_at": "2026-10-04T03:22:21.602Z",
+      "expires_at": "2026-10-04T03:52:21.602Z"
+    }
+  },
+  "cleanup": {
+    "observed_at": "2026-10-04 03:25:56.77851+00",
+    "tenants": 0,
+    "properties": 0,
+    "memberships": 0,
+    "issues": 0,
+    "events": 0,
+    "guard_functions": 0,
+    "guard_triggers": 0,
+    "review_fingerprint": "ae12f9df71b5335f86614494ff07dff8",
+    "rate_apply_disabled": true,
+    "active_review_backends": 0
+  },
+  "repository_checks": {
+    "CI": 37173874288,
+    "CodeQL": 37173874287,
+    "dependency_review": 37173874289,
+    "existing_browser_recovery": 37173874293,
+    "all_succeeded": true
+  },
+  "limitations": [
+    "Only concurrent HTTP clients; PostgreSQL lock-wait overlap not measured.",
+    "No full Home/PWA/phone supervisor UI, membership-revocation race or 500-property load qualification.",
+    "Partial isolated backend branch remains MIGRATIONS_FAILED/ACTIVE_HEALTHY.",
+    "Production review repair remains uninstalled; Red Roof and automatic writeback stay disabled.",
+    "Local sign-out was attempted in finally; no independent session revocation audit."
+  ],
+  "security_advisors": {
+    "lints": [
+      {
+        "name": "rls_enabled_no_policy",
+        "title": "RLS Enabled No Policy",
+        "level": "INFO",
+        "facing": "EXTERNAL",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created.",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy",
+        "count": 21,
+        "findings": [
+          {
+            "detail": "Table \\`irp_pms.activity\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "activity",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          },
+          {
+            "detail": "Table \\`irp_pms.memberships\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "memberships",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          },
+          {
+            "detail": "Table \\`irp_pms.nightly_capacity\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "nightly_capacity",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          },
+          {
+            "detail": "Table \\`irp_pms.nightly_rates\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "nightly_rates",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          },
+          {
+            "detail": "Table \\`irp_pms.properties\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "properties",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          },
+          {
+            "detail": "Table \\`irp_pms.rate_actions\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "rate_actions",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          },
+          {
+            "detail": "Table \\`irp_pms.rate_plans\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "rate_plans",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          },
+          {
+            "detail": "Table \\`irp_pms.reservation_charge_snapshots\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "reservation_charge_snapshots",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          },
+          {
+            "detail": "Table \\`irp_pms.reservations\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "reservations",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          },
+          {
+            "detail": "Table \\`irp_pms.revenue_rate_decisions\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "revenue_rate_decisions",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          },
+          {
+            "detail": "Table \\`irp_pms.revenue_supervisor_events\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "revenue_supervisor_events",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          },
+          {
+            "detail": "Table \\`irp_pms.revenue_supervisor_issues\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "revenue_supervisor_issues",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          },
+          {
+            "detail": "Table \\`irp_pms.room_closures\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "room_closures",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          },
+          {
+            "detail": "Table \\`irp_pms.room_types\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "room_types",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          },
+          {
+            "detail": "Table \\`irp_pms.rooms\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "rooms",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          },
+          {
+            "detail": "Table \\`irp_pms.service_books\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "service_books",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          },
+          {
+            "detail": "Table \\`irp_pms.service_day_closes\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "service_day_closes",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          },
+          {
+            "detail": "Table \\`irp_pms.service_day_entries\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "service_day_entries",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          },
+          {
+            "detail": "Table \\`irp_pms.service_reconciliation\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "service_reconciliation",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          },
+          {
+            "detail": "Table \\`irp_pms.tenants\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "tenants",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          },
+          {
+            "detail": "Table \\`irp_pms.turnover_tasks\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "turnover_tasks",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          }
+        ]
+      },
+      {
+        "name": "authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function",
+        "level": "WARN",
+        "facing": "EXTERNAL",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "count": 2,
+        "findings": [
+          {
+            "detail": "Function `public.irp_pms_pilot_revenue_decision_status(p_tenant uuid, p_property uuid, p_request uuid)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/irp_pms_pilot_revenue_decision_status`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+            "metadata": {
+              "name": "irp_pms_pilot_revenue_decision_status",
+              "schema": "public",
+              "language": "plpgsql",
+              "arguments": "p_tenant uuid, p_property uuid, p_request uuid",
+              "security_definer": true
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          },
+          {
+            "detail": "Function `public.irp_pms_pilot_revenue_supervisor_review(p_tenant uuid, p_property uuid, p_issue uuid, p_expected_revision bigint, p_action text, p_request uuid)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/irp_pms_pilot_revenue_supervisor_review`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+            "metadata": {
+              "name": "irp_pms_pilot_revenue_supervisor_review",
+              "schema": "public",
+              "language": "plpgsql",
+              "arguments": "p_tenant uuid, p_property uuid, p_issue uuid, p_expected_revision bigint, p_action text, p_request uuid",
+              "security_definer": true
+            },
+            "observed_at": "2026-10-04T03:27:04.729Z"
+          }
+        ]
+      },
+      {
+        "name": "auth_leaked_password_protection",
+        "title": "Leaked Password Protection Disabled",
+        "level": "WARN",
+        "facing": "EXTERNAL",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Leaked password protection is currently disabled.",
+        "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection",
+        "count": 1,
+        "findings": [
+          {
+            "detail": "Supabase Auth prevents the use of compromised passwords by checking against HaveIBeenPwned.org. Enable this feature to enhance security.",
+            "metadata": {
+              "type": "auth",
+              "entity": "Auth"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
