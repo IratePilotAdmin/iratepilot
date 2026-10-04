@@ -1,0 +1,68 @@
+{
+  "scope": "Supervisor stale-revision HTTP conflict repair; no hotel data mutation or rate activation",
+  "project": "eiqmdldjnedqgbtoozqa",
+  "sourceBefore": "c4249df6f9d6a485d5805fb3ae347d91",
+  "sourceAfter": "ae12f9df71b5335f86614494ff07dff8",
+  "readback": [
+    {
+      "observed_at": "2026-10-04 13:39:42.576539+00",
+      "fingerprint": "ae12f9df71b5335f86614494ff07dff8",
+      "owner": "postgres",
+      "prosecdef": true,
+      "proconfig": [
+        "search_path=pg_catalog"
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "anon_execute": false,
+      "authenticated_execute": true,
+      "service_role_execute": false
+    }
+  ],
+  "migration": "revenue_supervisor_http_conflict_repair",
+  "deployedPmsSource": "5a6f8f0283e101a133a1e205eae4f62ea08e0090",
+  "pmsVersion": 231,
+  "isolatedAuthRun": "https://github.com/IratePilotAdmin/iratepilot/actions/runs/37173953707",
+  "clientReview": {
+    "rpc": "hotelRpc preserves service message/code",
+    "conflict": "generic error display; review disabled until fresh queue refresh",
+    "recovery": "request ID retained until matching successful receipt",
+    "validation": "6 existing queue/timeout tests passed against current source with isolated test dependencies; initial invocation failed due missing test dependencies; rerun passed",
+    "browserOrPhoneValidated": false
+  },
+  "securityAdvisors": [
+    {
+      "name": "rls_enabled_no_policy",
+      "level": "INFO",
+      "count": 234
+    },
+    {
+      "name": "function_search_path_mutable",
+      "level": "WARN",
+      "count": 5
+    },
+    {
+      "name": "anon_security_definer_function_executable",
+      "level": "WARN",
+      "count": 13
+    },
+    {
+      "name": "authenticated_security_definer_function_executable",
+      "level": "WARN",
+      "count": 385
+    },
+    {
+      "name": "auth_leaked_password_protection",
+      "level": "WARN",
+      "count": 1
+    }
+  ],
+  "limits": [
+    "Live authenticated conflict scenario not executed; qualified isolated Auth version has matching live fingerprint",
+    "No browser/phone qualification",
+    "Nightly room-charge reconciliation remains open",
+    "500-property sustained qualification remains open",
+    "PostgREST version not measured",
+    "Security advisor includes existing unrelated project findings; not a clean project-wide security certificate"
+  ],
+  "rates": "Red Roof shadow mode retained; automatic/audited recommendation saving and OTA delivery disabled"
+}
