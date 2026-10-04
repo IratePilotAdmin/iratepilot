@@ -20,3 +20,7 @@ The runner attempts local sign-out in `finally`; abrupt cancellation may interru
 The HTTP checks require staff denial, one successful claim and one revision conflict from concurrent clients, exact retry replay, assignee protection, actor-bound receipt denial, and winner release. This does not establish observed PostgreSQL lock overlap, authorization revocation while waiting, phone operation, queue refresh, sustained 500-property capacity, pricing accuracy, or live activation. The isolated branch contains a partial backend, not complete PMS parity.
 
 Red Roof nightly reconciliation still needs actual nightly charge and effective inventory evidence for September 10, 22 and 24 plus a variable-price multi-night stay. No synthetic fixture can close that source-data gate.
+
+## October 4 preparation repair
+
+The standalone new workflow is not registered in GitHub Actions because it is absent from the default branch. The already registered `revenue-auth-write-http-gate.yml` now provides `supervisor-review` mode with the same non-secret inputs and protected environment. Use this entry point on the draft branch; no main-branch merge or workflow registration change is required. Existing pricing modes keep their prior immutable source pin; supervisor mode checks out its dispatch SHA. Seven preparation/preflight tests now use this repository's Vitest runner after the original Node test files caused CI suite-discovery failures. These fixes do not constitute real Auth execution.
