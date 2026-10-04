@@ -1,0 +1,75 @@
+{
+  "recorded_at": "2026-10-04 03:06:02.962648+00",
+  "scope": "isolated supervisor test preparation and cancelled dispatch; not Auth qualification",
+  "repair_commit": "b57c6a73c91792e93b656bffbb5c8c4259fa1968",
+  "repository_checks": {
+    "CI": {
+      "run_id": 37172800766,
+      "status": "success"
+    },
+    "CodeQL": {
+      "run_id": 37172800844,
+      "status": "success"
+    },
+    "dependency_review": {
+      "run_id": 37172800820,
+      "status": "success"
+    },
+    "existing_browser_recovery": {
+      "run_id": 37172800785,
+      "status": "success"
+    }
+  },
+  "local_vitest": {
+    "files": 2,
+    "passed": 7
+  },
+  "fixture": {
+    "project_ref": "ybehrayzwzyufxbxcysq",
+    "purpose": "isolated-supervisor-review-race",
+    "tenant_id": "d8b8932d-1a27-43e0-964b-54bad9b56262",
+    "property_id": "b4b562de-9aa0-47ca-b381-c054343f86f6",
+    "issue_id": "08451038-d76a-4969-be7f-ede171b8e162",
+    "owner_id": "7e3ac7b8-3286-4fcb-aaa9-a850390d787c",
+    "manager_id": "fe6502af-b9a2-478d-abad-bfbec8539df6",
+    "staff_id": "451c631e-2e3f-4293-b78c-e1bb92087f20",
+    "initial_revision": 1,
+    "initial_status": "open",
+    "initial_assignee": null,
+    "generated_at": "2026-10-04T03:02:40.772Z",
+    "expires_at": "2026-10-04T03:32:40.772Z"
+  },
+  "dispatch": {
+    "run_id": 37172956377,
+    "url": "https://github.com/IratePilotAdmin/iratepilot/actions/runs/37172956377",
+    "conclusion": "cancelled",
+    "job_id": 111349513369,
+    "job_steps": null,
+    "auth_suite_executed": false
+  },
+  "approval_block": {
+    "action": "approve protected environment and start real-account Auth supervisor suite",
+    "reason": "Automatic approval review requires explicit concrete authorization for saved test credential execution; Next was insufficient.",
+    "workaround_attempted": false
+  },
+  "before_cleanup": {
+    "issue_revision": 1,
+    "status": "open",
+    "assigned_to": null,
+    "events": 0
+  },
+  "cleanup": {
+    "observed_at": "2026-10-04 03:06:02.962648+00",
+    "review_fingerprint": "c4249df6f9d6a485d5805fb3ae347d91",
+    "tenants": 0,
+    "properties": 0,
+    "memberships": 0,
+    "issues": 0,
+    "events": 0,
+    "guard_function": null,
+    "guard_triggers": 0,
+    "rate_apply_disabled": true
+  },
+  "release_qualified": false,
+  "rate_writeback_enabled": false
+}

@@ -24,3 +24,9 @@ Red Roof nightly reconciliation still needs actual nightly charge and effective 
 ## October 4 preparation repair
 
 The standalone new workflow is not registered in GitHub Actions because it is absent from the default branch. The already registered `revenue-auth-write-http-gate.yml` now provides `supervisor-review` mode with the same non-secret inputs and protected environment. Use this entry point on the draft branch; no main-branch merge or workflow registration change is required. Existing pricing modes keep their prior immutable source pin; supervisor mode checks out its dispatch SHA. Seven preparation/preflight tests now use this repository's Vitest runner after the original Node test files caused CI suite-discovery failures. These fixes do not constitute real Auth execution.
+
+## Retained cancellation evidence
+
+Repair commit b57c6a73c91792e93b656bffbb5c8c4259fa1968 passed full CI (37172800766), CodeQL (37172800844), dependency review (37172800820) and existing recovery checks (37172800785). The registered supervisor form was visibly available on the draft branch. Manual run 37172956377 reached protected environment review, but automatic approval review rejected execution because the user had not explicitly authorized this concrete use of saved credentials. No workaround was attempted. The waiting run was cancelled before any job steps ran; no Auth suite execution is claimed.
+
+The synthetic issue remained revision 1/open/unassigned with zero events before scoped cleanup. Cleanup verified all five fixture counts zero, absent guard function and triggers, unchanged review fingerprint, and disabled rate-apply privileges at 2026-10-04T03:06:02Z. See `evidence/revenue-supervisor-cancelled-dispatch-20261004.json` and `evidence/revenue-supervisor-cancelled-dispatch-20261004.jpg`. Never rerun the cancelled job with its cleaned manifest. A specifically authorized execution needs a fresh generated fixture and new dispatch.
