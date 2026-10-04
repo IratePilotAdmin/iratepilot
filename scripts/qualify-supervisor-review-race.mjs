@@ -25,13 +25,23 @@ if (process.argv.includes('--preflight')) {
 }
 const sessions = [];
 const checks = [];
+let phase = 'sign-in';
+let claimSummaries = null;
+let transportFailure = null;
 
 async function request(path, token, body) {
-  const response = await fetch(`${base}${path}`, {
+  let response;
+  try {
+  response = await fetch(`${base}${path}`, {
     method: 'POST', signal: AbortSignal.timeout(20_000),
     headers: { apikey: key, ...(token ? { Authorization: `Bearer ${token}` } : {}), 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
+  } catch (error) {
+    transportFailure = { phase, operation: path.startsWith('/auth/') ? 'auth' : 'review',
+      kind: ['TimeoutError', 'AbortError', 'TypeError'].includes(error?.name) ? error.name : 'request-error' };
+    throw error;
+  }
   const data = await response.json().catch(() => null);
   return { ok: response.ok, status: response.status, data };
 }
@@ -56,6 +66,7 @@ try {
   const owner = await signIn('owner');
   const manager = await signIn('manager');
   const staff = await signIn('staff');
+  phase = 'staff-denial';
   const denied = await review(staff, command(1, 'claim'));
   assert.equal(denied.ok, false);
   assert.equal(denied.data?.code, '42501');
@@ -63,7 +74,11 @@ try {
 
   const commands = [command(1, 'claim'), command(1, 'claim')];
   const actors = [owner, manager];
+  phase = 'concurrent-claims';
   const claims = await Promise.all(actors.map((actor, index) => review(actor, commands[index])));
+  claimSummaries = claims.map((r, i) => ({ actor: i === 0 ? 'owner' : 'manager', ok: r.ok,
+    http_status: r.status, sqlstate: typeof r.data?.code === 'string' ? r.data.code : null,
+    receipt_revision: r.ok ? r.data?.revision : null, receipt_status: r.ok ? r.data?.review_status : null }));
   const winners = claims.map((r, i) => r.ok ? i : -1).filter(i => i >= 0);
   assert.equal(winners.length, 1, 'Exactly one concurrent claim must succeed');
   const winner = winners[0];
@@ -76,19 +91,23 @@ try {
   assert.equal(claims[winner].data?.replayed, false);
   checks.push('two concurrent clients produce one claim and one revision conflict');
 
+  phase = 'exact-retry';
   const replay = await review(actors[winner], commands[winner]);
   assert.equal(replay.ok, true);
   assert.deepEqual(replay.data, { ...claims[winner].data, replayed: true });
   checks.push('winner exact retry returns original receipt');
 
+  phase = 'assignee-protection';
   const displaced = await review(actors[loser], command(2, 'claim'));
   assert.equal(displaced.ok, false);
   assert.equal(displaced.data?.message, 'Another supervisor owns this review');
+  phase = 'actor-bound-receipt';
   const stolen = await review(actors[loser], commands[winner]);
   assert.equal(stolen.ok, false);
   assert.equal(stolen.data?.message, 'Review request does not match the original');
   checks.push('second supervisor cannot displace the assignee or replay another actor receipt');
 
+  phase = 'release';
   const released = await review(actors[winner], command(2, 'release'));
   assert.equal(released.ok, true);
   assert.equal(released.data?.revision, 3);
@@ -97,9 +116,10 @@ try {
   console.log(JSON.stringify({ status: 'http-assertions-passed', project_ref: project, checks,
     cleanup_required: true, database_receipt_audit_required: true,
     limits: 'Concurrent HTTP requests only; no browser, queue refresh, membership revocation or 500-property qualification.' }));
-} catch {
+} catch (error) {
   // Avoid serializing Auth responses, bearer tokens or credentials into runner logs.
-  console.error(JSON.stringify({ status: 'failed', passed_checks: checks, cleanup_required: true }));
+  console.error(JSON.stringify({ status: 'failed', passed_checks: checks, phase, claim_summaries: claimSummaries, transport_failure: transportFailure,
+    failure_kind: error?.code === 'ERR_ASSERTION' ? 'assertion' : 'request-or-runtime', cleanup_required: true }));
   process.exitCode = 1;
 } finally {
   await Promise.allSettled(sessions.map(token => request('/auth/v1/logout?scope=local', token, {})));
