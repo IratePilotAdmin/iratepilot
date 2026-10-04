@@ -83,7 +83,8 @@ try {
   assert.equal(winners.length, 1, 'Exactly one concurrent claim must succeed');
   const winner = winners[0];
   const loser = 1 - winner;
-  assert.equal(claims[loser].data?.code, '40001');
+  assert.equal(claims[loser].status, 409);
+  assert.equal(claims[loser].data?.code, 'PT409');
   assert.equal(claims[winner].data?.issue_id, fixture.issue_id);
   assert.equal(claims[winner].data?.request_id, commands[winner].p_request);
   assert.equal(claims[winner].data?.revision, 2);

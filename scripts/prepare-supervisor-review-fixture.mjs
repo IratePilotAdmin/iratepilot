@@ -16,7 +16,7 @@ const install=header+`BEGIN;
 DO $check$
 BEGIN
  IF clock_timestamp()>='${f.expires_at}'::timestamptz-interval '2 minutes' THEN RAISE EXCEPTION 'Generate a fresh fixture'; END IF;
- IF md5(pg_get_functiondef('public.irp_pms_pilot_revenue_supervisor_review(uuid,uuid,uuid,bigint,text,uuid)'::regprocedure))<>'c4249df6f9d6a485d5805fb3ae347d91' THEN RAISE EXCEPTION 'Review source mismatch'; END IF;
+ IF md5(pg_get_functiondef('public.irp_pms_pilot_revenue_supervisor_review(uuid,uuid,uuid,bigint,text,uuid)'::regprocedure))<>'ae12f9df71b5335f86614494ff07dff8' THEN RAISE EXCEPTION 'Review source mismatch'; END IF;
  IF NOT EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='irp_pms_pilot_apply_revenue_decision') THEN RAISE EXCEPTION 'Isolated pricing slice required'; END IF;
  IF EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proname='irp_pms_pilot_apply_revenue_decision' AND (has_function_privilege('anon',p.oid,'EXECUTE') OR has_function_privilege('authenticated',p.oid,'EXECUTE') OR has_function_privilege('service_role',p.oid,'EXECUTE'))) THEN RAISE EXCEPTION 'Rate apply must remain disabled'; END IF;
  IF (SELECT count(*) FROM auth.users WHERE id IN('${f.owner_id}','${f.manager_id}','${f.staff_id}'))<>3 THEN RAISE EXCEPTION 'Expected test actors absent'; END IF;
