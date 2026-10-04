@@ -1,0 +1,31 @@
+import React,{useState} from 'react';
+import {createRoot} from 'react-dom/client';
+import {createRevenueApprovalRecovery} from 'qualification-recovery';
+import {RevenueApprovalRecoveryPanel} from 'qualification-panel';
+
+const tenant='00000000-0000-4000-8000-000000000001',property='00000000-0000-4000-8000-000000000002',actor='00000000-0000-4000-8000-000000000005';
+const ledger='qualification:synthetic-ledger',signal='qualification:lock-signal';
+const command={p_tenant:tenant,p_property:property,p_request:'00000000-0000-4000-8000-000000000006',p_plan:'00000000-0000-4000-8000-000000000004',p_expected_version:1,p_stay_date:'2026-10-01',p_current_rate_minor:14000,p_recommended_rate_minor:16100,p_minimum_rate_minor:7000,p_maximum_rate_minor:21000,p_competitor_rate_minor:null,p_event_uplift_basis_points:0,p_effective_units:10,p_reserved_units:8,p_occupancy_tenths_percent:800,p_adjustment_basis_points:1500,p_guardrail:'none' as const,p_explanations:['Synthetic reviewed inputs']};
+function controller(){return createRevenueApprovalRecovery({actorId:actor,tenantId:tenant,propertyId:property,storage:localStorage,lock:async(key,work)=>navigator.locks.request(key,{mode:'exclusive'},work),transport:{apply:async value=>{
+ const prior=localStorage.getItem(ledger);
+ if(!prior)localStorage.setItem(ledger,JSON.stringify({request_id:value.p_request,tenant_id:value.p_tenant,property_id:value.p_property,plan_id:value.p_plan,stay_date:value.p_stay_date,recommended_rate_minor:value.p_recommended_rate_minor,saved_at:new Date().toISOString(),found:true}));
+ throw Error('Synthetic response lost after save');
+},status:async()=>JSON.parse(localStorage.getItem(ledger)||'null')}})}
+function App(){
+ const [message,setMessage]=useState('Ready'),[refresh,setRefresh]=useState(0),[other,setOther]=useState(false);
+ async function run(work:()=>Promise<unknown>){try{await work();setMessage('Completed')}catch(e){setMessage(e instanceof Error?e.message:String(e))}finally{setRefresh(n=>n+1)}}
+ return <main><h1>Isolated approval recovery qualification</h1><p>Synthetic browser transport only. No PMS, Supabase, OTA or rate writeback calls.</p>
+ <p>Browser context: {String(window.isSecureContext)}; Web Locks: {String(Boolean(navigator.locks))}</p>
+ <div><button onClick={()=>void run(()=>controller().stage(command))}>Stage synthetic review</button>
+ <button onClick={()=>void run(()=>controller().submit())}>Simulate lost save reply</button>
+ <button onClick={()=>void run(async()=>{localStorage.setItem('qualification:status-mode','error')})}>Make status unavailable</button>
+ <button onClick={()=>void run(async()=>{localStorage.setItem('qualification:status-mode','saved')})}>Restore saved status</button>
+ <button onClick={()=>setOther(value=>!value)}>Switch synthetic actor</button>
+ <button onClick={()=>void run(async()=>{await navigator.locks.request(`irp:revenue-approval:v1:${actor}:${tenant}:${property}`,async()=>{localStorage.setItem(signal,'held');setMessage('Lock held');await new Promise(resolve=>setTimeout(resolve,12000));localStorage.setItem(signal,'released')})})}>Hold exclusive lock</button>
+ <button onClick={()=>void run(()=>controller().stage({...command,p_request:'00000000-0000-4000-8000-000000000099'}))}>Try competing review</button></div>
+ <p role="status">{message}</p><p>Lock signal: {localStorage.getItem(signal)||'none'}</p>
+ <p>Journal phase: {controller().read()?.phase||'none'}</p><p>Journal request: {controller().read()?.command.p_request||'none'}</p>
+ <RevenueApprovalRecoveryPanel key={`${refresh}:${other}`} actor={other?'00000000-0000-4000-8000-000000000009':actor} tenant={tenant} property={property}/>
+ </main>;
+}
+createRoot(document.getElementById('root')!).render(<App/>);

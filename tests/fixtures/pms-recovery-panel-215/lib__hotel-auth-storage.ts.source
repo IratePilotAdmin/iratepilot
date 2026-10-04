@@ -1,0 +1,7 @@
+/** Preserve existing live sign-ins; isolate sessions for every other database origin. */
+export function hotelAuthStorageKey(connectionUrl:string){
+ const url=new URL(connectionUrl);
+ if(url.username||url.password||url.search||url.hash||url.pathname!=='/'||!['https:','http:'].includes(url.protocol))throw Error('Invalid hotel connection URL.');
+ if(url.origin==='https://eiqmdldjnedqgbtoozqa.supabase.co')return 'iratepilot-pms-auth';
+ return 'iratepilot-pms-auth:'+encodeURIComponent(url.origin);
+}

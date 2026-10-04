@@ -1,0 +1,29 @@
+{
+  "site_project_id": "appgprj_6a9ef311e9f08191b44e8d5598802ccc",
+  "site_version": 215,
+  "site_commit": "9a0ce72734562fbb834feecae386ae3340381c37",
+  "files": {
+    "components/revenue-approval-recovery-panel.tsx": {
+      "snapshot": "components__revenue-approval-recovery-panel.tsx.source",
+      "sha256": "79d32ab5c0e74e71cca504be7d7c43cb77b798d757a5ae808748bba528f0e495"
+    },
+    "lib/revenue-approval-recovery.ts": {
+      "snapshot": "lib__revenue-approval-recovery.ts.source",
+      "sha256": "c87646f5d541b5bb5f331f46287859e35944f1c286b745f62f4e369eb2bed933"
+    },
+    "lib/pilot.ts": {
+      "snapshot": "lib__pilot.ts.source",
+      "sha256": "f02dde87ab4f4c7160e3dc38fede985d73d63dcccecece7666fa99135f572b53"
+    },
+    "lib/hotel-auth-storage.ts": {
+      "snapshot": "lib__hotel-auth-storage.ts.source",
+      "sha256": "514e020a0dddf30a67d7be6155048467cb578237c9c8e77c4eb8711d55c61c9a"
+    },
+    "lib/pms-contract.ts": {
+      "snapshot": "lib__pms-contract.ts.source",
+      "sha256": "0dcf483c740a73b1dc28e0317d006fb839ce1e1e933b4a01287f9fd07238272f"
+    }
+  },
+  "connection_override": "isolated qualification branch only; live connection module excluded",
+  "limits": "Exact deployed component and transport source, mounted in isolated test host; not full deployed PMS screen."
+}

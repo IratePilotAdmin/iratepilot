@@ -1,0 +1,71 @@
+name: Isolated supervisor review HTTP qualification
+
+on:
+  workflow_dispatch:
+    inputs:
+      fixture_manifest:
+        description: Fresh installed synthetic fixture manifest JSON (no credentials)
+        type: string
+        required: true
+      publishable_key:
+        description: Isolated ybehrayzwzyufxbxcysq branch publishable key
+        type: string
+        required: true
+      supervised_cleanup:
+        description: Operator is present for database receipt audit and scoped cleanup after any result
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: revenue-signed-http-qualification
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    if: github.repository == 'IratePilotAdmin/iratepilot' && github.ref == 'refs/heads/revenue-ai-forecast-evidence-20260930' && inputs.supervised_cleanup
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    environment: revenue-http-qualification
+    steps:
+      - name: Check out the immutable dispatch commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+      - name: Write non-secret manifest and preflight before exposing credentials
+        env:
+          FIXTURE_JSON: ${{ inputs.fixture_manifest }}
+          IRP_REVIEW_FIXTURE_PATH: ${{ runner.temp }}/supervisor-review-fixture.json
+          IRP_REVIEW_PUBLISHABLE_KEY: ${{ inputs.publishable_key }}
+          IRP_REVIEW_SUPERVISED_CLEANUP: "1"
+        run: |
+          node --input-type=module -e 'import {writeFileSync} from "node:fs"; const f=JSON.parse(process.env.FIXTURE_JSON); writeFileSync(process.env.IRP_REVIEW_FIXTURE_PATH, JSON.stringify(f), {mode:0o600, flag:"wx"});'
+          node scripts/qualify-supervisor-review-race.mjs --preflight
+      - name: Run genuine Auth supervisor claim, denial and receipt checks
+        env:
+          IRP_REVIEW_FIXTURE_PATH: ${{ runner.temp }}/supervisor-review-fixture.json
+          IRP_REVIEW_PUBLISHABLE_KEY: ${{ inputs.publishable_key }}
+          IRP_REVIEW_SUPERVISED_CLEANUP: "1"
+          IRP_REVIEW_OWNER_EMAIL: ${{ secrets.IRP_HTTP_TEST_OWNER_EMAIL }}
+          IRP_REVIEW_OWNER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_OWNER_PASSWORD }}
+          IRP_REVIEW_MANAGER_EMAIL: ${{ secrets.IRP_HTTP_TEST_MANAGER_EMAIL }}
+          IRP_REVIEW_MANAGER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_MANAGER_PASSWORD }}
+          IRP_REVIEW_STAFF_EMAIL: ${{ secrets.IRP_HTTP_TEST_STAFF_EMAIL }}
+          IRP_REVIEW_STAFF_PASSWORD: ${{ secrets.IRP_HTTP_TEST_STAFF_PASSWORD }}
+        run: node scripts/qualify-supervisor-review-race.mjs
+      - name: Remove local manifest; database cleanup is still required
+        if: always()
+        run: rm -f -- "$RUNNER_TEMP/supervisor-review-fixture.json"
+
+# Manual dispatch only. This suite has no admin key and never invokes rate apply.
+# HTTP success alone is not qualification. Operator must retain database audit,
+# run generated cleanup.sql and verify no fixture rows or guard triggers remain.
+# Expiry rejects new mutations; it neither deletes records nor revokes Auth sessions.
