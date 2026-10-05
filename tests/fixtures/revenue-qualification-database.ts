@@ -23,6 +23,9 @@ export async function createRevenueQualificationDatabase(){
   // Match the isolated branch's disabled write endpoint; the rehearsal must
   // leave these ACLs unchanged rather than enabling authenticated API writes.
   await db.exec(`REVOKE EXECUTE ON FUNCTION public.irp_pms_pilot_apply_revenue_decision(uuid,uuid,uuid,uuid,bigint,date,bigint,bigint,bigint,bigint,bigint,integer,integer,integer,integer,integer,text,jsonb) FROM authenticated;`);
+  // Keep the read-only preflight endpoint disabled in the baseline as well;
+  // the isolated setup temporarily installs its own scoped wrapper.
+  await db.exec(`REVOKE EXECUTE ON FUNCTION public.irp_pms_pilot_revenue_facts_preflight(uuid,uuid,uuid,bigint,date,bigint,integer,integer) FROM authenticated;`);
 
   return db;
  }catch(error){await db.close();throw error;}
