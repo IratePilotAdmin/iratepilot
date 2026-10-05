@@ -23,7 +23,13 @@ Independent database readback confirms the baseline hash remains
 de351429652dba7c629ff9c705355a1b, with zero physical rooms/reservations.
 The supervisor queue/review definitions are preserved. The nightly rate setter
 remains non-executable by anon, authenticated and service_role. No rate or OTA
-operation was invoked. No fixture data was created and no pricing flags changed.
+operation was invoked. The queue read created two synthetic observation records,
+with no review events. Exact full-row guards removed only those two records;
+independent readback confirmed zero observation/review records afterwards. No
+tenant, property, membership or inventory fixture was added; no pricing flags
+changed. The original artifact's read_only flag describes client commands and is
+misleading for database effects. This audit supersedes that flag. Future runs
+require an operator for observation cleanup and report that effect explicitly.
 
 The test uses Chromium, an HTTP host and a synthetic empty baseline property whose
 queue reports unenrolled capture and incomplete room mapping. This does not prove

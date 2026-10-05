@@ -14,13 +14,17 @@ Vinext Link shim and mapping Cloudflare server bindings to process.env. The actu
 server GET verifies the genuine owner through isolated Supabase Auth. There are
 no successful preview, Auth, membership or workspace response stubs.
 
-The read-only browser suite uses the protected revenue-http-qualification
+The browser suite uses the protected revenue-http-qualification
 environment. Credentials never enter the source capture, static client fixture or
 evidence. The runner enters the protected test credentials into actual AuthPanel
 sign-in fields at runtime and confirms sign-out for each tested account.
 The client allows only isolated Auth, workspace reads and supervisor queue reads;
 unexpected operations abort and fail the suite. Rate writeback and OTA publication
 are unavailable. Browser screenshots mask account email and password controls.
+The actual queue read persists observation records. An operator must independently
+audit and remove the exact unchanged test observations after each run, preserving
+the baseline tenant, property, memberships and room type. No review command is
+allowlisted. CI holds no database administrator credentials.
 
 This is Chromium qualification of a synthetic empty isolated property over HTTP.
 It cannot prove production deployment, populated hotel data, saved review replay,

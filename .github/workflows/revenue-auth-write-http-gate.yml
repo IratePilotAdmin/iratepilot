@@ -27,7 +27,7 @@ on:
         type: string
         required: false
       supervised_cleanup:
-        description: Supervisor mode only - operator present for audit and scoped cleanup
+        description: Supervisor or Home browser mode - operator present for audit and scoped cleanup
         type: boolean
         default: false
 
@@ -105,6 +105,7 @@ jobs:
       - name: Qualify actual Home with genuine isolated Auth
         if: inputs.gate == 'home-browser'
         env:
+          IRP_HOME_SUPERVISED_CLEANUP: ${{ inputs.supervised_cleanup && '1' || '0' }}
           IRP_HTTP_TEST_OWNER_EMAIL: ${{ secrets.IRP_HTTP_TEST_OWNER_EMAIL }}
           IRP_HTTP_TEST_OWNER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_OWNER_PASSWORD }}
           IRP_HTTP_TEST_MANAGER_EMAIL: ${{ secrets.IRP_HTTP_TEST_MANAGER_EMAIL }}
