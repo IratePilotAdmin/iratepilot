@@ -28,7 +28,11 @@ describe("partner property images", () => {
   it("rejects local, private-network, and reserved media hosts", () => {
     for (const imageUrl of [
       "https://localhost/hotel.jpg",
+      "https://localhost./hotel.jpg",
+      "https://localhost%2e/hotel.jpg",
       "https://media.internal/hotel.jpg",
+      "https://media.internal./hotel.jpg",
+      "https://media.internal%2e/hotel.jpg",
       "https://hotel-assets.local/hotel.jpg",
       "https://127.0.0.1/hotel.jpg",
       "https://10.0.0.8/hotel.jpg",

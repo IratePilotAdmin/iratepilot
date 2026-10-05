@@ -20,7 +20,7 @@ function isPrivateOrReservedIpv4(hostname: string) {
 }
 
 function isPublicMediaHostname(hostname: string) {
-  const normalized = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  const normalized = hostname.toLowerCase().replace(/^\[|\]$/g, "").replace(/\.+$/, "");
   if (!normalized || normalized.includes(":")) return false;
   if (isPrivateOrReservedIpv4(normalized)) return false;
   if (/^\d+(?:\.\d+){3}$/.test(normalized)) return true;
