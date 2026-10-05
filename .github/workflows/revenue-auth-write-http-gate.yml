@@ -16,6 +16,7 @@ on:
           - supervisor-queue
           - supervisor-browser
           - supervisor-lockwait
+          - home-services
       fixture_manifest:
         description: Supervisor mode only - fresh installed fixture JSON
         type: string
@@ -43,18 +44,49 @@ jobs:
     timeout-minutes: 10
     environment: revenue-http-qualification
     steps:
+      - name: Check out Home service prerequisite candidate
+        if: inputs.gate == 'home-services'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Set up Node.js for Home prerequisite
+        if: inputs.gate == 'home-services'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24
+      - name: Qualify read-only Home services with genuine Auth
+        if: inputs.gate == 'home-services'
+        env:
+          IRP_HTTP_TEST_OWNER_EMAIL: ${{ secrets.IRP_HTTP_TEST_OWNER_EMAIL }}
+          IRP_HTTP_TEST_OWNER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_OWNER_PASSWORD }}
+          IRP_HTTP_TEST_MANAGER_EMAIL: ${{ secrets.IRP_HTTP_TEST_MANAGER_EMAIL }}
+          IRP_HTTP_TEST_MANAGER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_MANAGER_PASSWORD }}
+          IRP_HTTP_TEST_STAFF_EMAIL: ${{ secrets.IRP_HTTP_TEST_STAFF_EMAIL }}
+          IRP_HTTP_TEST_STAFF_PASSWORD: ${{ secrets.IRP_HTTP_TEST_STAFF_PASSWORD }}
+        run: node scripts/qualify-home-read-services.mjs
+      - name: Upload Home service prerequisite evidence
+        if: inputs.gate == 'home-services'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: home-read-services-evidence
+          path: work/home-read-services-evidence
+          if-no-files-found: error
+          retention-days: 14
       - name: Check out reviewed candidate
+        if: inputs.gate != 'home-services'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ (inputs.gate == 'supervisor-review' || inputs.gate == 'supervisor-queue' || inputs.gate == 'supervisor-browser' || inputs.gate == 'supervisor-lockwait' || inputs.gate == 'audited-http') && github.sha || '10164279cf57af50d64311d1d1b0e4c96d5be86f' }}
           persist-credentials: false
       - name: Set up Node.js
+        if: inputs.gate != 'home-services'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 24
           cache: npm
       - name: Install locked dependencies
-        if: inputs.gate != 'supervisor-review' && inputs.gate != 'supervisor-queue' && inputs.gate != 'supervisor-browser' && inputs.gate != 'supervisor-lockwait'
+        if: inputs.gate != 'supervisor-review' && inputs.gate != 'supervisor-queue' && inputs.gate != 'supervisor-browser' && inputs.gate != 'supervisor-lockwait' && inputs.gate != 'home-services'
         run: npm ci --ignore-scripts
       - name: Install isolated browser tools
         if: inputs.gate == 'browser-recovery' || inputs.gate == 'pms-panel' || inputs.gate == 'supervisor-browser'
@@ -62,7 +94,7 @@ jobs:
           npm ci --ignore-scripts --prefix scripts/revenue-browser-tools
           node scripts/revenue-browser-tools/node_modules/playwright/cli.js install --with-deps chromium
       - name: Validate isolated branch manifest
-        if: inputs.gate != 'supervisor-review' && inputs.gate != 'supervisor-queue' && inputs.gate != 'supervisor-browser' && inputs.gate != 'supervisor-lockwait'
+        if: inputs.gate != 'supervisor-review' && inputs.gate != 'supervisor-queue' && inputs.gate != 'supervisor-browser' && inputs.gate != 'supervisor-lockwait' && inputs.gate != 'home-services'
         env:
           IRP_HTTP_QUALIFICATION_MANIFEST: ${{ vars.IRP_HTTP_QUALIFICATION_MANIFEST }}
         run: node scripts/revenue-http-qualification-preflight.mjs
