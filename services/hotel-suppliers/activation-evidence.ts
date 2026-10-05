@@ -30,10 +30,16 @@ export function isVerifiedActivationDetail(value: string | undefined) {
 
 export function isVerifiedVendorApprovalReference(value: string | undefined) {
   const normalized = normalizedEvidence(value);
+  const characters = [...normalized];
+  const numericReference = characters.every(
+    (character) => character >= "0" && character <= "9",
+  );
   return isSubstantiveEvidence(normalized, 8)
     && !normalized.includes("://")
-    && /[A-Za-z]/.test(normalized)
-    && /[\d._:/-]/.test(normalized);
+    && (numericReference || (
+      /[A-Za-z]/.test(normalized)
+      && /[\d._:/-]/.test(normalized)
+    ));
 }
 
 export function isVerifiedProviderEnvironment(value: string | undefined) {

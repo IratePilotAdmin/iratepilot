@@ -115,6 +115,12 @@ describe("unified PMS production readiness", () => {
       propertyCode: "PNS-425",
       supportContact: `!@!.${"!.".repeat(300)}`,
     })).toBe(false);
+    expect(areVerifiedActivationDetails({
+      vendorApprovalReference: "12345678",
+      approvedEnvironment: "Production tenant",
+      propertyCode: "PNS-425",
+      supportContact: "provider-support@oracle.com",
+    })).toBe(true);
 
     const [oracle] = auditPriorityPmsProductionReadiness(configuredEnvironment(), {
       "oracle-opera": {
