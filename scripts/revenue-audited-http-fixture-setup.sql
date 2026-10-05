@@ -13,6 +13,8 @@ BEGIN
  OR EXISTS(SELECT 1 FROM irp_pms.rate_actions)
  OR EXISTS(SELECT 1 FROM irp_pms.activity)
  OR to_regclass('irp_pms.qualification_write_scope') IS NOT NULL
+ OR has_function_privilege('authenticated','public.irp_pms_pilot_revenue_facts_preflight(uuid,uuid,uuid,bigint,date,bigint,integer,integer)','execute')
+ OR to_regprocedure('irp_pms.qualification_preflight_original(uuid,uuid,uuid,bigint,date,bigint,integer,integer)') IS NOT NULL
  OR has_function_privilege('authenticated','public.irp_pms_pilot_apply_revenue_decision(uuid,uuid,uuid,uuid,bigint,date,bigint,bigint,bigint,bigint,bigint,integer,integer,integer,integer,integer,text,jsonb)','execute')
  THEN RAISE EXCEPTION 'Isolated write fixture baseline differs'; END IF;
 END $$;
@@ -50,13 +52,34 @@ BEGIN
  OR p_tenant IS DISTINCT FROM '00000000-0000-4000-8000-000000000001'::uuid
  OR p_property IS DISTINCT FROM '00000000-0000-4000-8000-000000000030'::uuid
  OR p_plan IS DISTINCT FROM '00000000-0000-4000-8000-000000000032'::uuid
- OR p_request IS NULL OR p_request NOT IN('00000000-0000-4000-8000-000000000020'::uuid,'00000000-0000-4000-8000-000000000021'::uuid,'00000000-0000-4000-8000-000000000022'::uuid)
+ OR p_request IS NULL OR p_request NOT IN('00000000-0000-4000-8000-000000000020'::uuid,'00000000-0000-4000-8000-000000000021'::uuid,'00000000-0000-4000-8000-000000000022'::uuid,'00000000-0000-4000-8000-000000000023'::uuid)
  OR NOT EXISTS(SELECT 1 FROM irp_pms.qualification_write_scope WHERE singleton AND expires_at>clock_timestamp() AND stay_date=p_stay_date)
  THEN RAISE EXCEPTION 'Isolated write qualification scope denied or expired' USING ERRCODE='42501'; END IF;
  RETURN irp_pms.qualification_apply_original(p_tenant,p_property,p_request,p_plan,p_expected_version,p_stay_date,p_current_rate_minor,p_recommended_rate_minor,p_minimum_rate_minor,p_maximum_rate_minor,p_competitor_rate_minor,p_event_uplift_basis_points,p_effective_units,p_reserved_units,p_occupancy_tenths_percent,p_adjustment_basis_points,p_guardrail,p_explanations);
 END $$;
 REVOKE ALL ON FUNCTION public.irp_pms_pilot_apply_revenue_decision(uuid,uuid,uuid,uuid,bigint,date,bigint,bigint,bigint,bigint,bigint,integer,integer,integer,integer,integer,text,jsonb) FROM PUBLIC,anon,service_role;
 GRANT EXECUTE ON FUNCTION public.irp_pms_pilot_apply_revenue_decision(uuid,uuid,uuid,uuid,bigint,date,bigint,bigint,bigint,bigint,bigint,integer,integer,integer,integer,integer,text,jsonb) TO authenticated;
+
+-- Authenticated PMS readback is limited to this expiring synthetic fixture.
+-- The original preflight's disabled ACL is preserved in the private schema.
+ALTER FUNCTION public.irp_pms_pilot_revenue_facts_preflight(uuid,uuid,uuid,bigint,date,bigint,integer,integer) SET SCHEMA irp_pms;
+ALTER FUNCTION irp_pms.irp_pms_pilot_revenue_facts_preflight(uuid,uuid,uuid,bigint,date,bigint,integer,integer) RENAME TO qualification_preflight_original;
+CREATE FUNCTION public.irp_pms_pilot_revenue_facts_preflight(
+ p_tenant uuid,p_property uuid,p_plan uuid,p_expected_version bigint,p_stay_date date,
+ p_current_rate_minor bigint,p_effective_units integer,p_reserved_units integer
+) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+BEGIN
+ IF auth.uid() IS NULL OR auth.uid() NOT IN('7e3ac7b8-3286-4fcb-aaa9-a850390d787c'::uuid,'fe6502af-b9a2-478d-abad-bfbec8539df6'::uuid,'451c631e-2e3f-4293-b78c-e1bb92087f20'::uuid)
+ OR p_tenant IS DISTINCT FROM '00000000-0000-4000-8000-000000000001'::uuid
+ OR p_property IS DISTINCT FROM '00000000-0000-4000-8000-000000000030'::uuid
+ OR p_plan IS DISTINCT FROM '00000000-0000-4000-8000-000000000032'::uuid
+ OR NOT EXISTS(SELECT 1 FROM irp_pms.qualification_write_scope WHERE singleton AND expires_at>clock_timestamp() AND stay_date=p_stay_date)
+ THEN RAISE EXCEPTION 'Isolated readback scope denied or expired' USING ERRCODE='42501'; END IF;
+ RETURN irp_pms.qualification_preflight_original(p_tenant,p_property,p_plan,p_expected_version,p_stay_date,p_current_rate_minor,p_effective_units,p_reserved_units);
+END $$;
+REVOKE ALL ON FUNCTION public.irp_pms_pilot_revenue_facts_preflight(uuid,uuid,uuid,bigint,date,bigint,integer,integer) FROM PUBLIC,anon,service_role;
+GRANT EXECUTE ON FUNCTION public.irp_pms_pilot_revenue_facts_preflight(uuid,uuid,uuid,bigint,date,bigint,integer,integer) TO authenticated;
+
 CREATE FUNCTION irp_pms.qualification_http_audit_failure() RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
 BEGIN
  IF NEW.property_id='00000000-0000-4000-8000-000000000030'::uuid AND NEW.request_id='00000000-0000-4000-8000-000000000022'::uuid

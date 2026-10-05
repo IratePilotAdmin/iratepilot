@@ -1,7 +1,7 @@
 import {readFileSync} from 'node:fs';
 import {createClient,type SupabaseClient} from '@supabase/supabase-js';
 import {afterAll,beforeAll,describe,expect,it} from 'vitest';
-import {parseAuditedWriteConfig,writeCommand,nextChicagoDay,writeProperty,ownerRequest,managerRequest,failureRequest} from './fixtures/revenue-http-write-commands';
+import {parseAuditedWriteConfig,writeCommand,nextChicagoDay,writeProperty,ownerRequest,managerRequest,failureRequest,compensationRequest} from './fixtures/revenue-http-write-commands';
 
 // Explicit opt-in only. This never mounts an application write transport.
 // Operator must install the expiring isolated fixture and clean it afterward.
@@ -9,9 +9,9 @@ describe.runIf(process.env.IRP_RUN_SIGNED_HTTP_WRITE_QUALIFICATION==='1').sequen
  type Role='owner'|'manager'|'staff';
  let config:ReturnType<typeof parseAuditedWriteConfig>;
  let day:string;
- let ownerSavedAt:string|undefined,managerSavedAt:string|undefined;
+ let ownerSavedAt:string|undefined,managerSavedAt:string|undefined,compensationSavedAt:string|undefined;
  const clients:Partial<Record<Role,SupabaseClient>>={};
- async function post(role:Role,endpoint:'apply'|'status',body:unknown,invalidBearer=false){
+ async function post(role:Role,endpoint:'apply'|'status'|'readback',body:unknown,invalidBearer=false){
   const client=clients[role]!;
   const session=await client.auth.getSession();
   const token=session.data.session?.access_token;
@@ -19,7 +19,7 @@ describe.runIf(process.env.IRP_RUN_SIGNED_HTTP_WRITE_QUALIFICATION==='1').sequen
   const verified=await client.auth.getUser(token);
   if(verified.error||verified.data.user?.id.toLowerCase()!==config.actors[role].id.toLowerCase())throw new Error('Isolated qualification identity verification failed');
   if((await client.auth.getSession()).data.session?.access_token!==token)throw new Error('Isolated qualification session changed');
-  const response=await fetch(`https://${config.branch.project_ref}.supabase.co/rest/v1/rpc/irp_pms_pilot_${endpoint==='apply'?'apply_revenue_decision':'revenue_decision_status'}`,{
+  const response=await fetch(`https://${config.branch.project_ref}.supabase.co/rest/v1/rpc/irp_pms_pilot_${endpoint==='apply'?'apply_revenue_decision':endpoint==='readback'?'revenue_facts_preflight':'revenue_decision_status'}`,{
    method:'POST',headers:{apikey:config.publishableKey,Authorization:`Bearer ${invalidBearer?'invalid-qualification-token':token}`,
     'Content-Type':'application/json','Accept':'application/json','Content-Profile':'public'},
    body:JSON.stringify(body),cache:'no-store',credentials:'omit',redirect:'error',signal:AbortSignal.timeout(15000),
@@ -44,6 +44,18 @@ describe.runIf(process.env.IRP_RUN_SIGNED_HTTP_WRITE_QUALIFICATION==='1').sequen
    &&value.replayed===replayed&&typeof value.saved_at==='string'&&Number.isFinite(Date.parse(value.saved_at))
    &&(savedAt===undefined||value.saved_at===savedAt);
  }
+
+ async function readback(rate:number,version:number){
+  const result=await post('owner','readback',{p_tenant:config.tenantId,p_property:writeProperty,
+   p_plan:writeCommand(day).p_plan,p_expected_version:version,p_stay_date:day,
+   p_current_rate_minor:rate,p_effective_units:10,p_reserved_units:8});
+  const facts=result.value.current_facts as Record<string,unknown>|undefined;
+  expect(result.ok&&result.value.tenant_id===config.tenantId&&result.value.property_id===writeProperty
+   &&result.value.plan_id===writeCommand(day).p_plan&&result.value.stay_date===day
+   &&result.value.facts_match===true&&facts?.current_rate_minor===rate&&facts?.plan_version===version
+   &&facts?.effective_units===10&&facts?.reserved_units===8).toBe(true);
+ }
+
  beforeAll(async()=>{
   const path=process.env.IRP_HTTP_QUALIFICATION_CONFIG;
   if(!path)throw new Error('An isolated branch manifest is required');
@@ -64,7 +76,7 @@ describe.runIf(process.env.IRP_RUN_SIGNED_HTTP_WRITE_QUALIFICATION==='1').sequen
    if(!valid)throw new Error(`Isolated ${role} sign-in verification failed`);
   }
   // Refuse to restart a partially completed fixture. Operator inspects and cleans it.
-  for(const [role,request] of [['owner',ownerRequest],['manager',managerRequest]] as const){
+  for(const [role,request] of [['owner',ownerRequest],['manager',managerRequest],['owner',compensationRequest]] as const){
    const result=await post(role,'status',scope(request));
    if(!result.ok||result.value.found!==false||result.value.request_id!==request)throw new Error('Write fixture is not fresh; inspect and clean before another run');
   }
@@ -87,6 +99,7 @@ describe.runIf(process.env.IRP_RUN_SIGNED_HTTP_WRITE_QUALIFICATION==='1').sequen
  it('saves the owner reviewed rate and audit receipt',async()=>{
   const r=await apply('owner');expect(r.ok&&receiptMatches(r.value,ownerRequest,16100,false)).toBe(true);ownerSavedAt=r.value.saved_at as string;
  },30000);
+ it('reads back the owner price and resulting PMS plan version',()=>readback(16100,2),30000);
  it('replays the identical owner request with its original timestamp',async()=>{
   const r=await apply('owner');expect(ownerSavedAt!==undefined&&r.ok&&receiptMatches(r.value,ownerRequest,16100,true,ownerSavedAt)).toBe(true);
  },30000);
@@ -102,6 +115,7 @@ describe.runIf(process.env.IRP_RUN_SIGNED_HTTP_WRITE_QUALIFICATION==='1').sequen
  it('saves a fresh manager reviewed rate',async()=>{
   const r=await apply('manager',managerPatch());expect(r.ok&&receiptMatches(r.value,managerRequest,18515,false)).toBe(true);managerSavedAt=r.value.saved_at as string;
  },30000);
+ it('reads back the manager price and resulting PMS plan version',()=>readback(18515,3),30000);
  it('replays the manager request without a second change',async()=>{
   const r=await apply('manager',managerPatch());expect(managerSavedAt!==undefined&&r.ok&&receiptMatches(r.value,managerRequest,18515,true,managerSavedAt)).toBe(true);
  },30000);
@@ -114,5 +128,23 @@ describe.runIf(process.env.IRP_RUN_SIGNED_HTTP_WRITE_QUALIFICATION==='1').sequen
  it('rejects an injected audit failure',()=>reject('owner','P0001',{p_request:failureRequest,p_expected_version:3,p_current_rate_minor:18515,p_recommended_rate_minor:21292}),30000);
  it('does not create a receipt for the failed audit',async()=>{
   const r=await post('owner','status',scope(failureRequest));expect(r.ok&&r.value.found===false&&!('saved_at' in r.value)).toBe(true);
+ },30000);
+ it('reads back unchanged price and version after rejected audit',()=>readback(18515,3),30000);
+ // A compensating decision is a new audit record, never deletion of the original.
+ // Equal reviewed bounds explicitly restore the fixture's starting price.
+ const compensationPatch=()=>({p_request:compensationRequest,p_expected_version:3,
+  p_current_rate_minor:18515,p_recommended_rate_minor:14000,p_minimum_rate_minor:14000,
+  p_maximum_rate_minor:14000,p_guardrail:'minimum' as const,
+  p_explanations:['Restore synthetic fixture starting rate through audited compensation']});
+ it('restores the starting price through a new audited compensating request',async()=>{
+  const r=await apply('owner',compensationPatch());
+  expect(r.ok&&receiptMatches(r.value,compensationRequest,14000,false)).toBe(true);
+  compensationSavedAt=r.value.saved_at as string;
+ },30000);
+ it('reads back restored price and advanced version from the PMS',()=>readback(14000,4),30000);
+ it('replays compensation without another effective change',async()=>{
+  const r=await apply('owner',compensationPatch());
+  expect(compensationSavedAt!==undefined&&r.ok&&receiptMatches(r.value,compensationRequest,14000,true,compensationSavedAt)).toBe(true);
+  await readback(14000,4);
  },30000);
 });

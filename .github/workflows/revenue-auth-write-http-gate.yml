@@ -43,7 +43,7 @@ jobs:
       - name: Check out reviewed candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ inputs.gate == 'supervisor-review' && github.sha || '10164279cf57af50d64311d1d1b0e4c96d5be86f' }}
+          ref: ${{ (inputs.gate == 'supervisor-review' || inputs.gate == 'audited-http') && github.sha || '10164279cf57af50d64311d1d1b0e4c96d5be86f' }}
           persist-credentials: false
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
@@ -63,7 +63,7 @@ jobs:
         env:
           IRP_HTTP_QUALIFICATION_MANIFEST: ${{ vars.IRP_HTTP_QUALIFICATION_MANIFEST }}
         run: node scripts/revenue-http-qualification-preflight.mjs
-      - name: Run 21 Auth-issued isolated audited-write HTTP cases
+      - name: Run 27 Auth-issued isolated audited-write HTTP cases
         if: inputs.gate == 'audited-http'
         env:
           IRP_RUN_SIGNED_HTTP_WRITE_QUALIFICATION: "1"
@@ -135,3 +135,4 @@ jobs:
 # Install the pinned expiring fixture only on the isolated branch before approval.
 # Operator must run scripts/revenue-audited-http-fixture-cleanup.sql after any result.
 # Runner has no database admin credentials; removal above is only the local manifest.
+

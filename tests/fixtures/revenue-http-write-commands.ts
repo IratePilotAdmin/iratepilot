@@ -5,6 +5,7 @@ export const writeProperty='00000000-0000-4000-8000-000000000030';
 export const writePlan='00000000-0000-4000-8000-000000000032';
 export const ownerRequest='00000000-0000-4000-8000-000000000020';
 export const managerRequest='00000000-0000-4000-8000-000000000021';
+export const compensationRequest='00000000-0000-4000-8000-000000000023';
 export const failureRequest='00000000-0000-4000-8000-000000000022';
 
 export function parseAuditedWriteConfig(raw:unknown){
@@ -31,3 +32,4 @@ export function nextChicagoDay(now:Date){
  date.setUTCDate(date.getUTCDate()+1);
  return date.toISOString().slice(0,10);
 }
+
