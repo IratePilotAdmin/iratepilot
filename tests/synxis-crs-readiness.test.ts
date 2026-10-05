@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildSynxisReadiness,
   buildVerifiedSynxisGates,
+  buildVerifiedSynxisReadiness,
   synxisCrsProvider,
   synxisRequiredEnvironmentKeys,
 } from "../services/hotel-suppliers/synxis";
@@ -151,6 +152,33 @@ describe("Sabre SynXis CRS readiness", () => {
       propertyMapped: true,
       sandboxValidated: true,
       productionSmokeValidated: true,
+    });
+  });
+
+  it("rejects generic text as SynXis activation evidence", () => {
+    const weakEvidence = {
+      vendorApproved: true,
+      certificationEnvironmentApproved: true,
+      propertyMapped: true,
+      sandboxValidated: true,
+      productionSmokeValidated: true,
+      liveEnabled: true,
+      vendorApprovalReference: "approved",
+      approvedEnvironment: "ok",
+      propertyCode: "ok",
+      supportContact: "Sabre Support",
+    };
+
+    expect(buildVerifiedSynxisGates(configuredEnvironment(), weakEvidence)).toEqual({
+      vendorApproved: false,
+      certificationEnvironmentApproved: false,
+      propertyMapped: false,
+      sandboxValidated: false,
+      productionSmokeValidated: false,
+    });
+    expect(buildVerifiedSynxisReadiness(configuredEnvironment(), weakEvidence)).toMatchObject({
+      status: "vendor_approval_required",
+      liveTrafficAllowed: false,
     });
   });
 });

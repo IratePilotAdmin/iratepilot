@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  areVerifiedActivationDetails,
   auditPriorityPmsProductionReadiness,
   priorityPmsProductionManifest,
   priorityPmsProviderIds,
@@ -99,6 +100,33 @@ describe("unified PMS production readiness", () => {
       realPropertyCodeDocumented: false,
       supportContactDocumented: false,
     });
+  });
+
+  it("rejects generic acknowledgements as external provider evidence", () => {
+    expect(areVerifiedActivationDetails({
+      vendorApprovalReference: "approved",
+      approvedEnvironment: "ok",
+      propertyCode: "ok",
+      supportContact: "Oracle Support",
+    })).toBe(false);
+
+    const [oracle] = auditPriorityPmsProductionReadiness(configuredEnvironment(), {
+      "oracle-opera": {
+        vendorApproved: true,
+        propertyMapped: true,
+        sandboxValidated: true,
+        webhookValidated: true,
+        productionSmokeValidated: true,
+        liveEnabled: true,
+        vendorApprovalReference: "approved",
+        approvedEnvironment: "ok",
+        propertyCode: "ok",
+        supportContact: "Oracle Support",
+      },
+    });
+
+    expect(oracle.status).toBe("activation_details_required");
+    expect(oracle.activationChecklist.liveTrafficEnabled).toBe(false);
   });
 
   it("does not present downstream checkboxes as verified without their dependencies", () => {

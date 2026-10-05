@@ -7,7 +7,7 @@ import {
   buildPmsReadiness,
   pmsProviders,
   priorityPmsProviderIds,
-  isVerifiedActivationDetail,
+  areVerifiedActivationDetails,
 } from "@/services/hotel-suppliers";
 import type { PriorityPmsLaunchEvidence, PriorityPmsProviderId } from "@/services/hotel-suppliers";
 import { evaluateInventorySandboxRuntimeGate } from "@/services/hotel-suppliers/inventory-runtime-gate.server";
@@ -227,7 +227,7 @@ export async function PATCH(request: Request) {
       propertyCode: typeof details.propertyCode === "string" ? details.propertyCode : current.property_code,
       supportContact: typeof details.supportContact === "string" ? details.supportContact : current.support_contact,
     };
-    if (patch.liveEnabled === true && Object.values(nextDetails).some((value) => !isVerifiedActivationDetail(value ?? ""))) {
+    if (patch.liveEnabled === true && !areVerifiedActivationDetails(nextDetails)) {
       return NextResponse.json({ error: "Verified vendor approval, environment, real property code, and support contact details are required before live traffic is enabled." }, { status: 409 });
     }
     const preActivationReadiness = auditPriorityPmsProductionReadiness(process.env, {

@@ -63,7 +63,7 @@ describe("SynXis CRS launch evidence persistence", () => {
     expect(route).toContain("Verified vendor approval and certification-environment details are required before the environment can be confirmed.");
     expect(route).toContain("Valid production configuration and verified sandbox validation are required before the production smoke test can be confirmed.");
     expect(route).toContain("buildVerifiedSynxisGates");
-    expect(route).toContain("isVerifiedActivationDetail");
+    expect(route).toContain("areVerifiedActivationDetails");
     expect(route).toContain("Apply SynXis CRS launch-evidence migration 040");
   });
 

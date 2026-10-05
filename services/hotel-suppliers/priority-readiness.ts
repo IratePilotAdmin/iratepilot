@@ -1,3 +1,12 @@
+import {
+  areVerifiedActivationDetails,
+  isVerifiedActivationDetail,
+  isVerifiedPropertyCode,
+  isVerifiedProviderEnvironment,
+  isVerifiedSupportContact,
+  isVerifiedVendorApprovalReference,
+} from "./activation-evidence";
+
 export const priorityPmsProviderIds = [
   "oracle-opera",
   "hilton-pep",
@@ -230,14 +239,6 @@ export const priorityPmsProductionManifest: readonly PriorityPmsProductionManife
 type Environment = Record<string, string | undefined>;
 type EvidenceByProvider = Partial<Record<PriorityPmsProviderId, PriorityPmsLaunchEvidence>>;
 
-const placeholderEvidencePattern = /(?:^|\b)(?:test hotel|example|placeholder|tbd|unknown|n\/a)(?:\b|$)/i;
-
-export function isVerifiedActivationDetail(value: string | undefined) {
-  const normalized = value?.trim() ?? "";
-  return normalized.length > 1 && !placeholderEvidencePattern.test(normalized);
-}
-
-
 const operationPathPattern = /_(?:AVAILABILITY|CREATE_RESERVATION|GET_RESERVATION|MODIFY_RESERVATION|CANCEL_RESERVATION|CREATE|GET|MODIFY|CANCEL|VALIDATION)_PATH$/;
 
 function isSecureUrl(value: string) {
@@ -304,10 +305,10 @@ export function auditPriorityPmsProductionReadiness(
     const providerEvidence = evidence[provider.id] ?? {};
     const productionConfigurationValid = missingEnvironmentKeys.length === 0 && invalidEnvironmentKeys.length === 0;
     const vendorApprovalDocumented = providerEvidence.vendorApproved === true
-      && isVerifiedActivationDetail(providerEvidence.vendorApprovalReference);
-    const approvedEnvironmentDocumented = isVerifiedActivationDetail(providerEvidence.approvedEnvironment);
-    const realPropertyCodeDocumented = isVerifiedActivationDetail(providerEvidence.propertyCode);
-    const supportContactDocumented = isVerifiedActivationDetail(providerEvidence.supportContact);
+      && isVerifiedVendorApprovalReference(providerEvidence.vendorApprovalReference);
+    const approvedEnvironmentDocumented = isVerifiedProviderEnvironment(providerEvidence.approvedEnvironment);
+    const realPropertyCodeDocumented = isVerifiedPropertyCode(providerEvidence.propertyCode);
+    const supportContactDocumented = isVerifiedSupportContact(providerEvidence.supportContact);
     const activationDetailsComplete = vendorApprovalDocumented
       && approvedEnvironmentDocumented
       && realPropertyCodeDocumented
@@ -384,3 +385,4 @@ export function auditPriorityPmsProductionReadiness(
   });
 }
 
+export { areVerifiedActivationDetails, isVerifiedActivationDetail };
