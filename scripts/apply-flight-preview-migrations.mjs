@@ -82,6 +82,7 @@ export const PINNED_NON_FLIGHT_MIGRATIONS = Object.freeze([
   ["202609270159", "202609270159_pms_only_properties.sql"],
   ["202609300161", "202609300161_hotel_marketplace_release_authorization.sql"],
   ["202609300162", "202609300162_property_intake_publication_guard.sql"],
+  ["20261005203527", "20261005203527_partner_review_publication_parity.sql"],
 ].map(([version, filename]) => Object.freeze({ version, filename })));
 
 export const RETIRED_FLIGHT_MIGRATION_VERSIONS = Object.freeze([
@@ -358,7 +359,7 @@ export function listRepositoryMigrations() {
     .filter((name) => name.endsWith(".sql"))
     .sort()
     .map((filename) => {
-      const match = /^(\d{12})_[a-z0-9_]+\.sql$/.exec(filename);
+      const match = /^(\d{12}|\d{14})_[a-z0-9_]+\.sql$/.exec(filename);
       if (!match) {
         throw new Error("The migration directory contains a non-canonical SQL filename.");
       }
