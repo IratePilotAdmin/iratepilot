@@ -50,4 +50,4 @@ jobs:
       - name: Run repository checks
         run: npm run check
       - name: Check isolated supervisor queue preparation without credentials
-        run: node --test scripts/tests/supervisor-queue-preparation.node-test.mjs
+        run: node --test scripts/tests/*.node-test.mjs

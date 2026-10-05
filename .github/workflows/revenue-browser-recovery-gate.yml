@@ -8,6 +8,8 @@ on:
       - scripts/revenue-auth-browser-recovery.fixture.ts
       - scripts/qualify-revenue-auth-browser-recovery.mjs
       - scripts/revenue-pms-panel*
+      - scripts/*supervisor*browser*
+      - tests/fixtures/pms-supervisor-246/**
       - tests/fixtures/pms-recovery-panel-215/**
       - scripts/revenue-browser-tools/**
       - .github/workflows/revenue-browser-recovery-gate.yml
@@ -28,5 +30,6 @@ jobs:
       - run: npm ci --ignore-scripts --prefix scripts/revenue-browser-tools
       - run: node scripts/qualify-revenue-auth-browser-recovery.mjs --build-only
       - run: node scripts/qualify-revenue-auth-browser-recovery.mjs --build-only --pms-panel
+      - run: node scripts/qualify-supervisor-browser-recovery.mjs --build-only
       - run: node scripts/revenue-browser-tools/node_modules/playwright/cli.js install --with-deps chromium
       - run: node scripts/qualify-revenue-browser-recovery.mjs
