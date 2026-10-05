@@ -8,8 +8,20 @@ function normalizedEvidence(value: string | undefined) {
 function isSubstantiveEvidence(value: string | undefined, minimumLength: number) {
   const normalized = normalizedEvidence(value);
   return normalized.length >= minimumLength
+    && normalized.length <= 500
     && !controlCharacterPattern.test(normalized)
     && !placeholderEvidencePattern.test(normalized);
+}
+
+function isPlausibleEmail(value: string) {
+  const separator = value.indexOf("@");
+  if (separator <= 0 || separator !== value.lastIndexOf("@")) return false;
+  const domain = value.slice(separator + 1);
+  return !value.includes(" ")
+    && domain.length >= 3
+    && domain.includes(".")
+    && !domain.startsWith(".")
+    && !domain.endsWith(".");
 }
 
 export function isVerifiedActivationDetail(value: string | undefined) {
@@ -37,9 +49,12 @@ export function isVerifiedPropertyCode(value: string | undefined) {
 export function isVerifiedSupportContact(value: string | undefined) {
   const normalized = normalizedEvidence(value);
   if (!isSubstantiveEvidence(normalized, 6)) return false;
-  const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized);
-  const phone = normalized.replace(/\D/g, "").length >= 7;
-  const supportCase = /\b(?:case|ticket)\b.*\d{3,}/i.test(normalized);
+  const email = isPlausibleEmail(normalized);
+  const digitCount = [...normalized].filter((character) => character >= "0" && character <= "9").length;
+  const lowerCaseValue = normalized.toLowerCase();
+  const phone = digitCount >= 7;
+  const supportCase = digitCount >= 3
+    && (lowerCaseValue.includes("case") || lowerCaseValue.includes("ticket"));
   if (email || phone || supportCase) return true;
   try {
     const url = new URL(normalized);
