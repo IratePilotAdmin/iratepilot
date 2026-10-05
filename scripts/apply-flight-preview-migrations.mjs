@@ -607,7 +607,7 @@ export function parseMigrationListOutput(output) {
 
     const parseCell = (cell) => {
       if (!cell) return undefined;
-      if (/^\d{12}$/.test(cell)) return cell;
+      if (/^(?:\d{12}|\d{14})$/.test(cell)) return cell;
       throw new Error("The Preview migration ledger contains a malformed version cell.");
     };
     const local = parseCell(localCell);
