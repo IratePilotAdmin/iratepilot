@@ -14,6 +14,7 @@ const rehearsalEnv = {
   SUPABASE_SERVICE_ROLE_KEY: "sandbox-server-placeholder",
   PILOT_MODE: "true",
   ENABLE_TEST_CHECKOUT: "true",
+  ENABLE_TEST_STRIPE_WEBHOOKS: "true",
   STRIPE_SECRET_KEY: "sk_test_placeholder",
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_test_placeholder",
   STRIPE_WEBHOOK_SECRET: "whsec_placeholder",
@@ -37,6 +38,7 @@ describe("PMS booking rehearsal preflight", () => {
     ["live Stripe key", { STRIPE_SECRET_KEY: "sk_live_placeholder" }, "stripe_test_secret"],
     ["live publishable key", { NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_live_placeholder" }, "stripe_test_publishable"],
     ["checkout disabled", { ENABLE_TEST_CHECKOUT: "false" }, "test_checkout_enabled"],
+    ["test webhooks disabled", { ENABLE_TEST_STRIPE_WEBHOOKS: "false" }, "test_webhooks_enabled"],
     ["public booking on", { NEXT_PUBLIC_PUBLIC_BOOKING: "true" }, "public_booking_off"],
     ["live payments on", { ENABLE_LIVE_BOOKING_PAYMENTS: "true" }, "live_payments_off"],
   ])("rejects %s", (_name, override, failedCheck) => {

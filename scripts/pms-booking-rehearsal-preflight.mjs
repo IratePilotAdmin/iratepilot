@@ -16,6 +16,7 @@ export function evaluatePmsBookingRehearsalPreflight(env) {
     ["stripe_test_secret", env.STRIPE_SECRET_KEY?.startsWith("sk_test_") === true],
     ["stripe_test_publishable", env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.startsWith("pk_test_") === true],
     ["stripe_webhook_signing_secret", env.STRIPE_WEBHOOK_SECRET?.startsWith("whsec_") === true],
+    ["test_webhooks_enabled", env.ENABLE_TEST_STRIPE_WEBHOOKS === "true"],
     ["public_booking_off", env.NEXT_PUBLIC_PUBLIC_BOOKING !== "true"],
     ["live_payments_off", env.ENABLE_LIVE_BOOKING_PAYMENTS !== "true"],
     ["live_payouts_off", env.ENABLE_LIVE_PARTNER_PAYOUTS !== "true"],

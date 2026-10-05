@@ -31,7 +31,11 @@ export function getApprovedBookingPaymentMode(env: PaymentEnvironment = process.
 }
 
 export function getStripeWebhookMode(env: PaymentEnvironment = process.env): BookingPaymentMode | null {
-  if (env.STRIPE_SECRET_KEY?.startsWith("sk_test_") && env.PILOT_MODE === "true") return "test";
+  if (
+    env.STRIPE_SECRET_KEY?.startsWith("sk_test_")
+    && env.PILOT_MODE === "true"
+    && env.ENABLE_TEST_STRIPE_WEBHOOKS !== "false"
+  ) return "test";
   if (
     env.STRIPE_SECRET_KEY?.startsWith("sk_live_")
     && env.ENABLE_LIVE_STRIPE_WEBHOOKS === "true"
