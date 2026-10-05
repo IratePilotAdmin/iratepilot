@@ -1,0 +1,17 @@
+# Isolated supervisor lock-wait gate
+
+The operator runs a bounded database lock holder while the protected workflow sends a genuine manager Auth-issued review over HTTP. The holder must observe exactly one PostgREST advisory-lock waiter blocked by its own transaction before demoting only the generated fixture membership. A missed window, absent waiter, ambiguous waiter or changed review function aborts without revocation.
+
+Generate a fresh scope with `node scripts/prepare-supervisor-lockwait-fixture.mjs <empty-directory>`. Inspect its manifest and SQL. Verify isolated project ybehrayzwzyufxbxcysq belongs to parent eiqmdldjnedqgbtoozqa, baseline hashes match, review definition matches ae12f9df71b5335f86614494ff07dff8 and pricing writeback remains denied. Install only generated install.sql through the isolated migration tool. Never run it on the parent. The script only prepares files; it performs no network requests or SQL.
+
+Dispatch revenue-supervisor-lockwait-gate.yml on the existing reviewed branch, supplying the manifest, pinned isolated publishable key and supervised_cleanup=true. Use the existing protected environment approval. Do not export passwords, bearer tokens or administrator connection credentials. The workflow has only manager Auth credentials and no database administrator credentials. Its scheduled start is three minutes after generation; missed phases fail rather than silently rescheduling.
+
+At start_at minus ten seconds, execute hold-new.sql. It holds the exact existing review advisory key, observes the HTTP waiter and demotes the fixture manager before committing. Record its waiter timestamp and revocation result. The HTTP new command must return 403/42501; audit zero events and unchanged issue revision one. Execute restore-before-claim.sql before start_at plus thirty seconds. The manager then commits the separately identified claim at revision two.
+
+At start_at plus fifty seconds, execute hold-replay.sql. It requires one committed event, observes a second actual HTTP advisory waiter and demotes the same fixture manager. Exact replay must return 403/42501, without adding an event. Execute restore-before-replay.sql before start_at plus ninety seconds. The workflow replays the identical claim request and requires its original receipt with replayed=true, then releases at revision three.
+
+Qualification requires all five HTTP assertions plus two database wait observations, matching actors/request IDs/revisions and database audit with exactly two events (claim and release), final revision three/open/unassigned. HTTP alone cannot prove a request waited. SQL identity substitution is not genuine Auth proof. Retain sanitized HTTP report, database observations, pre/post baseline hashes and cleanup evidence.
+
+Always execute the exact generated cleanup.sql through the isolated migration tool after any result, timeout, missed schedule, failed approval or cancellation. Verify zero generated tenant/property/membership/issue/event rows and fixture guards; unchanged baseline and function fingerprints; continued rate-apply denial. Do not rerun a cleaned or expired manifest. No live account role, credential, pricing flag, hotel rate or OTA publication changes are authorized by this gate.
+
+The new gate covers isolated HTTP/database authorization and receipt recovery only. Full Home membership/auth navigation, physical installed-iPhone recovery, full PMS migration parity and real hotel forecast/outcome validation remain separate requirements.
