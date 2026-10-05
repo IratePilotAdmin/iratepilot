@@ -134,6 +134,21 @@ begin
 end;
 $assert_publication$;
 
+-- Connect only the synthetic property. Baseline capture is enabled with zero
+-- bookings, while delivery remains held for explicit review.
+select public.irp_pms_configure_reservation_connection(
+  '99000000-0000-4000-8000-000000000091',
+  '11000000-0000-4000-8000-000000000012',
+  '33000000-0000-4000-8000-000000000033',
+  'SYNTHPMS001',
+  '99000000-0000-4000-8000-000000000092',
+  '99000000-0000-4000-8000-000000000093'
+);
+select property_id, snapshot_count from public.irp_pms_prepare_baseline(
+  '33000000-0000-4000-8000-000000000033',
+  '99000000-0000-4000-8000-000000000094', current_date, 0
+);
+
 insert into auth.users (id, email, email_confirmed_at, raw_user_meta_data)
 values (
   '11000000-0000-4000-8000-000000000013',
@@ -205,6 +220,66 @@ begin
 end;
 $assert_payment$;
 
+-- The initial OTA reservation must be captured, but not claimable before
+-- baseline release. A changed guest count must become a second ordered event.
+do $assert_pms_capture$
+declare
+  scope jsonb := '[{"connection_id":"SYNTHPMS001","property_id":"33000000-0000-4000-8000-000000000033","tenant_id":"99000000-0000-4000-8000-000000000092","pms_property_id":"99000000-0000-4000-8000-000000000093"}]'::jsonb;
+begin
+  if (select count(*) from public.irp_pms_outbox
+      where booking_id = '88000000-0000-4000-8000-000000000088') <> 1 then
+    raise exception 'Initial OTA booking did not create one PMS event';
+  end if;
+  if exists (select 1 from public.irp_pms_claim_configured_event(scope)) then
+    raise exception 'PMS event escaped before delivery release';
+  end if;
+end;
+$assert_pms_capture$;
+
+update public.bookings set guests = 2
+where id = '88000000-0000-4000-8000-000000000088';
+
+do $assert_pms_delivery$
+declare
+  scope jsonb := '[{"connection_id":"SYNTHPMS001","property_id":"33000000-0000-4000-8000-000000000033","tenant_id":"99000000-0000-4000-8000-000000000092","pms_property_id":"99000000-0000-4000-8000-000000000093"}]'::jsonb;
+  first_event public.irp_pms_outbox%rowtype;
+  second_event public.irp_pms_outbox%rowtype;
+begin
+  if (select count(*) from public.irp_pms_outbox
+      where booking_id = '88000000-0000-4000-8000-000000000088') <> 2
+    or (select version from public.irp_pms_booking_versions
+      where booking_id = '88000000-0000-4000-8000-000000000088') <> 2 then
+    raise exception 'OTA booking change did not create PMS version two';
+  end if;
+  if not public.irp_pms_release_baseline(
+      '33000000-0000-4000-8000-000000000033',
+      '99000000-0000-4000-8000-000000000094',
+      'synthetic-review-only-rollback') then
+    raise exception 'Synthetic PMS baseline did not release';
+  end if;
+  select * into first_event from public.irp_pms_claim_configured_event(scope);
+  if first_event.source_version is distinct from 1 then
+    raise exception 'First PMS claim was not version one';
+  end if;
+  if exists (select 1 from public.irp_pms_claim_configured_event(scope)) then
+    raise exception 'PMS version two overtook unacknowledged version one';
+  end if;
+  if not public.irp_pms_finish_event(first_event.event_id, first_event.lease_token,
+      'acknowledged', 'synthetic_ack_1') then
+    raise exception 'PMS version one acknowledgement failed';
+  end if;
+  select * into second_event from public.irp_pms_claim_configured_event(scope);
+  if second_event.source_version is distinct from 2
+    or second_event.event_payload #>> '{booking,guests}' <> '2' then
+    raise exception 'Second PMS claim lost the updated booking';
+  end if;
+  if not public.irp_pms_finish_event(second_event.event_id, second_event.lease_token,
+      'acknowledged', 'synthetic_ack_2') then
+    raise exception 'PMS version two acknowledgement failed';
+  end if;
+end;
+$assert_pms_delivery$;
+
 rollback;
 
 select
@@ -212,4 +287,5 @@ select
   (select count(*) from public.hotel_commercial_agreement_evidence where id = '66000000-0000-4000-8000-000000000066') as agreements_left,
   (select count(*) from auth.users where email like 'approval-%@example.invalid') as users_left,
   (select count(*) from public.bookings where id = '88000000-0000-4000-8000-000000000088') as bookings_left,
+  (select count(*) from public.irp_pms_outbox where booking_id = '88000000-0000-4000-8000-000000000088') as pms_events_left,
   (select booking_approval_enabled or payment_finalization_enabled or reward_issuance_enabled from public.hotel_legacy_transaction_controls where singleton = true) as legacy_controls_enabled;
