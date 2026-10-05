@@ -445,9 +445,11 @@ export async function POST(request: Request) {
   if (!readinessResponse.ok) {
     return NextResponse.json({ error: "Current launch readiness could not be verified." }, { status: 503 });
   }
-  const prerequisiteGates = Array.isArray(readiness.gates) ? readiness.gates.slice(0, 6) : [];
-  if (prerequisiteGates.length !== 6 || prerequisiteGates.some((gate: { status?: string }) => gate.status !== "ready")) {
-    return NextResponse.json({ error: "All six production prerequisites must pass before release authorization can be recorded." }, { status: 409 });
+  const prerequisiteGates = Array.isArray(readiness.gates)
+    ? readiness.gates.filter((gate: { id?: string }) => gate.id !== "production_release")
+    : [];
+  if (prerequisiteGates.length !== 7 || prerequisiteGates.some((gate: { status?: string }) => gate.status !== "ready")) {
+    return NextResponse.json({ error: "All seven production prerequisites must pass before release authorization can be recorded." }, { status: 409 });
   }
 
   const { data, error } = await auth.supabase.rpc("record_hotel_marketplace_release_authorization", {
