@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   evaluatePmsBookingRehearsalPreflight,
+  REHEARSAL_GIT_BRANCH,
   REHEARSAL_SUPABASE_URL,
 // @ts-expect-error -- The preflight is an executable .mjs module without a declaration file.
 } from "../scripts/pms-booking-rehearsal-preflight.mjs";
 
 const rehearsalEnv = {
+  VERCEL_ENV: "preview",
+  VERCEL_GIT_COMMIT_REF: REHEARSAL_GIT_BRANCH,
   NEXT_PUBLIC_SUPABASE_URL: REHEARSAL_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sandbox-public-placeholder",
   SUPABASE_SERVICE_ROLE_KEY: "sandbox-server-placeholder",
@@ -26,6 +29,8 @@ describe("PMS booking rehearsal preflight", () => {
   });
 
   it.each([
+    ["production deployment", { VERCEL_ENV: "production" }, "preview_deployment"],
+    ["wrong preview branch", { VERCEL_GIT_COMMIT_REF: "main" }, "rehearsal_branch"],
     ["wrong database", { NEXT_PUBLIC_SUPABASE_URL: "https://eiqmdldjnedqgbtoozqa.supabase.co" }, "isolated_database"],
     ["missing server key", { SUPABASE_SERVICE_ROLE_KEY: "" }, "server_database_key"],
     ["missing public key", { NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "" }, "public_database_key"],

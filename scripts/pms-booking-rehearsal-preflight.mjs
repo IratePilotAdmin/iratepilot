@@ -2,9 +2,12 @@ import { pathToFileURL } from "node:url";
 
 // This gate is intentionally pinned to the isolated, disposable PMS rehearsal project.
 export const REHEARSAL_SUPABASE_URL = "https://onbdizzwwubfdgkgaphx.supabase.co";
+export const REHEARSAL_GIT_BRANCH = "codex/ota-main-integration";
 
 export function evaluatePmsBookingRehearsalPreflight(env) {
   const checks = [
+    ["preview_deployment", env.VERCEL_ENV === "preview"],
+    ["rehearsal_branch", env.VERCEL_GIT_COMMIT_REF === REHEARSAL_GIT_BRANCH],
     ["isolated_database", env.NEXT_PUBLIC_SUPABASE_URL === REHEARSAL_SUPABASE_URL],
     ["public_database_key", Boolean(env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY)],
     ["server_database_key", Boolean(env.SUPABASE_SERVICE_ROLE_KEY)],
