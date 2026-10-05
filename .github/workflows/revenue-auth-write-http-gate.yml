@@ -63,7 +63,7 @@ jobs:
         env:
           IRP_HTTP_QUALIFICATION_MANIFEST: ${{ vars.IRP_HTTP_QUALIFICATION_MANIFEST }}
         run: node scripts/revenue-http-qualification-preflight.mjs
-      - name: Run 27 Auth-issued isolated audited-write HTTP cases
+      - name: Run 28 Auth-issued isolated audited-write HTTP cases
         if: inputs.gate == 'audited-http'
         env:
           IRP_RUN_SIGNED_HTTP_WRITE_QUALIFICATION: "1"
@@ -135,4 +135,5 @@ jobs:
 # Install the pinned expiring fixture only on the isolated branch before approval.
 # Operator must run scripts/revenue-audited-http-fixture-cleanup.sql after any result.
 # Runner has no database admin credentials; removal above is only the local manifest.
+
 

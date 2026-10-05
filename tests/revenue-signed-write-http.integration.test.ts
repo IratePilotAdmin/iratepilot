@@ -38,7 +38,7 @@ describe.runIf(process.env.IRP_RUN_SIGNED_HTTP_WRITE_QUALIFICATION==='1').sequen
   const result=await apply(role,patch);
   expect(!result.ok&&result.code===code&&(code!=='PT409'||result.status===409)).toBe(true); // Never dump raw Auth/RPC replies.
  }
- function receiptMatches(value:Record<string,unknown>,request:string,rate:number,replayed:boolean,savedAt?:string){
+ function receiptMatches(value:Record<string,unknown>,request:string,rate:number,replayed:boolean|undefined,savedAt?:string){
   return value.request_id===request&&value.tenant_id===config.tenantId&&value.property_id===writeProperty
    &&value.plan_id===writeCommand(day).p_plan&&value.stay_date===day&&value.recommended_rate_minor===rate
    &&value.replayed===replayed&&typeof value.saved_at==='string'&&Number.isFinite(Date.parse(value.saved_at))
@@ -96,8 +96,18 @@ describe.runIf(process.env.IRP_RUN_SIGNED_HTTP_WRITE_QUALIFICATION==='1').sequen
  it('rejects a stale current price',()=>reject('owner','PT409',{p_current_rate_minor:14100,p_recommended_rate_minor:16215}),30000);
  it('rejects stale capacity',()=>reject('owner','PT409',{p_effective_units:11,p_occupancy_tenths_percent:727,p_adjustment_basis_points:800,p_recommended_rate_minor:15120}),30000);
  it('rejects stale reserved occupancy',()=>reject('owner','PT409',{p_reserved_units:7,p_occupancy_tenths_percent:700,p_adjustment_basis_points:800,p_recommended_rate_minor:15120}),30000);
- it('saves the owner reviewed rate and audit receipt',async()=>{
-  const r=await apply('owner');expect(r.ok&&receiptMatches(r.value,ownerRequest,16100,false)).toBe(true);ownerSavedAt=r.value.saved_at as string;
+ it('discards a committed owner HTTP reply before retaining its receipt',async()=>{
+  await expect((async()=>{
+   const r=await apply('owner');
+   if(!r.ok)throw new Error('Synthetic owner write did not commit');
+   // Deterministic response loss at the client boundary, not a network fault.
+   throw new Error('Synthetic successful HTTP response discarded');
+  })()).rejects.toThrow('Synthetic successful HTTP response discarded');
+ },30000);
+ it('recovers the owner receipt by status after the discarded HTTP reply',async()=>{
+  const r=await post('owner','status',scope(ownerRequest));
+  expect(r.ok&&r.value.found===true&&receiptMatches(r.value,ownerRequest,16100,undefined)).toBe(true);
+  ownerSavedAt=r.value.saved_at as string;
  },30000);
  it('reads back the owner price and resulting PMS plan version',()=>readback(16100,2),30000);
  it('replays the identical owner request with its original timestamp',async()=>{
@@ -136,10 +146,13 @@ describe.runIf(process.env.IRP_RUN_SIGNED_HTTP_WRITE_QUALIFICATION==='1').sequen
   p_current_rate_minor:18515,p_recommended_rate_minor:14000,p_minimum_rate_minor:14000,
   p_maximum_rate_minor:14000,p_guardrail:'minimum' as const,
   p_explanations:['Restore synthetic fixture starting rate through audited compensation']});
- it('restores the starting price through a new audited compensating request',async()=>{
-  const r=await apply('owner',compensationPatch());
-  expect(r.ok&&receiptMatches(r.value,compensationRequest,14000,false)).toBe(true);
-  compensationSavedAt=r.value.saved_at as string;
+ it('simultaneous identical compensation requests produce one change and one replay',async()=>{
+  const results=await Promise.all([apply('owner',compensationPatch()),apply('owner',compensationPatch())]);
+  const fresh=results.filter(r=>r.ok&&receiptMatches(r.value,compensationRequest,14000,false));
+  const replays=results.filter(r=>r.ok&&receiptMatches(r.value,compensationRequest,14000,true));
+  expect(fresh.length===1&&replays.length===1
+   &&fresh[0].value.saved_at===replays[0].value.saved_at).toBe(true);
+  compensationSavedAt=fresh[0].value.saved_at as string;
  },30000);
  it('reads back restored price and advanced version from the PMS',()=>readback(14000,4),30000);
  it('replays compensation without another effective change',async()=>{
@@ -148,3 +161,4 @@ describe.runIf(process.env.IRP_RUN_SIGNED_HTTP_WRITE_QUALIFICATION==='1').sequen
   await readback(14000,4);
  },30000);
 });
+
