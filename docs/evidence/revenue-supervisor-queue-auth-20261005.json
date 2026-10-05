@@ -1,0 +1,147 @@
+{
+  "date": "2026-10-05",
+  "source_commit": "bcf88b01759c30111f8a3b5356844e6c8d16ce85",
+  "workflow_run": 37361767910,
+  "workflow_url": "https://github.com/IratePilotAdmin/iratepilot/actions/runs/37361767910",
+  "job": 111937861040,
+  "suite": "supervisor-queue",
+  "result": "success",
+  "genuine_auth": true,
+  "fixture": {
+    "project_ref": "ybehrayzwzyufxbxcysq",
+    "purpose": "isolated-supervisor-queue-recovery",
+    "tenant_id": "4c084c65-7c09-4313-9f49-dc4f8a1ca091",
+    "property_id": "5146f749-58e1-47e1-93a0-301390a5cbb9",
+    "owner_id": "7e3ac7b8-3286-4fcb-aaa9-a850390d787c",
+    "manager_id": "fe6502af-b9a2-478d-abad-bfbec8539df6",
+    "staff_id": "451c631e-2e3f-4293-b78c-e1bb92087f20",
+    "generated_at": "2026-10-05T19:12:07.953Z",
+    "expires_at": "2026-10-05T19:42:07.953Z",
+    "queue_hash": "c4ae842e83094387889917f2600050c0",
+    "review_hash": "ae12f9df71b5335f86614494ff07dff8",
+    "fault": "manager-membership-demotion-after-claim"
+  },
+  "preflight": {
+    "events": 0,
+    "issues": 0,
+    "queue_hash": "c4ae842e83094387889917f2600050c0",
+    "review_hash": "ae12f9df71b5335f86614494ff07dff8",
+    "baseline_hash": "cde21b6c192b80c6380067a9e2173d1a",
+    "fixture_guards": 0
+  },
+  "http_assertions": {
+    "status": "http-assertions-passed",
+    "project_ref": "ybehrayzwzyufxbxcysq",
+    "checks": [
+      "owner/manager see both authorized synthetic properties; staff sees none",
+      "real owner claim commits before deliberate reply loss",
+      "fresh HTTP exact retry returns revision two without another claim",
+      "fixture-only demotion removes the new property and retains the earlier authorized property",
+      "revoked manager exact retry and staff review are denied with 42501",
+      "authorized owner reclaims abandoned review and releases at revision six"
+    ],
+    "expected_events": 5,
+    "expected_final_revision": 6,
+    "cleanup_required": true,
+    "database_audit_required": true,
+    "limits": "Controlled reply discard and fixture trigger demotion; no browser/PWA, real packet loss, revocation lock overlap, reauthorization or load proof."
+  },
+  "database_audit": {
+    "roles": [
+      {
+        "role": "owner",
+        "actor": "7e3ac7b8-3286-4fcb-aaa9-a850390d787c"
+      },
+      {
+        "role": "staff",
+        "actor": "fe6502af-b9a2-478d-abad-bfbec8539df6"
+      },
+      {
+        "role": "staff",
+        "actor": "451c631e-2e3f-4293-b78c-e1bb92087f20"
+      }
+    ],
+    "events": [
+      {
+        "actor": "7e3ac7b8-3286-4fcb-aaa9-a850390d787c",
+        "action": "claim",
+        "request": "5abaab11-5dc5-4597-ba8e-7206441e2f47",
+        "receipt_revision": 2,
+        "expected_revision": 1
+      },
+      {
+        "actor": "7e3ac7b8-3286-4fcb-aaa9-a850390d787c",
+        "action": "release",
+        "request": "3c058632-3cea-404c-95ce-940629f554eb",
+        "receipt_revision": 3,
+        "expected_revision": 2
+      },
+      {
+        "actor": "fe6502af-b9a2-478d-abad-bfbec8539df6",
+        "action": "claim",
+        "request": "d2a5fd92-7aa4-44e4-abd5-97125f5a313e",
+        "receipt_revision": 4,
+        "expected_revision": 3
+      },
+      {
+        "actor": "7e3ac7b8-3286-4fcb-aaa9-a850390d787c",
+        "action": "claim",
+        "request": "247b2c51-acf8-4fce-81c6-7c9de69c94e7",
+        "receipt_revision": 5,
+        "expected_revision": 4
+      },
+      {
+        "actor": "7e3ac7b8-3286-4fcb-aaa9-a850390d787c",
+        "action": "release",
+        "request": "c55614f0-0337-42a6-9308-85f09361f150",
+        "receipt_revision": 6,
+        "expected_revision": 5
+      }
+    ],
+    "issues": [
+      {
+        "id": "1b233061-3f65-4042-8dcd-79bf13c5f005",
+        "key": "capture_missing",
+        "status": "open",
+        "assigned": null,
+        "revision": 6
+      }
+    ],
+    "checked_at": "2026-10-05T19:14:59.104957+00:00",
+    "rate_apply_disabled": true
+  },
+  "cleanup": {
+    "events": 0,
+    "issues": 0,
+    "checked_at": "2026-10-05T19:15:28.874711+00:00",
+    "queue_hash": "c4ae842e83094387889917f2600050c0",
+    "review_hash": "ae12f9df71b5335f86614494ff07dff8",
+    "baseline_hash": "cde21b6c192b80c6380067a9e2173d1a",
+    "fixture_tenants": 0,
+    "fixture_triggers": 0,
+    "fixture_functions": 0,
+    "fixture_properties": 0,
+    "fixture_memberships": 0,
+    "rate_apply_disabled": true
+  },
+  "session_cleanup": {
+    "runner_finally": "completed successfully; local signout requests returned success",
+    "limits": "Does not establish immediate JWT invalidation or abrupt-cancellation cleanup."
+  },
+  "production": {
+    "private_pms_version": 246,
+    "writeback_enabled": false,
+    "parent_mutated": false,
+    "release_gates_completed": 0,
+    "release_gates_total": 5
+  },
+  "unqualified": [
+    "Actual supervisor React/SDK/browser recovery",
+    "Real packet loss",
+    "Revocation while blocked on a database lock",
+    "Reauthorization",
+    "Installed phone standalone/background/offline/reload",
+    "Sustained 500-property operation",
+    "Full PMS schema parity"
+  ]
+}
