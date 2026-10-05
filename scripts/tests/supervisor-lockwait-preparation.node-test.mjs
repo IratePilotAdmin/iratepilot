@@ -13,6 +13,9 @@ test('lock-wait preparation isolates actors, scopes, commands and scheduled phas
   const holder=readFileSync(join(root,'hold-new.sql'),'utf8');
   assert.match(holder,/pg_blocking_pids/);assert.match(holder,/wait_event='advisory'/);assert.match(holder,/No HTTP advisory wait observed; revocation withheld/);
   assert.match(holder,/statement_timeout='25s'/);assert.match(holder,/role='manager'/);assert.equal(/GRANT |CREATE FUNCTION/.test(holder),false);
+  assert.match(holder,/INSERT INTO irp_pms.review_lockwait_probe_/);
+  const install=readFileSync(join(root,'install.sql'),'utf8');assert.match(install,/ENABLE ROW LEVEL SECURITY/);assert.match(install,/REVOKE ALL ON irp_pms.review_lockwait_probe_/);
+  assert.match(readFileSync(join(root,'cleanup.sql'),'utf8'),/DROP TABLE IF EXISTS irp_pms.review_lockwait_probe_/);
   assert.match(readFileSync(join(root,'restore-before-replay.sql'),'utf8'),/<>1 THEN RAISE/);
  }finally{rmSync(root,{recursive:true,force:true});}
 });

@@ -13,6 +13,15 @@ const original=JSON.parse(await readFile(join(root,'manifest.json'),'utf8'));
 const f=validateLockwaitFixture({...original,purpose:'isolated-supervisor-lockwait',start_at:new Date(Date.parse(original.generated_at)+180000).toISOString(),review_hash:'ae12f9df71b5335f86614494ff07dff8',requests:{denied:randomUUID(),claim:randomUUID(),release:randomUUID()}});
 await writeFile(join(root,'manifest.json'),JSON.stringify(f,null,2)+'\n');
 const header=`-- MANUAL isolated ${f.project_ref} only. Fresh fixture required. No credentials.\n`;
+const probe='review_lockwait_probe_'+f.issue_id.replaceAll('-','');
+const install=await readFile(join(root,'install.sql'),'utf8');
+await writeFile(join(root,'install.sql'),install.replace('COMMIT;',`CREATE TABLE irp_pms.${probe}(phase text PRIMARY KEY CHECK(phase IN('new','replay')),observation jsonb NOT NULL);
+ALTER TABLE irp_pms.${probe} ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON irp_pms.${probe} FROM PUBLIC,anon,authenticated,service_role;
+COMMIT;`));
+const cleanup=await readFile(join(root,'cleanup.sql'),'utf8');
+await writeFile(join(root,'cleanup.sql'),cleanup.replace('COMMIT;',`DROP TABLE IF EXISTS irp_pms.${probe};\nCOMMIT;`));
+await writeFile(join(root,'audit.sql'),(await readFile(join(root,'audit.sql'),'utf8'))+`SELECT phase,observation FROM irp_pms.${probe} ORDER BY phase;\n`);
 function restore(count){return header+`BEGIN; DO $restore$ DECLARE n integer; BEGIN
  IF clock_timestamp()>='${f.expires_at}'::timestamptz THEN RAISE EXCEPTION 'Expired fixture'; END IF;
  IF (SELECT count(*) FROM irp_pms.revenue_supervisor_events WHERE tenant_id='${f.tenant_id}' AND property_id='${f.property_id}')<>${count} THEN RAISE EXCEPTION 'Unexpected event count'; END IF;
@@ -34,8 +43,8 @@ DO $holder$ DECLARE stop_at timestamptz; seen jsonb; n integer; BEGIN
  END LOOP;
  IF jsonb_array_length(seen)<>1 THEN RAISE EXCEPTION 'Ambiguous waiters; revocation withheld'; END IF;
  UPDATE irp_pms.memberships SET role='staff' WHERE tenant_id='${f.tenant_id}' AND user_id='${f.manager_id}' AND role='manager'; GET DIAGNOSTICS n=ROW_COUNT; IF n<>1 THEN RAISE EXCEPTION 'Fixture-only revocation failed'; END IF;
- PERFORM set_config('irp_qualification.observation',jsonb_build_object('waiters',seen,'revoked_at',clock_timestamp(),'expected_events',${count})::text,true);
+ INSERT INTO irp_pms.${probe}(phase,observation) VALUES('${count===0?'new':'replay'}',jsonb_build_object('waiters',seen,'revoked_at',clock_timestamp(),'expected_events',${count}));
 END $holder$;
-SELECT current_setting('irp_qualification.observation')::jsonb AS observation; COMMIT;\n`;}
+SELECT observation FROM irp_pms.${probe} WHERE phase='${count===0?'new':'replay'}'; COMMIT;\n`;}
 for(const [name,content] of [['hold-new.sql',holder(0,0)],['restore-before-claim.sql',restore(0)],['hold-replay.sql',holder(60000,1)],['restore-before-replay.sql',restore(1)]])await writeFile(join(root,name),content,{flag:'wx'});
 console.log(JSON.stringify({project_ref:f.project_ref,start_at:f.start_at,expires_at:f.expires_at,sql_executed:false,cleanup_required:true}));

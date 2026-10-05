@@ -12,6 +12,8 @@ At start_at plus fifty seconds, execute hold-replay.sql. It requires one committ
 
 Qualification requires all five HTTP assertions plus two database wait observations, matching actors/request IDs/revisions and database audit with exactly two events (claim and release), final revision three/open/unassigned. HTTP alone cannot prove a request waited. SQL identity substitution is not genuine Auth proof. Retain sanitized HTTP report, database observations, pre/post baseline hashes and cleanup evidence.
 
+Each holder persists its wait observation atomically with the fixture-only demotion in a generated private audit table. All client roles are denied access and RLS is enabled. A connector response lost after commit can be reconciled with audit.sql; it is not permission to assume the transaction rolled back or blindly repeat it. The exact cleanup removes this table as well. If a connector outage prevents the scheduled restore, the HTTP gate must fail and the operator must audit and clean up before generating a new fixture.
+
 Always execute the exact generated cleanup.sql through the isolated migration tool after any result, timeout, missed schedule, failed approval or cancellation. Verify zero generated tenant/property/membership/issue/event rows and fixture guards; unchanged baseline and function fingerprints; continued rate-apply denial. Do not rerun a cleaned or expired manifest. No live account role, credential, pricing flag, hotel rate or OTA publication changes are authorized by this gate.
 
 The new gate covers isolated HTTP/database authorization and receipt recovery only. Full Home membership/auth navigation, physical installed-iPhone recovery, full PMS migration parity and real hotel forecast/outcome validation remain separate requirements.
