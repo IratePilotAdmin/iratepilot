@@ -1,0 +1,22 @@
+'use client';
+import {useCallback,useEffect,useRef,useState} from 'react';
+import {hotelClient,hotelRpc} from '@/lib/pilot';
+import {readFinancialMigrationHistory} from '@/lib/financial-migration-history';
+import type {HandoffScope} from '@/lib/cashier-handoff';
+import {FinancialMigrationUpload} from './financial-migration-upload';
+import {FinancialMigrationDetail} from './financial-migration-detail';
+import {FinancialReconciliationWorkflow} from './financial-reconciliation-workflow';
+import {FinancialMigrationPosting} from './financial-migration-posting';
+import {nextFinancialMigrationRecovery} from '@/lib/financial-migration-recovery';
+export function FinancialMigrationWorkspace({scope}:{scope:HandoffScope}){
+ const [recoveryLocked,setRecoveryLocked]=useState(false),[legacyRecovery,setLegacyRecovery]=useState(false);
+ const [history,setHistory]=useState<ReturnType<typeof readFinancialMigrationHistory>|null>(null),[selected,setSelected]=useState<{id:string;status:'staged'|'committed'}|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');const alive=useRef(false),lock=useRef(false);
+ useEffect(()=>{alive.current=true;try{const next=nextFinancialMigrationRecovery(sessionStorage,scope);if(next){setLegacyRecovery(next.legacy);setSelected({id:next.id,status:'staged'});setRecoveryLocked(true)}}catch{setError('Unable to read saved posting recovery. Keep saved requests intact and resolve recovery before continuing.');setRecoveryLocked(true)}return()=>{alive.current=false}},[scope.tenant,scope.property,scope.actor]);
+ function completed(){try{const next=nextFinancialMigrationRecovery(sessionStorage,scope);setLegacyRecovery(next?.legacy??false);setRecoveryLocked(!!next);setSelected(next?{id:next.id,status:'staged'}:selected?{...selected,status:'committed'}:null);void load()}catch{setError('A remaining migration request needs recovery. Keep saved requests intact.');setRecoveryLocked(true)}}
+ async function load(more=false){if(lock.current)return;lock.current=true;setBusy(true);setError('');try{const user=await hotelClient().auth.getUser();if(user.error||user.data.user?.id!==scope.actor)throw Error('Sign-in changed. Reopen migration.');const before=more?history?.next??null:null;if(more&&!before)return;const result=readFinancialMigrationHistory(await hotelRpc('financial_migration_batches_page',{p_tenant:scope.tenant,p_property:scope.property,p_before:before}),scope,before);const again=await hotelClient().auth.getUser();if(again.error||again.data.user?.id!==scope.actor)throw Error('Sign-in changed. Reopen migration.');if(alive.current)setHistory(result)}catch(e){if(alive.current)setError(e instanceof Error?e.message:'Unable to load migration history.')}finally{lock.current=false;if(alive.current)setBusy(false)}}
+ const Posting=legacyRecovery?FinancialMigrationPosting:FinancialReconciliationWorkflow;
+ const recoveryChanged=useCallback((locked:boolean)=>{try{if(!locked&&legacyRecovery&&selected&&!sessionStorage.getItem(['irp.financial.commit.v1',scope.tenant,scope.property,scope.actor,selected.id].join(':')))setLegacyRecovery(false);setRecoveryLocked(locked)}catch{setError('Unable to read posting recovery.');setRecoveryLocked(true)}},[legacyRecovery,selected?.id,scope.tenant,scope.property,scope.actor]);
+ return <><fieldset disabled={recoveryLocked}><FinancialMigrationUpload key={scope.actor+':upload'} scope={scope} onStaged={id=>{setSelected({id,status:'staged'});void load()}}/></fieldset><section className="card"><h2>Financial migration history</h2>{recoveryLocked&&<p role="status">Finish or recover the current posting before switching batches.</p>}<button type="button" disabled={busy} onClick={()=>void load()}>Refresh financial batches</button>{history?.entries.map(batch=><div className="pilot-list-row" key={batch.id}><div><strong>{batch.sourceBatch}</strong><p>{batch.provider} · {batch.cutover} · {batch.count} items · {batch.status}</p></div><button type="button" disabled={busy||recoveryLocked} onClick={()=>setSelected({id:batch.id,status:batch.status})}>Open financial batch</button></div>)}{history?.entries.length===0&&<p>No financial batches found.</p>}{history?.next&&<button type="button" disabled={busy} onClick={()=>void load(true)}>More financial batches</button>}{error&&<p role="alert">{error}</p>}</section>{selected?.status==='staged'&&<Posting onRecoveryLock={recoveryChanged} scope={scope} batch={selected.id} onCompleted={completed}/>}{selected&&<FinancialMigrationDetail key={selected.id+selected.status} scope={scope} batch={selected.id}/>}</>;
+}
+
+

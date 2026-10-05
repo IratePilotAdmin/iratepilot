@@ -1,0 +1,17 @@
+export function readInvoiceAllocationHistory(value:unknown,scope:{tenant:string;property:string;invoice:string;actor:string}){
+ const r=value as Record<string,unknown>,uuid=/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+ if(!r||r.schema_version!==1||r.tenant_id!==scope.tenant||r.property_id!==scope.property||r.invoice_id!==scope.invoice||r.actor_id!==scope.actor||r.complete!==true||r.currency!=='USD'||!Array.isArray(r.allocations)||r.allocations.length>1000)throw Error('Invoice allocation history scope changed.');
+ const seen=new Set<string>(),money=(v:unknown)=>{if(typeof v!=='string'||!/^(0|[1-9][0-9]{0,11})$/.test(v))throw Error('Invalid allocation history amount.');return BigInt(v);};
+ return r.allocations.map(value=>{const a=value as Record<string,unknown>;if(!a||typeof a.allocation_id!=='string'||!uuid.test(a.allocation_id)||seen.has(a.allocation_id)||typeof a.entry_id!=='string'||!uuid.test(a.entry_id)||typeof a.reference!=='string'||typeof a.reason!=='string'||a.reason.length>500||typeof a.effective_on!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(a.effective_on)||!Number.isFinite(Date.parse(a.effective_on+'T00:00:00Z'))||new Date(a.effective_on+'T00:00:00Z').toISOString().slice(0,10)!==a.effective_on)throw Error('Invalid allocation history row.');seen.add(a.allocation_id);
+ const amount=money(a.amount_minor),reversed=money(a.reversed_minor),remaining=money(a.reversible_minor);if(amount===BigInt(0)||amount-reversed!==remaining)throw Error('Allocation history does not reconcile.');return {id:a.allocation_id,entry:a.entry_id,reference:a.reference,reason:a.reason,effective_on:a.effective_on,amount_minor:amount.toString(),reversed_minor:reversed.toString(),reversible_minor:remaining.toString()};});
+}
+export function readInvoicePaymentOptions(value:unknown,scope:{tenant:string;property:string;invoice:string;actor:string}){
+ const r=value as Record<string,unknown>,uuid=/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+ if(!r||r.schema_version!==1||r.tenant_id!==scope.tenant||r.property_id!==scope.property||r.invoice_id!==scope.invoice||r.actor_id!==scope.actor||r.currency!=='USD'||r.complete!==true||!Array.isArray(r.payments)||r.payments.length>1000)throw Error('Invoice payment review scope changed.');
+ const money=(v:unknown)=>{if(typeof v!=='string'||!/^(0|[1-9][0-9]{0,11})$/.test(v))throw Error('Invalid payment review amount.');return BigInt(v);},seen=new Set<string>();
+ const outstanding=money(r.invoice_outstanding_minor);
+ const payments=r.payments.map(value=>{const p=value as Record<string,unknown>;if(!p||typeof p.entry_id!=='string'||!uuid.test(p.entry_id)||seen.has(p.entry_id)||typeof p.reference!=='string'||p.reference.length>500||typeof p.created_at!=='string'||!Number.isFinite(Date.parse(p.created_at)))throw Error('Invalid payment receipt.');seen.add(p.entry_id);
+ const received=money(p.received_minor),reduced=money(p.refunded_or_corrected_minor),allocated=money(p.allocated_minor),available=money(p.available_minor);if(received===BigInt(0)||received-reduced-allocated!==available)throw Error('Payment receipt does not reconcile.');
+ return {entry_id:p.entry_id,reference:p.reference,created_at:p.created_at,received_minor:received.toString(),reduced_minor:reduced.toString(),allocated_minor:allocated.toString(),available_minor:available.toString(),maximum_minor:(available<outstanding?available:outstanding).toString()};});
+ return {outstanding_minor:outstanding.toString(),payments};
+}

@@ -17,6 +17,7 @@ on:
           - supervisor-browser
           - supervisor-lockwait
           - home-services
+          - home-browser
       fixture_manifest:
         description: Supervisor mode only - fresh installed fixture JSON
         type: string
@@ -77,7 +78,7 @@ jobs:
         if: inputs.gate != 'home-services'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ (inputs.gate == 'supervisor-review' || inputs.gate == 'supervisor-queue' || inputs.gate == 'supervisor-browser' || inputs.gate == 'supervisor-lockwait' || inputs.gate == 'audited-http') && github.sha || '10164279cf57af50d64311d1d1b0e4c96d5be86f' }}
+          ref: ${{ (inputs.gate == 'home-browser' || inputs.gate == 'supervisor-review' || inputs.gate == 'supervisor-queue' || inputs.gate == 'supervisor-browser' || inputs.gate == 'supervisor-lockwait' || inputs.gate == 'audited-http') && github.sha || '10164279cf57af50d64311d1d1b0e4c96d5be86f' }}
           persist-credentials: false
       - name: Set up Node.js
         if: inputs.gate != 'home-services'
@@ -86,18 +87,39 @@ jobs:
           node-version: 24
           cache: npm
       - name: Install locked dependencies
-        if: inputs.gate != 'supervisor-review' && inputs.gate != 'supervisor-queue' && inputs.gate != 'supervisor-browser' && inputs.gate != 'supervisor-lockwait' && inputs.gate != 'home-services'
+        if: inputs.gate != 'supervisor-review' && inputs.gate != 'supervisor-queue' && inputs.gate != 'supervisor-browser' && inputs.gate != 'supervisor-lockwait' && inputs.gate != 'home-services' && inputs.gate != 'home-browser'
         run: npm ci --ignore-scripts
       - name: Install isolated browser tools
-        if: inputs.gate == 'browser-recovery' || inputs.gate == 'pms-panel' || inputs.gate == 'supervisor-browser'
+        if: inputs.gate == 'browser-recovery' || inputs.gate == 'pms-panel' || inputs.gate == 'supervisor-browser' || inputs.gate == 'home-browser'
         run: |
           npm ci --ignore-scripts --prefix scripts/revenue-browser-tools
           node scripts/revenue-browser-tools/node_modules/playwright/cli.js install --with-deps chromium
       - name: Validate isolated branch manifest
-        if: inputs.gate != 'supervisor-review' && inputs.gate != 'supervisor-queue' && inputs.gate != 'supervisor-browser' && inputs.gate != 'supervisor-lockwait' && inputs.gate != 'home-services'
+        if: inputs.gate != 'supervisor-review' && inputs.gate != 'supervisor-queue' && inputs.gate != 'supervisor-browser' && inputs.gate != 'supervisor-lockwait' && inputs.gate != 'home-services' && inputs.gate != 'home-browser'
         env:
           IRP_HTTP_QUALIFICATION_MANIFEST: ${{ vars.IRP_HTTP_QUALIFICATION_MANIFEST }}
         run: node scripts/revenue-http-qualification-preflight.mjs
+      - name: Verify actual full Home snapshot integrity
+        if: inputs.gate == 'home-browser'
+        run: node scripts/qualify-home-browser.mjs --verify-only
+      - name: Qualify actual Home with genuine isolated Auth
+        if: inputs.gate == 'home-browser'
+        env:
+          IRP_HTTP_TEST_OWNER_EMAIL: ${{ secrets.IRP_HTTP_TEST_OWNER_EMAIL }}
+          IRP_HTTP_TEST_OWNER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_OWNER_PASSWORD }}
+          IRP_HTTP_TEST_MANAGER_EMAIL: ${{ secrets.IRP_HTTP_TEST_MANAGER_EMAIL }}
+          IRP_HTTP_TEST_MANAGER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_MANAGER_PASSWORD }}
+          IRP_HTTP_TEST_STAFF_EMAIL: ${{ secrets.IRP_HTTP_TEST_STAFF_EMAIL }}
+          IRP_HTTP_TEST_STAFF_PASSWORD: ${{ secrets.IRP_HTTP_TEST_STAFF_PASSWORD }}
+        run: node scripts/qualify-home-browser.mjs
+      - name: Retain actual Home browser evidence
+        if: inputs.gate == 'home-browser' && always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: home-browser-evidence
+          path: work/home-browser-evidence
+          if-no-files-found: warn
+          retention-days: 14
       - name: Run 28 Auth-issued isolated audited-write HTTP cases
         if: inputs.gate == 'audited-http'
         env:

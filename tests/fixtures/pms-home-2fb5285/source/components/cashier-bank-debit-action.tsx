@@ -1,0 +1,21 @@
+"use client";
+import {useEffect,useRef,useState} from 'react';
+import {hotelClient,hotelRpc} from '@/lib/pilot';
+import {retainBankDebit,restoreBankDebit,readBankDebitReceipt,readBankDebitStatus,clearBankDebit,type BankDebitSelection,type BankDebitRequest} from '@/lib/cashier-bank-debit';
+import type {HandoffScope} from '@/lib/cashier-handoff';
+export function CashierBankDebitAction({scope,statement,selection,preview,onPending}:{scope:HandoffScope;statement:string;selection:BankDebitSelection|null;preview:Record<string,unknown>|null;onPending:(value:boolean)=>void}){
+ const [pending,setPending]=useState<BankDebitRequest|null>(null),[ready,setReady]=useState(false),[confirmed,setConfirmed]=useState(false),[cancelConfirmed,setCancelConfirmed]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState(''),[done,setDone]=useState(false);const alive=useRef(false),lock=useRef(false),notify=useRef(onPending);notify.current=onPending;
+ useEffect(()=>{alive.current=true;try{const r=restoreBankDebit(sessionStorage,scope,statement);setPending(r);notify.current(!!r);setReady(true)}catch(e){setError(e instanceof Error?e.message:'Unable to recover saved bank debit.');notify.current(true)}return()=>{alive.current=false}},[]);
+ useEffect(()=>{setConfirmed(false)},[preview]);
+ async function run(kind:'post'|'check'|'cancel'){if(lock.current||!ready||done||(kind==='post'&&!confirmed)||(kind==='cancel'&&!cancelConfirmed))return;lock.current=true;setBusy(true);setError('');setMessage('');let request=pending;
+ try{const user=await hotelClient().auth.getUser();if(user.error||user.data.user?.id!==scope.actor)throw Error('Sign-in changed. Reopen bank reconciliation.');
+ if(!request){if(kind!=='post'||!selection||!preview)throw Error('Prepare a bank debit preview first.');request={id:crypto.randomUUID(),selection,review:preview};retainBankDebit(sessionStorage,request);setPending(request);notify.current(true)}
+ const args={p_tenant:scope.tenant,p_property:scope.property,p_request:request.id};
+ if(kind==='post')readBankDebitReceipt(await hotelRpc('post_bank_debit',{...args,p_review:request.review,p_confirmed:true}),request);
+ if(kind==='cancel')await hotelRpc('cancel_bank_debit',{...args,p_confirmed:true});
+ const status=await hotelRpc('bank_debit_status',args),parsed=readBankDebitStatus(status,request);
+ const again=await hotelClient().auth.getUser();if(again.error||again.data.user?.id!==scope.actor)throw Error('Sign-in changed. Recover the saved bank debit after signing back in.');
+ if(parsed.state!=='missing'){clearBankDebit(sessionStorage,request,status);if(alive.current){setPending(null);setDone(parsed.state==='posted');setConfirmed(false);setCancelConfirmed(false);notify.current(false);setMessage(parsed.state==='cancelled'?'Settlement request cancelled. Prepare a fresh preview.':parsed.reversed?'Settlement was posted and subsequently reversed.':'Bank debit posted. Bank debit remains unverified.')}}else if(alive.current)setMessage('No posting found. Retry the saved request or cancel it.');
+ }catch(e){if(alive.current)setError(e instanceof Error?e.message:'Unable to complete bank debit. Check the saved request before retrying.')}finally{lock.current=false;if(alive.current)setBusy(false)}}
+ return <section aria-label="Post bank debit">{error&&<p role="alert">{error}</p>}{message&&<p role="status">{message}</p>}{!done&&<><label><input type="checkbox" disabled={busy||!ready||(!pending&&!preview)} checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>I approve this bank debit to the ledger.</label><button type="button" disabled={busy||!ready||!confirmed||(!pending&&!preview)} onClick={()=>void run('post')}>{pending?'Retry saved bank debit':'Post bank debit'}</button>{pending&&<><p>Saved bank debit request: {pending.id}</p><button type="button" disabled={busy} onClick={()=>void run('check')}>Check bank debit outcome</button><label><input type="checkbox" disabled={busy} checked={cancelConfirmed} onChange={e=>setCancelConfirmed(e.target.checked)}/>Cancel this request if it has not posted.</label><button type="button" disabled={busy||!cancelConfirmed} onClick={()=>void run('cancel')}>Cancel unposted bank debit</button></>}</>}</section>
+}

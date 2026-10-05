@@ -1,0 +1,44 @@
+'use client';
+import {useEffect,useRef,useState} from 'react';
+import {hotelClient,hotelRpc,type Membership} from '@/lib/pilot';
+import {accountingUsd,type AccountingSetup} from '@/lib/accounting';
+import {adjustmentAmount} from '@/lib/accounting-adjustment-request';
+import {readPaymentReview,type PaymentReview,type PaymentSources} from '@/lib/payment-accounting';
+import {PaymentAccountingAction} from '@/components/payment-accounting-action';
+export function PaymentAccountingForm({membership,setup,sources,businessDate}:{membership:Membership;setup:AccountingSetup;sources:PaymentSources;businessDate:string}){
+ const [entry,setEntry]=useState(''),[clearing,setClearing]=useState(''),[period,setPeriod]=useState(''),[date,setDate]=useState(businessDate),[allocations,setAllocations]=useState([{id:1,account:'',amount:''}]);
+ const [review,setReview]=useState<PaymentReview|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const alive=useRef(false),lock=useRef(false),latest=useRef({membership,setup,sources});latest.current={membership,setup,sources};useEffect(()=>{alive.current=true;return()=>{alive.current=false}},[]);
+ const allowed=['owner','manager'].includes(membership.role),scoped=setup.tenant_id===membership.tenant_id&&setup.property_id===membership.property_id&&sources.tenant_id===membership.tenant_id&&sources.property_id===membership.property_id;
+ const reviewContext=useRef<{membership:Membership;setup:AccountingSetup;sources:PaymentSources}|null>(null);
+ const visible=review&&reviewContext.current?.membership===membership&&reviewContext.current.setup===setup&&reviewContext.current.sources===sources?review:null;
+ const source=sources.rows.find(r=>r.entry_id===entry),active=setup.accounts.filter(a=>a.active),original=source?.original_posting;
+ const recordedPeriodClosed=!!source&&setup.periods.some(p=>p.closed&&source.source_date>=p.start_date&&source.source_date<p.end_date_exclusive);
+ const nextOpen=source?setup.periods.filter(p=>!p.closed&&p.end_date_exclusive>[source.source_date,businessDate].sort().at(-1)!).sort((a,b)=>a.start_date.localeCompare(b.start_date))[0]:undefined;
+ function changed(){setReview(null);setError('');}
+ function selectSource(id:string){changed();setEntry(id);const chosen=sources.rows.find(r=>r.entry_id===id);setClearing(chosen?.original_posting?.clearing_account_id??'');setAllocations([{id:1,account:'',amount:''}]);}
+ async function prepare(event:React.FormEvent){event.preventDefault();if(lock.current||!allowed||!scoped)return;lock.current=true;setBusy(true);changed();const context=latest.current;const current=()=>alive.current&&latest.current.membership===context.membership&&latest.current.setup===context.setup&&latest.current.sources===context.sources;
+  try{if(!source||source.journal_id)throw Error('Choose an unposted payment record.');if(source.kind!=='external_payment'&&!original)throw Error('Post the original payment before its refund or correction.');const selected=setup.periods.find(p=>p.period_id===period&&!p.closed);if(!selected||date<selected.start_date||date>=selected.end_date_exclusive||date<source.source_date)throw Error('Choose an open period and a date on or after the recorded payment.');
+   const split=allocations.map(a=>({account_id:a.account,amount_minor:adjustmentAmount(a.amount)}));
+   if(!active.some(a=>a.account_id===clearing&&a.kind==='asset')||split.some(a=>!active.some(x=>x.account_id===a.account_id&&['asset','liability'].includes(x.kind))))throw Error('Choose active clearing and control accounts.');
+   const identity=await hotelClient().auth.getUser();if(identity.error||!identity.data.user||identity.data.user.id!==sources.actor_id)throw Error('Verify sign-in and reload payment records.');
+   const value=await hotelRpc<unknown>('preview_payment_journal',{p_tenant:membership.tenant_id,p_property:membership.property_id,p_entry:entry,p_clearing:clearing,p_allocations:split,p_period:period,p_date:date});
+   const again=await hotelClient().auth.getUser();if(again.error||again.data.user?.id!==identity.data.user.id)throw Error('Sign-in changed. Reload payment records.');if(!current())return;
+   const parsed=readPaymentReview(value,{actor:identity.data.user.id,tenant:membership.tenant_id,property:membership.property_id});if(parsed.entry_id!==entry||parsed.amount_minor!==source.amount_minor||parsed.command.posting_date!==date||parsed.command.period_id!==period||parsed.clearing_account_id!==clearing||JSON.stringify(parsed.allocations)!==JSON.stringify(split))throw Error('Payment review differs from your selection.');reviewContext.current=context;setReview(parsed);
+  }catch(cause){if(current())setError(cause instanceof Error?cause.message:'Unable to review payment.');}finally{if(alive.current){lock.current=false;setBusy(false);}}
+ }
+ if(!allowed||!scoped)return <p>Reload the property with manager access to review payment accounting.</p>;
+ return <section aria-label="Payment accounting review"><h3>Record payment accounting</h3><p>Use clearing for externally recorded funds. Allocate to guest receivables or advances as appropriate. This does not verify settlement or change guest balances.</p>
+ <form onSubmit={prepare}><fieldset disabled={busy}><label className="field">Payment record<select value={entry} onChange={e=>selectSource(e.target.value)}><option value="">Choose a payment, refund or correction</option>{sources.rows.map(s=><option key={s.entry_id} value={s.entry_id} disabled={!!s.journal_id}>{s.reservation_reference} / {s.kind.replaceAll('_',' ')} / {accountingUsd(s.amount_minor)}{s.journal_id?' / posted':''}</option>)}</select></label>
+ {source&&<p>Recorded {source.source_date} / {accountingUsd(source.amount_minor)}{source.kind!=='external_payment'&&!original?' / Original payment must be posted first':''}</p>}
+ {recordedPeriodClosed&&<div role="status"><p>The accounting period for this payment’s recorded date is closed. Choose an open period to post its journal; the recorded payment date stays unchanged.</p>{nextOpen?<button type="button" disabled={busy} onClick={()=>{changed();setPeriod(nextOpen.period_id);setDate([nextOpen.start_date,source!.source_date,businessDate].sort().at(-1)!)}}>Use next available open period</button>:<p>No suitable open period is available. Ask the property owner to create one in Accounting setup, then reload payment records.</p>}</div>}
+ <label className="field">Clearing account<select value={clearing} disabled={!!original} onChange={e=>{changed();setClearing(e.target.value)}}><option value="">Choose an asset account</option>{active.filter(a=>a.kind==='asset').map(a=><option key={a.account_id} value={a.account_id}>{a.code} / {a.name}</option>)}</select></label>
+ <label className="field">Payment journal period<select value={period} onChange={e=>{changed();setPeriod(e.target.value)}}><option value="">Choose an open period</option>{setup.periods.filter(p=>!p.closed).map(p=><option key={p.period_id} value={p.period_id}>{p.start_date} to {p.end_date_exclusive} (end excluded)</option>)}</select></label>
+ <label className="field">Payment journal date<input type="date" value={date} onChange={e=>{changed();setDate(e.target.value)}}/></label>
+ {allocations.map((a,i)=><div key={a.id}><label className="field">Control account {i+1}<select value={a.account} onChange={e=>{changed();setAllocations(rows=>rows.map(r=>r.id===a.id?{...r,account:e.target.value}:r))}}><option value="">Choose receivable or advance control</option>{active.filter(x=>x.account_id!==clearing&&['asset','liability'].includes(x.kind)&&(!original||original.allocations.some(o=>o.account_id===x.account_id))).map(x=><option key={x.account_id} value={x.account_id}>{x.code} / {x.name}</option>)}</select></label><label className="field">Allocation USD {i+1}<input inputMode="decimal" value={a.amount} onChange={e=>{changed();setAllocations(rows=>rows.map(r=>r.id===a.id?{...r,amount:e.target.value}:r))}}/></label><button type="button" disabled={allocations.length===1} onClick={()=>{changed();setAllocations(rows=>rows.filter(r=>r.id!==a.id))}}>Remove allocation {i+1}</button></div>)}
+ <button type="button" disabled={allocations.length>=20} onClick={()=>{changed();setAllocations(rows=>[...rows,{id:Math.max(...rows.map(r=>r.id))+1,account:'',amount:''}])}}>Add payment allocation</button><button className="primary" type="submit">Review payment journal</button></fieldset></form>
+ {error&&<p role="alert" className="pilot-error">{error}</p>}{visible&&<table className="pilot-table"><caption>Reviewed payment journal</caption><thead><tr><th>Account</th><th>Side</th><th>USD</th></tr></thead><tbody>{visible.command.lines.map((line,i)=><tr key={line.account_id}><td>{visible.accounts[i].code} / {visible.accounts[i].name}</td><td>{line.side}</td><td>{accountingUsd(line.amount_minor)}</td></tr>)}</tbody></table>}
+ <PaymentAccountingAction membership={membership} preview={visible}/></section>;
+}
+
+

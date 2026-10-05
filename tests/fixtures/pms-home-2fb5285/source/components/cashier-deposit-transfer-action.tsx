@@ -1,0 +1,21 @@
+"use client";
+import {useEffect,useRef,useState} from 'react';
+import {hotelClient,hotelRpc} from '@/lib/pilot';
+import {retainDepositTransfer,restoreDepositTransfer,readDepositTransferReceipt,readDepositTransferStatus,clearDepositTransfer,type DepositTransferSelection,type DepositTransferRequest} from '@/lib/cashier-deposit-transfer';
+import type {HandoffScope} from '@/lib/cashier-handoff';
+export function CashierDepositTransferAction({scope,deposit,selection,preview,onPending}:{scope:HandoffScope;deposit:string;selection:DepositTransferSelection|null;preview:Record<string,unknown>|null;onPending:(value:boolean)=>void}){
+ const [pending,setPending]=useState<DepositTransferRequest|null>(null),[ready,setReady]=useState(false),[confirmed,setConfirmed]=useState(false),[cancelConfirmed,setCancelConfirmed]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState(''),[done,setDone]=useState(false);const alive=useRef(false),lock=useRef(false),notify=useRef(onPending);notify.current=onPending;
+ useEffect(()=>{alive.current=true;try{const r=restoreDepositTransfer(sessionStorage,scope,deposit);setPending(r);notify.current(!!r);setReady(true)}catch(e){setError(e instanceof Error?e.message:'Unable to recover saved transfer.');notify.current(true)}return()=>{alive.current=false}},[]);
+ useEffect(()=>{setConfirmed(false)},[preview]);
+ async function run(kind:'post'|'check'|'cancel'){if(lock.current||!ready||done||(kind==='post'&&!confirmed)||(kind==='cancel'&&!cancelConfirmed))return;lock.current=true;setBusy(true);setError('');setMessage('');let request=pending;
+ try{const user=await hotelClient().auth.getUser();if(user.error||user.data.user?.id!==scope.actor)throw Error('Sign-in changed. Reopen deposit accounting.');
+ if(!request){if(kind!=='post'||!selection||!preview)throw Error('Prepare a transfer preview first.');request={id:crypto.randomUUID(),selection,review:preview};retainDepositTransfer(sessionStorage,request);setPending(request);notify.current(true)}
+ const args={p_tenant:scope.tenant,p_property:scope.property,p_request:request.id};
+ if(kind==='post')readDepositTransferReceipt(await hotelRpc('post_deposit_transfer',{...args,p_review:request.review,p_confirmed:true}),request);
+ if(kind==='cancel')await hotelRpc('cancel_deposit_transfer',{...args,p_confirmed:true});
+ const status=await hotelRpc('deposit_transfer_status',args),parsed=readDepositTransferStatus(status,request);
+ const again=await hotelClient().auth.getUser();if(again.error||again.data.user?.id!==scope.actor)throw Error('Sign-in changed. Recover the saved transfer after signing back in.');
+ if(parsed.state!=='missing'){clearDepositTransfer(sessionStorage,request,status);if(alive.current){setPending(null);setDone(parsed.state==='posted');setConfirmed(false);setCancelConfirmed(false);notify.current(false);setMessage(parsed.state==='cancelled'?'Transfer request cancelled. Prepare a fresh preview.':parsed.reversed?'Transfer was posted and subsequently reversed.':'Deposit transfer posted. Bank settlement remains unverified.')}}else if(alive.current)setMessage('No posting found. Retry the saved request or cancel it.');
+ }catch(e){if(alive.current)setError(e instanceof Error?e.message:'Unable to complete transfer. Check the saved request before retrying.')}finally{lock.current=false;if(alive.current)setBusy(false)}}
+ return <section aria-label="Post deposit transfer">{error&&<p role="alert">{error}</p>}{message&&<p role="status">{message}</p>}{!done&&<><label><input type="checkbox" disabled={busy||!ready||(!pending&&!preview)} checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/>I approve this deposit transfer to the ledger.</label><button type="button" disabled={busy||!ready||!confirmed||(!pending&&!preview)} onClick={()=>void run('post')}>{pending?'Retry saved transfer':'Post deposit transfer'}</button>{pending&&<><p>Saved transfer request: {pending.id}</p><button type="button" disabled={busy} onClick={()=>void run('check')}>Check transfer outcome</button><label><input type="checkbox" disabled={busy} checked={cancelConfirmed} onChange={e=>setCancelConfirmed(e.target.checked)}/>Cancel this request if it has not posted.</label><button type="button" disabled={busy||!cancelConfirmed} onClick={()=>void run('cancel')}>Cancel unposted transfer</button></>}</>}</section>
+}

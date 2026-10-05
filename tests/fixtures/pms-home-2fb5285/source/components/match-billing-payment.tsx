@@ -1,0 +1,35 @@
+'use client';
+import {useEffect,useRef,useState} from 'react';
+import {hotelRpc,cents} from '@/lib/pilot';
+import {paymentSources,type PaymentSource,type PaymentScope} from '@/lib/billing-payment-entry';
+import {matchRequest,matchResult,type MatchRequest} from '@/lib/billing-match';
+import {billingDollars} from './billing-accounts';
+type Props=PaymentScope&{invoices:{invoice_id:string;invoice_number?:string;outstanding_minor:string}[];onSaved:(result:'matched'|'cancelled')=>void;onBusyChange?:(busy:boolean)=>void};
+export function MatchBillingPayment(props:Props){return <MatchForm key={[props.actor,props.tenant,props.property,props.account].join('/')} {...props}/>}
+function MatchForm(props:Props){
+ const key=['irp-billing-match',props.actor,props.tenant,props.property,props.account].join('/');
+ const [initial]=useState(()=>{try{const raw=sessionStorage.getItem(key);return {pending:raw?matchRequest(JSON.parse(raw),props):null,error:''}}catch{return {pending:null,error:'Saved invoice match could not be read. Restore browser storage before continuing.'}}});
+ const [pending,setPending]=useState<MatchRequest|null>(initial.pending),[draft,setDraft]=useState<MatchRequest|null>(null),[sources,setSources]=useState<PaymentSource[]>([]);
+ const [cancelReason,setCancelReason]=useState('');
+ const [invoice,setInvoice]=useState(''),[payment,setPayment]=useState(''),[amount,setAmount]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(initial.error),[notice,setNotice]=useState(''),[done,setDone]=useState(false);
+ const lock=useRef(false),alive=useRef(false);useEffect(()=>{alive.current=true;return()=>{alive.current=false}},[]);
+ useEffect(()=>{props.onBusyChange?.(busy);return()=>props.onBusyChange?.(false)},[busy,props.onBusyChange]);
+ async function run(action:()=>Promise<void>){if(lock.current||initial.error)return;lock.current=true;setBusy(true);setError('');try{await action()}catch(e){if(alive.current)setError(e instanceof Error?e.message:'Unable to match payment.')}finally{lock.current=false;if(alive.current)setBusy(false)}}
+ async function load(){setSources([]);setPayment('');const rows=paymentSources(await hotelRpc('billing_payment_receipts',{p_tenant:props.tenant,p_property:props.property,p_account:props.account}),props);if(alive.current)setSources(rows)}
+ function prepare(){try{const receipt=sources.find(r=>r.payment_id===payment),bill=props.invoices.find(i=>i.invoice_id===invoice),minor=String(cents(amount));if(!receipt||!bill||BigInt(minor)>BigInt(receipt.available_minor)||BigInt(minor)>BigInt(bill.outstanding_minor))throw Error('Select an invoice and receipt with enough remaining balance.');setDraft(matchRequest({version:1,actor:props.actor,tenant:props.tenant,property:props.property,account:props.account,request:crypto.randomUUID(),invoice,payment,amount:minor},props));setError('')}catch(e){setError(e instanceof Error?e.message:'Check match details.')}}
+ async function save(check=false){const r=pending??draft;if(!r||done||(!check&&r.cancellation))return;matchRequest(r,props);sessionStorage.setItem(key,JSON.stringify(r));setPending(r);let result;
+  try{result=matchResult(await hotelRpc(check?'billing_allocation_status':'allocate_billing_payment',{p_tenant:r.tenant,p_property:r.property,p_account:r.account,p_request:r.request,...(!check?{p_invoice:r.invoice,p_payment:r.payment,p_amount:r.amount,p_confirmed:true}:{})}),r,check)}catch{throw Error('Match could not be confirmed. Check its result or retry this same match.')}
+  if(!alive.current)return;if(!result){setNotice('No saved match found. Retry this same request.');return}sessionStorage.removeItem(key);setPending(null);setDraft(null);setDone(true);setNotice(result==='cancelled'?'This match was previously cancelled.':'Payment matched to invoice. No money moved.');props.onSaved(result);
+ }
+ async function cancel(){if(!pending)return;const r=matchRequest({...pending,cancellation:pending.cancellation??cancelReason.trim()},props);sessionStorage.setItem(key,JSON.stringify(r));setPending(r);
+  const v=await hotelRpc<Record<string,unknown>>('retire_billing_allocation',{p_tenant:r.tenant,p_property:r.property,p_account:r.account,p_request:r.request,p_reason:r.cancellation,p_confirmed:true});
+  if(v.tenant_id!==r.tenant||v.property_id!==r.property||v.account_id!==r.account||v.request_id!==r.request||v.actor_id!==r.actor||v.reason!==r.cancellation||v.retired!==true||v.money_moved!==false)throw Error('Cancellation could not be verified. Retry the same cancellation.');
+  if(!alive.current)return;sessionStorage.removeItem(key);setPending(null);setDraft(null);setSources([]);setPayment('');setNotice('Unsaved match cancelled. Load payments to prepare a replacement.');
+ }
+ const current=pending??draft;
+ return <section className="pilot-settings" aria-label="Match payment to invoice"><h3>Match payment to invoice</h3><p>Apply an existing receipt to an invoice. This does not collect another payment.</p>{error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}
+ <fieldset disabled={busy||!!initial.error} style={{border:0,padding:0,margin:0}}>
+ {!current&&!done&&<><button className="secondary" onClick={()=>void run(load)}>Load payments to match</button><label className="field">Invoice to settle<select value={invoice} onChange={e=>setInvoice(e.target.value)}><option value="">Select invoice</option>{props.invoices.map(i=><option key={i.invoice_id} value={i.invoice_id} disabled={i.outstanding_minor==='0'}>{i.invoice_number??i.invoice_id} · {billingDollars(i.outstanding_minor)} outstanding</option>)}</select></label><label className="field">Receipt to apply<select value={payment} onChange={e=>setPayment(e.target.value)}><option value="">Select receipt</option>{sources.map(r=><option key={r.payment_id} value={r.payment_id} disabled={r.available_minor==='0'}>{r.reference} · {billingDollars(r.available_minor)} available</option>)}</select></label><label className="field">Amount to match (USD)<input inputMode="decimal" value={amount} onChange={e=>setAmount(e.target.value)}/></label><button className="primary" onClick={prepare}>Review invoice match</button></>}
+ {current&&!done&&<><p>Apply {billingDollars(current.amount)} to invoice {props.invoices.find(i=>i.invoice_id===current.invoice)?.invoice_number??current.invoice}.</p><button className="primary" disabled={!!current.cancellation} onClick={()=>void run(()=>save())}>{pending?'Retry saved match':'Confirm invoice match'}</button>{pending?<><button className="secondary" onClick={()=>void run(()=>save(true))}>Check match result</button><label className="field">Cancel unsaved match reason<textarea maxLength={500} disabled={!!pending.cancellation} value={pending.cancellation??cancelReason} onChange={e=>setCancelReason(e.target.value)}/></label><button className="secondary" onClick={()=>void run(cancel)}>{pending.cancellation?'Retry match cancellation':'Cancel unsaved match'}</button></>:<button className="secondary" onClick={()=>setDraft(null)}>Edit match</button>}</>}
+ </fieldset>{busy&&<p role="status">Working on invoice match…</p>}</section>;
+}

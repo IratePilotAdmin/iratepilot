@@ -1,0 +1,16 @@
+'use client';
+import {useEffect,useRef,useState} from 'react';
+import {hotelClient,hotelRpc,usd,type Membership} from '@/lib/pilot';
+import {CashierHandoffDecision} from './cashier-handoff-decision';
+import {readHandoffs} from '@/lib/cashier-handoff';
+export function CashierHandoffs({membership}:{membership:Membership}){return <List key={[membership.tenant_id,membership.property_id,membership.role].join(':')} membership={membership}/>}
+function List({membership}:{membership:Membership}){
+ const [page,setPage]=useState<ReturnType<typeof readHandoffs>|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[actor,setActor]=useState('');const alive=useRef(false),lock=useRef(false);
+ useEffect(()=>{alive.current=true;return()=>{alive.current=false}},[]);
+ async function load(next=false){if(lock.current)return;lock.current=true;setBusy(true);setError('');try{
+  const user=await hotelClient().auth.getUser();if(user.error||!user.data.user)throw Error('Sign in to view cash handoffs.');const id=user.data.user.id;if(next&&actor!==id)throw Error('Sign-in changed. Refresh handoffs.');const before=next?page?.next:null;if(next&&!before)return;
+  const value=await hotelRpc('cashier_handoffs',{p_tenant:membership.tenant_id,p_property:membership.property_id,p_before:before??null});const result=readHandoffs(value,{tenant:membership.tenant_id,property:membership.property_id,actor:id},before??null);
+  const again=await hotelClient().auth.getUser();if(again.error||again.data.user?.id!==id)throw Error('Sign-in changed. Refresh handoffs.');if(alive.current){setActor(id);setPage(result)}
+ }catch(e){if(alive.current){setPage(null);setError(e instanceof Error?e.message:'Unable to load cash handoffs.')}}finally{lock.current=false;if(alive.current)setBusy(false)}}
+ return <section className="card"><h2>Cash handoffs</h2><p>Track custody of counted drawer cash. Refresh to include new handoffs. Acceptance records receipt by the named receiver; it does not verify a bank deposit.</p><button disabled={busy} onClick={()=>void load()}>Refresh cash handoffs</button>{error&&<p role="alert">{error}</p>}{page&&<>{page.entries.length?<div className="pilot-table-wrap"><table className="pilot-table"><thead><tr><th>Reference</th><th>Sender</th><th>Receiver</th><th>Amount</th><th>Status</th><th>Explanation</th><th>Action</th></tr></thead><tbody>{page.entries.map(h=><tr key={h.id}><td>{h.id}</td><td>{h.sender===actor?'You':h.sender}</td><td>{h.receiver===actor?'You':h.receiver}</td><td>{usd(Number(h.amount))}</td><td>{h.outcome}</td><td>{h.reason}{h.resolutionReason&&<p>Decision: {h.resolutionReason}</p>}</td><td>{(h.sender===actor||h.receiver===actor)&&<CashierHandoffDecision key={actor+":"+h.id} scope={{tenant:membership.tenant_id,property:membership.property_id,actor}} handoff={h} onSaved={()=>void load()}/>}</td></tr>)}</tbody></table></div>:<p>No cash handoffs on this page.</p>}{page.next&&<button disabled={busy} onClick={()=>void load(true)}>Next handoff page</button>}</>}</section>
+}

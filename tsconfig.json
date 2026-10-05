@@ -36,6 +36,7 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
+    "tests/fixtures/pms-home-2fb5285",
     "node_modules",
     "mobile"
   ]
