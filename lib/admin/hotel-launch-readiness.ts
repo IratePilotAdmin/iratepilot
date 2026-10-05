@@ -73,6 +73,17 @@ function gate(
 }
 
 export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
+  const supplierCheckPassed = (label: string) => input.supplierChecks
+    .some((item) => item.label === label && item.passed);
+  const vendorApprovalReady = input.supplierStateAvailable && supplierCheckPassed("Vendor approval");
+  const propertyMappingReady = input.supplierStateAvailable && supplierCheckPassed("Property mapping");
+  const externalAcquisitionReady = input.approvedHotelStateAvailable
+    && input.supplierStateAvailable
+    && input.completeHotelApplicationCount > 0
+    && input.verifiedHotelApprovalCount > 0
+    && input.approvedHotelCount > 0
+    && vendorApprovalReady
+    && propertyMappingReady;
   const approvedHotelReady = input.approvedHotelStateAvailable && input.approvedHotelCount > 0;
   const listingReady = input.listingStateAvailable && input.inventoryReadyHotelCount > 0;
   const commercialReady = input.commercialStateAvailable && input.commerciallyReadyHotelCount > 0;
@@ -82,6 +93,7 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
     && input.paymentAuthorizationValid;
   const operationsReady = input.operationsStateAvailable && input.operationsReady;
   const productionReleaseReady = approvedHotelReady
+    && externalAcquisitionReady
     && listingReady
     && commercialReady
     && supplierReady
@@ -90,6 +102,29 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
     && input.releaseAuthorizationValid
     && input.publicationEnabled;
   const gates: HotelLaunchGate[] = [
+    gate(
+      "external_acquisition",
+      "External approval and first-hotel acquisition",
+      !input.approvedHotelStateAvailable || !input.supplierStateAvailable
+        ? "unavailable"
+        : externalAcquisitionReady
+          ? "ready"
+          : "waiting_external",
+      !input.approvedHotelStateAvailable || !input.supplierStateAvailable
+        ? "Hotel-acquisition or provider-approval evidence could not be verified. This gate fails closed."
+        : externalAcquisitionReady
+          ? "A verified hotel application and written provider approval now converge on an approved, mapped property path."
+          : "Run both approval paths together: convert one real 4- or 5-star hotel application while securing written provider approval and a real property mapping. Outreach, meetings, registrations, and provider orders remain progress only until this evidence exists.",
+      "/admin/partners",
+      "Drive approval pipeline",
+      input.approvedHotelStateAvailable && input.supplierStateAvailable ? [
+        { label: "Complete hotel applications", ready: input.completeHotelApplicationCount > 0, value: String(input.completeHotelApplicationCount) },
+        { label: "Verified hotel approval decisions", ready: input.verifiedHotelApprovalCount > 0, value: String(input.verifiedHotelApprovalCount) },
+        { label: "Approved hotel linked to property", ready: input.approvedHotelCount > 0, value: String(input.approvedHotelCount) },
+        { label: "Written provider approval", ready: vendorApprovalReady, value: vendorApprovalReady ? "Documented" : "Required" },
+        { label: "Real property mapping", ready: propertyMappingReady, value: propertyMappingReady ? "Confirmed" : "Required" },
+      ] : undefined,
+    ),
     gate(
       "approved_hotel",
       "Approved hotel intake",
@@ -247,6 +282,11 @@ export function buildHotelLaunchReadiness(input: HotelLaunchReadinessInput) {
       "/admin/properties",
       "Review release candidates",
       [
+        {
+          label: "External approval and first-hotel acquisition",
+          ready: externalAcquisitionReady,
+          value: externalAcquisitionReady ? "Complete" : "Required",
+        },
         {
           label: "Approved hotel intake",
           ready: approvedHotelReady,
