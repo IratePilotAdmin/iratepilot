@@ -1,0 +1,1024 @@
+{
+  "captured_at": "2026-10-05",
+  "parent_project": "eiqmdldjnedqgbtoozqa",
+  "isolated_project": "ybehrayzwzyufxbxcysq",
+  "catalog_only": true,
+  "parent_schema": [
+    {
+      "relname": "gateway_connections",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "columns": [
+        {
+          "name": "connection_id",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "property_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "ota_property_id",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "inventory_authority",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "room_types",
+          "type": "jsonb",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "signing_secret",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "enabled",
+          "type": "boolean",
+          "default": "false",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "c",
+          "name": "gateway_connections_connection_id_check",
+          "definition": "CHECK ((connection_id ~ '^[A-Za-z0-9_-]{1,80}$'::text))"
+        },
+        {
+          "kind": "c",
+          "name": "gateway_connections_inventory_authority_check",
+          "definition": "CHECK ((inventory_authority = ANY (ARRAY['existing-pms'::text, 'iratepilot-pms'::text])))"
+        },
+        {
+          "kind": "c",
+          "name": "gateway_connections_ota_property_id_check",
+          "definition": "CHECK (((length(TRIM(BOTH FROM ota_property_id)) >= 1) AND (length(TRIM(BOTH FROM ota_property_id)) <= 128)))"
+        },
+        {
+          "kind": "p",
+          "name": "gateway_connections_pkey",
+          "definition": "PRIMARY KEY (connection_id)"
+        },
+        {
+          "kind": "c",
+          "name": "gateway_connections_room_types_check",
+          "definition": "CHECK ((jsonb_typeof(room_types) = 'object'::text))"
+        },
+        {
+          "kind": "c",
+          "name": "gateway_connections_signing_secret_check",
+          "definition": "CHECK (((octet_length(signing_secret) >= 32) AND (octet_length(signing_secret) <= 512)))"
+        },
+        {
+          "kind": "f",
+          "name": "gateway_connections_tenant_id_property_id_fkey",
+          "definition": "FOREIGN KEY (tenant_id, property_id) REFERENCES irp_pms.properties(tenant_id, id)"
+        }
+      ],
+      "indexes": [],
+      "triggers": []
+    },
+    {
+      "relname": "memberships",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "columns": [
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "role",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "p",
+          "name": "memberships_pkey",
+          "definition": "PRIMARY KEY (tenant_id, user_id)"
+        },
+        {
+          "kind": "c",
+          "name": "memberships_role_check",
+          "definition": "CHECK ((role = ANY (ARRAY['owner'::text, 'manager'::text, 'staff'::text])))"
+        },
+        {
+          "kind": "f",
+          "name": "memberships_tenant_id_fkey",
+          "definition": "FOREIGN KEY (tenant_id) REFERENCES irp_pms.tenants(id)"
+        },
+        {
+          "kind": "f",
+          "name": "memberships_user_id_fkey",
+          "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id)"
+        }
+      ],
+      "indexes": [],
+      "triggers": []
+    },
+    {
+      "relname": "properties",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "columns": [
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "currency",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "time_zone",
+          "type": "text",
+          "default": "'America/Chicago'::text",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "operating_model",
+          "type": "text",
+          "default": "'hotel'::text",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "operating_model_version",
+          "type": "bigint",
+          "default": "1",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "whole_home_max_guests",
+          "type": "integer",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "cleaning_fee",
+          "type": "jsonb",
+          "default": "'{\"basis\": \"per_stay\", \"taxes\": [], \"enabled\": false, \"amount_minor\": 0}'::jsonb",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "property_fees_version",
+          "type": "bigint",
+          "default": "1",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "c",
+          "name": "properties_currency_check",
+          "definition": "CHECK ((currency = 'USD'::text))"
+        },
+        {
+          "kind": "c",
+          "name": "properties_name_check",
+          "definition": "CHECK (((length(TRIM(BOTH FROM name)) >= 1) AND (length(TRIM(BOTH FROM name)) <= 200)))"
+        },
+        {
+          "kind": "c",
+          "name": "properties_operating_model_check",
+          "definition": "CHECK ((operating_model = ANY (ARRAY['hotel'::text, 'whole_home'::text])))"
+        },
+        {
+          "kind": "c",
+          "name": "properties_operating_model_version_check",
+          "definition": "CHECK (((operating_model_version >= 1) AND (operating_model_version <= '9007199254740991'::bigint)))"
+        },
+        {
+          "kind": "p",
+          "name": "properties_pkey",
+          "definition": "PRIMARY KEY (tenant_id, id)"
+        },
+        {
+          "kind": "c",
+          "name": "properties_property_fees_version_check",
+          "definition": "CHECK (((property_fees_version >= 1) AND (property_fees_version <= '9007199254740991'::bigint)))"
+        },
+        {
+          "kind": "f",
+          "name": "properties_tenant_id_fkey",
+          "definition": "FOREIGN KEY (tenant_id) REFERENCES irp_pms.tenants(id)"
+        },
+        {
+          "kind": "c",
+          "name": "property_cleaning_fee_canonical",
+          "definition": "CHECK ((cleaning_fee = irp_pms.normalize_cleaning_fee(cleaning_fee)))"
+        },
+        {
+          "kind": "c",
+          "name": "property_cleaning_whole_home",
+          "definition": "CHECK (((operating_model = 'whole_home'::text) OR (NOT ((cleaning_fee ->> 'enabled'::text))::boolean)))"
+        },
+        {
+          "kind": "c",
+          "name": "property_operating_model_guests",
+          "definition": "CHECK ((((operating_model = 'hotel'::text) AND (whole_home_max_guests IS NULL)) OR ((operating_model = 'whole_home'::text) AND ((whole_home_max_guests >= 1) AND (whole_home_max_guests <= 20)) AND (whole_home_max_guests IS NOT NULL))))"
+        },
+        {
+          "kind": "t",
+          "name": "whole_home_property_consistency",
+          "definition": "TRIGGER DEFERRABLE INITIALLY DEFERRED"
+        }
+      ],
+      "indexes": [],
+      "triggers": [
+        "CREATE TRIGGER irp_pms_front_office_statistics_activate AFTER INSERT ON irp_pms.properties FOR EACH ROW EXECUTE FUNCTION irp_pms.activate_front_office_statistics_for_property()",
+        "CREATE TRIGGER irp_pms_property_fee_guard BEFORE INSERT OR UPDATE ON irp_pms.properties FOR EACH ROW EXECUTE FUNCTION irp_pms.property_fee_guard()",
+        "CREATE TRIGGER irp_pms_turnover_property_guard BEFORE UPDATE ON irp_pms.properties FOR EACH ROW EXECUTE FUNCTION irp_pms.turnover_property_guard()",
+        "CREATE CONSTRAINT TRIGGER whole_home_property_consistency AFTER INSERT OR UPDATE ON irp_pms.properties DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION irp_pms.whole_home_property_consistency()"
+      ]
+    },
+    {
+      "relname": "revenue_forecast_records",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "columns": [
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "property_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "room_type_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "stay_date",
+          "type": "date",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "issued_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "stay_start_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "stay_end_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "source_captured_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "baseline_captured_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "model_version",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "currency",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "source_basis",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "capacity",
+          "type": "integer",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "on_books_rooms",
+          "type": "integer",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "predicted_rooms",
+          "type": "integer",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "evidence_state",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "c",
+          "name": "revenue_forecast_records_capacity_check",
+          "definition": "CHECK ((capacity > 0))"
+        },
+        {
+          "kind": "c",
+          "name": "revenue_forecast_records_check",
+          "definition": "CHECK ((on_books_rooms <= capacity))"
+        },
+        {
+          "kind": "c",
+          "name": "revenue_forecast_records_check1",
+          "definition": "CHECK (((predicted_rooms >= 0) AND (predicted_rooms <= capacity)))"
+        },
+        {
+          "kind": "c",
+          "name": "revenue_forecast_records_check2",
+          "definition": "CHECK ((((evidence_state = 'recorded'::text) AND (predicted_rooms IS NOT NULL)) OR ((evidence_state = 'insufficient_history'::text) AND (predicted_rooms IS NULL))))"
+        },
+        {
+          "kind": "c",
+          "name": "revenue_forecast_records_check3",
+          "definition": "CHECK (((source_captured_at <= issued_at) AND (issued_at < stay_start_at) AND (stay_start_at < stay_end_at)))"
+        },
+        {
+          "kind": "c",
+          "name": "revenue_forecast_records_check4",
+          "definition": "CHECK (((baseline_captured_at IS NULL) OR (baseline_captured_at < source_captured_at)))"
+        },
+        {
+          "kind": "c",
+          "name": "revenue_forecast_records_evidence_state_check",
+          "definition": "CHECK ((evidence_state = ANY (ARRAY['recorded'::text, 'insufficient_history'::text])))"
+        },
+        {
+          "kind": "c",
+          "name": "revenue_forecast_records_model_version_check",
+          "definition": "CHECK ((model_version = ANY (ARRAY['on-books-v1'::text, 'seven-day-pace-v1'::text])))"
+        },
+        {
+          "kind": "c",
+          "name": "revenue_forecast_records_on_books_rooms_check",
+          "definition": "CHECK ((on_books_rooms >= 0))"
+        },
+        {
+          "kind": "p",
+          "name": "revenue_forecast_records_pkey",
+          "definition": "PRIMARY KEY (tenant_id, property_id, room_type_id, stay_date, source_captured_at, model_version)"
+        }
+      ],
+      "indexes": [],
+      "triggers": []
+    },
+    {
+      "relname": "revenue_shadow_snapshots",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "columns": [
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "property_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "room_type_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "stay_date",
+          "type": "date",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "captured_at",
+          "type": "timestamp with time zone",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "currency",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "basis",
+          "type": "text",
+          "default": "'booked-room-revenue-v1'::text",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "booked_room_nights",
+          "type": "integer",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "sellable_room_nights",
+          "type": "integer",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "room_revenue_minor",
+          "type": "bigint",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "c",
+          "name": "revenue_shadow_snapshots_basis_check",
+          "definition": "CHECK ((basis = 'booked-room-revenue-v1'::text))"
+        },
+        {
+          "kind": "c",
+          "name": "revenue_shadow_snapshots_booked_room_nights_check",
+          "definition": "CHECK ((booked_room_nights >= 0))"
+        },
+        {
+          "kind": "c",
+          "name": "revenue_shadow_snapshots_currency_check",
+          "definition": "CHECK ((currency ~ '^[A-Z]{3}$'::text))"
+        },
+        {
+          "kind": "p",
+          "name": "revenue_shadow_snapshots_pkey",
+          "definition": "PRIMARY KEY (tenant_id, property_id, room_type_id, stay_date, captured_at)"
+        },
+        {
+          "kind": "c",
+          "name": "revenue_shadow_snapshots_room_revenue_minor_check",
+          "definition": "CHECK ((room_revenue_minor >= 0))"
+        },
+        {
+          "kind": "c",
+          "name": "revenue_shadow_snapshots_sellable_room_nights_check",
+          "definition": "CHECK ((sellable_room_nights >= 0))"
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX revenue_shadow_lookup ON irp_pms.revenue_shadow_snapshots USING btree (tenant_id, property_id, stay_date, room_type_id, captured_at DESC)",
+        "CREATE INDEX revenue_shadow_capture_time ON irp_pms.revenue_shadow_snapshots USING btree (tenant_id, property_id, captured_at DESC)"
+      ],
+      "triggers": []
+    },
+    {
+      "relname": "room_types",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "columns": [
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "property_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "max_guests",
+          "type": "integer",
+          "default": "4",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "c",
+          "name": "room_types_max_guests_check",
+          "definition": "CHECK (((max_guests >= 1) AND (max_guests <= 20)))"
+        },
+        {
+          "kind": "c",
+          "name": "room_types_name_check",
+          "definition": "CHECK (((length(TRIM(BOTH FROM name)) >= 1) AND (length(TRIM(BOTH FROM name)) <= 200)))"
+        },
+        {
+          "kind": "p",
+          "name": "room_types_pkey",
+          "definition": "PRIMARY KEY (tenant_id, property_id, id)"
+        },
+        {
+          "kind": "f",
+          "name": "room_types_tenant_id_property_id_fkey",
+          "definition": "FOREIGN KEY (tenant_id, property_id) REFERENCES irp_pms.properties(tenant_id, id)"
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX irp_pms_room_type_name_unique ON irp_pms.room_types USING btree (tenant_id, property_id, lower(TRIM(BOTH FROM name)))"
+      ],
+      "triggers": [
+        "CREATE TRIGGER whole_home_room_type_guard BEFORE INSERT OR DELETE OR UPDATE ON irp_pms.room_types FOR EACH ROW EXECUTE FUNCTION irp_pms.whole_home_unit_guard()"
+      ]
+    }
+  ],
+  "branch_schema_before": [
+    {
+      "relname": "memberships",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "columns": [
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "role",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "p",
+          "name": "memberships_pkey",
+          "definition": "PRIMARY KEY (tenant_id, user_id)"
+        },
+        {
+          "kind": "c",
+          "name": "memberships_role_check",
+          "definition": "CHECK ((role = ANY (ARRAY['owner'::text, 'manager'::text, 'staff'::text])))"
+        },
+        {
+          "kind": "f",
+          "name": "memberships_tenant_id_fkey",
+          "definition": "FOREIGN KEY (tenant_id) REFERENCES irp_pms.tenants(id)"
+        },
+        {
+          "kind": "f",
+          "name": "memberships_user_id_fkey",
+          "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id)"
+        }
+      ],
+      "indexes": [],
+      "triggers": []
+    },
+    {
+      "relname": "properties",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "columns": [
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "currency",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "time_zone",
+          "type": "text",
+          "default": "'America/Chicago'::text",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "operating_model",
+          "type": "text",
+          "default": "'hotel'::text",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "operating_model_version",
+          "type": "bigint",
+          "default": "1",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "whole_home_max_guests",
+          "type": "integer",
+          "default": null,
+          "identity": "",
+          "not_null": false,
+          "generated": ""
+        },
+        {
+          "name": "cleaning_fee",
+          "type": "jsonb",
+          "default": "'{\"basis\": \"per_stay\", \"taxes\": [], \"enabled\": false, \"amount_minor\": 0}'::jsonb",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "property_fees_version",
+          "type": "bigint",
+          "default": "1",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "c",
+          "name": "properties_currency_check",
+          "definition": "CHECK ((currency = 'USD'::text))"
+        },
+        {
+          "kind": "c",
+          "name": "properties_name_check",
+          "definition": "CHECK (((length(TRIM(BOTH FROM name)) >= 1) AND (length(TRIM(BOTH FROM name)) <= 200)))"
+        },
+        {
+          "kind": "c",
+          "name": "properties_operating_model_check",
+          "definition": "CHECK ((operating_model = ANY (ARRAY['hotel'::text, 'whole_home'::text])))"
+        },
+        {
+          "kind": "c",
+          "name": "properties_operating_model_version_check",
+          "definition": "CHECK (((operating_model_version >= 1) AND (operating_model_version <= '9007199254740991'::bigint)))"
+        },
+        {
+          "kind": "p",
+          "name": "properties_pkey",
+          "definition": "PRIMARY KEY (tenant_id, id)"
+        },
+        {
+          "kind": "c",
+          "name": "properties_property_fees_version_check",
+          "definition": "CHECK (((property_fees_version >= 1) AND (property_fees_version <= '9007199254740991'::bigint)))"
+        },
+        {
+          "kind": "f",
+          "name": "properties_tenant_id_fkey",
+          "definition": "FOREIGN KEY (tenant_id) REFERENCES irp_pms.tenants(id)"
+        },
+        {
+          "kind": "c",
+          "name": "property_cleaning_fee_canonical",
+          "definition": "CHECK ((cleaning_fee = irp_pms.normalize_cleaning_fee(cleaning_fee)))"
+        },
+        {
+          "kind": "c",
+          "name": "property_cleaning_whole_home",
+          "definition": "CHECK (((operating_model = 'whole_home'::text) OR (NOT ((cleaning_fee ->> 'enabled'::text))::boolean)))"
+        },
+        {
+          "kind": "c",
+          "name": "property_operating_model_guests",
+          "definition": "CHECK ((((operating_model = 'hotel'::text) AND (whole_home_max_guests IS NULL)) OR ((operating_model = 'whole_home'::text) AND ((whole_home_max_guests >= 1) AND (whole_home_max_guests <= 20)) AND (whole_home_max_guests IS NOT NULL))))"
+        },
+        {
+          "kind": "t",
+          "name": "whole_home_property_consistency",
+          "definition": "TRIGGER DEFERRABLE INITIALLY DEFERRED"
+        }
+      ],
+      "indexes": [],
+      "triggers": [
+        "CREATE TRIGGER irp_pms_property_fee_guard BEFORE INSERT OR UPDATE ON irp_pms.properties FOR EACH ROW EXECUTE FUNCTION irp_pms.property_fee_guard()",
+        "CREATE TRIGGER irp_pms_turnover_property_guard BEFORE UPDATE ON irp_pms.properties FOR EACH ROW EXECUTE FUNCTION irp_pms.turnover_property_guard()",
+        "CREATE CONSTRAINT TRIGGER whole_home_property_consistency AFTER INSERT OR UPDATE ON irp_pms.properties DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION irp_pms.whole_home_property_consistency()"
+      ]
+    },
+    {
+      "relname": "room_types",
+      "relrowsecurity": true,
+      "relforcerowsecurity": false,
+      "columns": [
+        {
+          "name": "tenant_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "property_id",
+          "type": "uuid",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "name",
+          "type": "text",
+          "default": null,
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        },
+        {
+          "name": "max_guests",
+          "type": "integer",
+          "default": "4",
+          "identity": "",
+          "not_null": true,
+          "generated": ""
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "c",
+          "name": "room_types_max_guests_check",
+          "definition": "CHECK (((max_guests >= 1) AND (max_guests <= 20)))"
+        },
+        {
+          "kind": "c",
+          "name": "room_types_name_check",
+          "definition": "CHECK (((length(TRIM(BOTH FROM name)) >= 1) AND (length(TRIM(BOTH FROM name)) <= 200)))"
+        },
+        {
+          "kind": "p",
+          "name": "room_types_pkey",
+          "definition": "PRIMARY KEY (tenant_id, property_id, id)"
+        },
+        {
+          "kind": "f",
+          "name": "room_types_tenant_id_property_id_fkey",
+          "definition": "FOREIGN KEY (tenant_id, property_id) REFERENCES irp_pms.properties(tenant_id, id)"
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX irp_pms_room_type_name_unique ON irp_pms.room_types USING btree (tenant_id, property_id, lower(TRIM(BOTH FROM name)))"
+      ],
+      "triggers": [
+        "CREATE TRIGGER whole_home_room_type_guard BEFORE INSERT OR DELETE OR UPDATE ON irp_pms.room_types FOR EACH ROW EXECUTE FUNCTION irp_pms.whole_home_unit_guard()"
+      ]
+    }
+  ],
+  "function_hashes": [
+    {
+      "schema": "public",
+      "proname": "irp_pms_pilot_revenue_supervisor_queue",
+      "hash": "c4ae842e83094387889917f2600050c0"
+    },
+    {
+      "schema": "irp_pms",
+      "proname": "observe_revenue_supervisor_issue",
+      "hash": "7792d1b13cd5c7bcfdd9d210e28a2f5a"
+    },
+    {
+      "schema": "irp_pms",
+      "proname": "observe_revenue_forecast_health",
+      "hash": "1d5fa05f0d3181d7d850b8f13428dca2"
+    }
+  ],
+  "limits": [
+    "No parent operational rows copied",
+    "properties front-office-statistics activation trigger absent on branch",
+    "No Auth-issued token or full browser execution yet"
+  ]
+}

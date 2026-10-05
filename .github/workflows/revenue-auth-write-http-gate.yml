@@ -13,6 +13,7 @@ on:
           - browser-recovery
           - pms-panel
           - supervisor-review
+          - supervisor-queue
       fixture_manifest:
         description: Supervisor mode only - fresh installed fixture JSON
         type: string
@@ -43,7 +44,7 @@ jobs:
       - name: Check out reviewed candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ (inputs.gate == 'supervisor-review' || inputs.gate == 'audited-http') && github.sha || '10164279cf57af50d64311d1d1b0e4c96d5be86f' }}
+          ref: ${{ (inputs.gate == 'supervisor-review' || inputs.gate == 'supervisor-queue' || inputs.gate == 'audited-http') && github.sha || '10164279cf57af50d64311d1d1b0e4c96d5be86f' }}
           persist-credentials: false
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
@@ -51,7 +52,7 @@ jobs:
           node-version: 24
           cache: npm
       - name: Install locked dependencies
-        if: inputs.gate != 'supervisor-review'
+        if: inputs.gate != 'supervisor-review' && inputs.gate != 'supervisor-queue'
         run: npm ci --ignore-scripts
       - name: Install isolated browser tools
         if: inputs.gate == 'browser-recovery' || inputs.gate == 'pms-panel'
@@ -59,7 +60,7 @@ jobs:
           npm ci --ignore-scripts --prefix scripts/revenue-browser-tools
           node scripts/revenue-browser-tools/node_modules/playwright/cli.js install --with-deps chromium
       - name: Validate isolated branch manifest
-        if: inputs.gate != 'supervisor-review'
+        if: inputs.gate != 'supervisor-review' && inputs.gate != 'supervisor-queue'
         env:
           IRP_HTTP_QUALIFICATION_MANIFEST: ${{ vars.IRP_HTTP_QUALIFICATION_MANIFEST }}
         run: node scripts/revenue-http-qualification-preflight.mjs
@@ -103,21 +104,26 @@ jobs:
           node scripts/revenue-http-qualification-preflight.mjs --credentials
           node scripts/qualify-revenue-auth-browser-recovery.mjs --pms-panel
       - name: Require supervised cleanup for supervisor mode
-        if: inputs.gate == 'supervisor-review' && !inputs.supervised_cleanup
+        if: (inputs.gate == 'supervisor-review' || inputs.gate == 'supervisor-queue') && !inputs.supervised_cleanup
         run: exit 1
+      - name: Check queue fixture preparation without credentials
+        if: inputs.gate == 'supervisor-queue'
+        run: node --test scripts/tests/supervisor-queue-preparation.node-test.mjs
       - name: Write non-secret supervisor manifest and preflight
-        if: inputs.gate == 'supervisor-review' && inputs.supervised_cleanup
+        if: (inputs.gate == 'supervisor-review' || inputs.gate == 'supervisor-queue') && inputs.supervised_cleanup
         env:
+          QUEUE_MODE: ${{ inputs.gate == 'supervisor-queue' && '1' || '0' }}
           FIXTURE_JSON: ${{ inputs.fixture_manifest }}
           IRP_REVIEW_FIXTURE_PATH: ${{ runner.temp }}/supervisor-review-fixture.json
           IRP_REVIEW_PUBLISHABLE_KEY: ${{ inputs.publishable_key }}
           IRP_REVIEW_SUPERVISED_CLEANUP: "1"
         run: |
           node --input-type=module -e 'import {writeFileSync} from "node:fs"; const f=JSON.parse(process.env.FIXTURE_JSON); writeFileSync(process.env.IRP_REVIEW_FIXTURE_PATH, JSON.stringify(f), {mode:0o600, flag:"wx"});'
-          node scripts/qualify-supervisor-review-race.mjs --preflight
+          if [ "$QUEUE_MODE" = "1" ]; then node scripts/qualify-supervisor-queue-recovery.mjs --preflight; else node scripts/qualify-supervisor-review-race.mjs --preflight; fi
       - name: Run genuine Auth supervisor claim, denial and receipt checks
-        if: inputs.gate == 'supervisor-review' && inputs.supervised_cleanup
+        if: (inputs.gate == 'supervisor-review' || inputs.gate == 'supervisor-queue') && inputs.supervised_cleanup
         env:
+          QUEUE_MODE: ${{ inputs.gate == 'supervisor-queue' && '1' || '0' }}
           IRP_REVIEW_FIXTURE_PATH: ${{ runner.temp }}/supervisor-review-fixture.json
           IRP_REVIEW_PUBLISHABLE_KEY: ${{ inputs.publishable_key }}
           IRP_REVIEW_SUPERVISED_CLEANUP: "1"
@@ -127,7 +133,8 @@ jobs:
           IRP_REVIEW_MANAGER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_MANAGER_PASSWORD }}
           IRP_REVIEW_STAFF_EMAIL: ${{ secrets.IRP_HTTP_TEST_STAFF_EMAIL }}
           IRP_REVIEW_STAFF_PASSWORD: ${{ secrets.IRP_HTTP_TEST_STAFF_PASSWORD }}
-        run: node scripts/qualify-supervisor-review-race.mjs
+        run: |
+          if [ "$QUEUE_MODE" = "1" ]; then node scripts/qualify-supervisor-queue-recovery.mjs; else node scripts/qualify-supervisor-review-race.mjs; fi
       - name: Remove local manifest
         if: always()
         run: rm -f -- "$RUNNER_TEMP/revenue-http-qualification.json" "$RUNNER_TEMP/supervisor-review-fixture.json"
