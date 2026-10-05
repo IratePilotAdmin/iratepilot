@@ -32,6 +32,7 @@ const empty: HotelLaunchReadinessInput = {
   supplierChecks: [
     { label: "Closest production connector", passed: false, value: "RateHawk" },
     { label: "Vendor approval", passed: false },
+    { label: "Property mapping", passed: false },
     { label: "Sandbox validation", passed: true },
   ],
   paymentConfigurationReady: false,
@@ -57,11 +58,11 @@ const uiSource = readFileSync(new URL("../components/dashboard/admin-hotel-launc
 const navigationSource = readFileSync(new URL("../data/navigation.ts", import.meta.url), "utf8");
 
 describe("hotel launch readiness", () => {
-  it("reports seven fail-closed gates without estimating readiness", () => {
+  it("reports eight fail-closed gates without estimating readiness", () => {
     const result = buildHotelLaunchReadiness(empty);
-    expect(result).toMatchObject({ complete: 0, total: 7, percent: 0, launchReady: false, readOnly: true });
+    expect(result).toMatchObject({ complete: 0, total: 8, percent: 0, launchReady: false, readOnly: true });
     expect(result.gates.map(({ status }) => status)).toEqual([
-      "waiting_external", "blocked", "waiting_external", "waiting_external", "blocked", "blocked", "blocked",
+      "waiting_external", "waiting_external", "blocked", "waiting_external", "waiting_external", "blocked", "blocked", "blocked",
     ]);
   });
 
@@ -77,7 +78,21 @@ describe("hotel launch readiness", () => {
       commercialCandidateAvailable: true,
       commercialChecks: empty.commercialChecks.map((item) => ({ ...item, passed: true })),
     });
-    expect(result).toMatchObject({ complete: 3, total: 7, percent: 43, launchReady: false });
+    expect(result).toMatchObject({ complete: 3, total: 8, percent: 38, launchReady: false });
+  });
+
+  it("requires external approval evidence and a first real hotel acquisition", () => {
+    const external = buildHotelLaunchReadiness(empty).gates.find(({ id }) => id === "external_acquisition");
+    expect(external?.checks).toEqual([
+      { label: "Hotel applications received", ready: true, value: "2" },
+      { label: "Verified hotel approval decisions", ready: false, value: "0" },
+      { label: "Approved hotel linked to property", ready: false, value: "0" },
+      { label: "Written provider approval", ready: false, value: "Required" },
+      { label: "Real property mapping", ready: false, value: "Required" },
+    ]);
+    expect(external?.detail).toContain("Run both approval paths together");
+    expect(external?.detail).toContain("progress only");
+    expect(JSON.stringify(external)).not.toMatch(/email|phone|credential value/i);
   });
 
   it("shows safe commercial release requirements without agreement or contact data", () => {
@@ -112,7 +127,7 @@ describe("hotel launch readiness", () => {
     expect(JSON.stringify(intake)).not.toMatch(/email|phone|contact/i);
   });
 
-  it("requires all seven gates for launch readiness", () => {
+  it("requires all eight gates for launch readiness", () => {
     const result = buildHotelLaunchReadiness({
       ...empty,
       approvedHotelCount: 1,
@@ -124,6 +139,7 @@ describe("hotel launch readiness", () => {
       commercialCandidateAvailable: true,
       commercialChecks: empty.commercialChecks.map((item) => ({ ...item, passed: true })),
       liveSupplierCount: 1,
+      supplierChecks: empty.supplierChecks.map((item) => ({ ...item, passed: true })),
       paymentConfigurationReady: true,
       paymentAuthorizationValid: true,
       paymentChecks: empty.paymentChecks.map((item) => ({ ...item, passed: true })),
@@ -136,13 +152,14 @@ describe("hotel launch readiness", () => {
       releaseAuthorizationValid: true,
       publicationEnabled: true,
     });
-    expect(result).toMatchObject({ complete: 7, total: 7, percent: 100, launchReady: true });
+    expect(result).toMatchObject({ complete: 8, total: 8, percent: 100, launchReady: true });
     expect(result.gates.every(({ status }) => status === "ready")).toBe(true);
   });
 
   it("shows every prerequisite on the final publication gate", () => {
     const publication = buildHotelLaunchReadiness(empty).gates.find(({ id }) => id === "production_release");
     expect(publication?.checks).toEqual([
+      { label: "External approval and first-hotel acquisition", ready: false, value: "Required" },
       { label: "Approved hotel intake", ready: false, value: "Required" },
       { label: "Listing and sellable inventory", ready: false, value: "Required" },
       { label: "Executed agreement and commercial review", ready: false, value: "Required" },
@@ -192,6 +209,7 @@ describe("hotel launch readiness", () => {
     expect(supplier?.checks).toEqual([
       { label: "Closest production connector", ready: false, value: "RateHawk" },
       { label: "Vendor approval", ready: false, value: "Required" },
+      { label: "Property mapping", ready: false, value: "Required" },
       { label: "Sandbox validation", ready: true, value: "Complete" },
     ]);
     expect(JSON.stringify(supplier)).not.toMatch(/API_KEY|SECRET|PASSWORD|credential value/i);
@@ -241,7 +259,7 @@ describe("hotel launch readiness", () => {
       operationsStateAvailable: false,
     });
     expect(result.gates.filter(({ status }) => status === "unavailable").map(({ id }) => id)).toEqual([
-      "approved_hotel", "listing_inventory", "commercial_release", "supplier_connection", "production_payments", "support_operations",
+      "external_acquisition", "approved_hotel", "listing_inventory", "commercial_release", "supplier_connection", "production_payments", "support_operations",
     ]);
   });
 
@@ -276,14 +294,14 @@ describe("hotel launch readiness", () => {
     expect(routeSource).toContain("review.legal_business_verified");
     expect(routeSource).toContain("export async function POST");
     expect(routeSource.indexOf('requireRole(["admin"])')).toBeLessThan(routeSource.indexOf('rpc("record_hotel_marketplace_release_authorization"'));
-    expect(routeSource).toContain("readiness.gates.slice(0, 6)");
+    expect(routeSource).toContain('gate.id !== "production_release"');
     expect(routeSource).toContain('gate.status !== "ready"');
-    expect(routeSource).toContain("All six production prerequisites must pass");
+    expect(routeSource).toContain("All seven production prerequisites must pass");
     expect(routeSource).toContain('value.replace(/\\s+/g, " ").trim()');
     expect(routeSource).toContain('rpc("revoke_hotel_marketplace_release_authorization"');
     expect(routeSource).not.toContain("export async function PATCH");
     expect(uiSource).toContain("Marketplace release authorization");
-    expect(uiSource).toContain("This control unlocks only after the first six production gates pass.");
+    expect(uiSource).toContain("This control unlocks only after all seven production prerequisites pass.");
     expect(uiSource).toContain("Recording this evidence never changes a runtime switch.");
     expect(uiSource).toContain("item.checks.map");
     expect(navigationSource).toContain('{ href: "/admin/launch-readiness", label: "Launch readiness" }');
