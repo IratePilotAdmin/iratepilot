@@ -25,6 +25,31 @@ describe("partner property images", () => {
     }
   });
 
+  it("rejects local, private-network, and reserved media hosts", () => {
+    for (const imageUrl of [
+      "https://localhost/hotel.jpg",
+      "https://localhost./hotel.jpg",
+      "https://localhost%2e/hotel.jpg",
+      "https://media.internal/hotel.jpg",
+      "https://media.internal./hotel.jpg",
+      "https://media.internal%2e/hotel.jpg",
+      "https://hotel-assets.local/hotel.jpg",
+      "https://127.0.0.1/hotel.jpg",
+      "https://10.0.0.8/hotel.jpg",
+      "https://172.16.4.2/hotel.jpg",
+      "https://192.168.1.5/hotel.jpg",
+      "https://169.254.169.254/latest/meta-data",
+      "https://[::1]/hotel.jpg",
+      "https://203.0.113.10/hotel.jpg",
+    ]) {
+      expect(isSafePropertyImageUrl(imageUrl)).toBe(false);
+    }
+  });
+
+  it("accepts a public IPv4 media host", () => {
+    expect(isSafePropertyImageUrl("https://8.8.8.8/hotel.jpg")).toBe(true);
+  });
+
   it("serves dynamic hotel URLs directly instead of through a restricted optimizer host list", () => {
     const sources = [
       "../components/hotels/hotel-card.tsx",
