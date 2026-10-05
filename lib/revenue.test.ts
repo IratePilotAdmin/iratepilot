@@ -28,4 +28,11 @@ describe("Revenue AI CSV and recommendations", () => {
     expect(recommendation.recommendedRate).toBeGreaterThan(189);
     expect(recommendation.reason).toContain("Manager approval");
   });
+  it.each([
+    ["0", 45],
+    ["", 90],
+  ])("distinguishes observed occupancy history '%s' from missing history", (history, expected) => {
+    const rows = parseRevenueCsv(`property_id,room_id,stay_date,rooms_available,rooms_sold,current_rate,last_year_occupancy\np1,r1,2026-10-06,10,9,100,${history}`);
+    expect(buildRateRecommendation(rows[0]).occupancyForecast).toBe(expected);
+  });
 });
