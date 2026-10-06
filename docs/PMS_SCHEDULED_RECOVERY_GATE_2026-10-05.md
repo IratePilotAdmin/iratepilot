@@ -15,6 +15,15 @@ The previous hosted gate proved that the isolated OTA source can deliver a queue
 - TypeScript `tsc --noEmit` and targeted ESLint passed.
 - The new tests verify modern server-key transport, bounded draining through a delivery then retry, retry response without event ID, and the five-minute cron path.
 
+## Hosted lost-acknowledgement recovery — October 5, 2026
+
+- Reused only synthetic booking `88000000-0000-4000-8000-000000000088` in isolated OTA project `onbdizzwwubfdgkgaphx` and isolated PMS receiver `wjosvslkselpauyftias`. Changed the booking's guest count from two to one while delivery was held, creating pending source version 3 behind delivered versions 1 and 2.
+- Temporarily enabled the exact sandbox connection and source delivery. A one-use local process ran the packaged scoped source worker. Its first HTTPS gateway request returned `200 reservation-staged` and committed the PMS update, but the process deliberately discarded that acknowledgement to model a network loss. The source recorded a durable `retry` and due-time backoff. After the backoff, the same worker reclaimed the same event and the PMS returned `duplicate`; the source acknowledged it.
+- Source event `63bf0b13-1990-407a-af48-4c6107f90ad0` is now `delivered` with two attempts, result code `duplicate`, and no live lease. The PMS still has exactly one Confirmed reservation, now at source version 3, one guest, and the unchanged $119 guest total. No card charge, real guest, or third-party OTA was involved.
+- Source delivery and both connections were disabled again; the receiver signing secret was rotated. Final reads found zero unfinished events for the test booking and one PMS reservation. The temporary one-use process exited, its files and result output were removed, and browser and OS clipboards were cleared.
+
+This verifies **hosted durable retry and idempotent PMS receipt with the packaged worker**. The Vercel scheduled route still has not run against these projects; Vercel cron only invokes production deployments, and this branch remains a draft candidate with sync off.
+
 ## Remaining release check
 
-This is a branch candidate. The hosted scheduled route has **not** run against the two isolated projects, and Vercel cron does not fire for Preview. Do not enable `IRP_PMS_SYNC_ENABLED` or promote the OTA connector on the basis of this gate alone. The next isolated test should invoke the protected route with a synthetic queued booking, force a transient receiver failure, then confirm due-time retry, one destination reservation, and source acknowledgement. Production rollout additionally needs verified environment binding, populated-data restore, a real Stripe TEST checkout/webhook, and operational review.
+This is a branch candidate. The hosted scheduled route has **not** run against the two isolated projects, and Vercel cron does not fire for Preview. Do not enable `IRP_PMS_SYNC_ENABLED` or promote the OTA connector on the basis of this gate alone. The next isolated test should invoke that exact protected route with scoped encrypted registry credentials and verify its response and source ledger. Production rollout additionally needs verified environment binding, populated-data restore, a real Stripe TEST checkout/webhook, and operational review.
