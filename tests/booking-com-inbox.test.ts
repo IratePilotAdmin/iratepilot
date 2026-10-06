@@ -181,7 +181,9 @@ describe("encrypted OTA reservation inbox staging", () => {
     };
     expect(() => decryptBookingComReservation({ ...envelope, propertyId: "10000000-0000-4000-8000-000000000002" }))
       .toThrow();
-    expect(() => decryptBookingComReservation({ ...envelope, ciphertext: `A${envelope.ciphertext.slice(1)}` }))
+    const tamperedCiphertext = Buffer.from(envelope.ciphertext, "base64");
+    tamperedCiphertext[0] ^= 1;
+    expect(() => decryptBookingComReservation({ ...envelope, ciphertext: tamperedCiphertext.toString("base64") }))
       .toThrow();
   });
 });
