@@ -18,8 +18,9 @@ on:
           - supervisor-lockwait
           - home-services
           - home-browser
+          - home-review
       fixture_manifest:
-        description: Supervisor mode only - fresh installed fixture JSON
+        description: Supervisor or Home review mode - fresh installed fixture JSON
         type: string
         required: false
       publishable_key:
@@ -78,7 +79,7 @@ jobs:
         if: inputs.gate != 'home-services'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ (inputs.gate == 'home-browser' || inputs.gate == 'supervisor-review' || inputs.gate == 'supervisor-queue' || inputs.gate == 'supervisor-browser' || inputs.gate == 'supervisor-lockwait' || inputs.gate == 'audited-http') && github.sha || '10164279cf57af50d64311d1d1b0e4c96d5be86f' }}
+          ref: ${{ (inputs.gate == 'home-review' || inputs.gate == 'home-browser' || inputs.gate == 'supervisor-review' || inputs.gate == 'supervisor-queue' || inputs.gate == 'supervisor-browser' || inputs.gate == 'supervisor-lockwait' || inputs.gate == 'audited-http') && github.sha || '10164279cf57af50d64311d1d1b0e4c96d5be86f' }}
           persist-credentials: false
       - name: Set up Node.js
         if: inputs.gate != 'home-services'
@@ -87,21 +88,40 @@ jobs:
           node-version: 24
           cache: npm
       - name: Install locked dependencies
-        if: inputs.gate != 'supervisor-review' && inputs.gate != 'supervisor-queue' && inputs.gate != 'supervisor-browser' && inputs.gate != 'supervisor-lockwait' && inputs.gate != 'home-services' && inputs.gate != 'home-browser'
+        if: inputs.gate != 'supervisor-review' && inputs.gate != 'supervisor-queue' && inputs.gate != 'supervisor-browser' && inputs.gate != 'supervisor-lockwait' && inputs.gate != 'home-services' && inputs.gate != 'home-browser' && inputs.gate != 'home-review'
         run: npm ci --ignore-scripts
       - name: Install isolated browser tools
-        if: inputs.gate == 'browser-recovery' || inputs.gate == 'pms-panel' || inputs.gate == 'supervisor-browser' || inputs.gate == 'home-browser'
+        if: inputs.gate == 'browser-recovery' || inputs.gate == 'pms-panel' || inputs.gate == 'supervisor-browser' || inputs.gate == 'home-browser' || inputs.gate == 'home-review'
         run: |
           npm ci --ignore-scripts --prefix scripts/revenue-browser-tools
           node scripts/revenue-browser-tools/node_modules/playwright/cli.js install --with-deps chromium
       - name: Validate isolated branch manifest
-        if: inputs.gate != 'supervisor-review' && inputs.gate != 'supervisor-queue' && inputs.gate != 'supervisor-browser' && inputs.gate != 'supervisor-lockwait' && inputs.gate != 'home-services' && inputs.gate != 'home-browser'
+        if: inputs.gate != 'supervisor-review' && inputs.gate != 'supervisor-queue' && inputs.gate != 'supervisor-browser' && inputs.gate != 'supervisor-lockwait' && inputs.gate != 'home-services' && inputs.gate != 'home-browser' && inputs.gate != 'home-review'
         env:
           IRP_HTTP_QUALIFICATION_MANIFEST: ${{ vars.IRP_HTTP_QUALIFICATION_MANIFEST }}
         run: node scripts/revenue-http-qualification-preflight.mjs
       - name: Verify actual full Home snapshot integrity
-        if: inputs.gate == 'home-browser'
+        if: inputs.gate == 'home-browser' || inputs.gate == 'home-review'
         run: node scripts/qualify-home-browser.mjs --verify-only
+      - name: Qualify saved review through actual Home
+        if: inputs.gate == 'home-review'
+        env:
+          IRP_HOME_SUPERVISED_CLEANUP: ${{ inputs.supervised_cleanup && '1' || '0' }}
+          IRP_HTTP_TEST_OWNER_EMAIL: ${{ secrets.IRP_HTTP_TEST_OWNER_EMAIL }}
+          IRP_HTTP_TEST_OWNER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_OWNER_PASSWORD }}
+          FIXTURE_JSON: ${{ inputs.fixture_manifest }}
+          IRP_REVIEW_FIXTURE_PATH: ${{ runner.temp }}/home-review-fixture.json
+        run: |
+          node --input-type=module -e 'import {writeFileSync} from "node:fs"; writeFileSync(process.env.IRP_REVIEW_FIXTURE_PATH, JSON.stringify(JSON.parse(process.env.FIXTURE_JSON)), {mode:0o600, flag:"wx"});'
+          node scripts/qualify-home-browser.mjs --review-recovery
+      - name: Retain actual Home saved-review evidence
+        if: inputs.gate == 'home-review' && always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: home-review-evidence
+          path: work/home-review-evidence
+          if-no-files-found: warn
+          retention-days: 14
       - name: Qualify actual Home with genuine isolated Auth
         if: inputs.gate == 'home-browser'
         env:
@@ -216,7 +236,7 @@ jobs:
           retention-days: 14
       - name: Remove local manifest
         if: always()
-        run: rm -f -- "$RUNNER_TEMP/revenue-http-qualification.json" "$RUNNER_TEMP/supervisor-review-fixture.json"
+        run: rm -f -- "$RUNNER_TEMP/revenue-http-qualification.json" "$RUNNER_TEMP/supervisor-review-fixture.json" "$RUNNER_TEMP/home-review-fixture.json"
 
 # Install the pinned expiring fixture only on the isolated branch before approval.
 # Pricing modes require their pinned cleanup; supervisor modes require the exact
