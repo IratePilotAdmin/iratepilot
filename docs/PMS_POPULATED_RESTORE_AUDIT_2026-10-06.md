@@ -87,3 +87,11 @@ The first app-level owner export returned HTTP 503. The local Miniflare D1 emula
 This passes the isolated app's owner-authenticated **browser → API → local D1 → downloaded response** read path. It is not a test of hosted Site cutover, write workflows, payment capture, or supplier traffic. The local copy's `_cf_*` filter fix should be reviewed for inclusion in a later source release if local D1 exports are expected to work in development.
 
 The owner-facing verified local export remains in Downloads as `iRatePilot-application-data (6).json`. An attempted cleanup of the generated import and local SQL-export files under the user's Temp directory was rejected by automatic command approval review as a blocked deletion. Those temporary private SQL files were left untouched; this audit does not claim they were removed.
+
+## October 6 isolated front-desk room-status write gate
+
+The local PMS was switched to the restored **Test Hotel** property (`b81d2680-5bf4-4e7e-b79c-65349b3d865f`). Before any write, read-only SQL confirmed four rooms, all Clean; `irp_pms.gateway_connections` had one disabled connection, and `public.irp_pms_outbox_connections` had no connection for this property. The live Red Roof property was not used for the write test.
+
+Through the signed-in owner browser, room `TEST-102` was marked Dirty. The Today board then showed the room as Vacant/Dirty with turnover, Ready rooms decreased from 3 to 2, Rooms to prepare increased from 0 to 1, and recent activity recorded Housekeeping Updated and Turnover Created. An independent query against the isolated restore confirmed `irp_pms.rooms.housekeeping = 'Dirty'` and `state_version = 6`, up from 5. The same browser action changed it back to Clean. The board returned to Ready rooms 3 and Rooms to prepare 0, and independent SQL confirmed `housekeeping = 'Clean'`, `state_version = 7`. This passes the browser → application → restored Supabase write → browser readback path for one room-status change and its reversal. It leaves normal audit/turnover history in the isolated test project; no production project or active supplier connection was changed.
+
+This test does not establish full PMS launch readiness. Guest booking and check-in, payment processing, OTA delivery, nightly close, other staff roles, the optional missing repair RPCs, and a production cutover remain separate gates.
