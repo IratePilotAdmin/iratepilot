@@ -43,3 +43,7 @@ export function getStripeWebhookMode(env: PaymentEnvironment = process.env): Boo
 export function getApprovedBookingMetadataMode(mode: BookingPaymentMode) {
   return mode === "test" ? "approved_booking_test" : "approved_booking_live";
 }
+
+export function stripeLivemodeMatchesPaymentMode(livemode: boolean, mode: BookingPaymentMode) {
+  return livemode === (mode === "live");
+}
