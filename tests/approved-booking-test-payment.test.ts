@@ -37,15 +37,15 @@ describe("approved reservation test payments", () => {
     expect(webhook).toContain("refundUnfinalizedBookingPayment(intent.id)");
   });
 
-  it("rechecks the complete marketplace launch gate before accepting a live success event", () => {
+  it("rechecks the refund-safe marketplace gate before accepting a live success event", () => {
     expect(webhook).toContain('webhookMode === "live"');
     expect(webhook).toContain('event.type === "payment_intent.succeeded"');
-    expect(webhook).toContain("isHotelMarketplaceLaunchAuthorized()");
+    expect(webhook).toContain("isHotelMarketplacePaymentFinalizationAuthorized()");
     expect(webhook).toContain("Live payment completion requires every production launch gate to pass.");
-    expect(webhook.indexOf("isHotelMarketplaceLaunchAuthorized()"))
+    expect(webhook.indexOf("isHotelMarketplacePaymentFinalizationAuthorized()"))
       .toBeLessThan(webhook.indexOf('from("stripe_financial_events")'));
-    expect(completionRoute).toContain('paymentMode === "live" && !await isHotelMarketplaceLaunchAuthorized()');
-    expect(completionRoute.indexOf("isHotelMarketplaceLaunchAuthorized()"))
+    expect(completionRoute).toContain('paymentMode === "live" && !await isHotelMarketplacePaymentFinalizationAuthorized()');
+    expect(completionRoute.indexOf("isHotelMarketplacePaymentFinalizationAuthorized()"))
       .toBeLessThan(completionRoute.indexOf("paymentIntents.retrieve"));
   });
 

@@ -25,7 +25,7 @@ import {
 } from "@/lib/stripe/booking-payment-mode";
 import { reconcileStripeBookingRefund, type StripeRefundReconciliation } from "@/lib/bookings/stripe-refund-reconciliation";
 import { drainNativePmsEvents } from "@/services/hotel-suppliers/iratepilot-pms/native-delivery";
-import { isHotelMarketplaceLaunchAuthorized } from "@/lib/hotels/marketplace-launch-authorization";
+import { isHotelMarketplacePaymentFinalizationAuthorized } from "@/lib/hotels/marketplace-launch-authorization";
 
 function deliverCancellationToNativePms() {
   after(async () => {
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
   if (
     webhookMode === "live"
     && event.type === "payment_intent.succeeded"
-    && !await isHotelMarketplaceLaunchAuthorized()
+    && !await isHotelMarketplacePaymentFinalizationAuthorized()
   ) {
     return NextResponse.json({
       error: "Live payment completion requires every production launch gate to pass.",

@@ -172,10 +172,16 @@ begin
     end if;
     raise exception 'This reservation already has a different payment';
   end if;
-  if p_payment_mode = 'live'
-    and not public.has_current_bookable_hotel_property(v_booking.property_id)
-  then
-    raise exception 'The hotel is no longer commercially authorized for live payment';
+  if p_payment_mode = 'live' then
+    perform pg_catalog.pg_advisory_xact_lock(
+      pg_catalog.hashtextextended(
+        'hotel-commercial-agreement:' || v_booking.property_id::text,
+        0
+      )
+    );
+    if not public.has_current_bookable_hotel_property(v_booking.property_id) then
+      raise exception 'The hotel is no longer commercially authorized for live payment';
+    end if;
   end if;
 
   update public.bookings

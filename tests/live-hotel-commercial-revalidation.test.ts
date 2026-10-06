@@ -9,6 +9,14 @@ const migration = readFileSync(
   new URL("../supabase/migrations/202610050164_revalidate_live_hotel_commerce.sql", import.meta.url),
   "utf8",
 );
+const paymentCompletionRoute = readFileSync(
+  new URL("../app/api/bookings/[id]/complete-payment/route.ts", import.meta.url),
+  "utf8",
+);
+const stripeWebhookRoute = readFileSync(
+  new URL("../app/api/stripe/webhook/route.ts", import.meta.url),
+  "utf8",
+);
 
 describe("live hotel commercial revalidation", () => {
   it("rechecks current commercial hotel inventory during every launch authorization", () => {
@@ -37,11 +45,19 @@ describe("live hotel commercial revalidation", () => {
     expect(migration).toContain("p_payment_mode = 'live'");
     expect(migration).toContain("has_current_bookable_hotel_property(v_booking.property_id)");
     expect(migration).toContain("The hotel is no longer commercially authorized for live payment");
-    const livePropertyGuard = "and not public.has_current_bookable_hotel_property(v_booking.property_id)";
+    const livePropertyGuard = "if not public.has_current_bookable_hotel_property(v_booking.property_id)";
     expect(migration.indexOf("v_booking.stripe_payment_intent_id is not null"))
       .toBeLessThan(migration.indexOf(livePropertyGuard));
     expect(migration.indexOf(livePropertyGuard))
       .toBeLessThan(migration.indexOf("set stripe_payment_intent_id = p_payment_intent_id"));
+    expect(migration).toContain("pg_catalog.pg_advisory_xact_lock");
+    expect(migration).toContain("'hotel-commercial-agreement:' || v_booking.property_id::text");
+  });
+
+  it("lets succeeded payments reach refund-capable property finalization", () => {
+    expect(paymentCompletionRoute).toContain("isHotelMarketplacePaymentFinalizationAuthorized");
+    expect(stripeWebhookRoute).toContain("isHotelMarketplacePaymentFinalizationAuthorized");
+    expect(launchAuthorization).toContain("allowUnavailableCommercialInventoryForPaymentFinalization");
   });
 
   it("keeps the runtime revalidation functions private to the service role", () => {
