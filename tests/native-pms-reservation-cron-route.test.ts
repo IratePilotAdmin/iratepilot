@@ -69,6 +69,20 @@ describe("native PMS reservation recovery route", () => {
     expect(await response.json()).toEqual({ error: "Reservation delivery worker is unavailable.", code: "source_connection_list_failed" });
   });
 
+  it("includes only the source RPC status category for an HTTP failure", async () => {
+    vi.stubEnv("CRON_SECRET", "secret-for-tests");
+    vi.stubEnv("IRP_PMS_SYNC_ENABLED", "true");
+    vi.stubEnv("PMS_CREDENTIAL_ENCRYPTION_KEY", "encryption-key-fixture");
+    vi.stubEnv("IRP_PMS_DESTINATION_URL", "https://pms.supabase.co/rest/v1/rpc/irp_pms_ota_gateway");
+    vi.stubEnv("IRP_PMS_DESTINATION_PUBLISHABLE_KEY", "sb_publishable_abcdefghijklmnop");
+    runWorker.mockRejectedValueOnce(new Error("Reservation worker database call failed: irp_pms_list_configured_delivery_connections (HTTP 401)."));
+    const response = await GET(new Request("https://ota.example/api/cron/native-pms-reservations", {
+      headers: { authorization: "Bearer secret-for-tests" },
+    }));
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "Reservation delivery worker is unavailable.", code: "source_connection_list_http_401" });
+  });
+
   it("does not expose the worker to POST requests", async () => {
     const response = await POST();
     expect(response.status).toBe(405);

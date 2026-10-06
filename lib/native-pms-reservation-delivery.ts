@@ -86,7 +86,7 @@ async function callRpc(fetcher: typeof fetch, base: string, key: string, name: s
   });
   const text = await readBoundedText(response, 512 * 1024);
   if (text === null) throw new Error("Reservation worker database response is too large.");
-  if (!response.ok) throw new Error(`Reservation worker database call failed: ${name}.`);
+  if (!response.ok) throw new Error(`Reservation worker database call failed: ${name} (HTTP ${response.status}).`);
   try { return JSON.parse(text) as unknown; } catch { throw new Error(`Reservation worker database response is invalid: ${name}.`); }
 }
 

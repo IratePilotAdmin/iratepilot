@@ -7,6 +7,8 @@ export const maxDuration = 180;
 
 function failureCode(error: unknown): string {
   const message = error instanceof Error ? error.message : "";
+  const sourceStatus = /^Reservation worker database call failed: (irp_pms_list_configured_delivery_connections|irp_pms_claim_configured_event|irp_pms_finish_event) \(HTTP (400|401|403|404|405|409|429|500|502|503)\)\.$/.exec(message);
+  if (sourceStatus) return `source_${sourceStatus[1] === "irp_pms_list_configured_delivery_connections" ? "connection_list" : sourceStatus[1] === "irp_pms_claim_configured_event" ? "claim" : "finish"}_http_${sourceStatus[2]}`;
   if (message === "Reservation worker database credential is invalid.") return "source_credential_invalid";
   if (message === "Reservation worker Supabase URL is invalid.") return "source_url_invalid";
   if (message === "Reservation credential encryption is unavailable.") return "encryption_key_invalid";
