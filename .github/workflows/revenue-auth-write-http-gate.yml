@@ -4,12 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       gate:
-        description: Isolated qualification suite (fresh fixture required)
+        description: Isolated qualification suite (pricing modes require fresh fixture)
         type: choice
         required: true
         default: audited-http
         options:
           - audited-http
+          - session-rejection
           - browser-recovery
           - pms-panel
           - supervisor-review
@@ -141,6 +142,13 @@ jobs:
           path: work/home-browser-evidence
           if-no-files-found: warn
           retention-days: 14
+      - name: Qualify actual Auth refresh rejection without rate writes
+        if: inputs.gate == 'session-rejection'
+        env:
+          IRP_RUN_AUTH_SESSION_REJECTION: "1"
+          IRP_HTTP_TEST_OWNER_EMAIL: ${{ secrets.IRP_HTTP_TEST_OWNER_EMAIL }}
+          IRP_HTTP_TEST_OWNER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_OWNER_PASSWORD }}
+        run: node node_modules/vitest/vitest.mjs run tests/revenue-auth-session-rejection.integration.test.ts
       - name: Run 28 Auth-issued isolated audited-write HTTP cases
         if: inputs.gate == 'audited-http'
         env:
