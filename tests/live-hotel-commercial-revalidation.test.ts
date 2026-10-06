@@ -25,6 +25,10 @@ const paymentIntentRoute = readFileSync(
   new URL("../app/api/bookings/[id]/payment-intent/route.ts", import.meta.url),
   "utf8",
 );
+const publicationRoute = readFileSync(
+  new URL("../app/api/admin/properties/[id]/route.ts", import.meta.url),
+  "utf8",
+);
 
 describe("live hotel commercial revalidation", () => {
   it("rechecks current commercial hotel inventory during every launch authorization", () => {
@@ -78,6 +82,14 @@ describe("live hotel commercial revalidation", () => {
       .toBeLessThan(bookingRoute.indexOf('from("bookings").insert'));
     expect(paymentIntentRoute.indexOf("hasCurrentBookableHotelProperty(admin, booking.property_id)"))
       .toBeLessThan(paymentIntentRoute.indexOf("paymentIntents.create"));
+  });
+
+  it("allows the first qualifying hotel to reach property-scoped publication checks", () => {
+    expect(publicationRoute).toContain("isHotelMarketplacePublicationAuthorized");
+    expect(launchAuthorization).toContain("allowUnavailableCommercialInventoryForPublication");
+    expect(publicationRoute).toContain("get_verified_hotel_intake_property_ids");
+    expect(publicationRoute).toContain("getPropertyReadiness");
+    expect(publicationRoute).toContain('rpc("set_property_publication_state"');
   });
 
   it("keeps the runtime revalidation functions private to the service role", () => {

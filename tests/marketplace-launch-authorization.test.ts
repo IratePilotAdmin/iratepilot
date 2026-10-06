@@ -76,6 +76,19 @@ describe("hotel marketplace launch authorization", () => {
       ...liveEvidence,
       hotelCommerceStateAvailable: false,
     })).toBe(false);
+    expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
+      ...liveEvidence,
+      commercialHotelInventoryReady: false,
+    }, {
+      allowUnavailableCommercialInventoryForPublication: true,
+    })).toBe(true);
+    expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
+      ...liveEvidence,
+      hotelCommerceStateAvailable: false,
+      commercialHotelInventoryReady: false,
+    }, {
+      allowUnavailableCommercialInventoryForPublication: true,
+    })).toBe(false);
   });
 
   it("fails closed for supplier or operations evidence errors", () => {
