@@ -6,12 +6,6 @@ begin;
 revoke all on function public.has_current_hotel_payment_launch_authorization()
   from public, anon, authenticated, service_role;
 
-alter table public.hotel_payment_launch_authorizations
-  drop constraint hotel_payment_launch_stripe_account_check,
-  add constraint hotel_payment_launch_stripe_account_check check (
-    stripe_account_reference ~ '^acct_[A-Za-z0-9]{8,127}$'
-  );
-
 create function public.has_current_hotel_payment_launch_authorization(
   p_stripe_account_reference text
 )

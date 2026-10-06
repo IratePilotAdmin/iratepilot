@@ -138,6 +138,8 @@ describe("payment readiness audit", () => {
     expect(dashboard).toContain('fetch("/api/admin/payment-readiness"');
     expect(dashboard).toContain("never creates a PaymentIntent");
     expect(dashboard).toContain("launch remains unauthorized");
+    expect(dashboard).toContain("data.productionConfiguration.authorization ?");
+    expect(dashboard).not.toContain("data.productionConfiguration.launchAuthorized ?");
     expect(settings).toContain("<PaymentReadiness />");
   });
 
