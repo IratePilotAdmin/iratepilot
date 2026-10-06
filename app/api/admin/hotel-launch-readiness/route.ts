@@ -7,6 +7,10 @@ import { requireRole } from "@/lib/auth/require-role";
 import { isEmailWorkerEnabled } from "@/lib/email/worker-gate";
 import { isHotelPublicationEnabled } from "@/lib/hotels/publication-gate";
 import { hasCurrentHotelMarketplaceReleaseAuthorization } from "@/lib/hotels/marketplace-release-authorization";
+import {
+  isCompleteHotelPartnerApplication,
+  type HotelPartnerApplicationCompleteness,
+} from "@/lib/partner/acquisition";
 import { getPropertyReadiness, type PropertyReadinessInput } from "@/lib/property-readiness";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -42,6 +46,12 @@ type ReleaseAuthorization = {
   approvedAt: string;
   expiresAt: string;
   revokedAt: string | null;
+};
+
+type LaunchHotelApplication = HotelPartnerApplicationCompleteness & {
+  id: string;
+  property_id: string | null;
+  status: "pending" | "approved" | "declined";
 };
 
 const timestampSchema = z.string().datetime({ offset: true });
@@ -88,14 +98,25 @@ export async function GET() {
       if (linkedToProperty) query = query.not("partner_applications.property_id", "is", null);
       return query;
     };
-    const [properties, applications, applicationApprovalEvidence, applicationTotal, pendingApplications, declinedApplications, verifiedApprovals, verifiedLinkedApprovals, commercialControls, supplierEvidence, synxisEvidence, emailBacklog, emailDeadLetters, deliveryFailures, payoutExceptions, paymentApprovals, paymentRevocations, releaseAuthorizations, releaseRevocations, releaseAuthorizationValid] = await Promise.all([
+    const fetchAllHotelApplications = async () => {
+      const pageSize = 1_000;
+      const data: LaunchHotelApplication[] = [];
+      for (let from = 0; ; from += pageSize) {
+        const page = await admin.from("partner_applications")
+          .select("id,property_id,status,star_rating,contact_role,phone,website_url,address_line1,city,postal_code,country,description,amenities,photo_source_url,hotel_authorized,content_rights_confirmed,information_accurate,commercial_terms_acknowledged,commercial_terms_version_acknowledged")
+          .order("id", { ascending: true })
+          .range(from, from + pageSize - 1);
+        if (page.error) return { data: [] as LaunchHotelApplication[], error: page.error };
+        const rows = (page.data ?? []) as LaunchHotelApplication[];
+        data.push(...rows);
+        if (rows.length < pageSize) return { data, error: null };
+      }
+    };
+    const [properties, applications, applicationApprovalEvidence, verifiedApprovals, verifiedLinkedApprovals, commercialControls, supplierEvidence, synxisEvidence, emailBacklog, emailDeadLetters, deliveryFailures, payoutExceptions, paymentApprovals, paymentRevocations, releaseAuthorizations, releaseRevocations, releaseAuthorizationValid] = await Promise.all([
       admin.from("properties").select("id,image_url,amenities,rooms(active,base_rate,max_guests,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount))"),
-      admin.from("partner_applications").select("id,property_id,status"),
+      fetchAllHotelApplications(),
       auth.supabase.from("partner_application_review_evidence")
         .select("application_id,decision,legal_business_verified,representative_authority_verified,content_rights_verified,commercial_terms_acknowledgement_verified,inactive_draft_scope_confirmed"),
-      admin.from("partner_applications").select("id", { count: "exact", head: true }),
-      count("partner_applications", "status", ["pending"]),
-      count("partner_applications", "status", ["declined"]),
       verifiedApprovalCount(false),
       verifiedApprovalCount(true),
       auth.supabase.from("properties").select("id,listing_scope,direct_request_mode,commercial_terms_version,commercial_verified_at,commercial_verified_by,support_contact_email"),
@@ -122,14 +143,9 @@ export async function GET() {
     }
 
     const approvedHotelStateAvailable = !applicationApprovalEvidence.error
-      && !applicationTotal.error
-      && !pendingApplications.error
-      && !declinedApplications.error
+      && !applications.error
       && !verifiedApprovals.error
       && !verifiedLinkedApprovals.error
-      && typeof applicationTotal.count === "number"
-      && typeof pendingApplications.count === "number"
-      && typeof declinedApplications.count === "number"
       && typeof verifiedApprovals.count === "number"
       && typeof verifiedLinkedApprovals.count === "number";
     const verifiedApprovalApplicationIds = new Set(
@@ -149,9 +165,10 @@ export async function GET() {
           && verifiedApprovalApplicationIds.has(application.id))
         .map((application) => application.property_id as string),
     );
-    const hotelApplicationCount = applicationTotal.count ?? 0;
-    const pendingHotelApplicationCount = pendingApplications.count ?? 0;
-    const declinedHotelApplicationCount = declinedApplications.count ?? 0;
+    const completeApplications = (applications.data ?? []).filter(isCompleteHotelPartnerApplication);
+    const hotelApplicationCount = completeApplications.length;
+    const pendingHotelApplicationCount = completeApplications.filter(({ status }) => status === "pending").length;
+    const declinedHotelApplicationCount = completeApplications.filter(({ status }) => status === "declined").length;
     const verifiedHotelApprovalCount = verifiedApprovals.count ?? 0;
     const approvedPropertyReadiness =
       (properties.data ?? [])

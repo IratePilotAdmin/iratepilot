@@ -127,6 +127,13 @@ describe("hotel launch readiness", () => {
     expect(JSON.stringify(intake)).not.toMatch(/email|phone|contact/i);
   });
 
+  it("paginates complete hotel applications before deriving funnel totals", () => {
+    expect(routeSource).toContain("const fetchAllHotelApplications = async () =>");
+    expect(routeSource).toContain(".range(from, from + pageSize - 1)");
+    expect(routeSource).toContain("if (rows.length < pageSize) return { data, error: null }");
+    expect(routeSource).toContain("fetchAllHotelApplications(),");
+  });
+
   it("requires all eight gates for launch readiness", () => {
     const result = buildHotelLaunchReadiness({
       ...empty,
