@@ -11,6 +11,7 @@ export type {
 } from "./inventory-readiness";
 export {
   auditPriorityPmsProductionReadiness,
+  areVerifiedActivationDetails,
   isVerifiedActivationDetail,
   priorityPmsProductionManifest,
   priorityPmsProviderIds,
