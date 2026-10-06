@@ -14,6 +14,8 @@ import { buildVerifiedSynxisReadiness, type SynxisVerifiedEvidence } from "../..
 type MarketplaceLaunchEvidence = {
   releaseAuthorizationValid: boolean;
   paymentAuthorizationValid: boolean;
+  hotelCommerceStateAvailable: boolean;
+  commercialHotelInventoryReady: boolean;
   supplierStateAvailable: boolean;
   priorityPmsEvidence: Partial<Record<PriorityPmsProviderId, PriorityPmsLaunchEvidence>>;
   synxisEvidence: SynxisVerifiedEvidence;
@@ -36,6 +38,8 @@ export function evaluateHotelMarketplaceLaunchAuthorization(
   if (!isHotelPublicationEnabled(env) || !isEmailWorkerEnabled(env.EMAIL_WORKER_ENABLED)) return false;
   if (!evidence.releaseAuthorizationValid
     || !evidence.paymentAuthorizationValid
+    || !evidence.hotelCommerceStateAvailable
+    || !evidence.commercialHotelInventoryReady
     || !evidence.supplierStateAvailable
     || !evidence.operationsStateAvailable) return false;
   if (!buildPaymentReadiness(env).productionConfiguration.ready) return false;
@@ -62,9 +66,10 @@ async function verifyHotelMarketplaceLaunchAuthorization(
       .from(table)
       .select("id", { count: "exact", head: true })
       .in(column, values);
-    const [releaseAuthorizationValid, paymentAuthorizationValid, supplierEvidence, synxisEvidence, emailBacklog, emailDeadLetters, deliveryFailures, payoutExceptions] = await Promise.all([
+    const [releaseAuthorizationValid, paymentAuthorizationValid, commercialHotelInventory, supplierEvidence, synxisEvidence, emailBacklog, emailDeadLetters, deliveryFailures, payoutExceptions] = await Promise.all([
       hasCurrentHotelMarketplaceReleaseAuthorization(admin),
       hasCurrentLivePaymentAuthorization(admin),
+      admin.rpc("has_current_commercial_hotel_inventory"),
       admin.from("priority_pms_launch_evidence").select("provider_id,vendor_approved,property_mapped,sandbox_validated,webhook_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact,verification_notes"),
       admin.from("synxis_crs_launch_evidence").select("vendor_approved,certification_environment_approved,property_mapped,sandbox_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact").eq("provider_id", "sabre-synxis").maybeSingle(),
       count("email_outbox", "status", ["pending", "failed", "processing"]),
@@ -90,6 +95,9 @@ async function verifyHotelMarketplaceLaunchAuthorization(
     return evaluateHotelMarketplaceLaunchAuthorization(env, {
       releaseAuthorizationValid,
       paymentAuthorizationValid,
+      hotelCommerceStateAvailable: !commercialHotelInventory.error
+        && typeof commercialHotelInventory.data === "boolean",
+      commercialHotelInventoryReady: commercialHotelInventory.data === true,
       supplierStateAvailable: !supplierEvidence.error && !synxisEvidence.error,
       priorityPmsEvidence,
       synxisEvidence: {

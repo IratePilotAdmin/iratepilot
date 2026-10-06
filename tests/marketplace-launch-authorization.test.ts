@@ -28,6 +28,8 @@ const liveEnvironment = {
 const liveEvidence = {
   releaseAuthorizationValid: true,
   paymentAuthorizationValid: true,
+  hotelCommerceStateAvailable: true,
+  commercialHotelInventoryReady: true,
   supplierStateAvailable: true,
   priorityPmsEvidence: {},
   synxisEvidence: {
@@ -62,6 +64,17 @@ describe("hotel marketplace launch authorization", () => {
     expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
       ...liveEvidence,
       paymentAuthorizationValid: false,
+    })).toBe(false);
+  });
+
+  it("revalidates current hotel intake, inventory, and commercial evidence", () => {
+    expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
+      ...liveEvidence,
+      commercialHotelInventoryReady: false,
+    })).toBe(false);
+    expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
+      ...liveEvidence,
+      hotelCommerceStateAvailable: false,
     })).toBe(false);
   });
 
