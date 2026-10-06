@@ -3,6 +3,49 @@ import { isSafePropertyImageUrl } from "../property-image";
 
 export const HOTEL_PARTNER_DISCLOSURE_VERSION = "hotel_partner_fee_disclosure_13_3_2026-08-22_v1";
 
+export type HotelPartnerApplicationCompleteness = {
+  star_rating: number | null;
+  contact_role: string | null;
+  phone: string | null;
+  website_url: string | null;
+  address_line1: string | null;
+  city: string | null;
+  postal_code: string | null;
+  country: string | null;
+  description: string | null;
+  amenities: string[] | null;
+  photo_source_url: string | null;
+  hotel_authorized: boolean;
+  content_rights_confirmed: boolean;
+  information_accurate: boolean;
+  commercial_terms_acknowledged: boolean;
+  commercial_terms_version_acknowledged: string | null;
+};
+
+/** Excludes incomplete legacy records from the real hotel acquisition funnel. */
+export function isCompleteHotelPartnerApplication(
+  application: HotelPartnerApplicationCompleteness,
+) {
+  return Boolean(
+    (application.star_rating === 4 || application.star_rating === 5)
+    && application.contact_role
+    && application.phone
+    && application.website_url
+    && application.address_line1
+    && application.city
+    && application.postal_code
+    && application.country
+    && application.description
+    && application.amenities?.length
+    && application.photo_source_url
+    && application.hotel_authorized
+    && application.content_rights_confirmed
+    && application.information_accurate
+    && application.commercial_terms_acknowledged
+    && application.commercial_terms_version_acknowledged === HOTEL_PARTNER_DISCLOSURE_VERSION,
+  );
+}
+
 const campaignLabel = (max: number) => z.string().trim().min(1).max(max)
   .regex(/^[^\u0000-\u001f\u007f]*$/, "Campaign labels cannot contain control characters.");
 
