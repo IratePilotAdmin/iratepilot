@@ -8,8 +8,11 @@ import {createRequire} from 'node:module';
 import {actors,baseline,validateQueueFixture} from './supervisor-queue-qualification-config.mjs';
 const reviewMode=process.argv.includes('--review-recovery');
 const rejectionMode=process.argv.includes('--auth-rejection');
+const expiryMode=process.argv.includes('--natural-expiry');
+const expiryProbe=process.argv.includes('--expiry-probe');
+const authLifecycleMode=rejectionMode||expiryMode||expiryProbe;
 const require=createRequire(new URL('./revenue-browser-tools/package.json',import.meta.url));
-const fixture=resolve('tests/fixtures/pms-home-2fb5285'),out=resolve(rejectionMode?'work/home-auth-rejection-evidence':reviewMode?'work/home-review-evidence':'work/home-browser-evidence');
+const fixture=resolve('tests/fixtures/pms-home-2fb5285'),out=resolve(expiryMode||expiryProbe?'work/home-natural-expiry-evidence':rejectionMode?'work/home-auth-rejection-evidence':reviewMode?'work/home-review-evidence':'work/home-browser-evidence');
 const provenance=JSON.parse(await readFile(resolve(fixture,'provenance.json'),'utf8'));
 assert.equal(provenance.candidate,'2fb5285ac74314e97a9161dd8872d7088ccb8a92');assert.equal(provenance.project,'ybehrayzwzyufxbxcysq');
 for(const [name,hash] of Object.entries(provenance.files)){
@@ -19,8 +22,8 @@ for(const [name,hash] of Object.entries(provenance.files)){
 for(const [name,hash] of Object.entries(provenance.assets))assert.equal(createHash('sha256').update(await readFile(resolve(fixture,name))).digest('hex'),hash);
 assert.match(await readFile(resolve(fixture,'source/components/revenue-recommendation-preview.tsx'),'utf8'),/auditedSaveEnabled\s*=\s*false/);
 if(process.argv.includes('--verify-only')){console.log(JSON.stringify({status:'home-snapshot-integrity-passed',sources:Object.keys(provenance.files).length}));process.exit(0);}
-if(!rejectionMode)assert.equal(process.env.IRP_HOME_SUPERVISED_CLEANUP,'1','An operator must audit and remove exact isolated queue observations after every run.');
-assert.ok(!(reviewMode&&rejectionMode),'Qualification modes must be separate');
+if(!authLifecycleMode)assert.equal(process.env.IRP_HOME_SUPERVISED_CLEANUP,'1','An operator must audit and remove exact isolated queue observations after every run.');
+assert.ok([reviewMode,rejectionMode,expiryMode,expiryProbe].filter(Boolean).length<=1,'Qualification modes must be separate');
 const scope=reviewMode?validateQueueFixture(JSON.parse(await readFile(process.env.IRP_REVIEW_FIXTURE_PATH||'','utf8'))):null;
 const scopeLabel=scope?'Synthetic queue recovery '+scope.tenant_id.replaceAll('-',''):null;
 let issueId,originalCommand,dropReply=true;const commands=[],receipts=[],denials=[];
@@ -41,11 +44,12 @@ await new Promise(done=>server.listen(0,'127.0.0.1',done));origin=`http://127.0.
 const {chromium}=require('playwright');let browser,context,page,phase='launch';const checks=[],blocked=[],reads={},errors=[];let interruptMembership=false;
 const allowedAuth=new Set(['/auth/v1/token','/auth/v1/user','/auth/v1/logout','/auth/v1/factors']);
 const allowedRPC=new Set(['irp_pms_pilot_workspaces','irp_pms_pilot_workspace','irp_pms_pilot_workspace_sync','irp_pms_pilot_revenue_supervisor_queue']);
-if(rejectionMode)allowedRPC.delete('irp_pms_pilot_revenue_supervisor_queue');
+if(authLifecycleMode)allowedRPC.delete('irp_pms_pilot_revenue_supervisor_queue');
 if(reviewMode)allowedRPC.add('irp_pms_pilot_revenue_supervisor_review');
 // Keep test-session secrets only in memory. Never include them in reports/errors.
 let authKey='',sessionToken='',sessionRefresh='',heldPreview,releasePreview;
 let holdPreview=false,identityRejections=0;
+let originalExpiry=0,originalToken='',latestExpiry=0,automaticRefreshes=0;
 const issuedTokens=[];
 async function revoke(token){
  const response=await fetch('https://ybehrayzwzyufxbxcysq.supabase.co/auth/v1/logout?scope=local',{method:'POST',headers:{apikey:authKey,Authorization:'Bearer '+token},redirect:'error',signal:AbortSignal.timeout(10000)});
@@ -70,12 +74,17 @@ try{
   if(url.origin==='https://ybehrayzwzyufxbxcysq.supabase.co'){
    const rpc=url.pathname.startsWith('/rest/v1/rpc/')?url.pathname.split('/').at(-1):null;
    if(allowedAuth.has(url.pathname)||(rpc&&allowedRPC.has(rpc))){
-    if(rejectionMode&&url.pathname==='/auth/v1/token'&&req.method()==='POST'&&url.search==='?grant_type=password'){
+    if(authLifecycleMode&&url.pathname==='/auth/v1/token'&&req.method()==='POST'&&['?grant_type=password','?grant_type=refresh_token'].includes(url.search)){
      authKey=req.headers().apikey;const response=await route.fetch({maxRetries:0});
-     if(response.ok()){const result=await response.json();assert.equal(result.user?.id,actors.owner);sessionToken=result.access_token;sessionRefresh=result.refresh_token;issuedTokens.push(sessionToken);}
+     if(response.ok()){const result=await response.json();assert.equal(result.user?.id,actors.owner);sessionToken=result.access_token;sessionRefresh=result.refresh_token;issuedTokens.push(sessionToken);
+      if(expiryMode||expiryProbe){latestExpiry=JSON.parse(Buffer.from(sessionToken.split('.')[1],'base64url').toString('utf8')).exp;assert.ok(Number.isSafeInteger(latestExpiry));
+       if(!originalExpiry){originalExpiry=latestExpiry;originalToken=sessionToken;}
+       if(url.search==='?grant_type=refresh_token'){automaticRefreshes++;console.log(JSON.stringify({status:'home-natural-refresh-observed',refresh_count:automaticRefreshes,new_expiry:latestExpiry,observed_at:new Date().toISOString()}));}
+      }
+     }
      await route.fulfill({response});return;
     }
-    if(rejectionMode&&url.pathname==='/auth/v1/user'&&req.method()==='GET'){
+    if(authLifecycleMode&&url.pathname==='/auth/v1/user'&&req.method()==='GET'){
      const response=await route.fetch({maxRetries:0});if(response.status()>=400&&response.status()<500)identityRejections++;await route.fulfill({response});return;
     }
     if(reviewMode&&rpc&&req.method()!=='OPTIONS'){
@@ -112,7 +121,24 @@ try{
  page=await context.newPage();page.on('pageerror',()=>errors.push('uncaught browser error'));
  phase='owner-sign-in';await page.goto(origin);await login('owner');await page.getByRole('heading',{name:'Today',exact:true}).waitFor({timeout:45000});await page.getByRole('heading',{name:'Today’s arrivals'}).waitFor();checks.push('Actual owner login, server preview authorization, memberships and Home workspace');
  assert.ok(reads.irp_pms_pilot_workspaces&&reads.irp_pms_pilot_workspace);await screenshot('owner-home');
- if(rejectionMode){
+ if(expiryMode||expiryProbe){
+  const remaining=originalExpiry-Math.floor(Date.now()/1000);assert.ok(remaining>120&&remaining<=4500,'Natural expiry falls outside the bounded qualification window');
+  const timing={status:expiryProbe?'home-expiry-timing-probed':'home-natural-expiry-running',original_expires_at:new Date(originalExpiry*1000).toISOString(),remaining_seconds:remaining,automatic_refresh_enabled:true,clock_modified:false,auth_policy_modified:false,natural_jwt_expiry_qualified:false};
+  await writeFile(resolve(out,expiryProbe?'probe.json':'progress.json'),JSON.stringify(timing,null,2));console.log(JSON.stringify(timing));
+  if(expiryProbe){checks.push('Genuine owner session lifetime measured without exposing its token');}
+  else{
+   phase='natural-clock-wait';const deadline=(originalExpiry+150)*1000;
+   // No SDK refresh call, reload, clock override, session mutation or policy change
+   // during this wait. The captured production client runs its normal refresh timer.
+   while(Date.now()<originalExpiry*1000+2000){assert.ok(Date.now()<deadline);await new Promise(done=>setTimeout(done,Math.min(30000,originalExpiry*1000+2000-Date.now())));}
+   assert.ok(automaticRefreshes>0,'Normal foreground automatic refresh was not observed');assert.notEqual(sessionToken,originalToken);assert.ok(latestExpiry>originalExpiry);checks.push('Actual client automatically obtains a new genuine token using its normal timer');
+   phase='old-token-natural-expiry';let expired=false;
+   while(Date.now()<deadline){const response=await fetch('https://ybehrayzwzyufxbxcysq.supabase.co/auth/v1/user',{headers:{apikey:authKey,Authorization:'Bearer '+originalToken},redirect:'error',signal:AbortSignal.timeout(10000)});if(response.status>=400&&response.status<500){const result=await response.json();assert.ok(/expired/i.test([result.msg,result.message,result.error_description].filter(value=>typeof value==='string').join(' ')),'Provider rejection did not identify expiration');expired=true;break;}assert.ok(response.ok,'Provider unavailable during natural expiry verification');await new Promise(done=>setTimeout(done,10000));}
+   assert.ok(expired,'Original token was not rejected after its real expiration');checks.push('Provider rejects the original token after real elapsed expiration without revocation');
+   phase='refreshed-home';await page.getByRole('heading',{name:'Today’s arrivals'}).waitFor({timeout:45000});await screenshot('naturally-refreshed-home');checks.push('Actual Home is authorized under the automatically refreshed session');
+   phase='refreshed-reload';await page.reload();await page.getByRole('heading',{name:'Today’s arrivals'}).waitFor({timeout:45000});assert.equal(reads.irp_pms_pilot_revenue_supervisor_queue??0,0);checks.push('Home reload succeeds after original token expires; no queue/review/rate operation allowed');
+  }
+ }else if(rejectionMode){
   phase='hold-authorized-preview';holdPreview=true;await page.reload();await page.waitForFunction(()=>document.body.textContent.includes('Verifying your owner access'));
   const holdDeadline=Date.now()+15000;while(!heldPreview&&Date.now()<holdDeadline)await new Promise(done=>setTimeout(done,50));assert.ok(heldPreview,'Authorized preview response was not captured');
   assert.equal(await page.getByRole('heading',{name:'Today',exact:true}).count(),0);checks.push('Actual gate hides Home while an authorized preview response is delayed');
@@ -144,6 +170,6 @@ try{
  for(const role of ['manager','staff']){phase=role+'-preview-denial';await login(role);await page.getByText('This preview is available only to its designated owner.',{exact:true}).waitFor({timeout:45000});assert.equal(await page.getByRole('heading',{name:'Today',exact:true}).count(),0);checks.push(role+' genuine Auth denied by actual owner-only server gate');await page.getByRole('button',{name:'Sign out and use another account',exact:true}).click();await page.getByRole('heading',{name:'Welcome back'}).waitFor();}
  }
  assert.deepEqual(blocked,[]);assert.deepEqual(errors,[]);checks.push('No unexpected network operations or uncaught browser errors');
- const report={status:rejectionMode?'actual-home-auth-rejection-passed':reviewMode?'actual-home-review-recovery-passed':'actual-home-genuine-auth-browser-passed',candidate:provenance.candidate,project:provenance.project,checks,reads,review_actions_disabled:!reviewMode,pricing_actions_disabled:true,queue_observations_may_persist:!rejectionMode,operator_cleanup_required:!rejectionMode,...(rejectionMode?{identity_rejections:identityRejections,natural_jwt_expiry_qualified:false}:{}),...(reviewMode?{scope,commands,receipts,denials}:{}),limits:'Isolated Chromium HTTP host using synthetic property. Queue observations and bounded review effects require independent scoped audit and cleanup. Not live PMS deployment, populated hotel inventory, installed PWA, physical iPhone or historical hotel outcomes.'};await writeFile(resolve(out,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
+ const report={status:expiryProbe?'actual-home-expiry-probe-passed':expiryMode?'actual-home-natural-expiry-passed':rejectionMode?'actual-home-auth-rejection-passed':reviewMode?'actual-home-review-recovery-passed':'actual-home-genuine-auth-browser-passed',candidate:provenance.candidate,project:provenance.project,checks,reads,review_actions_disabled:!reviewMode,pricing_actions_disabled:true,queue_observations_may_persist:!authLifecycleMode,operator_cleanup_required:!authLifecycleMode,...(expiryMode||expiryProbe?{automatic_refreshes:automaticRefreshes,original_expires_at:new Date(originalExpiry*1000).toISOString(),natural_jwt_expiry_qualified:expiryMode}:{}),...(rejectionMode?{identity_rejections:identityRejections,natural_jwt_expiry_qualified:false}:{}),...(reviewMode?{scope,commands,receipts,denials}:{}),limits:'Isolated Chromium HTTP host using synthetic property. Queue observations and bounded review effects require independent scoped audit and cleanup. Not live PMS deployment, populated hotel inventory, installed PWA, physical iPhone or historical hotel outcomes.'};await writeFile(resolve(out,expiryProbe?'probe-report.json':'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 }catch{process.exitCode=1;await writeFile(resolve(out,'report.json'),JSON.stringify({status:'actual-home-genuine-auth-browser-failed',phase,checks,reads,blocked,error_count:errors.length,...(reviewMode?{commands,receipts,denials}:{})},null,2));console.error(JSON.stringify({status:'actual-home-genuine-auth-browser-failed',phase,checks,reads,blocked,error_count:errors.length,...(reviewMode?{commands,receipts,denials}:{})}));if(page)try{await screenshot('failed');}catch{}}
-finally{releasePreview?.();if(page)try{const button=page.getByRole('button',{name:/^(Sign out|Sign out and use another account)$/});if(await button.count()===1){await button.click();await page.getByRole('heading',{name:'Welcome back'}).waitFor({timeout:20000});}}catch{process.exitCode=1;console.error('Qualification session cleanup could not be confirmed.');}if(rejectionMode)for(const token of issuedTokens)try{await revoke(token);}catch{process.exitCode=1;console.error('Isolated test-session cleanup could not be confirmed.');}sessionToken='';sessionRefresh='';authKey='';issuedTokens.length=0;await context?.close();await browser?.close();await new Promise(done=>server.close(done));}
+finally{releasePreview?.();if(page)try{const button=page.getByRole('button',{name:/^(Sign out|Sign out and use another account)$/});if(await button.count()===1){await button.click();await page.getByRole('heading',{name:'Welcome back'}).waitFor({timeout:20000});}}catch{process.exitCode=1;console.error('Qualification session cleanup could not be confirmed.');}if(authLifecycleMode)for(const token of issuedTokens)try{await revoke(token);}catch{process.exitCode=1;console.error('Isolated test-session cleanup could not be confirmed.');}originalToken='';sessionToken='';sessionRefresh='';authKey='';issuedTokens.length=0;await context?.close();await browser?.close();await new Promise(done=>server.close(done));}

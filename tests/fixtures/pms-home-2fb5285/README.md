@@ -24,6 +24,16 @@ be rejected before Home returns; fresh AuthPanel sign-in and reload then recover
 This is session revocation/rejection, not natural JWT expiry or iPhone evidence.
 Test-session tokens remain only in memory and are locally revoked on cleanup.
 
+`--expiry-probe` measures a genuine session's remaining JWT lifetime, then signs
+out; it never qualifies expiry. `--natural-expiry` waits for real elapsed expiry
+with the captured client's ordinary auto-refresh timer active. No clock override,
+forced SDK refresh, Auth configuration change or revocation occurs during that
+wait. It requires a new genuine token, provider rejection explicitly identifying
+the old token as expired, Home recovery and reload. Only this mode receives an
+85-minute CI timeout; other gates retain 10 minutes. Sessions outside the bounded
+2-to-75-minute window fail instead of silently skipping. Background/iPhone
+behavior and full Home unresolved-command preservation remain separate gates.
+
 Adaptations are restricted to the isolated publishable connection, the actual
 Vinext Link shim and mapping Cloudflare server bindings to process.env. The actual
 server GET verifies the genuine owner through isolated Supabase Auth. There are
