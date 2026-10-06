@@ -7,8 +7,9 @@ import {createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {actors,baseline,validateQueueFixture} from './supervisor-queue-qualification-config.mjs';
 const reviewMode=process.argv.includes('--review-recovery');
+const rejectionMode=process.argv.includes('--auth-rejection');
 const require=createRequire(new URL('./revenue-browser-tools/package.json',import.meta.url));
-const fixture=resolve('tests/fixtures/pms-home-2fb5285'),out=resolve(reviewMode?'work/home-review-evidence':'work/home-browser-evidence');
+const fixture=resolve('tests/fixtures/pms-home-2fb5285'),out=resolve(rejectionMode?'work/home-auth-rejection-evidence':reviewMode?'work/home-review-evidence':'work/home-browser-evidence');
 const provenance=JSON.parse(await readFile(resolve(fixture,'provenance.json'),'utf8'));
 assert.equal(provenance.candidate,'2fb5285ac74314e97a9161dd8872d7088ccb8a92');assert.equal(provenance.project,'ybehrayzwzyufxbxcysq');
 for(const [name,hash] of Object.entries(provenance.files)){
@@ -18,7 +19,8 @@ for(const [name,hash] of Object.entries(provenance.files)){
 for(const [name,hash] of Object.entries(provenance.assets))assert.equal(createHash('sha256').update(await readFile(resolve(fixture,name))).digest('hex'),hash);
 assert.match(await readFile(resolve(fixture,'source/components/revenue-recommendation-preview.tsx'),'utf8'),/auditedSaveEnabled\s*=\s*false/);
 if(process.argv.includes('--verify-only')){console.log(JSON.stringify({status:'home-snapshot-integrity-passed',sources:Object.keys(provenance.files).length}));process.exit(0);}
-assert.equal(process.env.IRP_HOME_SUPERVISED_CLEANUP,'1','An operator must audit and remove exact isolated queue observations after every run.');
+if(!rejectionMode)assert.equal(process.env.IRP_HOME_SUPERVISED_CLEANUP,'1','An operator must audit and remove exact isolated queue observations after every run.');
+assert.ok(!(reviewMode&&rejectionMode),'Qualification modes must be separate');
 const scope=reviewMode?validateQueueFixture(JSON.parse(await readFile(process.env.IRP_REVIEW_FIXTURE_PATH||'','utf8'))):null;
 const scopeLabel=scope?'Synthetic queue recovery '+scope.tenant_id.replaceAll('-',''):null;
 let issueId,originalCommand,dropReply=true;const commands=[],receipts=[],denials=[];
@@ -39,7 +41,16 @@ await new Promise(done=>server.listen(0,'127.0.0.1',done));origin=`http://127.0.
 const {chromium}=require('playwright');let browser,context,page,phase='launch';const checks=[],blocked=[],reads={},errors=[];let interruptMembership=false;
 const allowedAuth=new Set(['/auth/v1/token','/auth/v1/user','/auth/v1/logout','/auth/v1/factors']);
 const allowedRPC=new Set(['irp_pms_pilot_workspaces','irp_pms_pilot_workspace','irp_pms_pilot_workspace_sync','irp_pms_pilot_revenue_supervisor_queue']);
+if(rejectionMode)allowedRPC.delete('irp_pms_pilot_revenue_supervisor_queue');
 if(reviewMode)allowedRPC.add('irp_pms_pilot_revenue_supervisor_review');
+// Keep test-session secrets only in memory. Never include them in reports/errors.
+let authKey='',sessionToken='',sessionRefresh='',heldPreview,releasePreview;
+let holdPreview=false,identityRejections=0;
+const issuedTokens=[];
+async function revoke(token){
+ const response=await fetch('https://ybehrayzwzyufxbxcysq.supabase.co/auth/v1/logout?scope=local',{method:'POST',headers:{apikey:authKey,Authorization:'Bearer '+token},redirect:'error',signal:AbortSignal.timeout(10000)});
+ assert.ok(response.ok||response.status===401||response.status===403,'Isolated test-session cleanup failed');
+}
 async function login(role){const prefix=`IRP_HTTP_TEST_${role.toUpperCase()}`;assert.ok(process.env[prefix+'_EMAIL']&&process.env[prefix+'_PASSWORD']);await page.getByLabel('Work email').fill(process.env[prefix+'_EMAIL']);await page.getByLabel('Password',{exact:true}).fill(process.env[prefix+'_PASSWORD']);await page.getByRole('button',{name:'Sign in',exact:true}).click();}
 async function screenshot(name){await page.screenshot({path:resolve(out,name+'.png'),fullPage:true,mask:[page.locator('.pilot-sidebar-bottom'),page.locator('input[name=email]'),page.locator('input[name=password]')]});}
 async function journal(){return page.evaluate(actor=>{const value=localStorage.getItem('irp-supervisor-review-v1/'+actor);return value?JSON.parse(value):null;},actors.owner);}
@@ -50,10 +61,23 @@ try{
  await mkdir(out,{recursive:true});browser=await chromium.launch({headless:true});context=await browser.newContext();
  await context.route('**/*',async route=>{
   const req=route.request(),url=new URL(req.url());
-  if(url.origin===origin){if(['/','/home.js','/home.css','/api/release-preview','/favicon.ico'].includes(url.pathname)){await route.continue();return;}}
+  if(url.origin===origin){if(['/','/home.js','/home.css','/api/release-preview','/favicon.ico'].includes(url.pathname)){
+   if(rejectionMode&&url.pathname==='/api/release-preview'&&holdPreview){
+    holdPreview=false;const response=await route.fetch({maxRetries:0});assert.ok(response.ok,'Preview must be genuinely authorized before revocation');
+    heldPreview=true;await new Promise(done=>{releasePreview=done;});await route.fulfill({response});return;
+   }
+   await route.continue();return;}}
   if(url.origin==='https://ybehrayzwzyufxbxcysq.supabase.co'){
    const rpc=url.pathname.startsWith('/rest/v1/rpc/')?url.pathname.split('/').at(-1):null;
    if(allowedAuth.has(url.pathname)||(rpc&&allowedRPC.has(rpc))){
+    if(rejectionMode&&url.pathname==='/auth/v1/token'&&req.method()==='POST'&&url.search==='?grant_type=password'){
+     authKey=req.headers().apikey;const response=await route.fetch({maxRetries:0});
+     if(response.ok()){const result=await response.json();assert.equal(result.user?.id,actors.owner);sessionToken=result.access_token;sessionRefresh=result.refresh_token;issuedTokens.push(sessionToken);}
+     await route.fulfill({response});return;
+    }
+    if(rejectionMode&&url.pathname==='/auth/v1/user'&&req.method()==='GET'){
+     const response=await route.fetch({maxRetries:0});if(response.status()>=400&&response.status()<500)identityRejections++;await route.fulfill({response});return;
+    }
     if(reviewMode&&rpc&&req.method()!=='OPTIONS'){
      if(req.method()!=='POST'||url.search||Date.parse(scope.expires_at)<=Date.now()){blocked.push({path:url.pathname,reason:'method or expired fixture'});await route.abort();return;}
      const body=req.postDataJSON();
@@ -88,7 +112,17 @@ try{
  page=await context.newPage();page.on('pageerror',()=>errors.push('uncaught browser error'));
  phase='owner-sign-in';await page.goto(origin);await login('owner');await page.getByRole('heading',{name:'Today',exact:true}).waitFor({timeout:45000});await page.getByRole('heading',{name:'Today’s arrivals'}).waitFor();checks.push('Actual owner login, server preview authorization, memberships and Home workspace');
  assert.ok(reads.irp_pms_pilot_workspaces&&reads.irp_pms_pilot_workspace);await screenshot('owner-home');
- if(reviewMode){
+ if(rejectionMode){
+  phase='hold-authorized-preview';holdPreview=true;await page.reload();await page.waitForFunction(()=>document.body.textContent.includes('Verifying your owner access'));
+  const holdDeadline=Date.now()+15000;while(!heldPreview&&Date.now()<holdDeadline)await new Promise(done=>setTimeout(done,50));assert.ok(heldPreview,'Authorized preview response was not captured');
+  assert.equal(await page.getByRole('heading',{name:'Today',exact:true}).count(),0);checks.push('Actual gate hides Home while an authorized preview response is delayed');
+  phase='genuine-session-rejection';assert.ok(sessionToken&&sessionRefresh&&authKey);await revoke(sessionToken);
+  const rejected=await fetch('https://ybehrayzwzyufxbxcysq.supabase.co/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:authKey,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:sessionRefresh}),redirect:'error',signal:AbortSignal.timeout(10000)});
+  assert.ok(rejected.status>=400&&rejected.status<500,'Provider did not reject revoked refresh');checks.push('Genuine provider rejects this session refresh after local revocation');
+  phase='late-preview-identity-recheck';releasePreview();releasePreview=null;await page.getByRole('heading',{name:'Welcome back'}).waitFor({timeout:20000});assert.ok(identityRejections>0,'Actual gate must recheck identity with provider');assert.equal(await page.getByRole('heading',{name:'Today',exact:true}).count(),0);checks.push('Delayed formerly valid preview cannot restore Home after actual provider identity rejection');await screenshot('provider-rejected-home');
+  phase='fresh-owner-reentry';const previousToken=sessionToken;await login('owner');await page.getByRole('heading',{name:'Today’s arrivals'}).waitFor({timeout:45000});assert.notEqual(sessionToken,previousToken);checks.push('Actual AuthPanel fresh owner sign-in restores Home with a newly issued session');await screenshot('fresh-owner-home');
+  phase='fresh-session-reload';await page.reload();await page.getByRole('heading',{name:'Today’s arrivals'}).waitFor({timeout:45000});assert.equal(reads.irp_pms_pilot_revenue_supervisor_queue??0,0);checks.push('Fresh session survives actual Home reload; no queue/review/rate operation allowed');
+ }else if(reviewMode){
   phase='fresh-scope';await page.locator('.pilot-property-label select').selectOption(scope.property_id);await page.getByRole('heading',{name:'Today’s arrivals'}).waitFor();await openQueue();await scopedArticle().waitFor();assert.equal(await scopedArticle().count(),1);checks.push('Actual Home loads fresh authorized review scope');
   phase='lost-claim-reply';await scopedArticle().getByRole('button',{name:'Claim review',exact:true}).click();await page.getByRole('region',{name:'Unconfirmed review'}).waitFor();await page.getByRole('alert').filter({hasText:'Review could not be confirmed'}).waitFor();
   assert.ok(commands.length>=1);assert.equal(receipts[0].revision,2);const retained=await journal();assert.equal(retained.request,originalCommand.p_request);assert.equal(retained.revision,1);checks.push('Claim committed with genuine receipt; dropped delivery retains original journal');
@@ -110,6 +144,6 @@ try{
  for(const role of ['manager','staff']){phase=role+'-preview-denial';await login(role);await page.getByText('This preview is available only to its designated owner.',{exact:true}).waitFor({timeout:45000});assert.equal(await page.getByRole('heading',{name:'Today',exact:true}).count(),0);checks.push(role+' genuine Auth denied by actual owner-only server gate');await page.getByRole('button',{name:'Sign out and use another account',exact:true}).click();await page.getByRole('heading',{name:'Welcome back'}).waitFor();}
  }
  assert.deepEqual(blocked,[]);assert.deepEqual(errors,[]);checks.push('No unexpected network operations or uncaught browser errors');
- const report={status:reviewMode?'actual-home-review-recovery-passed':'actual-home-genuine-auth-browser-passed',candidate:provenance.candidate,project:provenance.project,checks,reads,review_actions_disabled:!reviewMode,pricing_actions_disabled:true,queue_observations_may_persist:true,operator_cleanup_required:true,...(reviewMode?{scope,commands,receipts,denials}:{}),limits:'Isolated Chromium HTTP host using synthetic property. Queue observations and bounded review effects require independent scoped audit and cleanup. Not live PMS deployment, populated hotel inventory, installed PWA, physical iPhone or historical hotel outcomes.'};await writeFile(resolve(out,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
+ const report={status:rejectionMode?'actual-home-auth-rejection-passed':reviewMode?'actual-home-review-recovery-passed':'actual-home-genuine-auth-browser-passed',candidate:provenance.candidate,project:provenance.project,checks,reads,review_actions_disabled:!reviewMode,pricing_actions_disabled:true,queue_observations_may_persist:!rejectionMode,operator_cleanup_required:!rejectionMode,...(rejectionMode?{identity_rejections:identityRejections,natural_jwt_expiry_qualified:false}:{}),...(reviewMode?{scope,commands,receipts,denials}:{}),limits:'Isolated Chromium HTTP host using synthetic property. Queue observations and bounded review effects require independent scoped audit and cleanup. Not live PMS deployment, populated hotel inventory, installed PWA, physical iPhone or historical hotel outcomes.'};await writeFile(resolve(out,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 }catch{process.exitCode=1;await writeFile(resolve(out,'report.json'),JSON.stringify({status:'actual-home-genuine-auth-browser-failed',phase,checks,reads,blocked,error_count:errors.length,...(reviewMode?{commands,receipts,denials}:{})},null,2));console.error(JSON.stringify({status:'actual-home-genuine-auth-browser-failed',phase,checks,reads,blocked,error_count:errors.length,...(reviewMode?{commands,receipts,denials}:{})}));if(page)try{await screenshot('failed');}catch{}}
-finally{if(page)try{const button=page.getByRole('button',{name:/^(Sign out|Sign out and use another account)$/});if(await button.count()===1){await button.click();await page.getByRole('heading',{name:'Welcome back'}).waitFor({timeout:20000});}}catch{process.exitCode=1;console.error('Qualification session cleanup could not be confirmed.');}await context?.close();await browser?.close();await new Promise(done=>server.close(done));}
+finally{releasePreview?.();if(page)try{const button=page.getByRole('button',{name:/^(Sign out|Sign out and use another account)$/});if(await button.count()===1){await button.click();await page.getByRole('heading',{name:'Welcome back'}).waitFor({timeout:20000});}}catch{process.exitCode=1;console.error('Qualification session cleanup could not be confirmed.');}if(rejectionMode)for(const token of issuedTokens)try{await revoke(token);}catch{process.exitCode=1;console.error('Isolated test-session cleanup could not be confirmed.');}sessionToken='';sessionRefresh='';authKey='';issuedTokens.length=0;await context?.close();await browser?.close();await new Promise(done=>server.close(done));}

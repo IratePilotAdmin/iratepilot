@@ -55,7 +55,7 @@
     "lib/invoice-correction.ts": "28774898e2f15961cf28ac215a1734eea733b1f0362959afdf5d69795882dd7e",
     "lib/opening-invoice-application.ts": "5d4fd9500f2654e4e6593a2c0c3fdba503b96fb7a0852c2f6a9e9702e089a5cb",
     "components/financial-match-correction.tsx": "eda27246a93019f2e95bee12b1cd72923d6058ac8e98f84bd2126f526ad504fa",
-    "lib/accounting.ts": "c69218478f23ace9ac0fc94721df768501d681a9f533ce236ea08489d3b23414",
+    "lib/accounting.ts": "d430f45e2608a0e08403c1e0a318975ab01212c947f893fa84f0ced03b49a048",
     "lib/financial-opening-action.ts": "e1bc6ed37163328de5ad881680a9ae4b102f38215dc4b273e3ffbd54ec1f8d69",
     "components/financial-opening-action.tsx": "8bb57e2b1182248bb3ccdfd2a53913b738b997693a434baf8128cf31825eba8b",
     "components/financial-invoice-application.tsx": "6a61ead8fa1f4f4b3f8cffd3ea67f2d6d04fad63bbe8233abefc1c140bccd108",
@@ -442,8 +442,8 @@
   ],
   "limits": "Build only; no Auth credentials used or browser acceptance established.",
   "assets": {
-    "home.js": "772d6ff1924c9e34b4cda5371650cec655726e9698bd05cdbcf80a2356da768a",
-    "preview.mjs": "43f540977870add25478c4d2427b9ac579050516534cf53a61fb4bb7ab4c9b39",
+    "home.js": "5488d9482a96064e45a29c39a34148071f2d3bb8bdaf712552b3bd66b158dc65",
+    "preview.mjs": "7f796e468afcc183019656e4d8396b91aa97fc8dc5fe02a2041610199893b519",
     "home.css": "0589382d7318aaf73aa82324868de4586270132158c12743aed0743d6df7aa78"
   },
   "build": {
@@ -451,6 +451,13 @@
     "react": "19.2.6",
     "supabase": "2.111.0",
     "vinext": "1.0.0-beta.5",
-    "origin": "Locally compiled actual PMS candidate; CI verifies all source and asset hashes before running."
-  }
+    "origin": "Locally rebuilt captured Home sources, preserving edc0680 accounting correction. CI verifies source and asset hashes. Not a build of the current private PMS."
+  },
+  "source_patches": [
+    {
+      "commit": "edc0680",
+      "file": "lib/accounting.ts",
+      "reason": "Preserve upstream accounting dollar-stripping correction; rebuilt capture is based on 2fb5285 with this patch."
+    }
+  ]
 }

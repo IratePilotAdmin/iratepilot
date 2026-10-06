@@ -9,6 +9,21 @@ records the original workspace compilation and requires that candidate's locked
 PMS dependencies; the protected CI runner verifies the capture before execution.
 CI does not claim to rebuild the full private application.
 
+October 6 packaging repair preserves the upstream edc0680 accounting correction.
+The capture is based on 2fb5285 with that recorded source patch; generated assets
+were rebuilt using the same pinned runtime and hashes refreshed. Run
+`node scripts/rebuild-home-qualification-snapshot.mjs` from the public checkout
+with the existing sibling private PMS and ui-runtime dependencies. This is a
+qualification asset rebuild, not a new private PMS deployment.
+
+`--auth-rejection` uses only the owner credential and workspace reads, with queue
+and all review/rate RPCs blocked. It holds a genuinely authorized preview reply,
+locally revokes that newly issued test session, verifies actual refresh rejection,
+and delivers the late reply to the actual Home access gate. Provider identity must
+be rejected before Home returns; fresh AuthPanel sign-in and reload then recover.
+This is session revocation/rejection, not natural JWT expiry or iPhone evidence.
+Test-session tokens remain only in memory and are locally revoked on cleanup.
+
 Adaptations are restricted to the isolated publishable connection, the actual
 Vinext Link shim and mapping Cloudflare server bindings to process.env. The actual
 server GET verifies the genuine owner through isolated Supabase Auth. There are

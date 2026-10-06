@@ -1,7 +1,7 @@
 // bindings:cloudflare-bindings
 var env = process.env;
 
-// work/pms/lib/enrolled-staff-assurance.ts
+// tests/fixtures/pms-home-2fb5285/source/lib/enrolled-staff-assurance.ts
 function enrolledStaffAssuranceFailure(authorization, user) {
   const unavailable = { status: 503, message: "Your verification methods could not be checked. Try again." };
   if (user.factors !== void 0 && !Array.isArray(user.factors)) return unavailable;
@@ -22,7 +22,7 @@ function enrolledStaffAssuranceFailure(authorization, user) {
   return null;
 }
 
-// work/pms/lib/bounded-provider-response.ts
+// tests/fixtures/pms-home-2fb5285/source/lib/bounded-provider-response.ts
 async function boundedProviderResponse(response, limit = 65536, signal) {
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 8388608) throw Error("Invalid response limit");
   if (!response.body) throw Error("Missing provider response");
@@ -63,7 +63,7 @@ async function boundedProviderResponse(response, limit = 65536, signal) {
   return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
 }
 
-// work/pms/lib/payment-provider-json.ts
+// tests/fixtures/pms-home-2fb5285/source/lib/payment-provider-json.ts
 async function paymentProviderJson(url, init, limit = 65536, timeoutMs = 2e4) {
   const controller = new AbortController();
   let timer;
@@ -95,7 +95,7 @@ async function paymentProviderJson(url, init, limit = 65536, timeoutMs = 2e4) {
 var supabaseUrl = "https://ybehrayzwzyufxbxcysq.supabase.co";
 var publishableKey = "sb_publishable_5qakGx4LyLTT4OnC2mO_ag_b0BY4Vjf";
 
-// work/pms/lib/release-preview-access.ts
+// tests/fixtures/pms-home-2fb5285/source/lib/release-preview-access.ts
 var ReleasePreviewAccessError = class extends Error {
   constructor(message, status) {
     super(message);
@@ -123,7 +123,7 @@ async function releasePreviewAccess(authorization, config) {
   return Object.freeze({ actor: verified.id.toLowerCase() });
 }
 
-// work/pms/app/api/release-preview/route.ts
+// tests/fixtures/pms-home-2fb5285/source/app/api/release-preview/route.ts
 var reply = (body, status) => Response.json(body, { status, headers: { "Cache-Control": "private, no-store", "Vary": "Authorization", "Referrer-Policy": "no-referrer", "X-Content-Type-Options": "nosniff" } });
 async function GET(request) {
   const url = new URL(request.url);

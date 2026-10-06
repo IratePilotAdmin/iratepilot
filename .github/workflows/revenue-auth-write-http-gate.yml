@@ -11,6 +11,7 @@ on:
         options:
           - audited-http
           - session-rejection
+          - home-auth-rejection
           - browser-recovery
           - pms-panel
           - supervisor-review
@@ -80,7 +81,7 @@ jobs:
         if: inputs.gate != 'home-services'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ (inputs.gate == 'home-review' || inputs.gate == 'home-browser' || inputs.gate == 'supervisor-review' || inputs.gate == 'supervisor-queue' || inputs.gate == 'supervisor-browser' || inputs.gate == 'supervisor-lockwait' || inputs.gate == 'audited-http' || inputs.gate == 'session-rejection') && github.sha || '10164279cf57af50d64311d1d1b0e4c96d5be86f' }}
+          ref: ${{ (inputs.gate == 'home-review' || inputs.gate == 'home-browser' || inputs.gate == 'home-auth-rejection' || inputs.gate == 'supervisor-review' || inputs.gate == 'supervisor-queue' || inputs.gate == 'supervisor-browser' || inputs.gate == 'supervisor-lockwait' || inputs.gate == 'audited-http' || inputs.gate == 'session-rejection') && github.sha || '10164279cf57af50d64311d1d1b0e4c96d5be86f' }}
           persist-credentials: false
       - name: Set up Node.js
         if: inputs.gate != 'home-services'
@@ -89,21 +90,35 @@ jobs:
           node-version: 24
           cache: npm
       - name: Install locked dependencies
-        if: inputs.gate != 'supervisor-review' && inputs.gate != 'supervisor-queue' && inputs.gate != 'supervisor-browser' && inputs.gate != 'supervisor-lockwait' && inputs.gate != 'home-services' && inputs.gate != 'home-browser' && inputs.gate != 'home-review'
+        if: inputs.gate != 'supervisor-review' && inputs.gate != 'supervisor-queue' && inputs.gate != 'supervisor-browser' && inputs.gate != 'supervisor-lockwait' && inputs.gate != 'home-services' && inputs.gate != 'home-browser' && inputs.gate != 'home-review' && inputs.gate != 'home-auth-rejection'
         run: npm ci --ignore-scripts
       - name: Install isolated browser tools
-        if: inputs.gate == 'browser-recovery' || inputs.gate == 'pms-panel' || inputs.gate == 'supervisor-browser' || inputs.gate == 'home-browser' || inputs.gate == 'home-review'
+        if: inputs.gate == 'browser-recovery' || inputs.gate == 'pms-panel' || inputs.gate == 'supervisor-browser' || inputs.gate == 'home-browser' || inputs.gate == 'home-review' || inputs.gate == 'home-auth-rejection'
         run: |
           npm ci --ignore-scripts --prefix scripts/revenue-browser-tools
           node scripts/revenue-browser-tools/node_modules/playwright/cli.js install --with-deps chromium
       - name: Validate isolated branch manifest
-        if: inputs.gate != 'supervisor-review' && inputs.gate != 'supervisor-queue' && inputs.gate != 'supervisor-browser' && inputs.gate != 'supervisor-lockwait' && inputs.gate != 'home-services' && inputs.gate != 'home-browser' && inputs.gate != 'home-review'
+        if: inputs.gate != 'supervisor-review' && inputs.gate != 'supervisor-queue' && inputs.gate != 'supervisor-browser' && inputs.gate != 'supervisor-lockwait' && inputs.gate != 'home-services' && inputs.gate != 'home-browser' && inputs.gate != 'home-review' && inputs.gate != 'home-auth-rejection'
         env:
           IRP_HTTP_QUALIFICATION_MANIFEST: ${{ vars.IRP_HTTP_QUALIFICATION_MANIFEST }}
         run: node scripts/revenue-http-qualification-preflight.mjs
       - name: Verify actual full Home snapshot integrity
-        if: inputs.gate == 'home-browser' || inputs.gate == 'home-review'
+        if: inputs.gate == 'home-browser' || inputs.gate == 'home-review' || inputs.gate == 'home-auth-rejection'
         run: node scripts/qualify-home-browser.mjs --verify-only
+      - name: Qualify provider rejection through actual full Home
+        if: inputs.gate == 'home-auth-rejection'
+        env:
+          IRP_HTTP_TEST_OWNER_EMAIL: ${{ secrets.IRP_HTTP_TEST_OWNER_EMAIL }}
+          IRP_HTTP_TEST_OWNER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_OWNER_PASSWORD }}
+        run: node scripts/qualify-home-browser.mjs --auth-rejection
+      - name: Retain actual Home provider rejection evidence
+        if: inputs.gate == 'home-auth-rejection' && always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: home-auth-rejection-evidence
+          path: work/home-auth-rejection-evidence
+          if-no-files-found: warn
+          retention-days: 14
       - name: Qualify saved review through actual Home
         if: inputs.gate == 'home-review'
         env:
