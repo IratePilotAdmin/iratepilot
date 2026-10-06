@@ -15,6 +15,13 @@ This gate reconciles the isolated OTA-to-PMS connector candidate with the code s
 - Merged `origin/main` into the connector branch candidate, preserving both new hotel-payment migrations (`202610050163`, `202610050164`) before the later partner-review migration (`20261005203527`). The test continues to expect that later version as the final sorted migration.
 - Checks on the reconciled tree: TypeScript `tsc --noEmit` passed; targeted ESLint passed; 23 focused test files / 137 tests passed; `scripts/replay-migrations.mjs` replayed 150 migrations; `next build` completed with `/api/ota/capabilities`, `/api/pms/ari`, and `/api/cron/native-pms-reservations` included. A full 541-file Vitest invocation did not finish and was stopped; it is **not** counted as a pass.
 
+## Fresh protected Preview — October 6 UTC
+
+- Vercel Preview deployment `dpl_DMaKzAuxRh3qW9qyZ8eMcchHn7dk` is Ready at commit `83aeab07b6065a99265fdf70621e13fc42e67170`. Its Preview alias is branch-scoped; neither live iRatePilot domain was assigned to it.
+- The branch-specific `NEXT_PUBLIC_SUPABASE_URL` points to isolated OTA source `onbdizzwwubfdgkgaphx`; `IRP_PMS_DESTINATION_URL` points to isolated PMS receiver `wjosvslkselpauyftias`. `IRP_PMS_SYNC_ENABLED=false` and `ENABLE_TEST_STRIPE_WEBHOOKS=false`. Credential values were not recorded.
+- Through the signed-in protected deployment, `GET /api/health` returned `ok:true` and database `reachable`. `GET /api/ota/capabilities` returned the connector contract with native PMS ARI `available` but `trafficEnabled:false`, Booking.com `development_only`, and Expedia and other major OTA providers `not_implemented`. `GET /api/pms/ari` returned `method_not_allowed`; an unauthenticated `GET /api/cron/native-pms-reservations` returned `Unauthorized.`
+- These are route-presence, isolation, and fail-closed checks. They do not constitute a signed ARI update, a new booking, a payment, or a live OTA rollout.
+
 ## Remaining before live traffic
 
-Review the merged draft PR and verify a fresh protected Preview against the intended isolated database and PMS receiver. Confirm the exact live OTA and PMS database bindings, populated-data restore, Stripe TEST checkout/webhook, operational controls, and live switch values before any production promotion or sync activation. Expedia and Booking.com require their own partner/certification and mapping gates. The older isolated Supabase `default` server key remains pending an explicitly confirmed revocation; this gate did not delete it.
+Review the merged draft PR. Confirm the exact live OTA and PMS database bindings, populated-data restore, Stripe TEST checkout/webhook, operational controls, and live switch values before any production promotion or sync activation. Expedia and Booking.com require their own partner/certification and mapping gates. The older isolated Supabase `default` server key remains pending an explicitly confirmed revocation; this gate did not delete it.
