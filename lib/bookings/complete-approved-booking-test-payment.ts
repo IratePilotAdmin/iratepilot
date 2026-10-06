@@ -2,7 +2,11 @@ import type Stripe from "stripe";
 import { createAdminClient } from "../supabase/admin";
 import { getStripe, isLivePartnerPayoutsEnabled } from "../stripe";
 import { partnerTransferFailureStatus } from "../payments/partner-transfer-failure-status";
-import { getApprovedBookingMetadataMode, type BookingPaymentMode } from "../stripe/booking-payment-mode";
+import {
+  getApprovedBookingMetadataMode,
+  stripeLivemodeMatchesPaymentMode,
+  type BookingPaymentMode,
+} from "../stripe/booking-payment-mode";
 
 type Booking = { id: string; confirmation_code: string; stripe_payment_intent_id?: string | null; stripe_payment_mode?: string | null };
 
@@ -18,11 +22,11 @@ export function isApprovedBookingPaymentIntent(
   expectedUserId?: string,
   expectedMode?: BookingPaymentMode,
 ) {
-  const acceptedModes = expectedMode
-    ? [getApprovedBookingMetadataMode(expectedMode)]
-    : [getApprovedBookingMetadataMode("test"), getApprovedBookingMetadataMode("live")];
+  const metadataMode = getApprovedBookingIntentPaymentMode(intent);
   return intent.status === "succeeded"
-    && acceptedModes.includes(intent.metadata.mode)
+    && metadataMode !== null
+    && (!expectedMode || metadataMode === expectedMode)
+    && stripeLivemodeMatchesPaymentMode(intent.livemode, metadataMode)
     && (!expectedUserId || intent.metadata.userId === expectedUserId)
     && Boolean(intent.metadata.bookingId && intent.metadata.userId && intent.metadata.confirmationCode)
     && intent.amount_received > 0;
