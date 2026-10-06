@@ -274,10 +274,9 @@ describe("hotel launch readiness", () => {
     expect(routeSource).toContain('from("partner_application_review_evidence")');
     expect(routeSource).toContain('evidence.decision === "approved"');
     expect(routeSource).toContain("verifiedApprovalApplicationIds.has(application.id)");
-    expect(routeSource).toContain('select("id", { count: "exact", head: true })');
-    expect(routeSource).toContain('partner_applications!inner(id)');
-    expect(routeSource).toContain('typeof verifiedLinkedApprovals.count === "number"');
-    expect(routeSource).toContain("approvedHotelCount: verifiedLinkedApprovals.count ?? 0");
+    expect(routeSource).toContain("const verifiedCompleteApplications = completeApplications");
+    expect(routeSource).toContain("const verifiedHotelApprovalCount = verifiedCompleteApplications.length");
+    expect(routeSource).toContain("approvedHotelCount: approvedPropertyIds.size");
   });
 
   it("counts SynXis only when its persisted evidence and production configuration are live", () => {
