@@ -48,6 +48,8 @@ export function buildPaymentReadiness(
   const stagedLiveKeyPair = env.STRIPE_LIVE_SECRET_KEY?.startsWith("sk_live_") === true
     && env.STRIPE_LIVE_PUBLISHABLE_KEY?.startsWith("pk_live_") === true;
   const liveKeyPair = activeLiveKeyPair || stagedLiveKeyPair;
+  const liveAccountReference = env.STRIPE_LIVE_ACCOUNT_ID?.trim() ?? "";
+  const liveAccountReferenceConfigured = /^acct_[A-Za-z0-9]{8,127}$/.test(liveAccountReference);
   const webhookSecretConfigured = env.STRIPE_WEBHOOK_SECRET?.startsWith("whsec_") === true;
   const liveWebhookSecretConfigured = activeLiveKeyPair
     ? webhookSecretConfigured
@@ -75,6 +77,12 @@ export function buildPaymentReadiness(
     check("live_webhooks_on", "Live Stripe webhooks are enabled", env.ENABLE_LIVE_STRIPE_WEBHOOKS === "true", "Live webhook processing requires an explicit enable flag."),
     check("live_payouts_on", "Live partner payouts are enabled", env.ENABLE_LIVE_PARTNER_PAYOUTS === "true", "Full commercial settlement requires an explicit payout enable flag."),
     check("live_key_pair", "Stripe live key pair is staged or active", liveKeyPair, "Stage the live secret and publishable keys separately, or activate a matching live key pair at cutover."),
+    check(
+      "live_account_identity",
+      "Stripe live account identity is configured",
+      liveAccountReferenceConfigured,
+      "STRIPE_LIVE_ACCOUNT_ID must identify the Stripe account that owns the staged or active live keys.",
+    ),
     check("webhook_secret", "Live webhook signing secret is staged or active", liveWebhookSecretConfigured, "Stage the live endpoint signing secret separately, or activate it at cutover."),
     check("live_payment_mode", "Approved-reservation payment mode resolves to live", paymentMode === "live", "The fail-closed payment gate must resolve to live mode."),
     check("live_webhook_mode", "Webhook mode resolves to live", webhookMode === "live", "The fail-closed webhook gate must resolve to live mode."),
@@ -83,6 +91,8 @@ export function buildPaymentReadiness(
   const authorizationValid = Boolean(
     authorization
       && !authorization.revokedAt
+      && liveAccountReferenceConfigured
+      && authorization.stripeAccountReference === liveAccountReference
       && Date.parse(authorization.approvedAt) <= now.getTime()
       && Date.parse(authorization.expiresAt) > now.getTime(),
   );
@@ -96,7 +106,9 @@ export function buildPaymentReadiness(
       launchReady: productionConfiguration.ready && authorizationValid,
       authorizationDetail: authorizationValid
         ? `Production payment approval ${authorization!.approvalReference} is current through ${authorization!.expiresAt}. Configuration and the final release gate must also pass.`
-        : "No current production payment approval receipt is recorded. Configuration readiness alone never authorizes production.",
+        : authorization && liveAccountReferenceConfigured && authorization.stripeAccountReference !== liveAccountReference
+          ? "The current production payment approval names a different Stripe account. Record approval for the configured live account before launch."
+          : "No current production payment approval receipt is recorded for the configured Stripe account. Configuration readiness alone never authorizes production.",
     },
     activePaymentMode: paymentMode,
     activeWebhookMode: webhookMode,

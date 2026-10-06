@@ -14,6 +14,7 @@ const liveEnvironment = {
   STRIPE_SECRET_KEY: "sk_live_example",
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_live_example",
   STRIPE_WEBHOOK_SECRET: "whsec_example",
+  STRIPE_LIVE_ACCOUNT_ID: "acct_liveexample123",
   BOOKING_PAYMENT_MODE: "live",
   STRIPE_WEBHOOK_MODE: "live",
   CRS_SYNXIS_BASE_URL: "https://example.test",
