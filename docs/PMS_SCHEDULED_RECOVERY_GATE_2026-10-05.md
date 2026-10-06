@@ -34,6 +34,15 @@ This verifies **hosted durable retry and idempotent PMS receipt with the package
 
 This proves the exact protected Vercel route can drain a synthetic event into the isolated PMS. It was invoked manually on Preview; it does **not** prove that Vercel's production-only cron scheduler fires unattended.
 
+## Isolated scheduled-host gate — October 5, 2026
+
+- Created the separate Vercel project `iratepilot-cron-rehearsal-20261005`, bound its Production environment to `codex/ota-main-integration`, and protected all deployments with Vercel Authentication. Its only domain is the generated `iratepilot-cron-rehearsal-20261005.vercel.app`; neither live iRatePilot domain was attached.
+- Deployed connector commit `406a34b` to this isolated project's Production environment with public booking, checkout, payments, webhooks, and PMS sync disabled. The project registered `/api/cron/native-pms-reservations` at `*/5 * * * *`.
+- At `2026-10-06T01:45:17Z`, Vercel invoked that route without a manual request. Its log records user agent `vercel-cron/1.0`, branch `codex/ota-main-integration`, and HTTP 401 because the first deployment had no `CRON_SECRET`. This proves scheduler invocation only; it does not prove reservation delivery.
+- Added a generated cron credential and PMS credential-encryption key as **Production-only Secret** variables. Vercel's bulk-import form initially classified three attempted secret rows as readable Config variables with Preview scope. Those rows were immediately deleted before any deployment consumed them. Rotation of the old isolated Supabase server key was requested before it is used again. No synthetic event was queued during this configuration correction.
+- Redeployed the same connector commit as isolated Production deployment `dpl_AELG3CyQFA75xfCsNopiqEpaXFQL` with the two correctly scoped Secrets and PMS sync still disabled. The deployment is Ready. A successful unattended delivery remains unverified until the isolated server key is rotated, the new key is saved as a Secret, and one synthetic event is observed end to end.
+- The dashboard's **Run** action against the new, disabled deployment returned HTTP 200 at `2026-10-06T01:51:29Z`; no source database access or booking delivery occurred because `IRP_PMS_SYNC_ENABLED=false`. This manual health check is separate from the unattended 401 invocation above.
+
 ## Remaining release check
 
 This is a branch candidate. The route passed a manual protected Preview invocation, but Vercel cron does not fire for Preview. Do not enable production `IRP_PMS_SYNC_ENABLED` or promote the OTA connector on the basis of this gate alone. The remaining scheduler check requires an isolated production-target deployment with guarded credentials and a timed invocation; production rollout additionally needs verified live environment binding, populated-data restore, a real Stripe TEST checkout/webhook, and operational review.
