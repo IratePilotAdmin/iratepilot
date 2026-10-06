@@ -76,9 +76,12 @@ function parseSettings(input: NativePmsReservationDeliveryConfig) {
 }
 
 async function callRpc(fetcher: typeof fetch, base: string, key: string, name: string, args: Record<string, unknown> = {}) {
+  const headers: Record<string, string> = { apikey: key, "Content-Type": "application/json" };
+  // Supabase's modern secret keys are API keys, not JWT bearer tokens.
+  if (!key.startsWith("sb_secret_")) headers.Authorization = `Bearer ${key}`;
   const response = await fetcher(base + name, {
     method: "POST", redirect: "error", cache: "no-store",
-    headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(args), signal: AbortSignal.timeout(12000),
   });
   const text = await readBoundedText(response, 512 * 1024);
@@ -183,7 +186,7 @@ function classifyResponse(status: number, body: unknown, eventId: string, source
       && typeof outcome === "string" && allowedOutcomes.has(outcome)) {
       return { outcome: "acknowledged", code: `pms_${outcome}` };
     }
-    return { outcome: "review-required", code: "invalid_pms_ack" };
+    return { outcome: "retry", code: "invalid_pms_ack" };
   }
   if ([408, 425, 429].includes(status) || status >= 500) return { outcome: "retry", code: `http_${status}` };
   return { outcome: "review-required", code: `http_${status}` };
@@ -244,12 +247,12 @@ export async function runNativePmsReservationDelivery(
         } else if (body && typeof body === "object" && !Array.isArray(body)) {
           const gatewayReply = body as Record<string, unknown>;
           if (typeof gatewayReply.status !== "number" || !Number.isInteger(gatewayReply.status)) {
-            decision = { outcome: "review-required", code: "invalid_gateway_ack" };
+            decision = { outcome: "retry", code: "invalid_gateway_ack" };
           } else {
             decision = classifyResponse(gatewayReply.status, gatewayReply.body, claimed.eventId, claimed.sourceVersion);
           }
         } else {
-          decision = { outcome: "review-required", code: "invalid_gateway_ack" };
+          decision = { outcome: "retry", code: "invalid_gateway_ack" };
         }
       } catch {
         decision = { outcome: "retry", code: "transport_failure" };
@@ -273,4 +276,19 @@ export function nativePmsReservationSignature(secret: string, timestamp: string,
     throw new Error("Reservation signature inputs are invalid.");
   }
   return sign(secret, timestamp, connection, rawBody);
+}
+
+export async function drainNativePmsReservationDelivery(
+  input: NativePmsReservationDeliveryConfig,
+  fetcher: typeof fetch = fetch,
+  limit = 3,
+): Promise<NativePmsReservationDeliveryResult[]> {
+  const bounded = Number.isInteger(limit) ? Math.max(1, Math.min(limit, 3)) : 3;
+  const results: NativePmsReservationDeliveryResult[] = [];
+  for (let index = 0; index < bounded; index += 1) {
+    const result = await runNativePmsReservationDelivery(input, fetcher);
+    results.push(result);
+    if (result.outcome !== "delivered") break;
+  }
+  return results;
 }

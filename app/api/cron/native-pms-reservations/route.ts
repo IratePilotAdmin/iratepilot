@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { runNativePmsReservationDelivery } from "@/lib/native-pms-reservation-delivery";
+import { drainNativePmsReservationDelivery } from "@/lib/native-pms-reservation-delivery";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 180;
 
 export async function GET(request: Request) {
   const cronSecret = process.env.CRON_SECRET;
@@ -20,14 +21,18 @@ export async function GET(request: Request) {
   }
 
   try {
-    const result = await runNativePmsReservationDelivery({
+    const results = await drainNativePmsReservationDelivery({
       supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
       serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
       credentialEncryptionKey,
       endpoint: destinationUrl,
       publishableKey: destinationPublishableKey,
     }, async (input, init) => fetch(input, init));
-    return NextResponse.json({ ok: true, ...result }, { headers: { "Cache-Control": "no-store" } });
+    const retryPending = results.some(({ outcome }) => outcome === "retry" || outcome === "lease_lost");
+    return NextResponse.json({
+      ok: !retryPending,
+      outcomes: results.map(({ outcome, code }) => ({ outcome, code })),
+    }, { status: retryPending ? 503 : 200, headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Reservation delivery worker is unavailable." }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }

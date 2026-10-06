@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nativePmsReservationSignature, runNativePmsReservationDelivery } from "@/lib/native-pms-reservation-delivery";
+import { drainNativePmsReservationDelivery, nativePmsReservationSignature, runNativePmsReservationDelivery } from "@/lib/native-pms-reservation-delivery";
 
 const eventId = "11111111-1111-4111-8111-111111111111";
 const leaseToken = "22222222-2222-4222-8222-222222222222";
@@ -82,6 +82,17 @@ describe("native PMS reservation delivery worker", () => {
     expect(calls).toHaveLength(4);
   });
 
+  it("uses a modern Supabase server key as an API key without a JWT bearer header", async () => {
+    const modern = { ...config, serviceRoleKey: `sb_secret_${"a".repeat(32)}` };
+    const fetcher: typeof fetch = async (_input, init) => {
+      const headers = new Headers(init?.headers);
+      expect(headers.get("apikey")).toBe(modern.serviceRoleKey);
+      expect(headers.has("authorization")).toBe(false);
+      return rpcResponse([]);
+    };
+    await expect(runNativePmsReservationDelivery(modern, fetcher)).resolves.toEqual({ outcome: "idle" });
+  });
+
   it.each([
     [503, "retry", "http_503"], [429, "retry", "http_429"],
     [422, "review", "http_422"], [409, "review", "http_409"],
@@ -115,8 +126,8 @@ describe("native PMS reservation delivery worker", () => {
       return rpcResponse({ status: 200, body: { outcome: "reservation-staged", eventId: "99999999-9999-4999-8999-999999999999", sourceVersion: 7 } });
     };
     const result = await runNativePmsReservationDelivery(config, fetcher);
-    expect(result).toMatchObject({ outcome: "review", code: "invalid_pms_ack" });
-    expect(finishArgs).toMatchObject({ p_outcome: "review-required", p_code: "invalid_pms_ack" });
+    expect(result).toMatchObject({ outcome: "retry", code: "invalid_pms_ack" });
+    expect(finishArgs).toMatchObject({ p_outcome: "retry", p_code: "invalid_pms_ack" });
   });
 
   it("does not claim events if the stored property secret cannot be decrypted", async () => {
@@ -160,5 +171,24 @@ describe("native PMS reservation delivery worker", () => {
     const fetcher: typeof fetch = async () => { throw new Error("must not send"); };
     await expect(runNativePmsReservationDelivery({ ...config, endpoint: "https://example.com/collect" }, fetcher))
       .rejects.toThrow("gateway URL is invalid");
+  });
+
+  it("drains a bounded batch and stops after a retry for the next scheduled run", async () => {
+    let claims = 0;
+    const fetcher: typeof fetch = async (input) => {
+      const url = String(input);
+      if (url.endsWith("/irp_pms_list_configured_delivery_connections")) return rpcResponse(registry);
+      if (url.endsWith("/irp_pms_claim_configured_event")) {
+        claims += 1;
+        return rpcResponse([{ ...claimed, attempts: claims }]);
+      }
+      if (url.endsWith("/irp_pms_finish_event")) return rpcResponse(true);
+      return claims === 1
+        ? rpcResponse({ status: 200, body: { outcome: "reservation-staged", eventId, sourceVersion: 1 } })
+        : new Response("unavailable", { status: 503 });
+    };
+    const results = await drainNativePmsReservationDelivery(config, fetcher, 25);
+    expect(results.map(({ outcome }) => outcome)).toEqual(["delivered", "retry"]);
+    expect(claims).toBe(2);
   });
 });

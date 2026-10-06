@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const { runWorker } = vi.hoisted(() => ({ runWorker: vi.fn() }));
-vi.mock("@/lib/native-pms-reservation-delivery", () => ({ runNativePmsReservationDelivery: runWorker }));
+vi.mock("@/lib/native-pms-reservation-delivery", () => ({ drainNativePmsReservationDelivery: runWorker }));
 
 import { GET, POST } from "@/app/api/cron/native-pms-reservations/route";
 
@@ -38,6 +38,21 @@ describe("native PMS reservation recovery route", () => {
     }));
     expect(response.status).toBe(503);
     expect(runWorker).not.toHaveBeenCalled();
+  });
+
+  it("reports a retry as a failed scheduled run without exposing an event id", async () => {
+    vi.stubEnv("CRON_SECRET", "secret-for-tests");
+    vi.stubEnv("IRP_PMS_SYNC_ENABLED", "true");
+    vi.stubEnv("PMS_CREDENTIAL_ENCRYPTION_KEY", "encryption-key-fixture");
+    vi.stubEnv("IRP_PMS_DESTINATION_URL", "https://pms.supabase.co/rest/v1/rpc/irp_pms_ota_gateway");
+    vi.stubEnv("IRP_PMS_DESTINATION_PUBLISHABLE_KEY", "sb_publishable_abcdefghijklmnop");
+    runWorker.mockResolvedValueOnce([{ outcome: "retry", eventId: "private-event-id", code: "http_503" }]);
+    const response = await GET(new Request("https://ota.example/api/cron/native-pms-reservations", {
+      headers: { authorization: "Bearer secret-for-tests" },
+    }));
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ ok: false, outcomes: [{ outcome: "retry", code: "http_503" }] });
+    expect(runWorker).toHaveBeenCalledTimes(1);
   });
 
   it("does not expose the worker to POST requests", async () => {
