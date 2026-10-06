@@ -66,7 +66,7 @@ try{
       if(response.ok()){
        const receipt=await response.json();assert.equal(receipt.issue_id,issueId);assert.equal(receipt.request_id,body.p_request);assert.equal(receipt.revision,body.p_expected_revision+1);receipts.push(receipt);
        if(body.p_action==='claim'&&dropReply){await route.abort('failed');return;}
-      }else{const result=await response.json();denials.push({status:response.status,code:result.code});}
+      }else{const result=await response.json();denials.push({status:response.status(),code:result.code});}
       await route.fulfill({response});return;
      }
      if(rpc==='irp_pms_pilot_revenue_supervisor_queue'){
