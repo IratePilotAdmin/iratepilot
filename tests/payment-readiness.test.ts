@@ -184,7 +184,7 @@ describe("payment readiness audit", () => {
   });
 
   it("binds the database runtime gate to the configured Stripe account", () => {
-    const accountBindingMigration = read("supabase/migrations/20261006005302_bind_hotel_payment_authorization_account.sql");
+    const accountBindingMigration = read("supabase/migrations/202610050163_bind_hotel_payment_authorization_account.sql");
     const runtimeGate = read("lib/stripe/live-payment-authorization.ts");
 
     expect(accountBindingMigration).toContain("p_stripe_account_reference text");
