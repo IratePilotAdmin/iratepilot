@@ -28,6 +28,7 @@ const productionEnvironment = {
   STRIPE_SECRET_KEY: "sk_live_do_not_serialize_this_value",
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_live_example",
   STRIPE_WEBHOOK_SECRET: "whsec_do_not_serialize_this_value",
+  STRIPE_LIVE_ACCOUNT_ID: "acct_liveexample123",
 };
 
 describe("payment readiness audit", () => {
@@ -55,6 +56,7 @@ describe("payment readiness audit", () => {
       STRIPE_LIVE_SECRET_KEY: "sk_live_staged_do_not_serialize_this_value",
       STRIPE_LIVE_PUBLISHABLE_KEY: "pk_live_staged_example",
       STRIPE_LIVE_WEBHOOK_SECRET: "whsec_live_staged_do_not_serialize_this_value",
+      STRIPE_LIVE_ACCOUNT_ID: "acct_liveexample123",
     });
 
     expect(readiness.testMode.ready).toBe(true);
@@ -74,13 +76,32 @@ describe("payment readiness audit", () => {
       expiresAt: "2026-09-19T12:00:00.000Z",
       revokedAt: null,
     };
-    const readiness = buildPaymentReadiness(productionEnvironment, authorization, new Date("2026-09-18T12:00:00.000Z"));
+    const matchingAuthorization = {
+      ...authorization,
+      stripeAccountReference: productionEnvironment.STRIPE_LIVE_ACCOUNT_ID,
+    };
+    const readiness = buildPaymentReadiness(productionEnvironment, matchingAuthorization, new Date("2026-09-18T12:00:00.000Z"));
     expect(readiness.productionConfiguration.launchAuthorized).toBe(true);
     expect(readiness.productionConfiguration.launchReady).toBe(true);
 
-    const expired = buildPaymentReadiness(productionEnvironment, authorization, new Date("2026-09-20T12:00:00.000Z"));
+    const expired = buildPaymentReadiness(productionEnvironment, matchingAuthorization, new Date("2026-09-20T12:00:00.000Z"));
     expect(expired.productionConfiguration.launchAuthorized).toBe(false);
     expect(expired.productionConfiguration.launchReady).toBe(false);
+  });
+
+  it("rejects approval evidence recorded for a different Stripe account", () => {
+    const authorization = {
+      id: "approval-1",
+      approvalReference: "PAYMENT-APPROVAL-2026-001",
+      stripeAccountReference: "acct_otheraccount123",
+      approvedAt: "2026-09-17T12:00:00.000Z",
+      expiresAt: "2026-09-19T12:00:00.000Z",
+      revokedAt: null,
+    };
+    const readiness = buildPaymentReadiness(productionEnvironment, authorization, new Date("2026-09-18T12:00:00.000Z"));
+    expect(readiness.productionConfiguration.ready).toBe(true);
+    expect(readiness.productionConfiguration.launchAuthorized).toBe(false);
+    expect(readiness.productionConfiguration.authorizationDetail).toContain("different Stripe account");
   });
 
   it("fails both modes closed for conflicting payment flags", () => {
@@ -139,13 +160,18 @@ describe("payment readiness audit", () => {
   });
 
   it("fails live PaymentIntent authorization closed unless the database confirms a current receipt", async () => {
-    const authorized = { rpc: async () => ({ data: true, error: null }) };
+    const calls: unknown[] = [];
+    const authorized = { rpc: async (...args: unknown[]) => { calls.push(args); return { data: true, error: null }; } };
     const revoked = { rpc: async () => ({ data: false, error: null }) };
     const unavailable = { rpc: async () => ({ data: null, error: new Error("unavailable") }) };
 
-    await expect(hasCurrentLivePaymentAuthorization(authorized)).resolves.toBe(true);
-    await expect(hasCurrentLivePaymentAuthorization(revoked)).resolves.toBe(false);
-    await expect(hasCurrentLivePaymentAuthorization(unavailable)).resolves.toBe(false);
+    await expect(hasCurrentLivePaymentAuthorization(authorized, "acct_liveexample123")).resolves.toBe(true);
+    expect(calls).toEqual([["has_current_hotel_payment_launch_authorization", {
+      p_stripe_account_reference: "acct_liveexample123",
+    }]]);
+    await expect(hasCurrentLivePaymentAuthorization(revoked, "acct_liveexample123")).resolves.toBe(false);
+    await expect(hasCurrentLivePaymentAuthorization(unavailable, "acct_liveexample123")).resolves.toBe(false);
+    await expect(hasCurrentLivePaymentAuthorization(authorized, "acct_short")).resolves.toBe(false);
 
     const paymentIntentRoute = read("app/api/bookings/[id]/payment-intent/route.ts");
     const runtimeMigration = read("supabase/migrations/202609200160_live_payment_authorization_runtime_gate.sql");
@@ -155,5 +181,17 @@ describe("payment readiness audit", () => {
     expect(runtimeMigration).toContain("grant execute on function public.has_current_hotel_payment_launch_authorization()\n  to service_role");
     expect(runtimeMigration).toContain("approval.expires_at > now()");
     expect(runtimeMigration).toContain("hotel_payment_launch_authorization_revocations");
+  });
+
+  it("binds the database runtime gate to the configured Stripe account", () => {
+    const accountBindingMigration = read("supabase/migrations/20261006005302_bind_hotel_payment_authorization_account.sql");
+    const runtimeGate = read("lib/stripe/live-payment-authorization.ts");
+
+    expect(accountBindingMigration).toContain("p_stripe_account_reference text");
+    expect(accountBindingMigration).toContain("approval.stripe_account_reference = p_stripe_account_reference");
+    expect(accountBindingMigration).toContain("revoke all on function public.has_current_hotel_payment_launch_authorization()");
+    expect(accountBindingMigration).toContain("grant execute on function public.has_current_hotel_payment_launch_authorization(text)\n  to service_role");
+    expect(runtimeGate).toContain("p_stripe_account_reference: normalizedReference");
+    expect(runtimeGate).toContain("STRIPE_LIVE_ACCOUNT_ID");
   });
 });
