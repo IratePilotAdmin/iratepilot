@@ -80,7 +80,7 @@ jobs:
         if: inputs.gate != 'home-services'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ (inputs.gate == 'home-review' || inputs.gate == 'home-browser' || inputs.gate == 'supervisor-review' || inputs.gate == 'supervisor-queue' || inputs.gate == 'supervisor-browser' || inputs.gate == 'supervisor-lockwait' || inputs.gate == 'audited-http') && github.sha || '10164279cf57af50d64311d1d1b0e4c96d5be86f' }}
+          ref: ${{ (inputs.gate == 'home-review' || inputs.gate == 'home-browser' || inputs.gate == 'supervisor-review' || inputs.gate == 'supervisor-queue' || inputs.gate == 'supervisor-browser' || inputs.gate == 'supervisor-lockwait' || inputs.gate == 'audited-http' || inputs.gate == 'session-rejection') && github.sha || '10164279cf57af50d64311d1d1b0e4c96d5be86f' }}
           persist-credentials: false
       - name: Set up Node.js
         if: inputs.gate != 'home-services'

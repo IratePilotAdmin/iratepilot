@@ -3,6 +3,7 @@ import {randomUUID} from 'node:crypto';
 import {createClient,type SupabaseClient} from '@supabase/supabase-js';
 import {afterAll,beforeAll,describe,expect,it} from 'vitest';
 import {createRevenueApprovalRecovery,type ApprovalStorage} from '../lib/revenue-approval-recovery';
+import {createRevenueApprovalStatusTransport} from '../lib/revenue-approval-status-transport';
 import {parseAuditedWriteConfig,writeCommand,nextChicagoDay} from './fixtures/revenue-http-write-commands';
 
 // Real refresh rejection, not natural JWT expiry or physical-device proof.
@@ -14,6 +15,7 @@ describe.runIf(process.env.IRP_RUN_AUTH_SESSION_REJECTION==='1').sequential('iso
  const values=new Map<string,string>();
  const storage:ApprovalStorage={getItem:key=>values.get(key)??null,setItem:(key,value)=>{values.set(key,value);},removeItem:key=>{values.delete(key);}};
  let controller:ReturnType<typeof createRevenueApprovalRecovery>;
+ let transport:ReturnType<typeof createRevenueApprovalStatusTransport>;
  let originalJournal:string;
  let authSignedOut=0,statusRequests=0,applyRequests=0;
  let unsubscribe:(()=>void)|undefined;
@@ -41,24 +43,6 @@ describe.runIf(process.env.IRP_RUN_AUTH_SESSION_REJECTION==='1').sequential('iso
   catch{/* Generic error only: secrets must not become assertion output. */}
   if(!ok)throw Error('Isolated owner authentication failed');
  }
- async function status(scope:{p_tenant:string;p_property:string;p_request:string}){
-  const session=await consumer.auth.getSession(),token=session.data.session?.access_token;
-  if(session.error||!token)throw Error('Authentication required before recovery');
-  const verified=await consumer.auth.getUser(token);
-  if(verified.error||verified.data.user?.id!==config.actors.owner.id)throw Error('Recovery actor verification failed');
-  if((await consumer.auth.getSession()).data.session?.access_token!==token)throw Error('Recovery session changed');
-  if(scope.p_tenant!==config.tenantId||scope.p_property!==config.propertyId||scope.p_request!==command.p_request)
-   throw Error('Recovery scope denied');
-  statusRequests++;
-  const reply=await fetch(`https://${config.branch.project_ref}.supabase.co/rest/v1/rpc/irp_pms_pilot_revenue_decision_status`,{
-   method:'POST',headers:{apikey:config.publishableKey,Authorization:`Bearer ${token}`,'Content-Type':'application/json'},
-   body:JSON.stringify(scope),redirect:'error',cache:'no-store',signal:AbortSignal.timeout(15000),
-  });
-  if(!reply.ok)throw Error('Isolated status read rejected');
-  const body=await reply.text();if(body.length>16384)throw Error('Status response limit exceeded');
-  if((await consumer.auth.getSession()).data.session?.access_token!==token)throw Error('Recovery session changed after reply');
-  try{return JSON.parse(body);}catch{throw Error('Invalid isolated status response');}
- }
  let command:ReturnType<typeof writeCommand>;
  beforeAll(async()=>{
   const path=process.env.IRP_HTTP_QUALIFICATION_CONFIG;if(!path)throw Error('Protected isolated manifest required');
@@ -75,14 +59,28 @@ describe.runIf(process.env.IRP_RUN_AUTH_SESSION_REJECTION==='1').sequential('iso
   if(cloned.error||!cloned.data.session||cloned.data.session.access_token!==initialToken)throw Error('Shared isolated session initialization failed');
   const subscription=consumer.auth.onAuthStateChange(event=>{if(event==='SIGNED_OUT')authSignedOut++;});
   unsubscribe=()=>subscription.data.subscription.unsubscribe();
+  transport=createRevenueApprovalStatusTransport({apiUrl:`https://${config.branch.project_ref}.supabase.co`,
+   publishableKey:config.publishableKey,actorId:config.actors.owner.id,tenantId:config.tenantId,propertyId:config.propertyId,
+   auth:consumer.auth,fetch:async(url,init)=>{
+    const target=new URL(String(url));
+    if(target.pathname.includes('apply_revenue_decision')||target.pathname.includes('set_nightly_rate'))applyRequests++;
+    if(target.href!==`https://${config.branch.project_ref}.supabase.co/rest/v1/rpc/irp_pms_pilot_revenue_decision_status`
+     ||init?.method!=='POST'||init.redirect!=='error')throw Error('Qualification RPC scope denied');
+    const scope=JSON.parse(String(init.body));
+    if(scope.p_tenant!==config.tenantId||scope.p_property!==config.propertyId||scope.p_request!==command.p_request)
+     throw Error('Qualification RPC body scope denied');
+    statusRequests++;return fetch(url,{...init,signal:AbortSignal.timeout(15000)});
+   }});
   controller=createRevenueApprovalRecovery({actorId:config.actors.owner.id,tenantId:config.tenantId,propertyId:config.propertyId,
-   storage,lock:async(_key,work)=>work(),transport:{status,apply:async()=>{applyRequests++;throw Error('Qualification rate writes disabled');}}});
+   storage,lock:async(_key,work)=>work(),transport});
  },60000);
  afterAll(async()=>{
   unsubscribe?.();
-  for(const target of [issuer,consumer])if(target){const result=await target.auth.signOut({scope:'local'});
-   if(result.error)throw Error('Isolated local-session cleanup failed');}
+  const cleanup=await Promise.allSettled([issuer,consumer].filter(Boolean).map(async target=>{
+   const result=await target.auth.signOut({scope:'local'});if(result.error)throw Error('Isolated local-session cleanup failed');
+  }));
   values.clear();refresh='';initialToken='';
+  if(cleanup.some(result=>result.status==='rejected'))throw Error('Isolated local-session cleanup failed');
  },30000);
  it('verifies a genuine owner session in both independent SDK clients',async()=>{
   const user=await consumer.auth.getUser(initialToken);
@@ -108,7 +106,7 @@ describe.runIf(process.env.IRP_RUN_AUTH_SESSION_REJECTION==='1').sequential('iso
   expect(!result.error&&result.data.session===null&&authSignedOut>0).toBe(true);
  });
  it('blocks recovery before RPC and preserves the exact unresolved journal',async()=>{
-  await expect(controller.recover()).rejects.toThrow('Authentication required before recovery');
+  await expect(controller.recover()).rejects.toThrow('Sign in to check saved status');
   expect([...values.values()][0]===originalJournal&&statusRequests===0&&applyRequests===0).toBe(true);
  });
  it('genuinely reauthenticates the same actor without automatically recovering or applying',async()=>{
@@ -123,5 +121,9 @@ describe.runIf(process.env.IRP_RUN_AUTH_SESSION_REJECTION==='1').sequential('iso
  it('refuses clearing an unresolved review and performs no rate write',async()=>{
   await expect(controller.acknowledge()).rejects.toThrow('Resolve saved status before clearing approval');
   expect(controller.read()?.command.p_request===command.p_request&&statusRequests===1&&applyRequests===0).toBe(true);
+ });
+ it('keeps the actual adapter apply path disabled after fresh authentication',async()=>{
+  await expect(transport.apply(command)).rejects.toThrow('Audited saving is not enabled');
+  expect(statusRequests===1&&applyRequests===0).toBe(true);
  });
 });
