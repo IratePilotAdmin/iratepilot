@@ -1,3 +1,10 @@
+import {
+  isVerifiedPropertyCode,
+  isVerifiedProviderEnvironment,
+  isVerifiedSupportContact,
+  isVerifiedVendorApprovalReference,
+} from "../activation-evidence";
+
 export const synxisCrsProvider = {
   id: "sabre-synxis",
   name: "Sabre SynXis Central Reservation System",
@@ -42,6 +49,13 @@ export type SynxisActivationEvidence = {
   sandboxValidated?: boolean;
   productionSmokeValidated?: boolean;
   liveEnabled?: boolean;
+};
+
+export type SynxisVerifiedEvidence = SynxisActivationEvidence & {
+  vendorApprovalReference?: string;
+  approvedEnvironment?: string;
+  propertyCode?: string;
+  supportContact?: string;
 };
 
 export type SynxisReadiness = {
@@ -116,6 +130,45 @@ export function buildSynxisReadiness(
     invalidEnvironmentKeys,
     liveTrafficAllowed: status === "live",
   };
+}
+
+export function buildVerifiedSynxisGates(
+  environment: Record<string, string | undefined>,
+  evidence: SynxisVerifiedEvidence = {},
+) {
+  const readiness = buildSynxisReadiness(environment, evidence);
+  const vendorApproved = evidence.vendorApproved === true
+    && isVerifiedVendorApprovalReference(evidence.vendorApprovalReference);
+  const certificationEnvironmentApproved = vendorApproved
+    && evidence.certificationEnvironmentApproved === true
+    && isVerifiedProviderEnvironment(evidence.approvedEnvironment);
+  const propertyMapped = certificationEnvironmentApproved
+    && evidence.propertyMapped === true
+    && isVerifiedPropertyCode(evidence.propertyCode)
+    && isVerifiedSupportContact(evidence.supportContact);
+  const sandboxValidated = propertyMapped && evidence.sandboxValidated === true;
+  const productionConfigurationValid = readiness.missingEnvironmentKeys.length === 0
+    && readiness.invalidEnvironmentKeys.length === 0;
+  return {
+    vendorApproved,
+    certificationEnvironmentApproved,
+    propertyMapped,
+    sandboxValidated,
+    productionSmokeValidated: productionConfigurationValid
+      && sandboxValidated
+      && evidence.productionSmokeValidated === true,
+  };
+}
+
+export function buildVerifiedSynxisReadiness(
+  environment: Record<string, string | undefined>,
+  evidence: SynxisVerifiedEvidence = {},
+) {
+  const verifiedGates = buildVerifiedSynxisGates(environment, evidence);
+  return buildSynxisReadiness(environment, {
+    ...verifiedGates,
+    liveEnabled: verifiedGates.productionSmokeValidated && evidence.liveEnabled === true,
+  });
 }
 
 export { buildSynxisInventoryXml, buildSynxisRateAmountXml } from "./ari";

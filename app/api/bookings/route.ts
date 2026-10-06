@@ -10,6 +10,7 @@ import { getActiveMembershipTier } from "@/lib/memberships/eligibility";
 import { queueBookingNotification } from "@/lib/email/booking-notifications";
 import { getApprovedBookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
 import { isHotelMarketplaceLaunchAuthorized } from "@/lib/hotels/marketplace-launch-authorization";
+import { hasCurrentBookableHotelProperty } from "@/lib/hotels/bookable-hotel-property";
 
 export async function GET(request: Request) {
   try {
@@ -63,6 +64,12 @@ export async function POST(request: Request) {
       .eq("id", parsed.data.roomId).eq("active", true).eq("properties.slug", parsed.data.hotelSlug)
       .eq("properties.active", true).eq("properties.partners.status", "approved").single();
     if (roomResult.error || !roomResult.data) return NextResponse.json({ error: "The selected approved room was not found." }, { status: 404 });
+    const property = roomResult.data.properties as unknown as { id: string; name: string };
+    if (requestMode === "commercial_request" && !await hasCurrentBookableHotelProperty(admin, property.id)) {
+      return NextResponse.json({
+        error: "The selected hotel is not currently authorized for commercial booking requests."
+      }, { status: 409 });
+    }
     if (parsed.data.guests > Number(roomResult.data.max_guests)) return NextResponse.json({ error: "Guest count exceeds this room’s capacity." }, { status: 400 });
 
     const findExistingBooking = () => supabase.from("bookings")
@@ -99,7 +106,6 @@ export async function POST(request: Request) {
     }
     if (!pricing.ok) return NextResponse.json({ error: "Pricing could not be verified for this stay." }, { status: 503 });
     const { subtotal, serviceFee, total } = pricing;
-    const property = roomResult.data.properties as unknown as { id: string; name: string };
     const confirmationCode = `IRP-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
 
     const { data, error } = await admin.from("bookings").insert({

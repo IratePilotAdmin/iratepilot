@@ -5,9 +5,10 @@ import {
   buildSynxisRequestMonitor,
   type SynxisRequestJournalRow,
 } from "@/lib/integrations/synxis-request-monitor";
-import { isVerifiedActivationDetail } from "@/services/hotel-suppliers/priority-readiness";
+import { areVerifiedActivationDetails } from "@/services/hotel-suppliers/activation-evidence";
 import {
-  buildSynxisReadiness,
+  buildVerifiedSynxisGates,
+  buildVerifiedSynxisReadiness,
   type SynxisActivationEvidence,
 } from "@/services/hotel-suppliers/synxis";
 
@@ -166,15 +167,12 @@ function buildResponse(
   exportReceiptLedgerAvailable = false,
   propertyOperations: Awaited<ReturnType<typeof loadPropertyOperationsReadiness>> = unavailablePropertyOperations,
 ) {
-  const readiness = buildSynxisReadiness(process.env, evidence);
-  const activationDetailsComplete = [
-    evidence.vendorApprovalReference,
-    evidence.approvedEnvironment,
-    evidence.propertyCode,
-    evidence.supportContact,
-  ].every(isVerifiedActivationDetail);
+  const verifiedGates = buildVerifiedSynxisGates(process.env, evidence);
+  const readiness = buildVerifiedSynxisReadiness(process.env, evidence);
+  const activationDetailsComplete = areVerifiedActivationDetails(evidence);
   return {
     evidence,
+    verifiedGates,
     readiness,
     evidenceTrackingAvailable,
     activationDetailsComplete,
@@ -390,14 +388,35 @@ export async function PATCH(request: Request) {
       propertyCode: typeof details.propertyCode === "string" ? details.propertyCode : current.propertyCode,
       supportContact: typeof details.supportContact === "string" ? details.supportContact : current.supportContact,
     };
-    if (patch.liveEnabled === true
-      && Object.values(nextDetails).some((value) => !isVerifiedActivationDetail(value))) {
+    if (patch.liveEnabled === true && !areVerifiedActivationDetails(nextDetails)) {
       return noStore({ error: "Verified vendor approval, certification environment, real property code, and support contact details are required before live traffic is enabled." }, { status: 409 });
     }
-    const preActivationReadiness = buildSynxisReadiness(process.env, {
+    const preActivationReadiness = buildVerifiedSynxisReadiness(process.env, {
+      ...current,
       ...next,
+      ...nextDetails,
       liveEnabled: false,
     });
+    const verifiedGates = buildVerifiedSynxisGates(process.env, {
+      ...current,
+      ...next,
+      ...nextDetails,
+    });
+    if (patch.vendorApproved === true && !verifiedGates.vendorApproved) {
+      return noStore({ error: "A verified Sabre approval reference is required before vendor approval can be confirmed." }, { status: 409 });
+    }
+    if (patch.certificationEnvironmentApproved === true && !verifiedGates.certificationEnvironmentApproved) {
+      return noStore({ error: "Verified vendor approval and certification-environment details are required before the environment can be confirmed." }, { status: 409 });
+    }
+    if (patch.propertyMapped === true && !verifiedGates.propertyMapped) {
+      return noStore({ error: "Verified certification environment, real property code, and support contact are required before property mapping can be confirmed." }, { status: 409 });
+    }
+    if (patch.sandboxValidated === true && !verifiedGates.sandboxValidated) {
+      return noStore({ error: "Verified property mapping is required before sandbox validation can be confirmed." }, { status: 409 });
+    }
+    if (patch.productionSmokeValidated === true && !verifiedGates.productionSmokeValidated) {
+      return noStore({ error: "Valid production configuration and verified sandbox validation are required before the production smoke test can be confirmed." }, { status: 409 });
+    }
     if (patch.liveEnabled === true && preActivationReadiness.status !== "activation_required") {
       return noStore({ error: "Production configuration must be complete and valid before live traffic is enabled." }, { status: 409 });
     }

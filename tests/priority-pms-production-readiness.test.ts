@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  areVerifiedActivationDetails,
   auditPriorityPmsProductionReadiness,
   priorityPmsProductionManifest,
   priorityPmsProviderIds,
@@ -99,6 +100,77 @@ describe("unified PMS production readiness", () => {
       realPropertyCodeDocumented: false,
       supportContactDocumented: false,
     });
+  });
+
+  it("rejects generic acknowledgements as external provider evidence", () => {
+    expect(areVerifiedActivationDetails({
+      vendorApprovalReference: "approved",
+      approvedEnvironment: "ok",
+      propertyCode: "ok",
+      supportContact: "Oracle Support",
+    })).toBe(false);
+    expect(areVerifiedActivationDetails({
+      vendorApprovalReference: "OHIP-APPROVAL-42",
+      approvedEnvironment: "Production tenant",
+      propertyCode: "PNS-425",
+      supportContact: `!@!.${"!.".repeat(300)}`,
+    })).toBe(false);
+    expect(areVerifiedActivationDetails({
+      vendorApprovalReference: "12345678",
+      approvedEnvironment: "Production tenant",
+      propertyCode: "PNS-425",
+      supportContact: "provider-support@oracle.com",
+    })).toBe(true);
+
+    const [oracle] = auditPriorityPmsProductionReadiness(configuredEnvironment(), {
+      "oracle-opera": {
+        vendorApproved: true,
+        propertyMapped: true,
+        sandboxValidated: true,
+        webhookValidated: true,
+        productionSmokeValidated: true,
+        liveEnabled: true,
+        vendorApprovalReference: "approved",
+        approvedEnvironment: "ok",
+        propertyCode: "ok",
+        supportContact: "Oracle Support",
+      },
+    });
+
+    expect(oracle.status).toBe("activation_details_required");
+    expect(oracle.activationChecklist.liveTrafficEnabled).toBe(false);
+  });
+
+  it("does not present downstream checkboxes as verified without their dependencies", () => {
+    const [oracle] = auditPriorityPmsProductionReadiness({}, {
+      "oracle-opera": {
+        vendorApproved: true,
+        propertyMapped: true,
+        sandboxValidated: true,
+        webhookValidated: true,
+        productionSmokeValidated: true,
+        liveEnabled: true,
+      },
+    });
+
+    expect(oracle.evidence).toMatchObject({
+      vendorApproved: true,
+      propertyMapped: true,
+      sandboxValidated: true,
+      webhookValidated: true,
+      productionSmokeValidated: true,
+      liveEnabled: true,
+    });
+    expect(oracle.activationChecklist).toMatchObject({
+      productionConfigurationValid: false,
+      vendorApprovalDocumented: false,
+      propertyMappingConfirmed: false,
+      sandboxValidationPassed: false,
+      webhookValidationPassed: false,
+      productionSmokePassed: false,
+      liveTrafficEnabled: false,
+    });
+    expect(oracle.readyForRealPropertyActivation).toBe(false);
   });
 
   it("rejects insecure and malformed URLs before declaring a provider live-ready", () => {

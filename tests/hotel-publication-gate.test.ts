@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({ auth: vi.fn(), launchAuthorized: vi.fn() }));
 vi.mock("@/lib/auth/require-role", () => ({ requireRole: mocks.auth }));
 vi.mock("@/lib/hotels/publication-gate", () => import("../lib/hotels/publication-gate"));
 vi.mock("@/lib/hotels/marketplace-launch-authorization", () => ({
-  isHotelMarketplaceLaunchAuthorized: mocks.launchAuthorized,
+  isHotelMarketplacePublicationAuthorized: mocks.launchAuthorized,
 }));
 vi.mock("@/lib/property-readiness", () => import("../lib/property-readiness"));
 import { PATCH } from "../app/api/admin/properties/[id]/route";

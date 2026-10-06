@@ -6,6 +6,7 @@ import { createRequestClient } from "@/lib/supabase/request";
 import { getApprovedBookingMetadataMode, getApprovedBookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
 import { hasCurrentLivePaymentAuthorization } from "@/lib/stripe/live-payment-authorization";
 import { isHotelMarketplaceLaunchAuthorized } from "@/lib/hotels/marketplace-launch-authorization";
+import { hasCurrentBookableHotelProperty } from "@/lib/hotels/bookable-hotel-property";
 
 const bookingIdSchema = z.string().uuid();
 
@@ -34,7 +35,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     );
   }
   const { data: booking, error } = await admin.from("bookings")
-    .select("id,customer_id,confirmation_code,status,total,stripe_payment_intent_id,properties(name),rooms(name)")
+    .select("id,customer_id,property_id,confirmation_code,status,total,stripe_payment_intent_id,properties(name),rooms(name)")
     .eq("id", id)
     .eq("customer_id", user.id)
     .maybeSingle();
@@ -42,6 +43,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!booking) return NextResponse.json({ error: "Reservation not found." }, { status: 404 });
   if (booking.status !== "confirmed") return NextResponse.json({ error: "Only approved reservations can be paid." }, { status: 409 });
   if (booking.stripe_payment_intent_id) return NextResponse.json({ error: "This reservation has already been paid." }, { status: 409 });
+  if (paymentMode === "live" && !await hasCurrentBookableHotelProperty(admin, booking.property_id)) {
+    return NextResponse.json({ error: "The hotel is no longer authorized to accept live payment." }, { status: 409 });
+  }
 
   const totalCents = Math.round(Number(booking.total) * 100);
   if (!Number.isSafeInteger(totalCents) || totalCents < 50) {

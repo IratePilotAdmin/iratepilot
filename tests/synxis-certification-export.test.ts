@@ -59,6 +59,7 @@ describe("SynXis certification packet", () => {
     expect(route).toContain('"Cache-Control": "private, no-store"');
     expect(route).not.toContain("CRS_SYNXIS_PASSWORD");
     expect(route).not.toContain("evidence_snapshot");
+    expect(route).toContain("buildVerifiedSynxisReadiness(process.env, evidence)");
   });
 
   it("offers the export only when all persistence migrations are available", () => {

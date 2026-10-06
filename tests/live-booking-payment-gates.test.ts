@@ -4,6 +4,7 @@ import {
   getApprovedBookingMetadataMode,
   getApprovedBookingPaymentMode,
   getStripeWebhookMode,
+  stripeLivemodeMatchesPaymentMode,
 } from "../lib/stripe/booking-payment-mode";
 
 const testKeys = {
@@ -17,6 +18,8 @@ const liveKeys = {
 const bookingRoute = readFileSync(new URL("../app/api/bookings/route.ts", import.meta.url), "utf8");
 const paymentIntentRoute = readFileSync(new URL("../app/api/bookings/[id]/payment-intent/route.ts", import.meta.url), "utf8");
 const cancellationRoute = readFileSync(new URL("../app/api/admin/cancellations/[id]/route.ts", import.meta.url), "utf8");
+const webhookRoute = readFileSync(new URL("../app/api/stripe/webhook/route.ts", import.meta.url), "utf8");
+const approvedPaymentFinalizer = readFileSync(new URL("../lib/bookings/complete-approved-booking-test-payment.ts", import.meta.url), "utf8");
 const refundReconciliation = readFileSync(new URL("../lib/bookings/stripe-refund-reconciliation.ts", import.meta.url), "utf8");
 const paymentMigration = readFileSync(new URL("../supabase/migrations/202608060028_live_booking_payment_modes.sql", import.meta.url), "utf8");
 
@@ -56,6 +59,17 @@ describe("live booking payment gates", () => {
     expect(getStripeWebhookMode({ ...testKeys, PILOT_MODE: "true", ENABLE_TEST_STRIPE_WEBHOOKS: "true" })).toBe("test");
     expect(getStripeWebhookMode({ ...liveKeys, PILOT_MODE: "false", ENABLE_LIVE_STRIPE_WEBHOOKS: "true" })).toBe("live");
     expect(getStripeWebhookMode({ ...liveKeys, PILOT_MODE: "false", ENABLE_LIVE_STRIPE_WEBHOOKS: "false" })).toBeNull();
+  });
+
+  it("rejects Stripe events and intents from the wrong payment environment", () => {
+    expect(stripeLivemodeMatchesPaymentMode(false, "test")).toBe(true);
+    expect(stripeLivemodeMatchesPaymentMode(true, "live")).toBe(true);
+    expect(stripeLivemodeMatchesPaymentMode(true, "test")).toBe(false);
+    expect(stripeLivemodeMatchesPaymentMode(false, "live")).toBe(false);
+    expect(webhookRoute).toContain("stripeLivemodeMatchesPaymentMode(event.livemode, webhookMode)");
+    expect(webhookRoute.indexOf("stripeLivemodeMatchesPaymentMode(event.livemode, webhookMode)"))
+      .toBeLessThan(webhookRoute.indexOf('from("stripe_financial_events")'));
+    expect(approvedPaymentFinalizer).toContain("stripeLivemodeMatchesPaymentMode(intent.livemode, metadataMode)");
   });
 
   it("uses distinct Stripe metadata namespaces", () => {
