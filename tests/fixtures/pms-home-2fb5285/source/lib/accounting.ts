@@ -66,7 +66,7 @@ export function readLedgerReport(value:unknown,scope:{tenant_id:string;property_
  if(debit!==BigInt(v.debit_total_minor)||credit!==BigInt(v.credit_total_minor)||debit!==credit||[...journals.values()].some(n=>n!==BigInt(0)))throw Error('Ledger totals do not reconcile.');return v;
 }
 export function ledgerReportRows(report:LedgerReport):string[][]{
- const decimal=(v:string)=>accountingUsd(v).replace('$','').replaceAll(',','');
+ const decimal=(v:string)=>accountingUsd(v).replaceAll('$','').replaceAll(',','');
  return [['iRatePilot PMS','General ledger'],['Property reference',report.property_id],['From',report.start_date],['Until (exclusive)',report.end_date_exclusive],['Currency','USD'],[],['Date','Journal','Line','Account','Current account name','Description','Debit USD','Credit USD','Source kind','Source reference','Reversal of'],...report.lines.map(l=>[l.posting_date,l.journal_id,String(l.line_no),l.account_code,l.current_account_name,l.description,decimal(l.debit_minor),decimal(l.credit_minor),l.source_kind,l.source_id,l.reversal_of??''])];
 }
 export type SourceReconciliation={schema_version:1;tenant_id:string;property_id:string;currency:'USD';start_date:string;end_date_exclusive:string;basis:string;entry_count:number;pending_count:number;posted_count:number;processed_zero_count?:number;processed_empty_count?:number;entries:{service_date:string;reservation_id:string;adjustment_id?:string;source_total_minor:string;status:'pending'|'posted'|'processed_zero'|'processed_empty';request_id:string|null;journal_id:string|null;mapping_id:string|null;mapping_version:number|null;posting_date:string|null}[]};

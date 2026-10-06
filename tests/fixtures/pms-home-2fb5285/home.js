@@ -56935,7 +56935,7 @@ See https://reselect.js.org/api/development-only-checks#cachesizecheck for detai
     return v;
   }
   function ledgerReportRows(report) {
-    const decimal2 = (v) => accountingUsd(v).replace("$", "").replaceAll(",", "");
+    const decimal2 = (v) => accountingUsd(v).replaceAll("$", "").replaceAll(",", "");
     return [["iRatePilot PMS", "General ledger"], ["Property reference", report.property_id], ["From", report.start_date], ["Until (exclusive)", report.end_date_exclusive], ["Currency", "USD"], [], ["Date", "Journal", "Line", "Account", "Current account name", "Description", "Debit USD", "Credit USD", "Source kind", "Source reference", "Reversal of"], ...report.lines.map((l) => [l.posting_date, l.journal_id, String(l.line_no), l.account_code, l.current_account_name, l.description, decimal2(l.debit_minor), decimal2(l.credit_minor), l.source_kind, l.source_id, l.reversal_of ?? ""])];
   }
   function readSourceReconciliation(value, scope, corrections) {
