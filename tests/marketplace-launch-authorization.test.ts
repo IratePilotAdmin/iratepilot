@@ -74,12 +74,6 @@ describe("hotel marketplace launch authorization", () => {
     })).toBe(false);
     expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
       ...liveEvidence,
-      commercialHotelInventoryReady: false,
-    }, {
-      allowUnavailableCommercialInventoryForPaymentFinalization: true,
-    })).toBe(true);
-    expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
-      ...liveEvidence,
       hotelCommerceStateAvailable: false,
     })).toBe(false);
   });

@@ -28,7 +28,6 @@ type MarketplaceLaunchEvidence = {
 
 type MarketplaceLaunchAuthorizationOptions = {
   allowPayoutExceptionsForReconciliation?: boolean;
-  allowUnavailableCommercialInventoryForPaymentFinalization?: boolean;
 };
 
 export function evaluateHotelMarketplaceLaunchAuthorization(
@@ -40,10 +39,9 @@ export function evaluateHotelMarketplaceLaunchAuthorization(
   if (!evidence.releaseAuthorizationValid
     || !evidence.paymentAuthorizationValid
     || !evidence.hotelCommerceStateAvailable
+    || !evidence.commercialHotelInventoryReady
     || !evidence.supplierStateAvailable
     || !evidence.operationsStateAvailable) return false;
-  if (!options.allowUnavailableCommercialInventoryForPaymentFinalization
-    && !evidence.commercialHotelInventoryReady) return false;
   if (!buildPaymentReadiness(env).productionConfiguration.ready) return false;
   if (evidence.emailBacklog !== 0
     || evidence.emailDeadLetters !== 0
@@ -143,13 +141,5 @@ export function isHotelMarketplacePayoutReconciliationAuthorized(
 ) {
   return verifyHotelMarketplaceLaunchAuthorization(env, {
     allowPayoutExceptionsForReconciliation: true,
-  });
-}
-
-export function isHotelMarketplacePaymentFinalizationAuthorized(
-  env: Record<string, string | undefined> = process.env,
-) {
-  return verifyHotelMarketplaceLaunchAuthorization(env, {
-    allowUnavailableCommercialInventoryForPaymentFinalization: true,
   });
 }

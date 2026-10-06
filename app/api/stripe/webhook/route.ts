@@ -25,7 +25,6 @@ import {
 } from "@/lib/stripe/booking-payment-mode";
 import { reconcileStripeBookingRefund, type StripeRefundReconciliation } from "@/lib/bookings/stripe-refund-reconciliation";
 import { drainNativePmsEvents } from "@/services/hotel-suppliers/iratepilot-pms/native-delivery";
-import { isHotelMarketplacePaymentFinalizationAuthorized } from "@/lib/hotels/marketplace-launch-authorization";
 
 function deliverCancellationToNativePms() {
   after(async () => {
@@ -56,16 +55,6 @@ export async function POST(request: Request) {
       error: "Stripe event mode does not match the configured webhook mode.",
     }, { status: 400 });
   }
-  if (
-    webhookMode === "live"
-    && event.type === "payment_intent.succeeded"
-    && !await isHotelMarketplacePaymentFinalizationAuthorized()
-  ) {
-    return NextResponse.json({
-      error: "Live payment completion requires every production launch gate to pass.",
-    }, { status: 503 });
-  }
-
   const admin = createAdminClient();
   const eventCreatedAt = new Date(event.created * 1000).toISOString();
   let financialId: string | null = null;

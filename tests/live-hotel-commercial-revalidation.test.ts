@@ -54,10 +54,13 @@ describe("live hotel commercial revalidation", () => {
     expect(migration).toContain("'hotel-commercial-agreement:' || v_booking.property_id::text");
   });
 
-  it("lets succeeded payments reach refund-capable property finalization", () => {
-    expect(paymentCompletionRoute).toContain("isHotelMarketplacePaymentFinalizationAuthorized");
-    expect(stripeWebhookRoute).toContain("isHotelMarketplacePaymentFinalizationAuthorized");
-    expect(launchAuthorization).toContain("allowUnavailableCommercialInventoryForPaymentFinalization");
+  it("lets succeeded payments bypass mutable launch gates and reach refund-capable finalization", () => {
+    expect(paymentCompletionRoute).not.toContain("isHotelMarketplaceLaunchAuthorized");
+    expect(paymentCompletionRoute).not.toContain("isHotelMarketplacePaymentFinalizationAuthorized");
+    expect(stripeWebhookRoute).not.toContain("isHotelMarketplaceLaunchAuthorized");
+    expect(stripeWebhookRoute).not.toContain("isHotelMarketplacePaymentFinalizationAuthorized");
+    expect(paymentCompletionRoute).toContain("completeApprovedBookingPayment(intent)");
+    expect(stripeWebhookRoute).toContain("completeApprovedBookingPayment(intent)");
   });
 
   it("keeps the runtime revalidation functions private to the service role", () => {
