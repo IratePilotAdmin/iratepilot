@@ -38,10 +38,10 @@ export function evaluateHotelMarketplaceLaunchAuthorization(
   if (!isHotelPublicationEnabled(env) || !isEmailWorkerEnabled(env.EMAIL_WORKER_ENABLED)) return false;
   if (!evidence.releaseAuthorizationValid
     || !evidence.paymentAuthorizationValid
-    || !evidence.hotelCommerceStateAvailable
-    || !evidence.commercialHotelInventoryReady
     || !evidence.supplierStateAvailable
     || !evidence.operationsStateAvailable) return false;
+  if (!options.allowPayoutExceptionsForReconciliation
+    && (!evidence.hotelCommerceStateAvailable || !evidence.commercialHotelInventoryReady)) return false;
   if (!buildPaymentReadiness(env).productionConfiguration.ready) return false;
   if (evidence.emailBacklog !== 0
     || evidence.emailDeadLetters !== 0

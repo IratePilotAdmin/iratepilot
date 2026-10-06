@@ -17,6 +17,14 @@ const stripeWebhookRoute = readFileSync(
   new URL("../app/api/stripe/webhook/route.ts", import.meta.url),
   "utf8",
 );
+const bookingRoute = readFileSync(
+  new URL("../app/api/bookings/route.ts", import.meta.url),
+  "utf8",
+);
+const paymentIntentRoute = readFileSync(
+  new URL("../app/api/bookings/[id]/payment-intent/route.ts", import.meta.url),
+  "utf8",
+);
 
 describe("live hotel commercial revalidation", () => {
   it("rechecks current commercial hotel inventory during every launch authorization", () => {
@@ -61,6 +69,15 @@ describe("live hotel commercial revalidation", () => {
     expect(stripeWebhookRoute).not.toContain("isHotelMarketplacePaymentFinalizationAuthorized");
     expect(paymentCompletionRoute).toContain("completeApprovedBookingPayment(intent)");
     expect(stripeWebhookRoute).toContain("completeApprovedBookingPayment(intent)");
+  });
+
+  it("revalidates the selected property before request and PaymentIntent creation", () => {
+    expect(bookingRoute).toContain("hasCurrentBookableHotelProperty(admin, property.id)");
+    expect(paymentIntentRoute).toContain("hasCurrentBookableHotelProperty(admin, booking.property_id)");
+    expect(bookingRoute.indexOf("hasCurrentBookableHotelProperty(admin, property.id)"))
+      .toBeLessThan(bookingRoute.indexOf('from("bookings").insert'));
+    expect(paymentIntentRoute.indexOf("hasCurrentBookableHotelProperty(admin, booking.property_id)"))
+      .toBeLessThan(paymentIntentRoute.indexOf("paymentIntents.create"));
   });
 
   it("keeps the runtime revalidation functions private to the service role", () => {

@@ -111,6 +111,11 @@ describe("hotel marketplace launch authorization", () => {
     })).toBe(true);
     expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
       ...payoutExceptionEvidence,
+      hotelCommerceStateAvailable: false,
+      commercialHotelInventoryReady: false,
+    }, { allowPayoutExceptionsForReconciliation: true })).toBe(true);
+    expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
+      ...payoutExceptionEvidence,
       deliveryFailures: 1,
     }, { allowPayoutExceptionsForReconciliation: true })).toBe(false);
   });
