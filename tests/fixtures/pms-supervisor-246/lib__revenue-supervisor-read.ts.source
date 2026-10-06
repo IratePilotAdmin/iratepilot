@@ -1,0 +1,15 @@
+/** A deadline does not cancel the request or determine a mutation's outcome. */
+async function withDeadline<T>(work:()=>Promise<T>,timeoutMs:number,message:string):Promise<T>{
+ let timer:ReturnType<typeof setTimeout>|undefined;
+ try{
+  return await Promise.race([Promise.resolve().then(work),new Promise<never>((_,reject)=>{
+   timer=setTimeout(()=>reject(Error(message)),timeoutMs);
+  })]);
+ }finally{clearTimeout(timer);}
+}
+export function readSupervisorWithDeadline<T>(read:()=>Promise<T>,timeoutMs=30000):Promise<T>{
+ return withDeadline(read,timeoutMs,'Supervisor queue refresh timed out. Refresh again before reviewing exceptions.');
+}
+export function reviewSupervisorWithDeadline<T>(review:()=>Promise<T>,timeoutMs=30000):Promise<T>{
+ return withDeadline(review,timeoutMs,'Review confirmation timed out. The save outcome is unknown. Refresh the queue before trying again.');
+}

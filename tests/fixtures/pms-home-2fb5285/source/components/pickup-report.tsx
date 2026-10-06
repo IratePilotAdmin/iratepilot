@@ -1,0 +1,48 @@
+'use client';
+import {BookingPace} from '@/components/booking-pace';
+import {PickupEvidence} from '@/components/pickup-evidence';
+import {PickupCapture as SavePickupCapture} from '@/components/pickup-capture';
+import {pickupAverageMinor,pickupMoney} from '@/lib/pickup-money';
+import {downloadReport} from '@/lib/report-export';
+import {pickupExportRows} from '@/lib/pickup-export';
+import {flushSync} from 'react-dom';
+import {useEffect,useRef,useState} from 'react';
+import {hotelRpc,type RoomType} from '@/lib/pilot';
+import {pickupBatchSnapshots,pickupHistoryPage,type PickupCapture,type PickupCursor} from '@/lib/revenue-pickup-report';
+import {compareRevenueSnapshots,type RevenueSnapshot} from '@/lib/revenue-pickup';
+import {PropertyDemandForecast} from '@/components/property-demand-forecast';
+import {ForecastAccuracyReport} from '@/components/forecast-accuracy-report';
+
+export function PickupReport({tenant,property,types,actor,businessDate,timeZone}:{tenant:string;property:string;types:RoomType[];actor?:string;businessDate?:string;timeZone?:string}){
+ const [captures,setCaptures]=useState<PickupCapture[]>([]),[before,setBefore]=useState(''),[after,setAfter]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[result,setResult]=useState<{old:RevenueSnapshot[];current:RevenueSnapshot[];rawOld:unknown;rawCurrent:unknown}|null>(null);
+ const [evidence,setEvidence]=useState<{capture:string;snapshot:RevenueSnapshot}|null>(null);
+ const evidencePanel=useRef<HTMLDivElement>(null),evidenceTrigger=useRef<HTMLButtonElement|null>(null);
+ useEffect(()=>{if(evidence){evidencePanel.current?.focus();evidencePanel.current?.scrollIntoView?.({block:'nearest'});}},[evidence]);
+ const [next,setNext]=useState<PickupCursor|null>(null),[loaded,setLoaded]=useState(false);
+ const [rowPage,setRowPage]=useState(0),[printing,setPrinting]=useState(false);
+ useEffect(()=>{const beforePrint=()=>flushSync(()=>setPrinting(true)),afterPrint=()=>setPrinting(false);window.addEventListener('beforeprint',beforePrint);window.addEventListener('afterprint',afterPrint);return()=>{window.removeEventListener('beforeprint',beforePrint);window.removeEventListener('afterprint',afterPrint)}},[]);
+ const sequence=useRef(0),running=useRef(false),alive=useRef(true);
+  useEffect(()=>{const mounted=alive,requestSequence=sequence,requestRunning=running;mounted.current=true;return()=>{mounted.current=false;requestSequence.current++;requestRunning.current=false}},[]);
+ async function run(work:()=>Promise<void>){
+  if(running.current)return;running.current=true;
+  const id=++sequence.current;setBusy(true);setError('');setResult(null);setEvidence(null);setRowPage(0);
+  let timer:ReturnType<typeof setTimeout>|undefined;
+  try{await Promise.race([work(),new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(Error('Loading took too long. Retry this report.')),15000)})])}
+  catch(e){if(alive.current&&id===sequence.current)setError(e instanceof Error?e.message:'Report could not load.')}
+  finally{clearTimeout(timer);if(alive.current&&id===sequence.current){sequence.current++;running.current=false;setBusy(false)}}
+ }
+ async function history(older=false){
+  const id=sequence.current;
+  const d=await hotelRpc('pickup_history',{p_tenant:tenant,p_property:property,p_limit:50,...(older&&next?{p_before_time:next.time,p_before_id:next.id}:{})});
+  if(id!==sequence.current)return;
+  const page=pickupHistoryPage(d,tenant,property);
+  if(older&&page.batches.some(c=>captures.some(existing=>existing.capture_id===c.capture_id)))throw Error('Capture history repeated a page. Reload recent captures.');
+  setCaptures(older?[...captures,...page.batches]:page.batches);setNext(page.next);setLoaded(true);
+  if(!older){setBefore('');setAfter('');}
+ }
+ async function compare(){const id=sequence.current;setResult(null);const [a,b]=await Promise.all([before,after].map(p_capture=>hotelRpc('pickup_batch',{p_tenant:tenant,p_property:property,p_capture})));if(id!==sequence.current)return;setResult({rawOld:a,rawCurrent:b,old:pickupBatchSnapshots(a,tenant,property,before),current:pickupBatchSnapshots(b,tenant,property,after)});}
+ const oldByKey=new Map(result?.old.map(s=>[s.roomTypeId+':'+s.stayDate,s])??[]),currentByKey=new Map(result?.current.map(s=>[s.roomTypeId+':'+s.stayDate,s])??[]);
+ const keys=result?[...new Set([...result.old,...result.current].map(s=>s.roomTypeId+':'+s.stayDate))].sort():[];
+ const visibleKeys=printing?keys:keys.slice(rowPage*50,(rowPage+1)*50);
+  return <>{<section className="card"><h2>Booking pickup</h2>{actor&&businessDate&&<SavePickupCapture actor={actor} tenant={tenant} property={property} businessDate={businessDate}/>}<p>Compare saved snapshots of booked room nights and room revenue. Development preview; scheduled capture is not active.</p><button className="secondary" disabled={busy} onClick={()=>void run(()=>history())}>Load recent captures</button>{next&&<button className="secondary" disabled={busy} onClick={()=>void run(()=>history(true))}>Load older captures</button>}{loaded&&<output>{captures.length===0?'No saved captures are available for this property.':`${captures.length} saved captures loaded${next?' · older captures available':''}.`}</output>}{error&&<p className="pilot-error" role="alert">{error}</p>}<div className="form-grid">{[['Baseline capture',before,setBefore],['Later capture',after,setAfter]].map(([label,value,setter])=><label className="field" key={label as string}>{label as string}<select value={value as string} disabled={busy} onChange={e=>{(setter as (v:string)=>void)(e.target.value);setResult(null);setEvidence(null)}}><option value="">Select a capture</option>{captures.map(c=><option key={c.capture_id} value={c.capture_id}>{c.started_at} · {c.start_date} to {c.end_date}</option>)}</select></label>)}</div><button className="primary" disabled={busy||!before||!after||before===after} onClick={()=>void run(compare)}>{busy?'Loading…':'Compare captures'}</button>{result&&<button className="secondary" onClick={()=>{try{downloadReport('booking-pickup-'+property,pickupExportRows(result.old,result.current,before,after,types))}catch(e){setError(e instanceof Error?e.message:'Download failed. Try again.')}}}>Download pickup CSV</button>}{result&&<div className="pilot-table-wrap"><table className="pilot-table"><thead><tr><th>Night</th><th>Room type</th><th>Room-night change</th><th>Room revenue change</th><th>Current occupancy</th><th>Current ADR</th><th>Current RevPAR</th><th>Reservation details</th></tr></thead><tbody>{visibleKeys.map(key=>{const old=oldByKey.get(key),current=currentByKey.get(key),s=current??old!,r=compareRevenueSnapshots(old??null,current??null);const money=(n:number|null)=>pickupMoney(n,s.currency);return <tr key={key}><td>{s.stayDate}</td><td>{types.find(t=>t.id===s.roomTypeId)?.name??'Unknown room type'}</td>{r.available?<><td>{r.roomNightsChange}</td><td>{money(r.roomRevenueChangeMinor)}</td><td>{r.currentOccupancy===null?'Unavailable':(r.currentOccupancy*100).toFixed(1)+'%'}</td><td>{money(current?pickupAverageMinor(current.roomRevenueMinor,current.bookedRoomNights):null)}</td><td>{money(current?pickupAverageMinor(current.roomRevenueMinor,current.sellableRoomNights):null)}</td></>:<td colSpan={5}>{r.reason}</td>}<td>{old&&<button className="text-button" onClick={e=>{evidenceTrigger.current=e.currentTarget;setEvidence({capture:before,snapshot:old})}}>Baseline details</button>}{current&&<button className="text-button" onClick={e=>{evidenceTrigger.current=e.currentTarget;setEvidence({capture:after,snapshot:current})}}>Later details</button>}</td></tr>})}</tbody></table>{!printing&&keys.length>50&&<nav aria-label="Pickup report pages" className="pilot-actions"><button className="secondary" disabled={rowPage===0} onClick={()=>setRowPage(p=>p-1)}>Previous rows</button><output>Rows {rowPage*50+1}–{Math.min((rowPage+1)*50,keys.length)} of {keys.length}</output><button className="secondary" disabled={(rowPage+1)*50>=keys.length} onClick={()=>setRowPage(p=>p+1)}>Next rows</button></nav>}</div>}{result&&evidence&&<section ref={evidencePanel} tabIndex={-1} aria-label="Selected reservation details"><button className="secondary" onClick={()=>{setEvidence(null);evidenceTrigger.current?.focus()}}>Close reservation details</button><PickupEvidence key={[tenant,property,evidence.capture,evidence.snapshot.roomTypeId,evidence.snapshot.stayDate].join(':')} tenant={tenant} property={property} capture={evidence.capture} roomType={evidence.snapshot.roomTypeId} day={evidence.snapshot.stayDate} currency={evidence.snapshot.currency} label={evidence.capture===before?"Baseline capture":"Later capture"} roomTypeName={types.find(t=>t.id===evidence.snapshot.roomTypeId)?.name??"Unknown room type"} capturedAt={evidence.snapshot.capturedAt}/></section>}{result&&timeZone&&<BookingPace key={before+after} tenant={tenant} property={property} referenceCapture={before} currentCapture={after} reference={result.rawOld} current={result.rawCurrent} old={result.old} later={result.current} timeZone={timeZone} types={types}/ >}{result&&actor&&timeZone&&<PropertyDemandForecast key={after+'/'+tenant+'/'+property} actor={actor} tenant={tenant} property={property} timeZone={timeZone} currentCaptureId={after} currentSnapshots={result.current} captures={captures}/>}<p>Net pickup includes cancellations and changes. Missing values are unavailable, not zero. These figures are not earned revenue, payments or demand forecasts.</p></section>}{actor&&businessDate&&<ForecastAccuracyReport key={'forecast-accuracy/'+tenant+'/'+property} actor={actor} tenant={tenant} property={property} businessDate={businessDate}/>}</>;
+}

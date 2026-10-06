@@ -1,0 +1,23 @@
+# Revenue pricing facts preflight
+
+The actual PMS now exposes `irp_pms_pilot_revenue_facts_preflight` for owner/manager access. It compares a reviewed plan version, nightly price, effective room capacity and occupied inventory count with current scoped PMS data. Inactive plans and non-USD properties cannot match this USD-only decision-support contract. Missing nightly prices or capacity fail closed. It uses the existing maintenance-capacity and inventory-occupancy helpers, including maintenance closures and overdue in-house inventory rules.
+
+All pricing facts are read in one statement snapshot. Membership and property rows are locked through the check, and manager authorization is rechecked after acquiring those locks. The result contains aggregate facts only, without guest or reservation identifiers. Anonymous and service-role execution are revoked; authenticated execution is intentionally granted with server-side tenant/property authorization. The security advisor's authenticated SECURITY DEFINER notice is expected for this restricted RPC; no mutable-search-path or anonymous-execution finding names this function. Existing unrelated project notices are outside this migration.
+
+This is a read-only backend prerequisite, not atomic rate approval. `write_authorized` is always false and `mode` is `shadow_preflight`, even when `facts_match` is true. No rates, plan versions, audit events or OTA outbox entries are written. Facts may change after the function returns. A client must not use a successful preflight as a write token. The existing private PMS UI is not wired to this new RPC in this release.
+
+## Verification
+
+Applied the CLI-generated migration `20260930181246_revenue_facts_preflight.sql` to the actual PMS project `eiqmdldjnedqgbtoozqa`. The source is maintained under `pms-migrations/`, separate from the OTA migration replay chain.
+
+Run `scripts/qualify-revenue-facts-preflight.sql` with administrator SQL access. It creates an isolated tenant using an existing owner identity, then tests matching facts, price drift, capacity drift, a new reservation, cancellation, inactive/version-changed plans, missing price/capacity, null input, past dates, unknown plans and staff denial. It asserts zero rate actions. A nested rollback removes every fixture and modification before returning the qualification summary. The first attempt rejected an incomplete reservation fixture; the corrected fixture obeys existing source, hash and financial constraints. The corrected run passed all assertions. Postchecks confirmed zero fixture tenants and authenticated-only execution.
+
+The test is sequential database qualification. It does not establish browser integration, simultaneous pricing changes, portfolio performance, or atomicity across a later rate write.
+
+## Remaining gate
+
+The capacity safeguard migration `20260930183205_revenue_capacity_preflight_lock.sql` adds `FOR SHARE` on the existing scoped nightly-capacity row through transaction end. This covers the service role's direct capacity DML, which does not necessarily acquire the property lock. If no capacity row was locked, effective capacity cannot match even if a concurrent insertion becomes visible to the later facts query. This remains a preflight, not a write token. The final audited writer must call validation within its own transaction and qualify lock ordering and concurrency.
+
+The revised function is tested with the existing twelve-assertion qualification in an isolated PGlite database using copied PMS dependency definitions. This local fixture has a reduced schema; it does not replace actual PMS schema or concurrent-session qualification. A requested production fixture rerun was rejected by automatic approval review over rollback/cleanup guarantees; it was not retried through another production execution path. Read-only production checks confirmed the new function body, fixed search path, authenticated-only execution and zero fixture tenants.
+
+The audited decision-apply RPC is still a candidate migration and was not found installed in the actual PMS. The existing private PMS recommendation uses the manual nightly-rate RPC outside the Red Roof shadow property. Before activating audited approval, validate every pricing writer's locking protocol, bind the final source checks and deterministic recommendation calculation to the same transaction as the nightly-rate write and decision audit, and qualify competing reservation/inventory/pricing/auth changes. Red Roof Inn Ridgeland stays in shadow testing; signed native PMS-to-OTA HTTP validation and prospective forecast accuracy evidence remain separate open gates.

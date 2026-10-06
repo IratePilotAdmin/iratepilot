@@ -1,0 +1,689 @@
+{
+  "branch": {
+    "id": "839c60dc-ba85-4ed1-a265-b4e8ea669e46",
+    "name": "revenue-recovery-access-20260930",
+    "project_ref": "mtqrgrolepovidlsfvuh",
+    "is_default": false,
+    "persistent": false,
+    "status": "CREATING_PROJECT",
+    "created_at": "2026-09-30T23:04:42.84841+00:00",
+    "updated_at": "2026-09-30T23:04:42.84841+00:00",
+    "parent_project_ref": "eiqmdldjnedqgbtoozqa",
+    "with_data": false
+  },
+  "scope": "Synthetic 19-table pricing slice; actual database role switching and injected JWT subject; no signed Auth/HTTP/browser qualification",
+  "attempts": [
+    {
+      "name": "authenticated_owner_save",
+      "after_repair": false,
+      "is_error": false,
+      "result": [
+        {
+          "receipt": {
+            "plan_id": "00000000-0000-4000-8000-000000000004",
+            "replayed": false,
+            "saved_at": "2026-09-30T23:06:18.653285+00:00",
+            "stay_date": "2026-10-01",
+            "tenant_id": "00000000-0000-4000-8000-000000000001",
+            "request_id": "00000000-0000-4000-8000-000000000006",
+            "property_id": "00000000-0000-4000-8000-000000000002",
+            "recommended_rate_minor": 16100
+          }
+        }
+      ]
+    },
+    {
+      "name": "owner_saved_status",
+      "after_repair": false,
+      "is_error": false,
+      "result": [
+        {
+          "result": {
+            "case": "owner_saved_status",
+            "role": "authenticated",
+            "actor": "00000000-0000-4000-8000-000000000005",
+            "passed": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "manager_other_actor_hidden",
+      "after_repair": false,
+      "is_error": false,
+      "result": [
+        {
+          "result": {
+            "case": "manager_other_actor_hidden",
+            "role": "authenticated",
+            "actor": "00000000-0000-4000-8000-000000000008",
+            "passed": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "manager_property_history",
+      "after_repair": false,
+      "is_error": true,
+      "result": {
+        "error": {
+          "name": "HttpException",
+          "message": "Failed to run sql query: ERROR:  42883: function min(uuid) does not exist\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.\nQUERY:  WITH page AS (\n  SELECT d.request_id,d.actor_id,d.plan_id,d.reviewed_plan_version,d.stay_date,d.current_rate_minor,d.recommended_rate_minor,d.minimum_rate_minor,d.maximum_rate_minor,d.competitor_rate_minor,d.event_uplift_basis_points,d.effective_units,d.reserved_units,d.occupancy_tenths_percent,d.adjustment_basis_points,d.guardrail,d.saved_at\n  FROM irp_pms.revenue_rate_decisions d WHERE d.tenant_id=p_tenant AND d.property_id=p_property\n   AND (p_before_time IS NULL OR (d.saved_at,d.request_id)<(p_before_time,p_before_id))\n  ORDER BY d.saved_at DESC,d.request_id DESC LIMIT 25\n ) SELECT coalesce(jsonb_agg(to_jsonb(page) ORDER BY saved_at DESC,request_id DESC),'[]'::jsonb),min(saved_at),min(request_id) FILTER(WHERE saved_at=(SELECT min(saved_at) FROM page))                                  FROM page\nCONTEXT:  PL/pgSQL function public.irp_pms_pilot_revenue_decisions(uuid,uuid,timestamp with time zone,uuid) line 6 at SQL statement\nPL/pgSQL function inline_code_block line 3 at assignment\n"
+        }
+      }
+    },
+    {
+      "name": "manager_property_history",
+      "after_repair": true,
+      "is_error": false,
+      "result": [
+        {
+          "result": {
+            "case": "manager_property_history",
+            "role": "authenticated",
+            "actor": "00000000-0000-4000-8000-000000000008",
+            "passed": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "staff_status_denied",
+      "after_repair": true,
+      "is_error": false,
+      "result": [
+        {
+          "result": {
+            "case": "staff_status_denied",
+            "role": "authenticated",
+            "actor": "00000000-0000-4000-8000-000000000009",
+            "passed": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "staff_history_denied",
+      "after_repair": true,
+      "is_error": false,
+      "result": [
+        {
+          "result": {
+            "case": "staff_history_denied",
+            "role": "authenticated",
+            "actor": "00000000-0000-4000-8000-000000000009",
+            "passed": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "outsider_status_denied",
+      "after_repair": true,
+      "is_error": false,
+      "result": [
+        {
+          "result": {
+            "case": "outsider_status_denied",
+            "role": "authenticated",
+            "actor": "00000000-0000-4000-8000-000000000010",
+            "passed": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "missing_actor_denied",
+      "after_repair": true,
+      "is_error": false,
+      "result": [
+        {
+          "result": {
+            "case": "missing_actor_denied",
+            "role": "authenticated",
+            "actor": null,
+            "passed": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "wrong_tenant_denied",
+      "after_repair": true,
+      "is_error": false,
+      "result": [
+        {
+          "result": {
+            "case": "wrong_tenant_denied",
+            "role": "authenticated",
+            "actor": "00000000-0000-4000-8000-000000000005",
+            "passed": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "wrong_property_denied",
+      "after_repair": true,
+      "is_error": false,
+      "result": [
+        {
+          "result": {
+            "case": "wrong_property_denied",
+            "role": "authenticated",
+            "actor": "00000000-0000-4000-8000-000000000005",
+            "passed": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "anon_status_denied",
+      "after_repair": true,
+      "is_error": false,
+      "result": [
+        {
+          "result": {
+            "case": "anon_status_denied",
+            "role": "anon",
+            "actor": null,
+            "passed": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "service_status_denied",
+      "after_repair": true,
+      "is_error": false,
+      "result": [
+        {
+          "result": {
+            "case": "service_status_denied",
+            "role": "service_role",
+            "actor": "00000000-0000-4000-8000-000000000005",
+            "passed": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "authenticated_table_read_denied",
+      "after_repair": true,
+      "is_error": false,
+      "result": [
+        {
+          "result": {
+            "case": "authenticated_table_read_denied",
+            "role": "authenticated",
+            "actor": "00000000-0000-4000-8000-000000000005",
+            "passed": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "authenticated_table_update_denied",
+      "after_repair": true,
+      "is_error": false,
+      "result": [
+        {
+          "result": {
+            "case": "authenticated_table_update_denied",
+            "role": "authenticated",
+            "actor": "00000000-0000-4000-8000-000000000005",
+            "passed": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "incomplete_history_cursor_denied",
+      "after_repair": true,
+      "is_error": false,
+      "result": [
+        {
+          "result": {
+            "case": "incomplete_history_cursor_denied",
+            "role": "authenticated",
+            "actor": "00000000-0000-4000-8000-000000000005",
+            "passed": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "spoofed_metadata_staff_denied",
+      "after_repair": true,
+      "is_error": false,
+      "result": [
+        {
+          "result": {
+            "case": "spoofed_metadata_staff_denied",
+            "role": "authenticated",
+            "actor": "00000000-0000-4000-8000-000000000009",
+            "passed": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "tied_timestamp_pagination",
+      "after_repair": true,
+      "is_error": false,
+      "result": [
+        {
+          "result": {
+            "case": "tied_timestamp_pagination",
+            "role": "authenticated",
+            "cursor": {
+              "saved_at": "2026-09-30T23:06:18.653285+00:00",
+              "request_id": "00000000-0000-4000-8000-000000000102"
+            },
+            "passed": true,
+            "last_next": null,
+            "first_count": 25,
+            "second_count": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "demoted_owner_status_denied",
+      "after_repair": true,
+      "is_error": false,
+      "result": [
+        {
+          "result": {
+            "case": "demoted_owner_status_denied",
+            "role": "authenticated",
+            "passed": true
+          }
+        }
+      ]
+    }
+  ],
+  "final": {
+    "decisions": 1,
+    "table_rls": true,
+    "owner_role": "owner",
+    "captured_at": "2026-09-30T23:10:24.020425+00:00",
+    "amount_minor": 16100,
+    "plan_version": 2,
+    "rate_actions": 1,
+    "table_grants": [
+      {
+        "role": "anon",
+        "delete": false,
+        "insert": false,
+        "select": false,
+        "update": false
+      },
+      {
+        "role": "authenticated",
+        "delete": false,
+        "insert": false,
+        "select": false,
+        "update": false
+      },
+      {
+        "role": "service_role",
+        "delete": false,
+        "insert": false,
+        "select": false,
+        "update": false
+      }
+    ],
+    "server_version": "17.11",
+    "function_grants": [
+      {
+        "role": "anon",
+        "config": [
+          "search_path=pg_catalog"
+        ],
+        "execute": false,
+        "function": "irp_pms_pilot_apply_revenue_decision",
+        "security_definer": true
+      },
+      {
+        "role": "authenticated",
+        "config": [
+          "search_path=pg_catalog"
+        ],
+        "execute": true,
+        "function": "irp_pms_pilot_apply_revenue_decision",
+        "security_definer": true
+      },
+      {
+        "role": "service_role",
+        "config": [
+          "search_path=pg_catalog"
+        ],
+        "execute": false,
+        "function": "irp_pms_pilot_apply_revenue_decision",
+        "security_definer": true
+      },
+      {
+        "role": "anon",
+        "config": [
+          "search_path=pg_catalog"
+        ],
+        "execute": false,
+        "function": "irp_pms_pilot_revenue_decision_status",
+        "security_definer": true
+      },
+      {
+        "role": "authenticated",
+        "config": [
+          "search_path=pg_catalog"
+        ],
+        "execute": true,
+        "function": "irp_pms_pilot_revenue_decision_status",
+        "security_definer": true
+      },
+      {
+        "role": "service_role",
+        "config": [
+          "search_path=pg_catalog"
+        ],
+        "execute": false,
+        "function": "irp_pms_pilot_revenue_decision_status",
+        "security_definer": true
+      },
+      {
+        "role": "anon",
+        "config": [
+          "search_path=pg_catalog"
+        ],
+        "execute": false,
+        "function": "irp_pms_pilot_revenue_decisions",
+        "security_definer": true
+      },
+      {
+        "role": "authenticated",
+        "config": [
+          "search_path=pg_catalog"
+        ],
+        "execute": true,
+        "function": "irp_pms_pilot_revenue_decisions",
+        "security_definer": true
+      },
+      {
+        "role": "service_role",
+        "config": [
+          "search_path=pg_catalog"
+        ],
+        "execute": false,
+        "function": "irp_pms_pilot_revenue_decisions",
+        "security_definer": true
+      }
+    ]
+  },
+  "dependency_grants": [
+    {
+      "anon_execute": false,
+      "authenticated_execute": true,
+      "service_execute": true
+    }
+  ],
+  "advisors_before": {
+    "lints": [
+      {
+        "name": "rls_enabled_no_policy",
+        "title": "RLS Enabled No Policy",
+        "level": "INFO",
+        "facing": "EXTERNAL",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created.",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy",
+        "count": 1,
+        "findings": [
+          {
+            "detail": "Table \\`irp_pms.revenue_rate_decisions\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "revenue_rate_decisions",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-09-30T23:10:31.418Z"
+          }
+        ]
+      },
+      {
+        "name": "anon_security_definer_function_executable",
+        "title": "Public Can Execute SECURITY DEFINER Function",
+        "level": "WARN",
+        "facing": "EXTERNAL",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable without signing in. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if it is not meant to be public.",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable",
+        "count": 1,
+        "findings": [
+          {
+            "detail": "Function `public.irp_pms_pilot_set_nightly_rate(p_tenant uuid, p_property uuid, p_request uuid, p_plan uuid, p_expected_version bigint, p_start date, p_end date, p_amount_minor bigint)` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/irp_pms_pilot_set_nightly_rate`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+            "metadata": {
+              "name": "irp_pms_pilot_set_nightly_rate",
+              "schema": "public",
+              "language": "plpgsql",
+              "arguments": "p_tenant uuid, p_property uuid, p_request uuid, p_plan uuid, p_expected_version bigint, p_start date, p_end date, p_amount_minor bigint",
+              "security_definer": true
+            },
+            "observed_at": "2026-09-30T23:10:31.418Z"
+          }
+        ]
+      },
+      {
+        "name": "authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function",
+        "level": "WARN",
+        "facing": "EXTERNAL",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "count": 5,
+        "findings": [
+          {
+            "detail": "Function `public.irp_pms_pilot_apply_revenue_decision(p_tenant uuid, p_property uuid, p_request uuid, p_plan uuid, p_expected_version bigint, p_stay_date date, p_current_rate_minor bigint, p_recommended_rate_minor bigint, p_minimum_rate_minor bigint, p_maximum_rate_minor bigint, p_competitor_rate_minor bigint, p_event_uplift_basis_points integer, p_effective_units integer, p_reserved_units integer, p_occupancy_tenths_percent integer, p_adjustment_basis_points integer, p_guardrail text, p_explanations jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/irp_pms_pilot_apply_revenue_decision`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+            "metadata": {
+              "name": "irp_pms_pilot_apply_revenue_decision",
+              "schema": "public",
+              "language": "plpgsql",
+              "arguments": "p_tenant uuid, p_property uuid, p_request uuid, p_plan uuid, p_expected_version bigint, p_stay_date date, p_current_rate_minor bigint, p_recommended_rate_minor bigint, p_minimum_rate_minor bigint, p_maximum_rate_minor bigint, p_competitor_rate_minor bigint, p_event_uplift_basis_points integer, p_effective_units integer, p_reserved_units integer, p_occupancy_tenths_percent integer, p_adjustment_basis_points integer, p_guardrail text, p_explanations jsonb",
+              "security_definer": true
+            },
+            "observed_at": "2026-09-30T23:10:31.418Z"
+          },
+          {
+            "detail": "Function `public.irp_pms_pilot_revenue_decision_status(p_tenant uuid, p_property uuid, p_request uuid)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/irp_pms_pilot_revenue_decision_status`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+            "metadata": {
+              "name": "irp_pms_pilot_revenue_decision_status",
+              "schema": "public",
+              "language": "plpgsql",
+              "arguments": "p_tenant uuid, p_property uuid, p_request uuid",
+              "security_definer": true
+            },
+            "observed_at": "2026-09-30T23:10:31.418Z"
+          },
+          {
+            "detail": "Function `public.irp_pms_pilot_revenue_decisions(p_tenant uuid, p_property uuid, p_before_time timestamp with time zone, p_before_id uuid)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/irp_pms_pilot_revenue_decisions`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+            "metadata": {
+              "name": "irp_pms_pilot_revenue_decisions",
+              "schema": "public",
+              "language": "plpgsql",
+              "arguments": "p_tenant uuid, p_property uuid, p_before_time timestamp with time zone, p_before_id uuid",
+              "security_definer": true
+            },
+            "observed_at": "2026-09-30T23:10:31.418Z"
+          },
+          {
+            "detail": "Function `public.irp_pms_pilot_revenue_facts_preflight(p_tenant uuid, p_property uuid, p_plan uuid, p_expected_version bigint, p_stay_date date, p_current_rate_minor bigint, p_effective_units integer, p_reserved_units integer)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/irp_pms_pilot_revenue_facts_preflight`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+            "metadata": {
+              "name": "irp_pms_pilot_revenue_facts_preflight",
+              "schema": "public",
+              "language": "plpgsql",
+              "arguments": "p_tenant uuid, p_property uuid, p_plan uuid, p_expected_version bigint, p_stay_date date, p_current_rate_minor bigint, p_effective_units integer, p_reserved_units integer",
+              "security_definer": true
+            },
+            "observed_at": "2026-09-30T23:10:31.418Z"
+          },
+          {
+            "detail": "Function `public.irp_pms_pilot_set_nightly_rate(p_tenant uuid, p_property uuid, p_request uuid, p_plan uuid, p_expected_version bigint, p_start date, p_end date, p_amount_minor bigint)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/irp_pms_pilot_set_nightly_rate`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+            "metadata": {
+              "name": "irp_pms_pilot_set_nightly_rate",
+              "schema": "public",
+              "language": "plpgsql",
+              "arguments": "p_tenant uuid, p_property uuid, p_request uuid, p_plan uuid, p_expected_version bigint, p_start date, p_end date, p_amount_minor bigint",
+              "security_definer": true
+            },
+            "observed_at": "2026-09-30T23:10:31.418Z"
+          }
+        ]
+      },
+      {
+        "name": "auth_leaked_password_protection",
+        "title": "Leaked Password Protection Disabled",
+        "level": "WARN",
+        "facing": "EXTERNAL",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Leaked password protection is currently disabled.",
+        "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection",
+        "count": 1,
+        "findings": [
+          {
+            "detail": "Supabase Auth prevents the use of compromised passwords by checking against HaveIBeenPwned.org. Enable this feature to enhance security.",
+            "metadata": {
+              "type": "auth",
+              "entity": "Auth"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "advisors_after": {
+    "lints": [
+      {
+        "name": "rls_enabled_no_policy",
+        "title": "RLS Enabled No Policy",
+        "level": "INFO",
+        "facing": "EXTERNAL",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created.",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy",
+        "count": 1,
+        "findings": [
+          {
+            "detail": "Table \\`irp_pms.revenue_rate_decisions\\` has RLS enabled, but no policies exist",
+            "metadata": {
+              "name": "revenue_rate_decisions",
+              "type": "table",
+              "schema": "irp_pms"
+            },
+            "observed_at": "2026-09-30T23:11:03.649Z"
+          }
+        ]
+      },
+      {
+        "name": "authenticated_security_definer_function_executable",
+        "title": "Signed-In Users Can Execute SECURITY DEFINER Function",
+        "level": "WARN",
+        "facing": "EXTERNAL",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+        "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+        "count": 5,
+        "findings": [
+          {
+            "detail": "Function `public.irp_pms_pilot_apply_revenue_decision(p_tenant uuid, p_property uuid, p_request uuid, p_plan uuid, p_expected_version bigint, p_stay_date date, p_current_rate_minor bigint, p_recommended_rate_minor bigint, p_minimum_rate_minor bigint, p_maximum_rate_minor bigint, p_competitor_rate_minor bigint, p_event_uplift_basis_points integer, p_effective_units integer, p_reserved_units integer, p_occupancy_tenths_percent integer, p_adjustment_basis_points integer, p_guardrail text, p_explanations jsonb)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/irp_pms_pilot_apply_revenue_decision`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+            "metadata": {
+              "name": "irp_pms_pilot_apply_revenue_decision",
+              "schema": "public",
+              "language": "plpgsql",
+              "arguments": "p_tenant uuid, p_property uuid, p_request uuid, p_plan uuid, p_expected_version bigint, p_stay_date date, p_current_rate_minor bigint, p_recommended_rate_minor bigint, p_minimum_rate_minor bigint, p_maximum_rate_minor bigint, p_competitor_rate_minor bigint, p_event_uplift_basis_points integer, p_effective_units integer, p_reserved_units integer, p_occupancy_tenths_percent integer, p_adjustment_basis_points integer, p_guardrail text, p_explanations jsonb",
+              "security_definer": true
+            },
+            "observed_at": "2026-09-30T23:11:03.649Z"
+          },
+          {
+            "detail": "Function `public.irp_pms_pilot_revenue_decision_status(p_tenant uuid, p_property uuid, p_request uuid)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/irp_pms_pilot_revenue_decision_status`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+            "metadata": {
+              "name": "irp_pms_pilot_revenue_decision_status",
+              "schema": "public",
+              "language": "plpgsql",
+              "arguments": "p_tenant uuid, p_property uuid, p_request uuid",
+              "security_definer": true
+            },
+            "observed_at": "2026-09-30T23:11:03.649Z"
+          },
+          {
+            "detail": "Function `public.irp_pms_pilot_revenue_decisions(p_tenant uuid, p_property uuid, p_before_time timestamp with time zone, p_before_id uuid)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/irp_pms_pilot_revenue_decisions`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+            "metadata": {
+              "name": "irp_pms_pilot_revenue_decisions",
+              "schema": "public",
+              "language": "plpgsql",
+              "arguments": "p_tenant uuid, p_property uuid, p_before_time timestamp with time zone, p_before_id uuid",
+              "security_definer": true
+            },
+            "observed_at": "2026-09-30T23:11:03.649Z"
+          },
+          {
+            "detail": "Function `public.irp_pms_pilot_revenue_facts_preflight(p_tenant uuid, p_property uuid, p_plan uuid, p_expected_version bigint, p_stay_date date, p_current_rate_minor bigint, p_effective_units integer, p_reserved_units integer)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/irp_pms_pilot_revenue_facts_preflight`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+            "metadata": {
+              "name": "irp_pms_pilot_revenue_facts_preflight",
+              "schema": "public",
+              "language": "plpgsql",
+              "arguments": "p_tenant uuid, p_property uuid, p_plan uuid, p_expected_version bigint, p_stay_date date, p_current_rate_minor bigint, p_effective_units integer, p_reserved_units integer",
+              "security_definer": true
+            },
+            "observed_at": "2026-09-30T23:11:03.649Z"
+          },
+          {
+            "detail": "Function `public.irp_pms_pilot_set_nightly_rate(p_tenant uuid, p_property uuid, p_request uuid, p_plan uuid, p_expected_version bigint, p_start date, p_end date, p_amount_minor bigint)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/irp_pms_pilot_set_nightly_rate`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+            "metadata": {
+              "name": "irp_pms_pilot_set_nightly_rate",
+              "schema": "public",
+              "language": "plpgsql",
+              "arguments": "p_tenant uuid, p_property uuid, p_request uuid, p_plan uuid, p_expected_version bigint, p_start date, p_end date, p_amount_minor bigint",
+              "security_definer": true
+            },
+            "observed_at": "2026-09-30T23:11:03.649Z"
+          }
+        ]
+      },
+      {
+        "name": "auth_leaked_password_protection",
+        "title": "Leaked Password Protection Disabled",
+        "level": "WARN",
+        "facing": "EXTERNAL",
+        "categories": [
+          "SECURITY"
+        ],
+        "description": "Leaked password protection is currently disabled.",
+        "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection",
+        "count": 1,
+        "findings": [
+          {
+            "detail": "Supabase Auth prevents the use of compromised passwords by checking against HaveIBeenPwned.org. Enable this feature to enhance security.",
+            "metadata": {
+              "type": "auth",
+              "entity": "Auth"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

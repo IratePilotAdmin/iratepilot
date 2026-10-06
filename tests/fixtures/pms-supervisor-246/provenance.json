@@ -1,0 +1,41 @@
+{
+  "site_commit": "efe6b94765e39f4aa5e916375600666de0750441",
+  "site_project_id": "appgprj_6a9ef311e9f08191b44e8d5598802ccc",
+  "limits": "Exact component, transport, journal and deadlines in a disposable host; full Home/membership loading, deployed app styling and physical phone are not qualified",
+  "connection_override": "Isolated project ybehrayzwzyufxbxcysq; live connection module excluded",
+  "site_version": 246,
+  "files": {
+    "lib/revenue-supervisor-journal.ts": {
+      "snapshot": "lib__revenue-supervisor-journal.ts.source",
+      "sha256": "534f211b742a099cbc7542ed6bdbccb49053f0a3aef7c861b40045f2ef516905"
+    },
+    "lib/revenue-supervisor-transport.ts": {
+      "snapshot": "lib__revenue-supervisor-transport.ts.source",
+      "sha256": "9ef36bf2589d5ee193e0198c89c6c43af395e9bebc155f29e41ad4a59e267558"
+    },
+    "lib/hotel-auth-storage.ts": {
+      "snapshot": "lib__hotel-auth-storage.ts.source",
+      "sha256": "514e020a0dddf30a67d7be6155048467cb578237c9c8e77c4eb8711d55c61c9a"
+    },
+    "lib/revenue-supervisor-read.ts": {
+      "snapshot": "lib__revenue-supervisor-read.ts.source",
+      "sha256": "fd544366fc6a6e4ddabd878e786a052ba66055071587fd06b245f87a8c072d42"
+    },
+    "components/revenue-supervisor-queue.tsx": {
+      "snapshot": "components__revenue-supervisor-queue.tsx.source",
+      "sha256": "6adeb549987f26b6b920aea09b620dbe9afe3934c137ef8e3d3fe147e0d574b4"
+    },
+    "lib/revenue-supervisor.ts": {
+      "snapshot": "lib__revenue-supervisor.ts.source",
+      "sha256": "b9e3cee0f619aa9b9b7ab8125df333da3ad639632ebbb1048630058e2255ffe8"
+    },
+    "lib/pms-contract.ts": {
+      "snapshot": "lib__pms-contract.ts.source",
+      "sha256": "0dcf483c740a73b1dc28e0317d006fb839ce1e1e933b4a01287f9fd07238272f"
+    },
+    "lib/pilot.ts": {
+      "snapshot": "lib__pilot.ts.source",
+      "sha256": "f02dde87ab4f4c7160e3dc38fede985d73d63dcccecece7666fa99135f572b53"
+    }
+  }
+}

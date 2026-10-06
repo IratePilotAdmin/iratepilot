@@ -1,0 +1,35 @@
+name: Revenue isolated browser recovery gate
+on:
+  pull_request:
+    paths:
+      - lib/revenue-approval-recovery.ts
+      - scripts/revenue-browser-recovery.fixture.ts
+      - scripts/qualify-revenue-browser-recovery.mjs
+      - scripts/revenue-auth-browser-recovery.fixture.ts
+      - scripts/qualify-revenue-auth-browser-recovery.mjs
+      - scripts/revenue-pms-panel*
+      - scripts/*supervisor*browser*
+      - tests/fixtures/pms-supervisor-246/**
+      - tests/fixtures/pms-recovery-panel-215/**
+      - scripts/revenue-browser-tools/**
+      - .github/workflows/revenue-browser-recovery-gate.yml
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts
+      - run: npm ci --ignore-scripts --prefix scripts/revenue-browser-tools
+      - run: node scripts/qualify-revenue-auth-browser-recovery.mjs --build-only
+      - run: node scripts/qualify-revenue-auth-browser-recovery.mjs --build-only --pms-panel
+      - run: node scripts/qualify-supervisor-browser-recovery.mjs --build-only
+      - run: node scripts/revenue-browser-tools/node_modules/playwright/cli.js install --with-deps chromium
+      - run: node scripts/qualify-revenue-browser-recovery.mjs

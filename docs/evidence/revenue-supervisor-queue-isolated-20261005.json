@@ -1,0 +1,151 @@
+{
+  "captured_at": "2026-10-05",
+  "project": "ybehrayzwzyufxbxcysq",
+  "real_auth_executed": false,
+  "queue_install_readback": [
+    {
+      "jsonb_build_object": {
+        "events": 0,
+        "issues": 0,
+        "tables": [
+          {
+            "rls": true,
+            "name": "gateway_connections",
+            "rows": 0,
+            "anon_select": false,
+            "service_select": false,
+            "authenticated_select": false
+          },
+          {
+            "rls": true,
+            "name": "revenue_forecast_records",
+            "rows": 0,
+            "anon_select": false,
+            "service_select": false,
+            "authenticated_select": false
+          },
+          {
+            "rls": true,
+            "name": "revenue_shadow_snapshots",
+            "rows": 0,
+            "anon_select": false,
+            "service_select": false,
+            "authenticated_select": false
+          }
+        ],
+        "functions": [
+          {
+            "anon": false,
+            "hash": "7f62d01281c4f47257d179a95f34f632",
+            "definer": true,
+            "service": false,
+            "signature": "irp_pms.pilot_require(uuid,uuid,boolean)",
+            "search_path": [
+              "search_path=pg_catalog"
+            ],
+            "authenticated": false
+          },
+          {
+            "anon": false,
+            "hash": "9b8942f31303120451259b970393672e",
+            "definer": true,
+            "service": false,
+            "signature": "irp_pms_pilot_apply_revenue_decision(uuid,uuid,uuid,uuid,bigint,date,bigint,bigint,bigint,bigint,bigint,integer,integer,integer,integer,integer,text,jsonb)",
+            "search_path": [
+              "search_path=pg_catalog"
+            ],
+            "authenticated": false
+          },
+          {
+            "anon": false,
+            "hash": "ae12f9df71b5335f86614494ff07dff8",
+            "definer": true,
+            "service": false,
+            "signature": "irp_pms_pilot_revenue_supervisor_review(uuid,uuid,uuid,bigint,text,uuid)",
+            "search_path": [
+              "search_path=pg_catalog"
+            ],
+            "authenticated": true
+          },
+          {
+            "anon": false,
+            "hash": "7792d1b13cd5c7bcfdd9d210e28a2f5a",
+            "definer": false,
+            "service": false,
+            "signature": "irp_pms.observe_revenue_supervisor_issue(uuid,uuid,text,text,text,text,text,timestamp with time zone)",
+            "search_path": [
+              "search_path=pg_catalog"
+            ],
+            "authenticated": false
+          },
+          {
+            "anon": false,
+            "hash": "1d5fa05f0d3181d7d850b8f13428dca2",
+            "definer": false,
+            "service": false,
+            "signature": "irp_pms.observe_revenue_forecast_health(uuid,uuid,timestamp with time zone)",
+            "search_path": [
+              "search_path=pg_catalog"
+            ],
+            "authenticated": false
+          },
+          {
+            "anon": false,
+            "hash": "c4ae842e83094387889917f2600050c0",
+            "definer": true,
+            "service": false,
+            "signature": "irp_pms_pilot_revenue_supervisor_queue(integer,text,boolean)",
+            "search_path": [
+              "search_path=pg_catalog"
+            ],
+            "authenticated": true
+          }
+        ],
+        "checked_at": "2026-10-05T18:46:21.016489+00:00"
+      }
+    }
+  ],
+  "guard_smoke": [
+    {
+      "evidence": {
+        "real_auth": false,
+        "fixture_events": 0,
+        "fixture_issues": 0,
+        "synthetic_guard_assertions": 2
+      }
+    }
+  ],
+  "cleanup_data": [
+    {
+      "cleanup": {
+        "events": 0,
+        "issues": 0,
+        "tenants": 0,
+        "properties": 0,
+        "memberships": 0
+      }
+    }
+  ],
+  "final_readback": [
+    {
+      "evidence": {
+        "events": 0,
+        "issues": 0,
+        "checked_at": "2026-10-05T19:00:24.705033+00:00",
+        "queue_hash": "c4ae842e83094387889917f2600050c0",
+        "review_hash": "ae12f9df71b5335f86614494ff07dff8",
+        "baseline_hash": "cde21b6c192b80c6380067a9e2173d1a",
+        "fixture_triggers": 0,
+        "fixture_functions": 0,
+        "rate_apply_disabled": true
+      }
+    }
+  ],
+  "unit_tests": {
+    "passed": 7,
+    "failed": 0,
+    "skipped": 0
+  },
+  "initial_fixture_rejected": "Existing pricing-fixture memberships; transaction rolled back",
+  "baseline_before_hash": "cde21b6c192b80c6380067a9e2173d1a"
+}

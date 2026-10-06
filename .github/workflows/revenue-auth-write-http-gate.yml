@@ -2,6 +2,35 @@ name: Revenue Auth audited-write HTTP release gate
 
 on:
   workflow_dispatch:
+    inputs:
+      gate:
+        description: Isolated qualification suite (fresh fixture required)
+        type: choice
+        required: true
+        default: audited-http
+        options:
+          - audited-http
+          - browser-recovery
+          - pms-panel
+          - supervisor-review
+          - supervisor-queue
+          - supervisor-browser
+          - supervisor-lockwait
+          - home-services
+          - home-browser
+          - home-review
+      fixture_manifest:
+        description: Supervisor or Home review mode - fresh installed fixture JSON
+        type: string
+        required: false
+      publishable_key:
+        description: Supervisor mode only - isolated branch publishable key
+        type: string
+        required: false
+      supervised_cleanup:
+        description: Supervisor or Home browser mode - operator present for audit and scoped cleanup
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -17,23 +46,103 @@ jobs:
     timeout-minutes: 10
     environment: revenue-http-qualification
     steps:
+      - name: Check out Home service prerequisite candidate
+        if: inputs.gate == 'home-services'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Set up Node.js for Home prerequisite
+        if: inputs.gate == 'home-services'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24
+      - name: Qualify read-only Home services with genuine Auth
+        if: inputs.gate == 'home-services'
+        env:
+          IRP_HTTP_TEST_OWNER_EMAIL: ${{ secrets.IRP_HTTP_TEST_OWNER_EMAIL }}
+          IRP_HTTP_TEST_OWNER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_OWNER_PASSWORD }}
+          IRP_HTTP_TEST_MANAGER_EMAIL: ${{ secrets.IRP_HTTP_TEST_MANAGER_EMAIL }}
+          IRP_HTTP_TEST_MANAGER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_MANAGER_PASSWORD }}
+          IRP_HTTP_TEST_STAFF_EMAIL: ${{ secrets.IRP_HTTP_TEST_STAFF_EMAIL }}
+          IRP_HTTP_TEST_STAFF_PASSWORD: ${{ secrets.IRP_HTTP_TEST_STAFF_PASSWORD }}
+        run: node scripts/qualify-home-read-services.mjs
+      - name: Upload Home service prerequisite evidence
+        if: inputs.gate == 'home-services'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: home-read-services-evidence
+          path: work/home-read-services-evidence
+          if-no-files-found: error
+          retention-days: 14
       - name: Check out reviewed candidate
+        if: inputs.gate != 'home-services'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: 41ebe1cefed14c3f81304b6fb03aaf0474887a9d
+          ref: ${{ (inputs.gate == 'home-review' || inputs.gate == 'home-browser' || inputs.gate == 'supervisor-review' || inputs.gate == 'supervisor-queue' || inputs.gate == 'supervisor-browser' || inputs.gate == 'supervisor-lockwait' || inputs.gate == 'audited-http') && github.sha || '10164279cf57af50d64311d1d1b0e4c96d5be86f' }}
           persist-credentials: false
       - name: Set up Node.js
+        if: inputs.gate != 'home-services'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 24
           cache: npm
       - name: Install locked dependencies
+        if: inputs.gate != 'supervisor-review' && inputs.gate != 'supervisor-queue' && inputs.gate != 'supervisor-browser' && inputs.gate != 'supervisor-lockwait' && inputs.gate != 'home-services' && inputs.gate != 'home-browser' && inputs.gate != 'home-review'
         run: npm ci --ignore-scripts
+      - name: Install isolated browser tools
+        if: inputs.gate == 'browser-recovery' || inputs.gate == 'pms-panel' || inputs.gate == 'supervisor-browser' || inputs.gate == 'home-browser' || inputs.gate == 'home-review'
+        run: |
+          npm ci --ignore-scripts --prefix scripts/revenue-browser-tools
+          node scripts/revenue-browser-tools/node_modules/playwright/cli.js install --with-deps chromium
       - name: Validate isolated branch manifest
+        if: inputs.gate != 'supervisor-review' && inputs.gate != 'supervisor-queue' && inputs.gate != 'supervisor-browser' && inputs.gate != 'supervisor-lockwait' && inputs.gate != 'home-services' && inputs.gate != 'home-browser' && inputs.gate != 'home-review'
         env:
           IRP_HTTP_QUALIFICATION_MANIFEST: ${{ vars.IRP_HTTP_QUALIFICATION_MANIFEST }}
         run: node scripts/revenue-http-qualification-preflight.mjs
-      - name: Run 21 Auth-issued isolated audited-write HTTP cases
+      - name: Verify actual full Home snapshot integrity
+        if: inputs.gate == 'home-browser' || inputs.gate == 'home-review'
+        run: node scripts/qualify-home-browser.mjs --verify-only
+      - name: Qualify saved review through actual Home
+        if: inputs.gate == 'home-review'
+        env:
+          IRP_HOME_SUPERVISED_CLEANUP: ${{ inputs.supervised_cleanup && '1' || '0' }}
+          IRP_HTTP_TEST_OWNER_EMAIL: ${{ secrets.IRP_HTTP_TEST_OWNER_EMAIL }}
+          IRP_HTTP_TEST_OWNER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_OWNER_PASSWORD }}
+          FIXTURE_JSON: ${{ inputs.fixture_manifest }}
+          IRP_REVIEW_FIXTURE_PATH: ${{ runner.temp }}/home-review-fixture.json
+        run: |
+          node --input-type=module -e 'import {writeFileSync} from "node:fs"; writeFileSync(process.env.IRP_REVIEW_FIXTURE_PATH, JSON.stringify(JSON.parse(process.env.FIXTURE_JSON)), {mode:0o600, flag:"wx"});'
+          node scripts/qualify-home-browser.mjs --review-recovery
+      - name: Retain actual Home saved-review evidence
+        if: inputs.gate == 'home-review' && always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: home-review-evidence
+          path: work/home-review-evidence
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Qualify actual Home with genuine isolated Auth
+        if: inputs.gate == 'home-browser'
+        env:
+          IRP_HOME_SUPERVISED_CLEANUP: ${{ inputs.supervised_cleanup && '1' || '0' }}
+          IRP_HTTP_TEST_OWNER_EMAIL: ${{ secrets.IRP_HTTP_TEST_OWNER_EMAIL }}
+          IRP_HTTP_TEST_OWNER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_OWNER_PASSWORD }}
+          IRP_HTTP_TEST_MANAGER_EMAIL: ${{ secrets.IRP_HTTP_TEST_MANAGER_EMAIL }}
+          IRP_HTTP_TEST_MANAGER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_MANAGER_PASSWORD }}
+          IRP_HTTP_TEST_STAFF_EMAIL: ${{ secrets.IRP_HTTP_TEST_STAFF_EMAIL }}
+          IRP_HTTP_TEST_STAFF_PASSWORD: ${{ secrets.IRP_HTTP_TEST_STAFF_PASSWORD }}
+        run: node scripts/qualify-home-browser.mjs
+      - name: Retain actual Home browser evidence
+        if: inputs.gate == 'home-browser' && always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: home-browser-evidence
+          path: work/home-browser-evidence
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Run 28 Auth-issued isolated audited-write HTTP cases
+        if: inputs.gate == 'audited-http'
         env:
           IRP_RUN_SIGNED_HTTP_WRITE_QUALIFICATION: "1"
           IRP_HTTP_TEST_OWNER_EMAIL: ${{ secrets.IRP_HTTP_TEST_OWNER_EMAIL }}
@@ -45,10 +154,91 @@ jobs:
         run: |
           node scripts/revenue-http-qualification-preflight.mjs --credentials
           node node_modules/vitest/vitest.mjs run tests/revenue-signed-write-http.integration.test.ts
+      - name: Run 12 Auth-issued isolated Chromium recovery cases
+        if: inputs.gate == 'browser-recovery'
+        env:
+          IRP_RUN_AUTH_BROWSER_RECOVERY: "1"
+          IRP_HTTP_TEST_OWNER_EMAIL: ${{ secrets.IRP_HTTP_TEST_OWNER_EMAIL }}
+          IRP_HTTP_TEST_OWNER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_OWNER_PASSWORD }}
+          IRP_HTTP_TEST_MANAGER_EMAIL: ${{ secrets.IRP_HTTP_TEST_MANAGER_EMAIL }}
+          IRP_HTTP_TEST_MANAGER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_MANAGER_PASSWORD }}
+          IRP_HTTP_TEST_STAFF_EMAIL: ${{ secrets.IRP_HTTP_TEST_STAFF_EMAIL }}
+          IRP_HTTP_TEST_STAFF_PASSWORD: ${{ secrets.IRP_HTTP_TEST_STAFF_PASSWORD }}
+        run: |
+          node scripts/revenue-http-qualification-preflight.mjs --credentials
+          node scripts/qualify-revenue-auth-browser-recovery.mjs
+      - name: Run 18 isolated Auth-issued private PMS panel cases
+        if: inputs.gate == 'pms-panel'
+        env:
+          IRP_RUN_AUTH_BROWSER_RECOVERY: "1"
+          IRP_HTTP_TEST_OWNER_EMAIL: ${{ secrets.IRP_HTTP_TEST_OWNER_EMAIL }}
+          IRP_HTTP_TEST_OWNER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_OWNER_PASSWORD }}
+          IRP_HTTP_TEST_MANAGER_EMAIL: ${{ secrets.IRP_HTTP_TEST_MANAGER_EMAIL }}
+          IRP_HTTP_TEST_MANAGER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_MANAGER_PASSWORD }}
+          IRP_HTTP_TEST_STAFF_EMAIL: ${{ secrets.IRP_HTTP_TEST_STAFF_EMAIL }}
+          IRP_HTTP_TEST_STAFF_PASSWORD: ${{ secrets.IRP_HTTP_TEST_STAFF_PASSWORD }}
+        run: |
+          node scripts/revenue-http-qualification-preflight.mjs --credentials
+          node scripts/qualify-revenue-auth-browser-recovery.mjs --pms-panel
+      - name: Require supervised cleanup for supervisor mode
+        if: (inputs.gate == 'supervisor-review' || inputs.gate == 'supervisor-queue' || inputs.gate == 'supervisor-browser' || inputs.gate == 'supervisor-lockwait') && !inputs.supervised_cleanup
+        run: exit 1
+      - name: Check queue fixture preparation without credentials
+        if: inputs.gate == 'supervisor-queue' || inputs.gate == 'supervisor-browser' || inputs.gate == 'supervisor-lockwait'
+        run: node --test scripts/tests/*.node-test.mjs
+      - name: Build exact supervisor component without credentials
+        if: inputs.gate == 'supervisor-browser'
+        run: node scripts/qualify-supervisor-browser-recovery.mjs --build-only
+      - name: Write non-secret supervisor manifest and preflight
+        if: (inputs.gate == 'supervisor-review' || inputs.gate == 'supervisor-queue' || inputs.gate == 'supervisor-browser' || inputs.gate == 'supervisor-lockwait') && inputs.supervised_cleanup
+        env:
+          LOCKWAIT_MODE: ${{ inputs.gate == 'supervisor-lockwait' && '1' || '0' }}
+          QUEUE_MODE: ${{ (inputs.gate == 'supervisor-queue' || inputs.gate == 'supervisor-browser') && '1' || '0' }}
+          FIXTURE_JSON: ${{ inputs.fixture_manifest }}
+          IRP_REVIEW_FIXTURE_PATH: ${{ runner.temp }}/supervisor-review-fixture.json
+          IRP_REVIEW_PUBLISHABLE_KEY: ${{ inputs.publishable_key }}
+          IRP_REVIEW_SUPERVISED_CLEANUP: "1"
+        run: |
+          node --input-type=module -e 'import {writeFileSync} from "node:fs"; const f=JSON.parse(process.env.FIXTURE_JSON); writeFileSync(process.env.IRP_REVIEW_FIXTURE_PATH, JSON.stringify(f), {mode:0o600, flag:"wx"});'
+          if [ "$LOCKWAIT_MODE" = "1" ]; then node scripts/qualify-supervisor-lockwait.mjs --preflight; elif [ "$QUEUE_MODE" = "1" ]; then node scripts/qualify-supervisor-queue-recovery.mjs --preflight; else node scripts/qualify-supervisor-review-race.mjs --preflight; fi
+      - name: Run genuine Auth supervisor claim, denial and receipt checks
+        if: (inputs.gate == 'supervisor-review' || inputs.gate == 'supervisor-queue' || inputs.gate == 'supervisor-browser' || inputs.gate == 'supervisor-lockwait') && inputs.supervised_cleanup
+        env:
+          BROWSER_MODE: ${{ inputs.gate == 'supervisor-browser' && '1' || '0' }}
+          LOCKWAIT_MODE: ${{ inputs.gate == 'supervisor-lockwait' && '1' || '0' }}
+          QUEUE_MODE: ${{ inputs.gate == 'supervisor-queue' && '1' || '0' }}
+          IRP_REVIEW_FIXTURE_PATH: ${{ runner.temp }}/supervisor-review-fixture.json
+          IRP_REVIEW_PUBLISHABLE_KEY: ${{ inputs.publishable_key }}
+          IRP_REVIEW_SUPERVISED_CLEANUP: "1"
+          IRP_REVIEW_OWNER_EMAIL: ${{ secrets.IRP_HTTP_TEST_OWNER_EMAIL }}
+          IRP_REVIEW_OWNER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_OWNER_PASSWORD }}
+          IRP_REVIEW_MANAGER_EMAIL: ${{ secrets.IRP_HTTP_TEST_MANAGER_EMAIL }}
+          IRP_REVIEW_MANAGER_PASSWORD: ${{ secrets.IRP_HTTP_TEST_MANAGER_PASSWORD }}
+          IRP_REVIEW_STAFF_EMAIL: ${{ secrets.IRP_HTTP_TEST_STAFF_EMAIL }}
+          IRP_REVIEW_STAFF_PASSWORD: ${{ secrets.IRP_HTTP_TEST_STAFF_PASSWORD }}
+        run: |
+          if [ "$LOCKWAIT_MODE" = "1" ]; then node scripts/qualify-supervisor-lockwait.mjs; elif [ "$BROWSER_MODE" = "1" ]; then node scripts/qualify-supervisor-browser-recovery.mjs; elif [ "$QUEUE_MODE" = "1" ]; then node scripts/qualify-supervisor-queue-recovery.mjs; else node scripts/qualify-supervisor-review-race.mjs; fi
+      - name: Retain scoped supervisor browser evidence
+        if: inputs.gate == 'supervisor-browser' && success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: supervisor-browser-evidence
+          path: work/supervisor-browser-evidence
+          if-no-files-found: error
+          retention-days: 14
+      - name: Retain scoped supervisor lock-wait evidence
+        if: inputs.gate == 'supervisor-lockwait' && success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: supervisor-lockwait-evidence
+          path: work/supervisor-lockwait-evidence
+          if-no-files-found: error
+          retention-days: 14
       - name: Remove local manifest
         if: always()
-        run: rm -f -- "$RUNNER_TEMP/revenue-http-qualification.json"
+        run: rm -f -- "$RUNNER_TEMP/revenue-http-qualification.json" "$RUNNER_TEMP/supervisor-review-fixture.json" "$RUNNER_TEMP/home-review-fixture.json"
 
 # Install the pinned expiring fixture only on the isolated branch before approval.
-# Operator must run scripts/revenue-audited-http-fixture-cleanup.sql after any result.
+# Pricing modes require their pinned cleanup; supervisor modes require the exact
+# generated cleanup-data.sql and cleanup-guards.sql after any result or cancellation.
 # Runner has no database admin credentials; removal above is only the local manifest.

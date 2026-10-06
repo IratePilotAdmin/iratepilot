@@ -37,6 +37,10 @@
     "tailwind-merge": "^2.5.4",
     "zod": "^3.24.1"
   },
+  "optionalDependencies": {
+    "@emnapi/core": "1.11.3",
+    "@emnapi/runtime": "1.11.3"
+  },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
     "@types/node": "^22.10.2",
@@ -55,6 +59,7 @@
       "postcss": "8.5.23"
     },
     "nanoid": "3.3.18",
-    "sharp": "^0.35.4"
+    "sharp": "^0.35.5",
+    "source-map-js": "^1.2.2"
   }
 }

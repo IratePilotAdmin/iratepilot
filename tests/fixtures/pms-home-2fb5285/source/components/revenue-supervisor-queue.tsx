@@ -1,0 +1,70 @@
+'use client';
+import {useCallback,useEffect,useRef,useState} from 'react';
+import {hotelClient,hotelRpc,type Membership} from '@/lib/pilot';
+import {readSupervisorCommand,stageSupervisorCommand,clearSupervisorCommand,supervisorJournalKey,type SupervisorCommand} from '@/lib/revenue-supervisor-journal';
+import {reviewSupervisorCommand} from '@/lib/revenue-supervisor-transport';
+import {readSupervisorWithDeadline,reviewSupervisorWithDeadline} from '@/lib/revenue-supervisor-read';
+import {readSupervisorQueue,supervisorQueueFresh,type SupervisorQueue,type SupervisorIssue} from '@/lib/revenue-supervisor';
+
+export function RevenueSupervisorQueue({actor,members,onOpen}:{actor:string;members:Membership[];onOpen:(membership:Membership)=>void}){
+ const [page,setPage]=useState<SupervisorQueue|null>(null),[status,setStatus]=useState('all'),[mine,setMine]=useState(false),[offset,setOffset]=useState(0),[revision,setRevision]=useState(0),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+ const [clock,setClock]=useState(()=>Date.now()),[online,setOnline]=useState(true);
+ const sequence=useRef(0),lock=useRef(false),mounted=useRef(true);
+ const [pending,setPending]=useState<SupervisorCommand|null>(null),[journalError,setJournalError]=useState(''),[lockSupported,setLockSupported]=useState(false);
+ useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
+ const syncJournal=useCallback(()=>{try{setPending(readSupervisorCommand(localStorage,actor));setJournalError('');}catch{setJournalError('Saved review storage is unavailable or invalid. Review actions are paused; contact support if refreshing does not restore it.');}},[actor]);
+ useEffect(()=>{let live=true;void Promise.resolve().then(()=>{if(live){setLockSupported(!!navigator.locks?.request);syncJournal();}});const sync=(event:StorageEvent)=>{if(event.key===null||event.key===supervisorJournalKey(actor))syncJournal();};window.addEventListener('storage',sync);return()=>{live=false;window.removeEventListener('storage',sync);};},[actor,syncJournal]);
+ useEffect(()=>{let live=true,running=false;
+  const read=async()=>{setClock(Date.now());setOnline(navigator.onLine);if(running||lock.current||document.visibilityState==='hidden'||!navigator.onLine)return;
+   syncJournal();
+   running=true;const seq=++sequence.current;setLoading(true);
+   try{const value=await readSupervisorWithDeadline(()=>hotelRpc<unknown>('revenue_supervisor_queue',{p_offset:offset,p_status:status,p_mine:mine}));const result=readSupervisorQueue(value);if(live&&seq===sequence.current){setPage(result);setClock(Date.now());setError('');}}
+   // A failed refresh may mean access was revoked. Discard the old snapshot,
+   // but retain the actor's unresolved command until its outcome is proven.
+   catch(reason){if(live&&seq===sequence.current){setPage(null);setError(reason instanceof Error?reason.message:'The supervisor queue could not load.');}}
+   finally{running=false;if(live&&seq===sequence.current)setLoading(false);}
+  };
+  void Promise.resolve().then(()=>{if(live){setPage(null);setError('');setLoading(false);void read();}});const timer=setInterval(()=>void read(),60000),clockTimer=setInterval(()=>{if(live&&document.visibilityState!=='hidden')setClock(Date.now());},15000);
+  const offline=()=>{setOnline(false);setPage(null);sequence.current++;setLoading(false);setClock(Date.now());};
+  window.addEventListener('focus',read);window.addEventListener('online',read);window.addEventListener('offline',offline);document.addEventListener('visibilitychange',read);
+  return()=>{live=false;clearInterval(timer);clearInterval(clockTimer);window.removeEventListener('focus',read);window.removeEventListener('online',read);window.removeEventListener('offline',offline);document.removeEventListener('visibilitychange',read);};
+ },[offset,status,mine,revision,actor,syncJournal]);
+ const fresh=supervisorQueueFresh(page?.as_of,clock,!!error,online);
+
+ async function submit(command:SupervisorCommand,stage:boolean){
+  if(lock.current)return;
+  if(!navigator.locks?.request){setError('This browser cannot safely coordinate review tabs. Use a supported browser.');return;}
+  lock.current=true;setBusy(true);setError('');setNotice('');
+  try{await navigator.locks.request(supervisorJournalKey(actor),{mode:'exclusive',ifAvailable:true},async browserLock=>{
+   if(!browserLock)throw Error('Another tab is confirming a review. Refresh after it finishes.');
+   if(!mounted.current||command.actor!==actor||!supervisorQueueFresh(page?.as_of,Date.now(),false,navigator.onLine))throw Error('Refresh the queue before reviewing an exception.');
+   if(!members.some(member=>member.tenant_id===command.tenant&&member.property_id===command.property&&['owner','manager'].includes(member.role)))throw Error('Your review access is unavailable. The saved request is retained.');
+   const {data,error:authError}=await readSupervisorWithDeadline(()=>hotelClient().auth.getUser());
+   if(authError||data.user?.id!==actor||!mounted.current)throw Error('Your sign-in changed. Refresh before continuing.');
+   if(!supervisorQueueFresh(page?.as_of,Date.now(),false,navigator.onLine))throw Error('Refresh the queue before reviewing an exception.');
+   if(stage){stageSupervisorCommand(localStorage,command);if(mounted.current)setPending(command);}
+   else{const retained=readSupervisorCommand(localStorage,actor);if(JSON.stringify(retained)!==JSON.stringify(command))throw Error('Saved review changed. Refresh before continuing.');}
+   let result:{issue_id:string;request_id:string;revision:number};
+   try{result=await reviewSupervisorWithDeadline(()=>reviewSupervisorCommand(actor,{p_tenant:command.tenant,p_property:command.property,p_issue:command.issue,p_expected_revision:command.revision,p_action:command.action,p_request:command.request}));}
+   catch(reason){
+    // The RPC checks actor-bound replay before revision conflict. PT409 proves
+    // this exact command has no committed receipt; other errors retain it.
+    if(mounted.current&&(reason as {code?:string})?.code==='PT409')clearSupervisorCommand(localStorage,command);
+    throw reason;
+   }
+   if(result.issue_id!==command.issue||result.request_id!==command.request||result.revision!==command.revision+1)throw Error('Review receipt mismatch. Keep the saved request and retry confirmation.');
+   // Never update a new account or clear storage after the panel unmounts.
+   if(!mounted.current)return;
+   const verified=await readSupervisorWithDeadline(()=>hotelClient().auth.getUser());
+   if(verified.error||verified.data.user?.id!==actor||!mounted.current)throw Error('Your sign-in changed. The saved request is retained.');
+   clearSupervisorCommand(localStorage,command);setPending(null);setNotice('Review saved. Revenue safety gates remain active.');setRevision(value=>value+1);
+  });}catch(reason){if(mounted.current){setError(reason instanceof Error?reason.message:'Review could not be confirmed. Refresh before retrying.');syncJournal();}}
+  finally{lock.current=false;if(mounted.current)setBusy(false);}
+ }
+ async function review(issue:SupervisorIssue,action:SupervisorCommand['action']){
+  if(pending||journalError||!fresh)return;
+  await submit({actor,tenant:issue.tenant_id,property:issue.property_id,issue:issue.id,revision:issue.revision,action,request:crypto.randomUUID()},true);
+ }
+ const paused=busy||loading||!fresh||!!pending||!!journalError||!lockSupported;
+ return <div className="revenue-supervisor" aria-label="Revenue exception workflow"><section className="card"><div className="section-top"><div><h2>Revenue supervisor queue</h2><p>Shared review status across authorized properties and devices. Critical safety gates stay active after acknowledgment.</p></div><button className="secondary" disabled={loading||busy} onClick={()=>setRevision(value=>value+1)}>Refresh queue</button></div><div className="form-grid"><label className="field">Review status<select disabled={busy} value={status} onChange={event=>{setStatus(event.target.value);setOffset(0)}}><option value="all">All active issues</option><option value="open">Open</option><option value="in_review">In review</option><option value="acknowledged">Acknowledged</option></select></label><label className="pilot-check"><input type="checkbox" disabled={busy} checked={mine} onChange={event=>{setMine(event.target.checked);setOffset(0)}}/>Assigned to me</label></div>{page&&<><div className="detail-grid"><div>Authorized properties<b>{page.property_count}</b></div><div>Matching issues<b>{page.total}</b></div><div>Critical<b>{page.critical}</b></div><div>Acknowledged<b>{page.acknowledged}</b></div></div><p className="muted">Observed {new Date(page.as_of).toLocaleString()} · Refreshes every minute while visible and when you return to the app. Red Roof forecast health is monitored every 15 minutes; other properties require enrollment.</p></>}{!online&&<output className="pilot-error">Offline. Review actions are paused until the queue refreshes.</output>}{page&&!fresh&&online&&!loading&&<output className="pilot-error">Queue evidence is delayed or unavailable. Refresh before reviewing exceptions.</output>}{error&&<p className="pilot-error" role="alert">{error}</p>}{!lockSupported&&<output className="pilot-error">Review actions require a browser with secure tab coordination.</output>}{journalError&&<p className="pilot-error" role="alert">{journalError}</p>}{pending&&<section className="supervisor-recovery" aria-label="Unconfirmed review"><h3>Confirm your earlier review</h3><p>This device retained your {pending.action} request. Refresh the queue, then retry its confirmation before starting another review. Retrying uses the original request and cannot create a duplicate review.</p><button className="secondary" disabled={busy||loading||!fresh||!!journalError||!lockSupported} onClick={()=>void submit(pending,false)}>Retry saved review</button></section>}{notice&&<output className="pilot-notice">{notice}</output>}{loading&&<p>Loading shared reviews…</p>}</section>{page&&<section className="card"><h2>Active exceptions</h2>{page.items.map(issue=>{const property=members.find(member=>member.tenant_id===issue.tenant_id&&member.property_id===issue.property_id&&['owner','manager'].includes(member.role));return <article className="card" key={issue.id}><div className="section-top"><div><strong>{issue.property_name}</strong><h3>{issue.title}</h3></div><span className={'pill '+(issue.priority==='critical'?'amber':'gray')}>{issue.priority}</span></div><p>{issue.detail}</p><p className="muted">{issue.review_status.replaceAll('_',' ')} · {issue.assigned_to_me?'Assigned to you':issue.reclaimable?'Former supervisor no longer has review access':issue.assigned?'Assigned to another supervisor':'Unassigned'} · First seen {new Date(issue.first_seen_at).toLocaleString()}</p><div className="pilot-actions">{(!issue.assigned||issue.reclaimable)&&<button className="secondary" disabled={paused||!property} onClick={()=>void review(issue,'claim')}>{issue.reclaimable?'Claim abandoned review':'Claim review'}</button>}{issue.assigned_to_me&&<><button className="secondary" disabled={paused||!property||issue.review_status==='acknowledged'} onClick={()=>void review(issue,'acknowledge')}>Acknowledge</button><button className="secondary" disabled={paused||!property||issue.review_status==='open'} onClick={()=>void review(issue,'reopen')}>Reopen review</button><button className="secondary" disabled={paused||!property} onClick={()=>void review(issue,'release')}>Release review</button></>}{property&&<button className="text-button" disabled={busy} onClick={()=>onOpen(property)}>Open property Revenue AI</button>}</div></article>})}{!page.items.length&&<p>No active exceptions match these filters. This does not certify forecast accuracy or OTA delivery.</p>}<div className="pilot-actions"><button className="secondary" disabled={busy||loading||offset===0} onClick={()=>setOffset(Math.max(0,offset-50))}>Previous 50</button><span>{page.items.length?offset+1:0}–{offset+page.items.length} of {page.total}</span><button className="secondary" disabled={busy||loading||page.next_offset===null} onClick={()=>setOffset(page.next_offset!)}>Next 50</button></div></section>}</div>;
+}
