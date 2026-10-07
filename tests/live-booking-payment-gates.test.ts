@@ -55,6 +55,8 @@ describe("live booking payment gates", () => {
 
   it("keeps live webhook processing independently controllable for delayed events", () => {
     expect(getStripeWebhookMode({ ...testKeys, PILOT_MODE: "true" })).toBe("test");
+    expect(getStripeWebhookMode({ ...testKeys, PILOT_MODE: "true", ENABLE_TEST_STRIPE_WEBHOOKS: "false" })).toBeNull();
+    expect(getStripeWebhookMode({ ...testKeys, PILOT_MODE: "true", ENABLE_TEST_STRIPE_WEBHOOKS: "true" })).toBe("test");
     expect(getStripeWebhookMode({ ...liveKeys, PILOT_MODE: "false", ENABLE_LIVE_STRIPE_WEBHOOKS: "true" })).toBe("live");
     expect(getStripeWebhookMode({ ...liveKeys, PILOT_MODE: "false", ENABLE_LIVE_STRIPE_WEBHOOKS: "false" })).toBeNull();
   });

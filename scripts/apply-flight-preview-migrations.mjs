@@ -6,6 +6,31 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 export const PREVIEW_PROJECT_REF = "eiqmdldjnedqgbtoozqa";
 export const PRODUCTION_PROJECT_REF = "allliumarkejinplrggl";
 export const REQUIRED_BASELINE_TIP = "202608170067";
+export const NATIVE_PMS_MIGRATIONS = Object.freeze([
+  { version: "202609070139", filename: "202609070139_iratepilot_pms_transactional_outbox.sql" },
+  { version: "202609070140", filename: "202609070140_iratepilot_pms_baseline_activation.sql" },
+  { version: "202609070141", filename: "202609070141_iratepilot_pms_delivery_control.sql" },
+  { version: "202609070157", filename: "202609070157_iratepilot_pms_scoped_source_claim.sql" },
+  { version: "202609070158", filename: "202609070158_iratepilot_pms_scoped_source_claim_identity.sql" },
+  { version: "202609230139", filename: "202609230139_iratepilot_pms_guest_name_snapshot.sql" },
+  { version: "202609230140", filename: "202609230140_iratepilot_pms_native_ari_receiver.sql" },
+  { version: "202609230141", filename: "202609230141_iratepilot_pms_delivery_connection_registry.sql" },
+  { version: "202609230142", filename: "202609230142_iratepilot_pms_reservation_connection_setup.sql" },
+  { version: "202609240143", filename: "202609240143_iratepilot_pms_baseline_review_control.sql" },
+  { version: "202609240144", filename: "202609240144_iratepilot_pms_atomic_connection_setup.sql" },
+  { version: "202609240145", filename: "202609240145_iratepilot_pms_revenue_recommendation_generation.sql" },
+  { version: "202609240146", filename: "202609240146_iratepilot_pms_ota_reservation_inbox.sql" },
+]);
+export const NATIVE_BOOKING_COM_MIGRATIONS = Object.freeze([
+  { version: "202609250147", filename: "202609250147_iratepilot_booking_com_machine_account_vault.sql" },
+  { version: "202609250148", filename: "202609250148_iratepilot_booking_com_ari_outbox.sql" },
+  { version: "202609250149", filename: "202609250149_iratepilot_booking_com_inbox_provider_guard.sql" },
+  { version: "202609250150", filename: "202609250150_iratepilot_booking_com_reservation_inbox_lifecycle.sql" },
+  { version: "202609250151", filename: "202609250151_iratepilot_booking_com_reservation_source_order.sql" },
+  { version: "202609250152", filename: "202609250152_iratepilot_booking_com_token_refresh_lease.sql" },
+  { version: "202609250153", filename: "202609250153_iratepilot_booking_com_credential_rotation.sql" },
+  { version: "202609250154", filename: "202609250154_iratepilot_booking_com_reservation_pii_retention.sql" },
+]);
 export const REQUIRED_REMOTE_FLIGHT_BASELINE_TIP = "202608250080";
 export const APPLY_CONFIRMATION_FLAG =
   "--apply-confirmation=PREVIEW_eiqmdldjnedqgbtoozqa_FLIGHT_120_138";
@@ -34,6 +59,22 @@ export const PINNED_NON_FLIGHT_MIGRATIONS = Object.freeze([
   ["202609070141", "202609070141_iratepilot_pms_delivery_control.sql"],
   ["202609070157", "202609070157_iratepilot_pms_scoped_source_claim.sql"],
   ["202609070158", "202609070158_iratepilot_pms_scoped_source_claim_identity.sql"],
+  ["202609230139", "202609230139_iratepilot_pms_guest_name_snapshot.sql"],
+  ["202609230140", "202609230140_iratepilot_pms_native_ari_receiver.sql"],
+  ["202609230141", "202609230141_iratepilot_pms_delivery_connection_registry.sql"],
+  ["202609230142", "202609230142_iratepilot_pms_reservation_connection_setup.sql"],
+  ["202609240143", "202609240143_iratepilot_pms_baseline_review_control.sql"],
+  ["202609240144", "202609240144_iratepilot_pms_atomic_connection_setup.sql"],
+  ["202609240145", "202609240145_iratepilot_pms_revenue_recommendation_generation.sql"],
+  ["202609240146", "202609240146_iratepilot_pms_ota_reservation_inbox.sql"],
+  ["202609250147", "202609250147_iratepilot_booking_com_machine_account_vault.sql"],
+  ["202609250148", "202609250148_iratepilot_booking_com_ari_outbox.sql"],
+  ["202609250149", "202609250149_iratepilot_booking_com_inbox_provider_guard.sql"],
+  ["202609250150", "202609250150_iratepilot_booking_com_reservation_inbox_lifecycle.sql"],
+  ["202609250151", "202609250151_iratepilot_booking_com_reservation_source_order.sql"],
+  ["202609250152", "202609250152_iratepilot_booking_com_token_refresh_lease.sql"],
+  ["202609250153", "202609250153_iratepilot_booking_com_credential_rotation.sql"],
+  ["202609250154", "202609250154_iratepilot_booking_com_reservation_pii_retention.sql"],
   ["202609180145", "202609180145_ai_travel_request_limits.sql"],
   ["202609180146", "202609180146_ai_travel_admin_usage_read.sql"],
   ["202609180159", "202609180159_hotel_payment_launch_authorization.sql"],
@@ -43,6 +84,7 @@ export const PINNED_NON_FLIGHT_MIGRATIONS = Object.freeze([
   ["202609300162", "202609300162_property_intake_publication_guard.sql"],
   ["202610050163", "202610050163_bind_hotel_payment_authorization_account.sql"],
   ["202610050164", "202610050164_revalidate_live_hotel_commerce.sql"],
+  ["20261005203527", "20261005203527_partner_review_publication_parity.sql"],
 ].map(([version, filename]) => Object.freeze({ version, filename })));
 
 export const RETIRED_FLIGHT_MIGRATION_VERSIONS = Object.freeze([
@@ -319,7 +361,7 @@ export function listRepositoryMigrations() {
     .filter((name) => name.endsWith(".sql"))
     .sort()
     .map((filename) => {
-      const match = /^(\d{12})_[a-z0-9_]+\.sql$/.exec(filename);
+      const match = /^(\d{12}|\d{14})_[a-z0-9_]+\.sql$/.exec(filename);
       if (!match) {
         throw new Error("The migration directory contains a non-canonical SQL filename.");
       }
@@ -345,7 +387,22 @@ export function assertPinnedFlightMigrations({
   )),
   requireSharedHotel = false,
 } = {}) {
-  const baselineTipIndex = repositoryMigrations.findIndex(
+  const pmsMigrations = repositoryMigrations.filter(({ filename }) => filename.includes("_iratepilot_pms_"));
+  const expectedPmsMigrations = NATIVE_PMS_MIGRATIONS.map(({ version, filename }) => ({ version, filename }));
+  if (JSON.stringify(pmsMigrations) !== JSON.stringify(expectedPmsMigrations)) {
+    throw new Error("The native PMS migration set must match its exact registered files and versions.");
+  }
+  const bookingComMigrations = repositoryMigrations.filter(({ filename }) => filename.includes("_iratepilot_booking_com_"));
+  const expectedBookingComMigrations = NATIVE_BOOKING_COM_MIGRATIONS.map(({ version, filename }) => ({ version, filename }));
+  if (JSON.stringify(bookingComMigrations) !== JSON.stringify(expectedBookingComMigrations)) {
+    throw new Error("The native Booking.com migration set must match its exact registered files and versions.");
+  }
+  const nativeConnectorFilenames = new Set([
+    ...NATIVE_PMS_MIGRATIONS.map(({ filename }) => filename),
+    ...NATIVE_BOOKING_COM_MIGRATIONS.map(({ filename }) => filename),
+  ]);
+  const flightRepositoryMigrations = repositoryMigrations.filter(({ filename }) => !nativeConnectorFilenames.has(filename));
+  const baselineTipIndex = flightRepositoryMigrations.findIndex(
     ({ version }) => version === REQUIRED_BASELINE_TIP,
   );
   if (baselineTipIndex < 0) {
@@ -355,7 +412,7 @@ export function assertPinnedFlightMigrations({
   const approvedNonFlightRows = new Set(
     PINNED_NON_FLIGHT_MIGRATIONS.map(({ version, filename }) => `${version}:${filename}`),
   );
-  const postBaseline = repositoryMigrations
+  const postBaseline = flightRepositoryMigrations
     .slice(baselineTipIndex + 1)
     .filter(({ version, filename }) => !approvedNonFlightRows.has(`${version}:${filename}`));
   const retiredSet = new Set(RETIRED_FLIGHT_MIGRATION_VERSIONS);
@@ -421,7 +478,7 @@ export function assertPinnedFlightMigrations({
     }
   }
 
-  const remoteBaselineTipIndex = repositoryMigrations.findIndex(
+  const remoteBaselineTipIndex = flightRepositoryMigrations.findIndex(
     ({ version }) => version === REQUIRED_REMOTE_FLIGHT_BASELINE_TIP,
   );
   if (remoteBaselineTipIndex < 0) {
@@ -439,7 +496,7 @@ export function assertPinnedFlightMigrations({
   const nonFlightVersions = new Set(PINNED_NON_FLIGHT_MIGRATIONS.map(({ version }) => version));
   return {
     migrations: repositoryMigrations,
-    baselineVersions: repositoryMigrations
+    baselineVersions: flightRepositoryMigrations
       .slice(0, remoteBaselineTipIndex + 1)
       .filter(({ version }) => !nonFlightVersions.has(version))
       .map(({ version }) => version),
@@ -552,7 +609,7 @@ export function parseMigrationListOutput(output) {
 
     const parseCell = (cell) => {
       if (!cell) return undefined;
-      if (/^\d{12}$/.test(cell)) return cell;
+      if (/^(?:\d{12}|\d{14})$/.test(cell)) return cell;
       throw new Error("The Preview migration ledger contains a malformed version cell.");
     };
     const local = parseCell(localCell);

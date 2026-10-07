@@ -1778,7 +1778,7 @@ describe("flight Preview migration gate", () => {
       "local side does not exactly match",
     );
 
-    const malformedLongRemote = `${migrationList(requiredRemotePredecessorVersions)}\n  | 20260824009999 |`;
+    const malformedLongRemote = `${migrationList(requiredRemotePredecessorVersions)}\n  | 202608240099999 |`;
     expect(() => assertPreviewLedger(malformedLongRemote, pinnedPlan)).toThrow(
       "malformed version cell",
     );

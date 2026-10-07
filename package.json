@@ -15,6 +15,7 @@
     "migration:replay": "node scripts/replay-migrations.mjs",
     "check": "npm run lint && npm run typecheck && npm run migration:replay && npm run test && npm run build",
     "commercial:sandbox-preflight": "node scripts/commercial-sandbox-preflight.mjs",
+    "pms:booking-rehearsal-preflight": "node scripts/pms-booking-rehearsal-preflight.mjs",
     "preview:migrations": "node scripts/reconcile-preview-migrations.mjs"
   },
   "dependencies": {

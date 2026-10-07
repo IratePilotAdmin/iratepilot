@@ -1,0 +1,57 @@
+# Native PMS scheduled recovery candidate — October 5, 2026
+
+The previous hosted gate proved that the isolated OTA source can deliver a queued synthetic booking to the isolated PMS receiver through the packaged one-shot Node worker. It did not exercise an unattended scheduler. This gate prepares the OTA application's own scheduled worker for that test; it does not activate production sync.
+
+## Change
+
+- `vercel.json` now schedules `GET /api/cron/native-pms-reservations` every five minutes instead of scheduling the older one-property `/api/cron/pms-outbox` route once a day. The connected IratePilot Vercel team reports the Pro plan. [Vercel cron documentation](https://vercel.com/docs/cron-jobs) confirms cron requests target production deployments; a Preview deployment does not prove automatic execution.
+- The scheduled route remains guarded by `CRON_SECRET` and `IRP_PMS_SYNC_ENABLED=true`. It requires the encrypted per-property registry, server key, destination endpoint, and destination publishable key. With the switch off, it returns `disabled` before database access.
+- Each invocation processes at most three events and stops on idle, retry, review, or lease loss. The route's 180-second maximum is shorter than its five-minute schedule to avoid overlapping invocations under the configured request timeouts. A retry or lease loss returns HTTP 503 to make failure visible to cron monitoring. The response contains only outcome codes, not booking or event IDs. The source outbox's due time, retry limit, and lease fencing still decide when the event is eligible again.
+- Supabase modern `sb_secret_` keys are sent in the `apikey` header without a JWT Bearer header, matching the successful hosted one-shot worker. Legacy service-role JWTs retain the Bearer header. An invalid HTTP-200 PMS acknowledgement now enters the bounded retry path instead of immediately entering operator review.
+
+## Verification
+
+- Focused Vitest: 27 tests passed across the worker, route, cron configuration, and automation files.
+- TypeScript `tsc --noEmit` and targeted ESLint passed.
+- The new tests verify modern server-key transport, bounded draining through a delivery then retry, retry response without event ID, and the five-minute cron path.
+
+## Hosted lost-acknowledgement recovery — October 5, 2026
+
+- Reused only synthetic booking `88000000-0000-4000-8000-000000000088` in isolated OTA project `onbdizzwwubfdgkgaphx` and isolated PMS receiver `wjosvslkselpauyftias`. Changed the booking's guest count from two to one while delivery was held, creating pending source version 3 behind delivered versions 1 and 2.
+- Temporarily enabled the exact sandbox connection and source delivery. A one-use local process ran the packaged scoped source worker. Its first HTTPS gateway request returned `200 reservation-staged` and committed the PMS update, but the process deliberately discarded that acknowledgement to model a network loss. The source recorded a durable `retry` and due-time backoff. After the backoff, the same worker reclaimed the same event and the PMS returned `duplicate`; the source acknowledged it.
+- Source event `63bf0b13-1990-407a-af48-4c6107f90ad0` is now `delivered` with two attempts, result code `duplicate`, and no live lease. The PMS still has exactly one Confirmed reservation, now at source version 3, one guest, and the unchanged $119 guest total. No card charge, real guest, or third-party OTA was involved.
+- Source delivery and both connections were disabled again; the receiver signing secret was rotated. Final reads found zero unfinished events for the test booking and one PMS reservation. The temporary one-use process exited, its files and result output were removed, and browser and OS clipboards were cleared.
+
+This verifies **hosted durable retry and idempotent PMS receipt with the packaged worker**. Vercel cron only invokes production deployments, and this branch remains a draft candidate with sync off.
+
+## Protected Vercel Preview route — October 5, 2026
+
+- Redeployed branch commit `43bfaba1e97d0c391ce59694884b240c5e6ace97` to the protected `iratepilotadmin` Preview with settings scoped to `codex/ota-main-integration`. The route used only isolated OTA project `onbdizzwwubfdgkgaphx` and isolated PMS receiver `wjosvslkselpauyftias`; no production environment setting was changed.
+- With source delivery disabled, an authenticated `GET /api/cron/native-pms-reservations` returned HTTP 200 and `idle`. The same route without its cron credential returned HTTP 401 through the temporary Preview share session.
+- Added an encrypted signing credential to the synthetic source registry, temporarily enabled the single sandbox connection, and changed synthetic booking `88000000-0000-4000-8000-000000000088` from one to two guests. The source created event `9cde3cb4-0246-493a-b3bf-24fd949317ae`, version 4, pending with zero attempts.
+- An authenticated request to the **hosted Vercel route** returned HTTP 200, `delivered`, `pms_reservation-staged`, followed by `idle`. The source event became `delivered` in one attempt. The PMS inbound event recorded `applied`, and its one Confirmed reservation advanced to version 4 and two guests with the same $119 guest total. A second authenticated route request returned `idle`.
+- Disabled source capture and delivery, removed the temporary encrypted source registry row, disabled the receiver gateway connection, rotated its signing secret, revoked the temporary Preview share link, and changed the branch Preview `IRP_PMS_SYNC_ENABLED` setting back to `false`. The tested immutable Preview still has its original build-time setting, but its source scope is disabled and its receiver secret is invalidated. No live charge or real guest was involved.
+
+This proves the exact protected Vercel route can drain a synthetic event into the isolated PMS. It was invoked manually on Preview; it does **not** prove that Vercel's production-only cron scheduler fires unattended.
+
+## Isolated scheduled-host gate — October 5, 2026
+
+- Created the separate Vercel project `iratepilot-cron-rehearsal-20261005`, bound its Production environment to `codex/ota-main-integration`, and protected all deployments with Vercel Authentication. Its only domain is the generated `iratepilot-cron-rehearsal-20261005.vercel.app`; neither live iRatePilot domain was attached.
+- Deployed connector commit `406a34b` to this isolated project's Production environment with public booking, checkout, payments, webhooks, and PMS sync disabled. The project registered `/api/cron/native-pms-reservations` at `*/5 * * * *`.
+- At `2026-10-06T01:45:17Z`, Vercel invoked that route without a manual request. Its log records user agent `vercel-cron/1.0`, branch `codex/ota-main-integration`, and HTTP 401 because the first deployment had no `CRON_SECRET`. This proves scheduler invocation only; it does not prove reservation delivery.
+- Added a generated cron credential and PMS credential-encryption key as **Production-only Secret** variables. Vercel's bulk-import form initially classified three attempted secret rows as readable Config variables with Preview scope. Those rows were deleted shortly after discovery. No isolated Production deployment was made while they existed, but unrelated Preview builds started around that interval, so their snapshots may contain the old isolated server key. Rotation of that key was requested before it is used again. No synthetic event was queued during this configuration correction.
+- Redeployed the same connector commit as isolated Production deployment `dpl_AELG3CyQFA75xfCsNopiqEpaXFQL` with the two correctly scoped Secrets and PMS sync still disabled. The deployment is Ready. A successful unattended delivery remains unverified until the isolated server key is rotated, the new key is saved as a Secret, and one synthetic event is observed end to end.
+- The dashboard's **Run** action against the new, disabled deployment returned HTTP 200 at `2026-10-06T01:51:29Z`; no source database access or booking delivery occurred because `IRP_PMS_SYNC_ENABLED=false`. This manual health check is separate from the unattended 401 invocation above.
+- After the guarded branch advanced to documentation commit `0270cdb`, Vercel fired the five-minute schedule again at `2026-10-06T01:55:17Z`. Its request log records `vercel-cron/1.0`, isolated Production deployment `dpl_Cn2cL59iEeCFdzgyfE3deQJxUey9`, and HTTP 200. The route remained disabled, so this proves the **unattended schedule and cron authentication**, not OTA-to-PMS delivery. Cron Jobs were then disabled for the isolated project while the key rotation and synthetic delivery test remain pending.
+
+## Remaining release check
+
+The scheduled-delivery check below is now complete. This remains a branch candidate; do not enable live OTA `IRP_PMS_SYNC_ENABLED` or promote the connector on the basis of this isolated test alone. Production rollout additionally needs verified live environment binding, populated-data restore, a real Stripe TEST checkout/webhook, and operational review.
+
+## Unattended scheduled delivery — October 5, 2026 (October 6 UTC)
+
+- Created a replacement `sb_secret_` key in the isolated OTA source project and stored it as a Production-only Secret in the isolated Vercel project. The first saved value contained a duplicated suffix from the dashboard display and caused a scheduled HTTP 503. Read-only Supabase edge logs classified that attempt as an invalid API key. Correcting the saved value to the exact generated key resolved the error. Commits `2852285` and `3b0a386` make source RPC failures observable as bounded HTTP status codes without logging credentials or booking data.
+- With only the synthetic `SYNTHPMS001` sandbox connection enabled, changed booking `88000000-0000-4000-8000-000000000088` from two guests to one. That queued source version 5 for the isolated PMS receiver. No real guest, charge, or third-party OTA was involved.
+- Vercel's unattended request at `2026-10-06T02:25:29.300Z` reached `/api/cron/native-pms-reservations` on isolated Production deployment `dpl_FVkhFW784SwU3qG24zG9Fsd6emUF`. Its request log records user agent `vercel-cron/1.0` and HTTP 200. The source outbox records version 5 `delivered` in one attempt with result `pms_reservation-staged`; the receiver has exactly the same reservation at version 5 and one guest. This proves the scheduled Vercel route delivered a synthetic OTA reservation into the isolated PMS without a manual trigger.
+- After delivery, disabled Cron Jobs on `iratepilot-cron-rehearsal-20261005`, set its Production `IRP_PMS_SYNC_ENABLED=false`, and redeployed commit `3b0a386` as Ready deployment `dpl_J53Q2btYuGbLDa8i2fJ1PadxzQG3`. The generated project domain points to that deployment. Disabled the source outbox connection and delivery, removed the synthetic encrypted registry row, disabled the receiver gateway, and rotated its signing secret. Final reads confirmed the source connection disabled, zero synthetic registry rows, delivered version 5, the receiver connection disabled, and the receiver reservation at version 5.
+- The older isolated Supabase `default` secret key may still be present in earlier Preview build snapshots. It must be revoked once its use elsewhere is ruled out and the owner confirms permanent deletion. The replacement key remains scoped to the isolated Vercel Production project. Neither `pms.iratepilot.com` nor `www.iratepilot.com` was changed in this gate.
