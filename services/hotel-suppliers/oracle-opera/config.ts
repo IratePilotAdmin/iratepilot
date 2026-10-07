@@ -4,6 +4,8 @@ export type OracleOperaConfig = {
   clientId: string;
   clientSecret: string;
   appKey: string;
+  enterpriseId: string;
+  scope: string;
   timeoutMs: number;
 };
 
@@ -15,6 +17,8 @@ const environmentKeys = {
   clientId: "PMS_ORACLE_OPERA_CLIENT_ID",
   clientSecret: "PMS_ORACLE_OPERA_CLIENT_SECRET",
   appKey: "PMS_ORACLE_OPERA_APP_KEY",
+  enterpriseId: "PMS_ORACLE_OPERA_ENTERPRISE_ID",
+  scope: "PMS_ORACLE_OPERA_SCOPE",
   timeoutMs: "PMS_ORACLE_OPERA_TIMEOUT_MS",
 } as const;
 
@@ -60,6 +64,8 @@ export function loadOracleOperaConfig(
     clientId: requireValue(environment, environmentKeys.clientId),
     clientSecret: requireValue(environment, environmentKeys.clientSecret),
     appKey: requireValue(environment, environmentKeys.appKey),
+    enterpriseId: requireValue(environment, environmentKeys.enterpriseId),
+    scope: requireValue(environment, environmentKeys.scope),
     timeoutMs,
   };
 }

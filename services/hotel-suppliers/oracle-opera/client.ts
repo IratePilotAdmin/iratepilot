@@ -108,10 +108,15 @@ export class OracleOperaClient {
         method: "POST",
         headers: {
           Authorization: `Basic ${credentials}`,
+          Accept: "application/json",
           "Content-Type": "application/x-www-form-urlencoded",
+          enterpriseId: this.config.enterpriseId,
           "x-app-key": this.config.appKey,
         },
-        body: new URLSearchParams({ grant_type: "client_credentials" }),
+        body: new URLSearchParams({
+          grant_type: "client_credentials",
+          scope: this.config.scope,
+        }),
       },
       "authentication_failed",
       async (response) => {
