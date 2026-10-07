@@ -1,10 +1,14 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  requireRole: vi.fn(),
   loadConfig: vi.fn(),
   testConnection: vi.fn(),
 }));
 
+vi.mock("@/lib/auth/require-role", () => ({
+  requireRole: mocks.requireRole,
+}));
 vi.mock("@/services/hotel-suppliers/oracle-opera/config", () => ({
   loadOracleOperaConfig: mocks.loadConfig,
 }));
@@ -54,6 +58,11 @@ describe("Oracle OPERA Preview credential probe route", () => {
     vi.clearAllMocks();
     process.env.VERCEL_ENV = "preview";
     process.env.PMS_ORACLE_OPERA_HOTEL_ID = "OHIPSB02";
+    mocks.requireRole.mockResolvedValue({
+      user: { id: "admin-a" },
+      profile: { role: "admin" },
+      supabase: {},
+    });
     mocks.loadConfig.mockReturnValue({
       baseUrl: "https://sandbox.example.test",
       tokenUrl: "https://sandbox.example.test/oauth/v1/tokens",
@@ -86,6 +95,16 @@ describe("Oracle OPERA Preview credential probe route", () => {
     process.env.VERCEL_ENV = "production";
     const response = await POST(request());
     expect(response.status).toBe(404);
+    expect(mocks.requireRole).not.toHaveBeenCalled();
+    expect(mocks.testConnection).not.toHaveBeenCalled();
+  });
+
+  it("requires an authenticated admin before parsing the probe request or contacting Oracle", async () => {
+    mocks.requireRole.mockResolvedValueOnce({ error: "Authentication required.", status: 401 });
+    const response = await POST(request());
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "Authentication required." });
+    expect(mocks.loadConfig).not.toHaveBeenCalled();
     expect(mocks.testConnection).not.toHaveBeenCalled();
   });
 

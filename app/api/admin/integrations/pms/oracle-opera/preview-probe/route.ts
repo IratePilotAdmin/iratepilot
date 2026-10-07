@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireRole } from "@/lib/auth/require-role";
 import {
   OracleOperaConnectionTestError,
   testOracleOperaSandboxConnection,
@@ -23,6 +24,11 @@ export async function POST(request: Request) {
   if (process.env.VERCEL_ENV !== "preview") {
     return privateJson({ error: "Not found." }, 404);
   }
+  const auth = await requireRole(["admin"]);
+  if ("error" in auth) {
+    return privateJson({ error: auth.error }, auth.status);
+  }
+
   let body: unknown;
   try {
     const rawBody = await request.text();
