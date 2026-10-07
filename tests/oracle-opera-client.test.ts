@@ -8,6 +8,8 @@ const config = {
   clientId: "client-id",
   clientSecret: "super-secret",
   appKey: "app-key",
+  enterpriseId: "ENTERPRISE-1",
+  scope: "urn:opc:hgbu:ws:__myscopes__",
   timeoutMs: 100,
 };
 
@@ -27,7 +29,10 @@ describe("OracleOperaClient", () => {
     const [tokenUrl, tokenInit] = fetcher.mock.calls[0];
     expect(tokenUrl).toBe(config.tokenUrl);
     expect(tokenInit.method).toBe("POST");
-    expect(String(tokenInit.body)).toBe("grant_type=client_credentials");
+    expect(String(tokenInit.body)).toBe(
+      "grant_type=client_credentials&scope=urn%3Aopc%3Ahgbu%3Aws%3A__myscopes__",
+    );
+    expect(new Headers(tokenInit.headers).get("enterpriseId")).toBe("ENTERPRISE-1");
     expect(new Headers(tokenInit.headers).get("Authorization")).toBe(
       `Basic ${Buffer.from("client-id:super-secret").toString("base64")}`,
     );

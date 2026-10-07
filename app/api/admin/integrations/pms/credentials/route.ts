@@ -184,6 +184,8 @@ export async function POST(request: Request) {
           clientId: credentials.PMS_ORACLE_OPERA_CLIENT_ID,
           clientSecret: credentials.PMS_ORACLE_OPERA_CLIENT_SECRET,
           appKey: credentials.PMS_ORACLE_OPERA_APP_KEY,
+          enterpriseId: credentials.PMS_ORACLE_OPERA_ENTERPRISE_ID,
+          scope: credentials.PMS_ORACLE_OPERA_SCOPE,
           hotelId: credentials.PMS_ORACLE_OPERA_HOTEL_ID,
           timeoutMs: 15_000,
         });

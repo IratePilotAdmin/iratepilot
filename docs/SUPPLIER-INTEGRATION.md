@@ -23,7 +23,7 @@ Each provider uses an environment prefix and required configuration list declare
 - `<PREFIX>_CLIENT_ID`
 - `<PREFIX>_CLIENT_SECRET`
 
-Oracle OPERA also requires `PMS_ORACLE_OPERA_APP_KEY`. Its token endpoint defaults to `<BASE_URL>/oauth/v1/tokens`; an issued alternative can be set with `PMS_ORACLE_OPERA_TOKEN_URL`. Request timeouts default to 15 seconds and can be overridden with `PMS_ORACLE_OPERA_TIMEOUT_MS`.
+Oracle OPERA also requires `PMS_ORACLE_OPERA_APP_KEY`, `PMS_ORACLE_OPERA_ENTERPRISE_ID`, and `PMS_ORACLE_OPERA_SCOPE`. The OCIM scope issued by Oracle is normally `urn:opc:hgbu:ws:__myscopes__`. Its token endpoint defaults to `<BASE_URL>/oauth/v1/tokens`; an issued alternative can be set with `PMS_ORACLE_OPERA_TOKEN_URL`. Request timeouts default to 15 seconds and can be overridden with `PMS_ORACLE_OPERA_TIMEOUT_MS`.
 
 Never prefix these variables with `NEXT_PUBLIC_`. The admin-only endpoint `GET /api/admin/integrations/pms` reports missing variable names and readiness, but never returns their values.
 
