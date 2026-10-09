@@ -4,9 +4,9 @@ import {resolve} from 'node:path';
 
 // Immutable deployed source snapshots, not hand-reimplemented UI or mocked hotelRpc.
 export async function pmsPanelBuildOptions(root){
- const directory=resolve(root,'tests/fixtures/pms-recovery-panel-215');
+ const directory=resolve(root,'tests/fixtures/pms-recovery-panel-262');
  const provenance=JSON.parse(await readFile(resolve(directory,'provenance.json'),'utf8'));
- if(provenance.site_commit!=='9a0ce72734562fbb834feecae386ae3340381c37'||provenance.site_version!==215)throw Error('Pinned PMS source required');
+ if(provenance.site_commit!=='a8da4fc1f7cafddf8c6d237fe4ef056489454f99'||provenance.site_version!==262)throw Error('Pinned PMS source required');
  const sources=new Map();
  for(const [path,file] of Object.entries(provenance.files)){
   if(!/^[a-zA-Z0-9_.-]+\.source$/.test(file.snapshot))throw Error('Invalid PMS snapshot path');
