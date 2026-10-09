@@ -98,7 +98,7 @@ try{
    finally{await context.setOffline(false);}
   });
   await check('PMS service error keeps recovery available and the original request unresolved',async()=>{
-   statusFault='service';try{await recoveryButton.click();await page.getByText('Injected isolated UI status unavailable',{exact:true}).waitFor();assert.equal((await run(page,'read')).value.phase,'awaiting');assert.equal(await recoveryButton.isEnabled(),true);}
+   statusFault='service';try{await recoveryButton.click();await page.getByText('Saved status could not be verified. Your approval remains unresolved. Check your access and try again.',{exact:true}).waitFor();assert.equal((await run(page,'read')).value.phase,'awaiting');assert.equal(await recoveryButton.isEnabled(),true);}
    finally{statusFault='normal';}
   });
   await check('PMS rejects an injected mismatched receipt without resolving the journal',async()=>{
@@ -112,7 +112,7 @@ try{
    assert.equal((await run(page,'switchProperty','00000000-0000-4000-8000-000000000009')).ok,true);await empty.waitFor();
    assert.equal((await run(page,'switchProperty','00000000-0000-4000-8000-000000000030')).ok,true);await recoveryButton.waitFor();
   });
-  await check('actual PMS hotelRpc and recovery button restore the original server receipt',async()=>{
+  await check('current PMS actor-bound transport and recovery button restore the original server receipt',async()=>{
    const before=statusRequests;await recoveryButton.click();await page.getByText(/A matching server receipt confirms this request was saved/).waitFor();
    assert.equal(statusRequests,before+1);const record=(await run(page,'read')).value;assert.equal(record.phase,'saved');assert.equal(record.receipt.saved_at,savedAt);
    assert.equal(await page.locator('#pms-panel button').count(),0);assert.equal(applyRequests,2);
