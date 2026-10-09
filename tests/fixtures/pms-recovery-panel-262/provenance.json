@@ -1,0 +1,33 @@
+{
+  "site_project_id": "appgprj_6a9ef311e9f08191b44e8d5598802ccc",
+  "site_version": 262,
+  "site_commit": "a8da4fc1f7cafddf8c6d237fe4ef056489454f99",
+  "files": {
+    "components/revenue-approval-recovery-panel.tsx": {
+      "snapshot": "components__revenue-approval-recovery-panel.tsx.source",
+      "sha256": "f11c83ecb0389042307c5e04002651edc1fb1f27f0883fe45f3f3ca15fb07888"
+    },
+    "lib/revenue-approval-recovery.ts": {
+      "snapshot": "lib__revenue-approval-recovery.ts.source",
+      "sha256": "c87646f5d541b5bb5f331f46287859e35944f1c286b745f62f4e369eb2bed933"
+    },
+    "lib/revenue-approval-status-transport.ts": {
+      "snapshot": "lib__revenue-approval-status-transport.ts.source",
+      "sha256": "f46fa56a3851b2e4e9909196cbe80cd6f9270fc2c26b71ad2220793ad8cb973f"
+    },
+    "lib/pilot.ts": {
+      "snapshot": "lib__pilot.ts.source",
+      "sha256": "9a0039eba7a6863be4c5f4dcde3a140f928d0bc3652232f57bcc01359e42c9b8"
+    },
+    "lib/hotel-auth-storage.ts": {
+      "snapshot": "lib__hotel-auth-storage.ts.source",
+      "sha256": "514e020a0dddf30a67d7be6155048467cb578237c9c8e77c4eb8711d55c61c9a"
+    },
+    "lib/pms-contract.ts": {
+      "snapshot": "lib__pms-contract.ts.source",
+      "sha256": "0dcf483c740a73b1dc28e0317d006fb839ce1e1e933b4a01287f9fd07238272f"
+    }
+  },
+  "connection_override": "isolated qualification branch only; live connection module excluded",
+  "limits": "Exact current deployed recovery panel and actor-bound status transport in isolated host; not full Home or physical phone."
+}
