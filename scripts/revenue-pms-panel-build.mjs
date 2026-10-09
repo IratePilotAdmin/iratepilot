@@ -1,6 +1,6 @@
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
-import {resolve} from 'node:path';
+import {resolve,posix} from 'node:path';
 
 // Immutable deployed source snapshots, not hand-reimplemented UI or mocked hotelRpc.
 export async function pmsPanelBuildOptions(root){
@@ -20,6 +20,7 @@ export async function pmsPanelBuildOptions(root){
   plugins:[{name:'pinned-pms-source',setup(build){
    build.onResolve({filter:/^(irp-pms-panel|irp-pms-pilot)$/},args=>({path:args.path==='irp-pms-panel'?'components/revenue-approval-recovery-panel.tsx':'lib/pilot.ts',namespace:'pms-snapshot'}));
    build.onResolve({filter:/^@\//,namespace:'pms-snapshot'},args=>({path:args.path.slice(2)+'.ts',namespace:'pms-snapshot'}));
+   build.onResolve({filter:/^\./,namespace:'pms-snapshot'},args=>({path:posix.normalize(posix.join(posix.dirname(args.importer),args.path))+'.ts',namespace:'pms-snapshot'}));
    build.onLoad({filter:/.*/,namespace:'pms-snapshot'},args=>{
     if(args.path==='lib/hotel-connection.ts')return {contents:"export const supabaseUrl='https://ybehrayzwzyufxbxcysq.supabase.co';export const publishableKey='sb_publishable_5qakGx4LyLTT4OnC2mO_ag_b0BY4Vjf';",loader:'ts',resolveDir:root};
     const content=sources.get(args.path);if(!content)throw Error('Uncaptured PMS source dependency');
