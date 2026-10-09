@@ -5,7 +5,7 @@ import {hotelClient} from 'irp-pms-pilot';
 import {qualification as base} from './revenue-auth-browser-recovery.fixture';
 import {parseAuditedWriteConfig,writeProperty} from '../tests/fixtures/revenue-http-write-commands';
 
-// Exact version-215 panel and hotelRpc are bundled without changing their source.
+// Exact version-262 panel and actor-bound saved-status transport are bundled without changing their source.
 // Only the connection module is replaced by a pinned isolated public connection.
 let root:Root|undefined;
 let config:ReturnType<typeof parseAuditedWriteConfig>|undefined;
