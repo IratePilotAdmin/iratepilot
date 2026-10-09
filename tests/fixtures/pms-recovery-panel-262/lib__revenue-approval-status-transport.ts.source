@@ -1,0 +1,21 @@
+import {hotelClient} from './pilot';
+
+/** A read-only receipt lookup bound to the actor whose journal is being recovered. */
+export async function readRevenueApprovalStatus(actor:string,args:{p_tenant:string;p_property:string;p_request:string}):Promise<unknown>{
+ const client=hotelClient(),session=await client.auth.getSession();
+ const token=session.data.session?.access_token;
+ if(session.error||!token)throw Error('Verify your sign-in before checking saved status. Your approval remains unresolved.');
+ const verified=await client.auth.getUser(token);
+ if(verified.error||verified.data.user?.id!==actor)throw Error('Your sign-in changed. Your approval remains unresolved.');
+ const current=await client.auth.getSession();
+ if(current.error||current.data.session?.access_token!==token)throw Error('Your sign-in changed. Your approval remains unresolved.');
+ const {data,error}=await client.rpc('irp_pms_pilot_revenue_decision_status',args).setHeader('Authorization',`Bearer ${token}`);
+ const after=await client.auth.getSession();
+ // Even a same-account token refresh requires a fresh lookup. Never convert an
+ // uncertain or unavailable lookup into a definitive not-found response.
+ if(after.error||after.data.session?.access_token!==token)throw Error('Your sign-in changed. Your approval remains unresolved.');
+ if(error)throw Error(error.code==='PGRST202'
+  ?'Saved-status recovery is not available in the connected hotel service. Your approval remains unresolved.'
+  :'Saved status could not be verified. Your approval remains unresolved. Check your access and try again.');
+ return data;
+}
