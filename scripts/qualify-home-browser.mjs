@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {readFile,mkdir,writeFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
+import {pathToFileURL} from 'node:url';
+import {loadCurrentHomeCapture} from './load-current-home-capture.mjs';
 import {createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {actors,baseline,validateQueueFixture} from './supervisor-queue-qualification-config.mjs';
@@ -12,15 +14,15 @@ const expiryMode=process.argv.includes('--natural-expiry');
 const expiryProbe=process.argv.includes('--expiry-probe');
 const authLifecycleMode=rejectionMode||expiryMode||expiryProbe;
 const require=createRequire(new URL('./revenue-browser-tools/package.json',import.meta.url));
-const fixture=resolve('tests/fixtures/pms-home-2fb5285'),out=resolve(expiryMode||expiryProbe?'work/home-natural-expiry-evidence':rejectionMode?'work/home-auth-rejection-evidence':reviewMode?'work/home-review-evidence':'work/home-browser-evidence');
-const provenance=JSON.parse(await readFile(resolve(fixture,'provenance.json'),'utf8'));
-assert.equal(provenance.candidate,'2fb5285ac74314e97a9161dd8872d7088ccb8a92');assert.equal(provenance.project,'ybehrayzwzyufxbxcysq');
+const {fixture,provenance}=await loadCurrentHomeCapture();
+const out=resolve(expiryMode||expiryProbe?'work/home-natural-expiry-evidence':rejectionMode?'work/home-auth-rejection-evidence':reviewMode?'work/home-review-evidence':'work/home-browser-evidence');
+assert.equal(provenance.candidate,'743b1d704b08e5f2b2ed977d8f1108b3c215ca13');assert.equal(provenance.project,'ybehrayzwzyufxbxcysq');
 for(const [name,hash] of Object.entries(provenance.files)){
  assert.ok(/^(app|components|lib)\//.test(name)&&!name.includes('..'));
  assert.equal(createHash('sha256').update(await readFile(resolve(fixture,'source',name))).digest('hex'),hash);
 }
 for(const [name,hash] of Object.entries(provenance.assets))assert.equal(createHash('sha256').update(await readFile(resolve(fixture,name))).digest('hex'),hash);
-assert.match(await readFile(resolve(fixture,'source/components/revenue-recommendation-preview.tsx'),'utf8'),/auditedSaveEnabled\s*=\s*false/);
+assert.match(await readFile(resolve(fixture,'source/components/revenue-approval-recovery-panel.tsx'),'utf8'),/Audited recommendation saving and retry are not yet enabled/);
 if(process.argv.includes('--verify-only')){console.log(JSON.stringify({status:'home-snapshot-integrity-passed',sources:Object.keys(provenance.files).length}));process.exit(0);}
 if(!authLifecycleMode)assert.equal(process.env.IRP_HOME_SUPERVISED_CLEANUP,'1','An operator must audit and remove exact isolated queue observations after every run.');
 assert.ok([reviewMode,rejectionMode,expiryMode,expiryProbe].filter(Boolean).length<=1,'Qualification modes must be separate');
@@ -28,7 +30,7 @@ const scope=reviewMode?validateQueueFixture(JSON.parse(await readFile(process.en
 const scopeLabel=scope?'Synthetic queue recovery '+scope.tenant_id.replaceAll('-',''):null;
 let issueId,originalCommand,dropReply=true;const commands=[],receipts=[],denials=[];
 process.env.RELEASE_PREVIEW_ENABLED='true';process.env.RELEASE_PREVIEW_OWNER_ID='7e3ac7b8-3286-4fcb-aaa9-a850390d787c';process.env.RELEASE_PREVIEW_OWNER_EMAIL=process.env.IRP_HTTP_TEST_OWNER_EMAIL;
-const {GET}=await import(new URL('../tests/fixtures/pms-home-2fb5285/preview.mjs',import.meta.url));
+const {GET}=await import(pathToFileURL(resolve(fixture,'preview.mjs')).href);
 const assets=new Map(await Promise.all(['home.js','home.css'].map(async name=>['/'+name,await readFile(resolve(fixture,name))])));
 let origin;const server=createServer(async(req,res)=>{try{
  const path=new URL(req.url,origin).pathname;
@@ -170,6 +172,6 @@ try{
  for(const role of ['manager','staff']){phase=role+'-preview-denial';await login(role);await page.getByText('This preview is available only to its designated owner.',{exact:true}).waitFor({timeout:45000});assert.equal(await page.getByRole('heading',{name:'Today',exact:true}).count(),0);checks.push(role+' genuine Auth denied by actual owner-only server gate');await page.getByRole('button',{name:'Sign out and use another account',exact:true}).click();await page.getByRole('heading',{name:'Welcome back'}).waitFor();}
  }
  assert.deepEqual(blocked,[]);assert.deepEqual(errors,[]);checks.push('No unexpected network operations or uncaught browser errors');
- const report={status:expiryProbe?'actual-home-expiry-probe-passed':expiryMode?'actual-home-natural-expiry-passed':rejectionMode?'actual-home-auth-rejection-passed':reviewMode?'actual-home-review-recovery-passed':'actual-home-genuine-auth-browser-passed',candidate:provenance.candidate,project:provenance.project,checks,reads,review_actions_disabled:!reviewMode,pricing_actions_disabled:true,queue_observations_may_persist:!authLifecycleMode,operator_cleanup_required:!authLifecycleMode,...(expiryMode||expiryProbe?{automatic_refreshes:automaticRefreshes,original_expires_at:new Date(originalExpiry*1000).toISOString(),natural_jwt_expiry_qualified:expiryMode}:{}),...(rejectionMode?{identity_rejections:identityRejections,natural_jwt_expiry_qualified:false}:{}),...(reviewMode?{scope,commands,receipts,denials}:{}),limits:'Isolated Chromium HTTP host using synthetic property. Queue observations and bounded review effects require independent scoped audit and cleanup. Not live PMS deployment, populated hotel inventory, installed PWA, physical iPhone or historical hotel outcomes.'};await writeFile(resolve(out,expiryProbe?'probe-report.json':'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
+ const report={status:expiryProbe?'actual-home-expiry-probe-passed':expiryMode?'actual-home-natural-expiry-passed':rejectionMode?'actual-home-auth-rejection-passed':reviewMode?'actual-home-review-recovery-passed':'actual-home-genuine-auth-browser-passed',candidate:provenance.candidate,site_version:provenance.site_version,source_count:Object.keys(provenance.files).length,asset_hashes:provenance.assets,project:provenance.project,checks,reads,review_actions_disabled:!reviewMode,pricing_actions_disabled:true,queue_observations_may_persist:!authLifecycleMode,operator_cleanup_required:!authLifecycleMode,...(expiryMode||expiryProbe?{automatic_refreshes:automaticRefreshes,original_expires_at:new Date(originalExpiry*1000).toISOString(),natural_jwt_expiry_qualified:expiryMode}:{}),...(rejectionMode?{identity_rejections:identityRejections,natural_jwt_expiry_qualified:false}:{}),...(reviewMode?{scope,commands,receipts,denials}:{}),limits:'Isolated Chromium HTTP host using synthetic property. Queue observations and bounded review effects require independent scoped audit and cleanup. Not live PMS deployment, populated hotel inventory, installed PWA, physical iPhone or historical hotel outcomes.'};await writeFile(resolve(out,expiryProbe?'probe-report.json':'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 }catch{process.exitCode=1;await writeFile(resolve(out,'report.json'),JSON.stringify({status:'actual-home-genuine-auth-browser-failed',phase,checks,reads,blocked,error_count:errors.length,...(reviewMode?{commands,receipts,denials}:{})},null,2));console.error(JSON.stringify({status:'actual-home-genuine-auth-browser-failed',phase,checks,reads,blocked,error_count:errors.length,...(reviewMode?{commands,receipts,denials}:{})}));if(page)try{await screenshot('failed');}catch{}}
 finally{releasePreview?.();if(page)try{const button=page.getByRole('button',{name:/^(Sign out|Sign out and use another account)$/});if(await button.count()===1){await button.click();await page.getByRole('heading',{name:'Welcome back'}).waitFor({timeout:20000});}}catch{process.exitCode=1;console.error('Qualification session cleanup could not be confirmed.');}if(authLifecycleMode)for(const token of issuedTokens)try{await revoke(token);}catch{process.exitCode=1;console.error('Isolated test-session cleanup could not be confirmed.');}originalToken='';sessionToken='';sessionRefresh='';authKey='';issuedTokens.length=0;await context?.close();await browser?.close();await new Promise(done=>server.close(done));}
