@@ -44,6 +44,7 @@ export const PINNED_NON_FLIGHT_MIGRATIONS = Object.freeze([
   ["202610050163", "202610050163_bind_hotel_payment_authorization_account.sql"],
   ["202610050164", "202610050164_revalidate_live_hotel_commerce.sql"],
   ["202610140165", "202610140165_expand_pms_catalog.sql"],
+  ["202610140166", "202610140166_unique_siteminder_hotel_codes.sql"],
 ].map(([version, filename]) => Object.freeze({ version, filename })));
 
 export const RETIRED_FLIGHT_MIGRATION_VERSIONS = Object.freeze([
