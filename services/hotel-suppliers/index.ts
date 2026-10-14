@@ -258,6 +258,20 @@ export {
   ThinkReservationsClientError,
   ThinkReservationsConnectionTestError,
 } from "./thinkreservations";
+export {
+  buildSiteMinderErrorResponse,
+  buildSiteMinderRoomsAndRatesResponse,
+  parseSiteMinderMappings,
+  parseSiteMinderRequest,
+  siteMinderCredentialsMatch,
+  SITE_MINDER_MAX_XML_BYTES,
+} from "./siteminder";
+export type {
+  SiteMinderRatePlanMapping,
+  SiteMinderRoomRateMapping,
+  SiteMinderRoomMapping,
+  SiteMinderRoomsAndRatesRequest,
+} from "./siteminder";
 export type {
   ThinkReservationsClientConfig,
   ThinkReservationsConnectionTestConfig,

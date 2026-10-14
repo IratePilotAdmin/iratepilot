@@ -247,9 +247,9 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     capabilities: fullReservationCapabilities,
     certificationRequired: true,
     environmentPrefix: "PMS_SITEMINDER",
-    requiredConfiguration: ["BASE_URL", "CLIENT_ID", "CLIENT_SECRET", "VALIDATION_PATH"],
+    requiredConfiguration: ["USERNAME", "PASSWORD", "PRICING_MODEL"],
     documentationUrl: "https://developer.siteminder.com/",
-    notes: "Use only SiteMinder-issued partner credentials and the approved OTA/channel specification. Production traffic requires partner approval, hotel authorization, mapping validation, and certification.",
+    notes: "SiteConnect uses SOAP 1.1 with WS-Security UsernameToken. iRatePilot supplies the inbound endpoint and channel credentials; production traffic remains disabled until SiteMinder approves the partnership, hotel mappings, pricing model, and certification.",
   },
   {
     id: "roomraccoon",
