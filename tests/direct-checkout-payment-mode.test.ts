@@ -6,6 +6,7 @@ import {
   assertPreviewMigrationTarget,
   assertPreviewRemoteMigrationState,
   listMigrationVersions,
+  PMS_CATALOG_EXPANSION_PENDING,
   PMS_PILOT_PREFLIGHT_PENDING,
   PRODUCTION_PROJECT_REF,
   reconcilePreviewMigrations,
@@ -56,7 +57,7 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
   it("recognizes the repository migration chain through the OTA delivery migrations before reconciling Preview", () => {
     const versions = listMigrationVersions();
     expect(versions).toEqual(expect.arrayContaining(REQUIRED_PREVIEW_BASELINE));
-    expect(versions.at(-1)).toBe("202610050164");
+    expect(versions.at(-1)).toBe("202610140165");
     expect(assertPreviewMigrationTarget({
       PREVIEW_SUPABASE_DB_URL: previewUrl,
       PREVIEW_SUPABASE_PROJECT_REF: previewRef,
@@ -85,6 +86,16 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
       migrationList(migrationVersions, migrationVersions),
       migrationVersions,
     ).pendingVersions).toEqual([]);
+  });
+
+  it("approves the isolated PMS catalog migration for Preview reconciliation", () => {
+    const versions = listMigrationVersions();
+    const applied = versions.filter((version) => !PMS_CATALOG_EXPANSION_PENDING.includes(version));
+
+    expect(assertPreviewRemoteMigrationState(
+      migrationList(versions, applied),
+      versions,
+    ).pendingVersions).toEqual(PMS_CATALOG_EXPANSION_PENDING);
   });
 
   it("rejects missing history, unexpected remote versions, and unexpected pending migrations", () => {

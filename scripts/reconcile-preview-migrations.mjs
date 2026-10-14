@@ -17,6 +17,12 @@ export const APPROVED_PREVIEW_PENDING = [
   "202609070158",
 ];
 
+// This release only widens the guarded PMS provider catalog. Keep its approval
+// separate so Preview cannot silently apply unrelated migrations with it.
+export const PMS_CATALOG_EXPANSION_PENDING = [
+  "202610140165",
+];
+
 // Observed on the Preview dashboard. This is a read-only preflight target, not push approval.
 export const PMS_PILOT_PREFLIGHT_PENDING = [
   "202609070139",
@@ -104,7 +110,7 @@ function sameVersions(actual, expected) {
 export function assertPreviewRemoteMigrationState(
   output,
   migrationVersions = listMigrationVersions(),
-  allowedPendingSets = [APPROVED_PREVIEW_PENDING, []],
+  allowedPendingSets = [APPROVED_PREVIEW_PENDING, PMS_CATALOG_EXPANSION_PENDING, []],
 ) {
   const { localVersions, remoteVersions } = parseMigrationListOutput(output);
   const expectedLocal = [...migrationVersions].sort();
@@ -175,6 +181,7 @@ export function reconcilePreviewMigrations(
     projectRef: plan.projectRef,
     requiredBaseline: REQUIRED_PREVIEW_BASELINE,
     approvedPendingVersions: APPROVED_PREVIEW_PENDING,
+    approvedPendingSets: [APPROVED_PREVIEW_PENDING, PMS_CATALOG_EXPANSION_PENDING],
     latestRepositoryMigration: plan.migrationVersions.at(-1),
   };
 

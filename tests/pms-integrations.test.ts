@@ -37,8 +37,32 @@ describe("PMS integration foundation", () => {
       "ezee-absolute",
       "clock-pms-plus",
       "hotelogix",
+      "thinkreservations",
+      "siteminder",
+      "roomraccoon",
     ]);
-    expect(new Set(pmsProviders.map((provider) => provider.id)).size).toBe(22);
+    expect(new Set(pmsProviders.map((provider) => provider.id)).size).toBe(25);
+  });
+
+  it.each([
+    ["thinkreservations", "PMS_THINKRESERVATIONS", ["BASE_URL", "CLIENT_ID", "CLIENT_SECRET", "TOKEN_URL", "AUDIENCE", "VALIDATION_PATH"]],
+    ["siteminder", "PMS_SITEMINDER", ["BASE_URL", "CLIENT_ID", "CLIENT_SECRET", "VALIDATION_PATH"]],
+    ["roomraccoon", "PMS_ROOMRACCOON", ["BASE_URL", "API_CREDENTIAL", "VALIDATION_PATH"]],
+  ] as const)("registers guarded partner configuration for %s", (providerId, prefix, suffixes) => {
+    const environment = Object.fromEntries(suffixes.map((suffix) => {
+      if (suffix.endsWith("URL")) return [`${prefix}_${suffix}`, `https://${providerId}.example.com`];
+      if (suffix.endsWith("PATH")) return [`${prefix}_${suffix}`, "/v1/validation"];
+      return [`${prefix}_${suffix}`, `${providerId}-${suffix.toLowerCase()}-value`];
+    }));
+    const provider = buildPmsReadiness(environment).find((item) => item.id === providerId);
+
+    expect(provider).toMatchObject({
+      status: "ready_for_validation",
+      certificationRequired: true,
+      missingConfiguration: [],
+      invalidConfiguration: [],
+    });
+    expect(JSON.stringify(provider)).not.toContain("secret-value");
   });
 
   it("does not report a provider ready until all server credentials exist", () => {

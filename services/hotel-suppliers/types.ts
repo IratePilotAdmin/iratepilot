@@ -20,7 +20,10 @@ export type PmsProviderId =
   | "guestline"
   | "ezee-absolute"
   | "clock-pms-plus"
-  | "hotelogix";
+  | "hotelogix"
+  | "thinkreservations"
+  | "siteminder"
+  | "roomraccoon";
 
 export type PmsCapability =
   | "availability"
