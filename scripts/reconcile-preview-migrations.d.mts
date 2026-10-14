@@ -1,5 +1,6 @@
 export const REQUIRED_PREVIEW_BASELINE: string[];
 export const APPROVED_PREVIEW_PENDING: string[];
+export const PMS_CATALOG_EXPANSION_PENDING: string[];
 export const PMS_PILOT_PREFLIGHT_PENDING: string[];
 export const PMS_PILOT_PREVIEW_PROJECT_REF: string;
 export const PRODUCTION_PROJECT_REF: string;
@@ -49,6 +50,7 @@ export function reconcilePreviewMigrations(
   projectRef: string;
   requiredBaseline: string[];
   approvedPendingVersions: string[];
+  approvedPendingSets: string[][];
   latestRepositoryMigration: string | undefined;
   applied?: boolean;
   pendingBefore?: string[];
