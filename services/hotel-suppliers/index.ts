@@ -268,6 +268,7 @@ export {
 } from "./siteminder";
 export type {
   SiteMinderRatePlanMapping,
+  SiteMinderRoomRateMapping,
   SiteMinderRoomMapping,
   SiteMinderRoomsAndRatesRequest,
 } from "./siteminder";

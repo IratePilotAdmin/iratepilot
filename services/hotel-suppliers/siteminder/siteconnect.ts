@@ -24,6 +24,12 @@ export type SiteMinderRatePlanMapping = {
   code: string;
   name: string;
   description: string;
+  roomTypeCode: string;
+};
+
+export type SiteMinderRoomRateMapping = {
+  room: SiteMinderRoomMapping;
+  rate: SiteMinderRatePlanMapping;
 };
 
 function decodeXml(value: string) {
@@ -134,18 +140,45 @@ function mappingLines(value: string | null | undefined, kind: "room" | "rate") {
 export function parseSiteMinderMappings(input: {
   roomTypeMapping?: string | null;
   ratePlanMapping?: string | null;
+  roomOccupancyByName: Record<string, number>;
 }) {
   const rooms: SiteMinderRoomMapping[] = mappingLines(input.roomTypeMapping, "room")
-    .map((item) => ({ ...item, maxOccupancy: 2 }));
-  const rates: SiteMinderRatePlanMapping[] = mappingLines(input.ratePlanMapping, "rate");
-  if (rooms.length < 2 || rates.length < 2) {
-    throw new Error("SiteMinder certification requires at least two room types and two rate plans");
+    .map((item) => {
+      const maxOccupancy = input.roomOccupancyByName[item.name];
+      if (!Number.isInteger(maxOccupancy) || maxOccupancy < 1 || maxOccupancy > 30) {
+        throw new Error(`SiteMinder room mapping does not match an active iRatePilot room: ${item.name}`);
+      }
+      return { ...item, maxOccupancy };
+    });
+  const rates: SiteMinderRatePlanMapping[] = mappingLines(input.ratePlanMapping, "rate")
+    .map((item) => {
+      const separator = item.name.indexOf(":");
+      if (separator < 1) throw new Error("Each SiteMinder rate mapping must use ROOM_CODE: Rate name = RATE_CODE");
+      return {
+        ...item,
+        roomTypeCode: item.name.slice(0, separator).trim(),
+        name: item.name.slice(separator + 1).trim(),
+        description: item.name.slice(separator + 1).trim(),
+      };
+    });
+  if (rooms.length < 2) {
+    throw new Error("SiteMinder certification requires at least two room types");
   }
   if (new Set(rooms.map((item) => item.code)).size !== rooms.length
-    || new Set(rates.map((item) => item.code)).size !== rates.length) {
+    || new Set(rates.map((item) => `${item.roomTypeCode}:${item.code}`)).size !== rates.length) {
     throw new Error("SiteMinder room and rate codes must be unique");
   }
-  return { rooms, rates };
+  const roomRates = rooms.flatMap((room) => {
+    const matchingRates = rates.filter((rate) => rate.roomTypeCode === room.code);
+    if (matchingRates.length < 2) {
+      throw new Error(`SiteMinder certification requires at least two rate plans for room ${room.code}`);
+    }
+    return matchingRates.map((rate) => ({ room, rate }));
+  });
+  if (rates.some((rate) => !rooms.some((room) => room.code === rate.roomTypeCode))) {
+    throw new Error("SiteMinder rate mapping references an unknown room code");
+  }
+  return { roomRates };
 }
 
 function envelope(body: string) {
@@ -163,12 +196,11 @@ export function buildSiteMinderErrorResponse(input: {
 
 export function buildSiteMinderRoomsAndRatesResponse(input: {
   echoToken: string;
-  rooms: SiteMinderRoomMapping[];
-  rates: SiteMinderRatePlanMapping[];
+  roomRates: SiteMinderRoomRateMapping[];
 }) {
-  const roomStays = input.rooms.flatMap((room) => input.rates.map((rate) =>
+  const roomStays = input.roomRates.map(({ room, rate }) =>
     `<RoomStay><RoomTypes><RoomType RoomTypeCode="${xml(room.code)}"><RoomDescription Name="${xml(room.name)}"><Text>${xml(room.description)}</Text></RoomDescription><Occupancy AgeQualifyingCode="10" MaxOccupancy="${room.maxOccupancy}"/></RoomType></RoomTypes><RatePlans><RatePlan RatePlanCode="${xml(rate.code)}"><RatePlanDescription Name="${xml(rate.name)}"><Text>${xml(rate.description)}</Text></RatePlanDescription></RatePlan></RatePlans></RoomStay>`,
-  )).join("");
+  ).join("");
   return envelope(`<OTA_HotelAvailRS xmlns="${OTA_NAMESPACE}" EchoToken="${xml(input.echoToken)}" TimeStamp="${new Date().toISOString()}" Version="1.0"><Success/><RoomStays>${roomStays}</RoomStays></OTA_HotelAvailRS>`);
 }
 

@@ -45,21 +45,25 @@ describe("SiteMinder SiteConnect foundation", () => {
   it("builds a minified certification-ready rooms and rates response", () => {
     const mapping = parseSiteMinderMappings({
       roomTypeMapping: "Deluxe King = DLXK\nDouble Queen = DBLQ",
-      ratePlanMapping: "Best Available Rate = BAR\nFlexible Rate = FLEX",
+      ratePlanMapping: "DLXK: Best Available Rate = BAR\nDLXK: Flexible Rate = FLEX\nDBLQ: Best Available Rate = BAR\nDBLQ: Flexible Rate = FLEX",
+      roomOccupancyByName: { "Deluxe King": 3, "Double Queen": 4 },
     });
     const response = buildSiteMinderRoomsAndRatesResponse({ echoToken: "echo-1", ...mapping });
     expect(response).toContain("<Success/>");
     expect(response.match(/<RoomStay>/g)).toHaveLength(4);
     expect(response).toContain('RoomTypeCode="DLXK"');
     expect(response).toContain('RatePlanCode="FLEX"');
+    expect(response).toContain('MaxOccupancy="3"');
+    expect(response).toContain('MaxOccupancy="4"');
     expect(response).not.toContain("\n");
   });
 
   it("fails closed when certification mappings are incomplete", () => {
     expect(() => parseSiteMinderMappings({
       roomTypeMapping: "Deluxe King = DLXK",
-      ratePlanMapping: "Best Available Rate = BAR",
-    })).toThrow("at least two room types and two rate plans");
+      ratePlanMapping: "DLXK: Best Available Rate = BAR",
+      roomOccupancyByName: { "Deluxe King": 2 },
+    })).toThrow("at least two room types");
   });
 
   it("escapes reflected SOAP error fields", () => {

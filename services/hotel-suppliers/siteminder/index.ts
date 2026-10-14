@@ -8,6 +8,7 @@ export {
 } from "./siteconnect";
 export type {
   SiteMinderRatePlanMapping,
+  SiteMinderRoomRateMapping,
   SiteMinderRoomMapping,
   SiteMinderRoomsAndRatesRequest,
 } from "./siteconnect";
