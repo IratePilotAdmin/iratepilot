@@ -355,6 +355,7 @@ export async function POST(request: Request) {
           clientId: credentials.PMS_THINKRESERVATIONS_CLIENT_ID,
           clientSecret: credentials.PMS_THINKRESERVATIONS_CLIENT_SECRET,
           audience: credentials.PMS_THINKRESERVATIONS_AUDIENCE,
+          hotelId: selected.external_property_code,
           timeoutMs: 15_000,
         });
         hotelCount = result.hotelCount;

@@ -60,7 +60,20 @@ describe("ThinkReservations platform client", () => {
         { externalId: "hotel-1" }, { externalId: "hotel-2" },
       ])));
 
-    await expect(testThinkReservationsConnection(config, fetcher)).resolves.toEqual({ hotelCount: 2 });
+    await expect(testThinkReservationsConnection({ ...config, hotelId: "hotel-2" }, fetcher))
+      .resolves.toEqual({ hotelCount: 2 });
+  });
+
+  it("rejects credentials that cannot access the selected hotel", async () => {
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: "token", expires_in: 3_600 })))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ externalId: "another-hotel" }])));
+
+    await expect(testThinkReservationsConnection({ ...config, hotelId: "selected-hotel" }, fetcher))
+      .rejects.toMatchObject({
+        status: 403,
+        detailCode: "thinkreservations_hotel_not_authorized",
+      });
   });
 
   it("fails closed for insecure endpoints and invalid hotel payloads", async () => {
