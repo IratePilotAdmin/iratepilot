@@ -251,6 +251,21 @@ export type {
   OracleOperaConnectionTestResult,
   OracleOperaRequestOptions,
 } from "./oracle-opera";
+export {
+  loadThinkReservationsConfig,
+  testThinkReservationsConnection,
+  ThinkReservationsClient,
+  ThinkReservationsClientError,
+  ThinkReservationsConnectionTestError,
+} from "./thinkreservations";
+export type {
+  ThinkReservationsClientConfig,
+  ThinkReservationsConnectionTestConfig,
+  ThinkReservationsConnectionTestResult,
+  ThinkReservationsEnvironment,
+  ThinkReservationsFetch,
+  ThinkReservationsHotel,
+} from "./thinkreservations";
 export type {
   HotelSupplier,
   PmsAccessModel,
