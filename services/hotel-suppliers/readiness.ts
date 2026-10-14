@@ -10,6 +10,12 @@ function requiredEnvironmentKeys(provider: PmsProviderManifest) {
 }
 
 function isValidConfiguration(key: string, value: string) {
+  if (key === "PMS_SITEMINDER_PASSWORD") {
+    return value.length >= 12 && value.length <= 50
+      && /[a-z]/.test(value) && /[A-Z]/.test(value)
+      && /\d/.test(value) && /[^A-Za-z0-9]/.test(value)
+      && !/[<>&"']/.test(value);
+  }
   if (key.endsWith("_BASE_URL")) {
     try {
       return new URL(value).protocol === "https:";
@@ -18,9 +24,10 @@ function isValidConfiguration(key: string, value: string) {
     }
   }
   if (key.endsWith("_CLIENT_SECRET") || key.endsWith("_APP_KEY")
-    || key.endsWith("_API_KEY") || key.endsWith("_TOKEN")) {
+    || key.endsWith("_API_KEY") || key.endsWith("_TOKEN") || key.endsWith("_PASSWORD")) {
     return value.length >= 12;
   }
+  if (key.endsWith("_PRICING_MODEL")) return value === "PDP" || value === "OBP";
   if (key.endsWith("_HOTEL")) return value.length >= 1;
   return value.length >= 3;
 }
