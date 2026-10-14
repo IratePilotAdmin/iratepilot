@@ -1,8 +1,9 @@
-import { createHash, timingSafeEqual } from "node:crypto";
+import { timingSafeEqual } from "node:crypto";
 
 const SOAP_NAMESPACE = "http://schemas.xmlsoap.org/soap/envelope/";
 const OTA_NAMESPACE = "http://www.opentravel.org/OTA/2003/05";
 const MAX_XML_BYTES = 1_000_000;
+const MAX_CREDENTIAL_BYTES = 120;
 
 export type SiteMinderRoomsAndRatesRequest = {
   operation: "rooms_and_rates";
@@ -79,9 +80,15 @@ export function parseSiteMinderRequest(source: string): SiteMinderRoomsAndRatesR
   const password = element(source, "Password");
   const hotelCode = attribute(source, "HotelRef", "HotelCode");
   const echoToken = attribute(source, "OTA_HotelAvailRQ", "EchoToken");
-  if (!username || !password) throw new Error("SiteMinder WS-Security credentials are required");
-  if (!hotelCode) throw new Error("SiteMinder HotelCode is required");
-  if (!echoToken || echoToken.length > 120) throw new Error("SiteMinder EchoToken is required");
+  if (!username || !password || username.length > MAX_CREDENTIAL_BYTES || password.length > 50) {
+    throw new Error("SiteMinder WS-Security credentials are required");
+  }
+  if (!hotelCode || !/^[A-Za-z0-9._-]{1,120}$/.test(hotelCode)) {
+    throw new Error("SiteMinder HotelCode is required");
+  }
+  if (!echoToken || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(echoToken)) {
+    throw new Error("SiteMinder EchoToken must be a UUID");
+  }
   if (attribute(source, "AvailRequestSegment", "AvailReqType") !== "Room") {
     throw new Error("SiteMinder request is not a rooms and rates request");
   }
@@ -92,11 +99,19 @@ export function siteMinderCredentialsMatch(
   provided: { username: string; password: string },
   expected: { username?: string; password?: string },
 ) {
-  const digest = (value: string) => createHash("sha256").update(value, "utf8").digest();
+  const compare = (left: string, right: string) => {
+    const leftSource = Buffer.from(left, "utf8");
+    const rightSource = Buffer.from(right, "utf8");
+    const leftPadded = Buffer.alloc(MAX_CREDENTIAL_BYTES);
+    const rightPadded = Buffer.alloc(MAX_CREDENTIAL_BYTES);
+    leftSource.copy(leftPadded, 0, 0, MAX_CREDENTIAL_BYTES);
+    rightSource.copy(rightPadded, 0, 0, MAX_CREDENTIAL_BYTES);
+    return leftSource.length === rightSource.length && timingSafeEqual(leftPadded, rightPadded);
+  };
   const expectedUsername = expected.username ?? "";
   const expectedPassword = expected.password ?? "";
-  const usernameMatches = timingSafeEqual(digest(expectedUsername), digest(provided.username));
-  const passwordMatches = timingSafeEqual(digest(expectedPassword), digest(provided.password));
+  const usernameMatches = compare(expectedUsername, provided.username);
+  const passwordMatches = compare(expectedPassword, provided.password);
   return expectedUsername.length > 0 && expectedPassword.length > 0
     && usernameMatches && passwordMatches;
 }

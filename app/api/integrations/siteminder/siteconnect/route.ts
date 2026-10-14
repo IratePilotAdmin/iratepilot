@@ -53,7 +53,7 @@ export async function POST(request: Request) {
         echoToken: parsed.echoToken,
         type: 6,
         code: 392,
-        message: `Hotel not found for HotelCode=${parsed.hotelCode}`,
+        message: "Hotel not found for the supplied HotelCode",
       }));
     }
 

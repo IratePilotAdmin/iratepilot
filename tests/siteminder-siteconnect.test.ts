@@ -25,6 +25,10 @@ describe("SiteMinder SiteConnect foundation", () => {
       .toThrow("operation is not enabled");
     expect(() => parseSiteMinderRequest(`<!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>${request}`))
       .toThrow("prohibited XML declaration");
+    expect(() => parseSiteMinderRequest(request.replace(
+      "ed8835ff-6198-4f38-b589-3058397f677c",
+      "<script>alert(1)</script>",
+    ))).toThrow("EchoToken must be a UUID");
   });
 
   it("compares channel credentials without accepting partial values", () => {
