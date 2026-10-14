@@ -234,7 +234,7 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     certificationRequired: true,
     environmentPrefix: "PMS_THINKRESERVATIONS",
     requiredConfiguration: [
-      "BASE_URL", "CLIENT_ID", "CLIENT_SECRET", "TOKEN_URL", "AUDIENCE", "VALIDATION_PATH",
+      "BASE_URL", "CLIENT_ID", "CLIENT_SECRET", "TOKEN_URL", "AUDIENCE",
     ],
     documentationUrl: "https://developers.thinkreservations.com/",
     notes: "Platform access requires a ThinkReservations partner agreement and issued machine-to-machine OAuth credentials. Keep booking disabled until scopes, payment-token handling, property access, and certification are verified.",

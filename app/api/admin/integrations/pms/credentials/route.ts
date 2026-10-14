@@ -23,6 +23,7 @@ import {
   SihotConnectionTestError,
   StayntouchConnectionTestError,
   StandardPmsConnectionTestError,
+  ThinkReservationsConnectionTestError,
   testApaleoSandboxConnection,
   testCloudbedsSandboxConnection,
   testHiltonPepSandboxConnection,
@@ -38,6 +39,7 @@ import {
   testSihotSandboxConnection,
   testStayntouchSandboxConnection,
   testStandardPmsConnection,
+  testThinkReservationsConnection,
   validatePmsConfiguration,
 } from "@/services/hotel-suppliers";
 
@@ -342,6 +344,26 @@ export async function POST(request: Request) {
         detailCode = error instanceof ApaleoConnectionTestError
           ? error.detailCode
           : "apaleo_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "thinkreservations") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testThinkReservationsConnection({
+          baseUrl: credentials.PMS_THINKRESERVATIONS_BASE_URL,
+          tokenUrl: credentials.PMS_THINKRESERVATIONS_TOKEN_URL,
+          clientId: credentials.PMS_THINKRESERVATIONS_CLIENT_ID,
+          clientSecret: credentials.PMS_THINKRESERVATIONS_CLIENT_SECRET,
+          audience: credentials.PMS_THINKRESERVATIONS_AUDIENCE,
+          timeoutMs: 15_000,
+        });
+        hotelCount = result.hotelCount;
+        detailCode = "thinkreservations_hotels_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof ThinkReservationsConnectionTestError
+          ? error.detailCode
+          : "thinkreservations_connection_unreachable";
       }
     } else if (configurationPassed && provider.id === "stayntouch") {
       validationMode = "vendor_sandbox";

@@ -45,7 +45,7 @@ describe("PMS integration foundation", () => {
   });
 
   it.each([
-    ["thinkreservations", "PMS_THINKRESERVATIONS", ["BASE_URL", "CLIENT_ID", "CLIENT_SECRET", "TOKEN_URL", "AUDIENCE", "VALIDATION_PATH"]],
+    ["thinkreservations", "PMS_THINKRESERVATIONS", ["BASE_URL", "CLIENT_ID", "CLIENT_SECRET", "TOKEN_URL", "AUDIENCE"]],
     ["siteminder", "PMS_SITEMINDER", ["BASE_URL", "CLIENT_ID", "CLIENT_SECRET", "VALIDATION_PATH"]],
     ["roomraccoon", "PMS_ROOMRACCOON", ["BASE_URL", "API_CREDENTIAL", "VALIDATION_PATH"]],
   ] as const)("registers guarded partner configuration for %s", (providerId, prefix, suffixes) => {
