@@ -6,3 +6,7 @@ export { ClockPmsBookingMapper } from "./mapper";
 export type { ClockPmsBookingMapperConfig } from "./mapper";
 export { createClockPmsSyncAdapter, loadClockPmsSyncConfig } from "./sync";
 export type { ClockPmsDigestSigner, ClockPmsSyncEnvironment } from "./sync";
+export { ClockPmsConnectionTestError, testClockPmsConnection } from "./connection-test";
+export type {
+  ClockPmsConnectionTestConfig, ClockPmsConnectionTestResult,
+} from "./connection-test";
