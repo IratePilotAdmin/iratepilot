@@ -61,9 +61,36 @@ function parseDigestChallenge(header: string | null): DigestChallenge {
   }
   const values: Record<string, string> = {};
   const source = header.trim().slice(7);
-  const pattern = /([a-zA-Z][a-zA-Z0-9_-]*)\s*=\s*(?:"((?:\\.|[^"])*)"|([^,\s]+))/g;
-  for (const match of source.matchAll(pattern)) {
-    values[match[1].toLowerCase()] = (match[2] ?? match[3] ?? "").replace(/\\"/g, '"');
+  let offset = 0;
+  while (offset < source.length) {
+    while (offset < source.length && (source[offset] === "," || /\s/.test(source[offset]))) offset += 1;
+    const keyStart = offset;
+    while (offset < source.length && /[a-zA-Z0-9_-]/.test(source[offset])) offset += 1;
+    const key = source.slice(keyStart, offset).toLowerCase();
+    while (offset < source.length && /\s/.test(source[offset])) offset += 1;
+    if (!key || source[offset] !== "=") break;
+    offset += 1;
+    while (offset < source.length && /\s/.test(source[offset])) offset += 1;
+    let value = "";
+    if (source[offset] === '"') {
+      offset += 1;
+      while (offset < source.length) {
+        const character = source[offset];
+        offset += 1;
+        if (character === '"') break;
+        if (character === "\\" && offset < source.length) {
+          value += source[offset];
+          offset += 1;
+        } else {
+          value += character;
+        }
+      }
+    } else {
+      const valueStart = offset;
+      while (offset < source.length && source[offset] !== ",") offset += 1;
+      value = source.slice(valueStart, offset).trim();
+    }
+    values[key] = value;
   }
   if (!values.realm || !values.nonce) {
     throw new ClockPmsConnectionTestError(
