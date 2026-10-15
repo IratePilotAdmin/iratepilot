@@ -5,6 +5,7 @@ import { pmsConnectionSchema } from "../lib/validation";
 const route = readFileSync(new URL("../app/api/partner/integrations/pms/route.ts", import.meta.url), "utf8");
 const component = readFileSync(new URL("../components/dashboard/partner-pms-connections.tsx", import.meta.url), "utf8");
 const migration = readFileSync(new URL("../supabase/migrations/202610150167_pms_vendor_account_reference.sql", import.meta.url), "utf8");
+const enforcementMigration = readFileSync(new URL("../supabase/migrations/202610150168_require_clock_subscription_id.sql", import.meta.url), "utf8");
 
 describe("partner PMS connections", () => {
   it("requires an approved partner and verifies property ownership", () => {
@@ -82,6 +83,9 @@ describe("partner PMS connections", () => {
     expect(migration).toContain("property_pms_connections_vendor_account_reference_format");
     expect(migration).toContain("Never stores credentials");
     expect(migration).not.toMatch(/create policy|enable row level security/i);
+    expect(enforcementMigration).toContain("provider_id <> 'clock-pms-plus' or vendor_account_reference is not null");
+    expect(enforcementMigration).toContain("Requires a non-secret Subscription ID for Clock PMS+");
+    expect(enforcementMigration).not.toMatch(/create policy|enable row level security/i);
   });
 });
 

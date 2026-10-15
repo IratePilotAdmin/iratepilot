@@ -27,6 +27,7 @@ export const PMS_CATALOG_EXPANSION_PENDING = [
 // partner onboarding flow. Keep its Preview approval isolated from other work.
 export const PMS_VENDOR_REFERENCE_PENDING = [
   "202610150167",
+  "202610150168",
 ];
 
 export const PMS_CATALOG_AND_VENDOR_REFERENCE_PENDING = [
@@ -42,6 +43,10 @@ export const PMS_PILOT_PREFLIGHT_PENDING = [
   "202609070157",
   "202609070158",
   "202609270159",
+];
+export const PMS_PILOT_WITH_VENDOR_REFERENCE_PENDING = [
+  ...PMS_PILOT_PREFLIGHT_PENDING,
+  ...PMS_VENDOR_REFERENCE_PENDING,
 ];
 export const PMS_PILOT_PREVIEW_PROJECT_REF = "tztrvyhqyhkjhjwhrbaa";
 
@@ -226,7 +231,9 @@ export function reconcilePreviewMigrations(
   );
   if (argv.includes("--preflight")) {
     const observed = assertPreviewRemoteMigrationState(
-      beforeOutput, plan.migrationVersions, [PMS_PILOT_PREFLIGHT_PENDING, []],
+      beforeOutput,
+      plan.migrationVersions,
+      [PMS_PILOT_PREFLIGHT_PENDING, PMS_PILOT_WITH_VENDOR_REFERENCE_PENDING, []],
     );
     const dryRunOutput = runner(
       command,
