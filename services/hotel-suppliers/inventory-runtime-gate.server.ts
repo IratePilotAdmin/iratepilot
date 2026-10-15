@@ -25,6 +25,7 @@ const enablementKeys: Record<InventorySupplierId, string> = {
   hotelbeds: "HOTEL_INVENTORY_HOTELBEDS_SANDBOX_ENABLED",
   ratehawk: "HOTEL_INVENTORY_RATEHAWK_SANDBOX_ENABLED",
   "expedia-rapid": "HOTEL_INVENTORY_EXPEDIA_RAPID_SANDBOX_ENABLED",
+  stuba: "HOTEL_INVENTORY_STUBA_SANDBOX_ENABLED",
 };
 
 export function evaluateInventorySandboxRuntimeGate(

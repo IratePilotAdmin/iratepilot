@@ -5,6 +5,7 @@ import {
   buildExpediaRapidSandboxAvailabilityRequest,
   buildHotelbedsSandboxAvailabilityRequest,
   buildRatehawkSandboxHotelSearchRequest,
+  buildStubaSandboxHotelSearchRequest,
 } from "../services/hotel-suppliers/inventory-sandbox-request.server";
 
 describe("inventory supplier sandbox request builders", () => {
@@ -74,6 +75,30 @@ describe("inventory supplier sandbox request builders", () => {
     );
   });
 
+  it("builds a Stuba JSON sandbox hotel search request", () => {
+    const request = buildStubaSandboxHotelSearchRequest({
+      authApiKey: "issued-stuba-sandbox-key",
+      payload: {
+        checkIn: "2026-10-22",
+        checkOut: "2026-10-25",
+        hotelIds: [55492],
+      },
+    });
+
+    expect(request).toEqual({
+      supplierId: "stuba",
+      url: "https://testapijson.stuba.com/HotelSearch",
+      method: "POST",
+      headers: {
+        AuthApiKey: "issued-stuba-sandbox-key",
+        Accept: "application/json",
+        "Accept-Encoding": "gzip,br",
+        "Content-Type": "application/json",
+      },
+      body: '{"checkIn":"2026-10-22","checkOut":"2026-10-25","hotelIds":[55492]}',
+    });
+  });
+
   it("rejects invalid bodies and query values", () => {
     expect(() => buildHotelbedsSandboxAvailabilityRequest({
       apiKey: "hotelbeds-api-key",
@@ -96,5 +121,10 @@ describe("inventory supplier sandbox request builders", () => {
       timestampSeconds: 1,
       query: {},
     })).toThrow("query parameters are required");
+
+    expect(() => buildStubaSandboxHotelSearchRequest({
+      authApiKey: "bad\nInjected: yes",
+      payload: { hotelIds: [55492] },
+    })).toThrow("API key is invalid");
   });
 });

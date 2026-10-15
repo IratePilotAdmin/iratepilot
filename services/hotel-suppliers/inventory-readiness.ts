@@ -1,4 +1,4 @@
-export type InventorySupplierId = "hotelbeds" | "ratehawk" | "expedia-rapid";
+export type InventorySupplierId = "hotelbeds" | "ratehawk" | "expedia-rapid" | "stuba";
 
 export type InventorySupplierStatus =
   | "not_configured"
@@ -81,6 +81,15 @@ const inventorySupplierManifests = [
     ],
     documentationUrl: "https://developers.expediagroup.com/rapid/lodging/reference/signature-authentication",
     approvalNote: "Requires Rapid partner approval and issued credentials; production access remains restricted until launch review.",
+  },
+  {
+    id: "stuba",
+    name: "Stuba",
+    requiredEnvironmentKeys: [
+      "HOTEL_INVENTORY_STUBA_AUTH_API_KEY",
+    ],
+    documentationUrl: "https://developer.stuba.com/hapi/getting-started/",
+    approvalNote: "Requires an activated Stuba account and an issued environment-specific API key before sandbox or production traffic.",
   },
 ] as const satisfies readonly InventorySupplierManifest[];
 
