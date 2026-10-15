@@ -12,15 +12,31 @@ const adminSettings = readFileSync(
 );
 
 describe("inventory supplier readiness", () => {
-  it("tracks the three supplier applications without implying approval", () => {
+  it("tracks supplier applications without implying approval", () => {
     const readiness = buildInventorySupplierReadiness({});
 
     expect(readiness.map(({ id }) => id)).toEqual([
       "hotelbeds",
       "ratehawk",
       "expedia-rapid",
+      "stuba",
     ]);
     expect(readiness.every(({ status }) => status === "not_configured")).toBe(true);
+  });
+
+  it("requires an issued Stuba API key before sandbox validation", () => {
+    const incomplete = buildInventorySupplierReadiness({
+      HOTEL_INVENTORY_STUBA_AUTH_API_KEY: "placeholder-api-key",
+    }).find(({ id }) => id === "stuba");
+    const ready = buildInventorySupplierReadiness({
+      HOTEL_INVENTORY_STUBA_AUTH_API_KEY: "issued-stuba-sandbox-key",
+    }).find(({ id }) => id === "stuba");
+
+    expect(incomplete?.status).toBe("invalid_configuration");
+    expect(incomplete?.invalidEnvironmentKeys).toEqual([
+      "HOTEL_INVENTORY_STUBA_AUTH_API_KEY",
+    ]);
+    expect(ready?.status).toBe("ready_for_sandbox_validation");
   });
 
   it("requires the complete Hotelbeds authentication and mTLS material", () => {
