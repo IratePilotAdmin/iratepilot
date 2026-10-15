@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
+import { FLORIDA_SELLER_OF_TRAVEL_DISCLOSURE } from "@/lib/legal/seller-of-travel";
 import { requireRole } from "@/lib/auth/require-role";
 import { emptyEmailWorkerSummary, isEmailWorkerEnabled } from "@/lib/email/worker-gate";
 import {
@@ -114,6 +115,7 @@ async function processTransactionalEmail(request: Request) {
             <p>${escapeHtml(message)}</p>
             <p style="margin-top:28px"><a href="${escapeHtml(actionUrl)}" style="background:#000;color:#fff;padding:12px 20px;text-decoration:none">View details</a></p>
             <p style="margin-top:32px;color:#667085;font-size:13px">iRatePilot Group, LLC</p>
+            <p style="margin-top:8px;color:#667085;font-size:12px">${escapeHtml(FLORIDA_SELLER_OF_TRAVEL_DISCLOSURE)}</p>
           </div>
         `,
       }, {
