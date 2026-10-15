@@ -9,6 +9,10 @@ const migration = readFileSync(
   new URL("../supabase/migrations/202608070032_secure_pms_credentials.sql", import.meta.url),
   "utf8",
 );
+const settings = readFileSync(
+  new URL("../components/dashboard/admin-settings.tsx", import.meta.url),
+  "utf8",
+);
 
 describe("PMS credential vault", () => {
   it("is admin-only and stores credentials through the service role", () => {
@@ -44,5 +48,12 @@ describe("PMS credential vault", () => {
     expect(migration).toContain("enable row level security");
     expect(migration).toContain("revoke all on table public.property_pms_credentials from anon, authenticated");
     expect(migration).toContain("revoke all on table public.pms_connection_test_events from anon, authenticated");
+  });
+
+  it("retains the credential form across the async save", () => {
+    expect(settings).toContain("const formElement = event.currentTarget;");
+    expect(settings).toContain("const form = new FormData(formElement);");
+    expect(settings).toContain("formElement.reset();");
+    expect(settings).not.toContain("event.currentTarget.reset();");
   });
 });

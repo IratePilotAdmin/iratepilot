@@ -236,10 +236,11 @@ export function AdminSettings() {
   async function saveCredentials(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedConnection) return;
+    const formElement = event.currentTarget;
     setCredentialBusy(true);
     setCredentialMessage("");
     try {
-      const form = new FormData(event.currentTarget);
+      const form = new FormData(formElement);
       const credentials = Object.fromEntries(selectedConnection.credential_keys.map((key) => [key, form.get(key)]));
       const response = await fetch("/api/admin/integrations/pms/credentials", {
         method: "PUT",
@@ -249,7 +250,7 @@ export function AdminSettings() {
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Credentials could not be stored.");
       setCredentialMessage(body.message);
-      event.currentTarget.reset();
+      formElement.reset();
       setPmsConnections((items) => items.map((item) => item.id === selectedConnection.id
         ? { ...item, credentials_configured: true, credentials_updated_at: new Date().toISOString() }
         : item));
