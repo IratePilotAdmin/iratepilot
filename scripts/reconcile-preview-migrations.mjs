@@ -23,6 +23,17 @@ export const PMS_CATALOG_EXPANSION_PENDING = [
   "202610140165",
 ];
 
+// This release adds a nullable, non-secret PMS vendor reference used by the
+// partner onboarding flow. Keep its Preview approval isolated from other work.
+export const PMS_VENDOR_REFERENCE_PENDING = [
+  "202610150167",
+];
+
+export const PMS_CATALOG_AND_VENDOR_REFERENCE_PENDING = [
+  ...PMS_CATALOG_EXPANSION_PENDING,
+  ...PMS_VENDOR_REFERENCE_PENDING,
+];
+
 // Observed on the Preview dashboard. This is a read-only preflight target, not push approval.
 export const PMS_PILOT_PREFLIGHT_PENDING = [
   "202609070139",
@@ -110,7 +121,13 @@ function sameVersions(actual, expected) {
 export function assertPreviewRemoteMigrationState(
   output,
   migrationVersions = listMigrationVersions(),
-  allowedPendingSets = [APPROVED_PREVIEW_PENDING, PMS_CATALOG_EXPANSION_PENDING, []],
+  allowedPendingSets = [
+    APPROVED_PREVIEW_PENDING,
+    PMS_CATALOG_EXPANSION_PENDING,
+    PMS_VENDOR_REFERENCE_PENDING,
+    PMS_CATALOG_AND_VENDOR_REFERENCE_PENDING,
+    [],
+  ],
 ) {
   const { localVersions, remoteVersions } = parseMigrationListOutput(output);
   const expectedLocal = [...migrationVersions].sort();
@@ -181,7 +198,12 @@ export function reconcilePreviewMigrations(
     projectRef: plan.projectRef,
     requiredBaseline: REQUIRED_PREVIEW_BASELINE,
     approvedPendingVersions: APPROVED_PREVIEW_PENDING,
-    approvedPendingSets: [APPROVED_PREVIEW_PENDING, PMS_CATALOG_EXPANSION_PENDING],
+    approvedPendingSets: [
+      APPROVED_PREVIEW_PENDING,
+      PMS_CATALOG_EXPANSION_PENDING,
+      PMS_VENDOR_REFERENCE_PENDING,
+      PMS_CATALOG_AND_VENDOR_REFERENCE_PENDING,
+    ],
     latestRepositoryMigration: plan.migrationVersions.at(-1),
   };
 

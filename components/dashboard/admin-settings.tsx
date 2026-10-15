@@ -36,6 +36,7 @@ type PmsConnection = {
   provider_id: string;
   property_name: string;
   external_property_code: string;
+  vendor_account_reference: string | null;
   connection_status: string;
   credential_keys: string[];
   credentials_configured: boolean;
@@ -523,6 +524,7 @@ export function AdminSettings() {
             <div className="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
               <strong className="text-slate-900">{selectedConnection.property_name}</strong>
               <span className="ml-2">Property code: {selectedConnection.external_property_code}</span>
+              {selectedConnection.vendor_account_reference && <p className="mt-1">Vendor account/subscription reference: {selectedConnection.vendor_account_reference}</p>}
               <p className="mt-1">Vault status: {selectedConnection.credentials_configured ? "configured" : "not configured"}</p>
             </div>
             <div className="grid gap-4 md:grid-cols-2">{selectedConnection.credential_keys.map((key) => <label className="text-sm font-medium" key={key}>{key.replaceAll("_", " ").toLowerCase()}
