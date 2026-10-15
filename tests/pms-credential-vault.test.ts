@@ -63,7 +63,7 @@ describe("PMS credential vault", () => {
 
   it("distinguishes a live sandbox request from a configuration-only check", () => {
     expect(settings).toContain("body.liveVendorConnectionTested");
-    expect(settings).toContain("Sandbox provider request passed validation. Live traffic remains disabled.");
+    expect(settings).toContain("Sandbox provider request passed validation. This validation did not change live-traffic authorization.");
     expect(settings).toContain("Encrypted configuration passed validation. No vendor request was sent.");
   });
 });

@@ -275,7 +275,7 @@ export function AdminSettings() {
       if (!response.ok) throw new Error(body.error || "Configuration test failed.");
       setCredentialMessage(body.passed
         ? body.liveVendorConnectionTested
-          ? "Sandbox provider request passed validation. Live traffic remains disabled."
+          ? "Sandbox provider request passed validation. This validation did not change live-traffic authorization."
           : "Encrypted configuration passed validation. No vendor request was sent."
         : "Encrypted configuration did not pass validation.");
     } catch (error) {
