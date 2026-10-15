@@ -15,6 +15,12 @@ select
   to_regclass('public.partner_team_invitations') is not null as partner_team_invitations_ready,
   to_regclass('public.partner_team_access_events') is not null as partner_team_audit_ready;
 
+-- Connector setup must exist before an admin can pair iRatePilot.com and PMS.
+-- This reports schema presence only; it does not enable sandbox or live traffic.
+select
+  to_regprocedure('public.irp_pms_configure_native_connection(uuid,uuid,uuid,text,uuid,uuid,text,text,text,integer,jsonb)')
+    is not null as native_ota_atomic_setup_ready;
+
 select
   to_regclass('public.one_pending_partner_application_per_email_and_property') is not null
     as hotel_intake_deduplication_ready,

@@ -1,0 +1,84 @@
+import { requireRole } from "@/lib/auth/require-role";
+import { readNativePmsBaselinePreview } from "@/lib/native-pms-baseline-preview";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+export const dynamic = "force-dynamic";
+const headers = {
+  "Cache-Control": "private, no-store",
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "no-referrer",
+};
+const reply = (body: unknown, status = 200) => Response.json(body, { status, headers });
+const uuid = (value: unknown): value is string => typeof value === "string"
+  && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+const isoDate = (value: unknown): value is string => typeof value === "string"
+  && /^\d{4}-\d{2}-\d{2}$/.test(value)
+  && new Date(`${value}T00:00:00.000Z`).toISOString().slice(0, 10) === value;
+
+async function readBoundedJson(request: Request): Promise<unknown> {
+  const reader = request.body?.getReader();
+  if (!reader) throw new Error("invalid_body");
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > 2048) {
+        await reader.cancel();
+        throw new Error("body_too_large");
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const raw = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) { raw.set(chunk, offset); offset += chunk.byteLength; }
+  return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(raw)) as unknown;
+}
+
+export async function POST(request: Request) {
+  const url = new URL(request.url);
+  if (request.headers.get("origin") !== url.origin || request.headers.get("sec-fetch-site") === "cross-site") {
+    return reply({ error: "Open the baseline review from PMS Admin Settings." }, 403);
+  }
+  if (url.search || url.hash) return reply({ error: "The baseline review does not accept URL parameters." }, 400);
+  if (request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !== "application/json") {
+    return reply({ error: "Use the baseline review form." }, 415);
+  }
+  const auth = await requireRole(["admin"]);
+  if ("error" in auth) return reply({ error: auth.error }, auth.status);
+
+  let body: unknown;
+  try {
+    body = await readBoundedJson(request);
+  } catch (error) {
+    if (error instanceof Error && error.message === "body_too_large") {
+      return reply({ error: "The baseline review request is too large." }, 413);
+    }
+    return reply({ error: "The baseline review request is invalid." }, 400);
+  }
+  if (!body || typeof body !== "object" || Array.isArray(body)
+    || Object.keys(body).sort().join(",") !== "fromDate,propertyId"
+    || !uuid((body as Record<string, unknown>).propertyId)
+    || !isoDate((body as Record<string, unknown>).fromDate)) {
+    return reply({ error: "Provide an approved property and a valid local cutover date." }, 400);
+  }
+
+  try {
+    const fromDate = (body as { fromDate: string }).fromDate;
+    const result = await createAdminClient().rpc("irp_pms_preview_reservation_baseline", {
+      p_property: (body as { propertyId: string }).propertyId,
+      p_from: fromDate,
+    });
+    if (result.error) throw result.error;
+    const preview = readNativePmsBaselinePreview(result.data, fromDate);
+    return reply({ ...preview, captureAvailable: false,
+      message: "Read-only preview only. Capturing a baseline requires a scheduled maintenance window and a separately reviewed activation." });
+  } catch {
+    return reply({ error: "Baseline readiness could not be verified. No reservations were changed." }, 503);
+  }
+}

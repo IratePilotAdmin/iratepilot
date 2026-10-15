@@ -78,6 +78,7 @@ describe("Automation Operations Center Phase 4", () => {
     expect(envExample).toContain("AUTOMATION_POLICY_SCANNER_ENABLED=false");
     expect(vercel.crons).toContainEqual({ path: "/api/cron/automation-policy-scan", schedule: "15 8 * * *" });
     expect(vercel.crons).toContainEqual({ path: "/api/cron/pms-outbox", schedule: "30 8 * * *" });
+    expect(vercel.crons).toContainEqual({ path: "/api/cron/booking-com-reservation-retention", schedule: "20 5 * * *" });
     expect(new Set(vercel.crons.map(({ path }: { path: string }) => path)).size).toBe(vercel.crons.length);
   });
 
