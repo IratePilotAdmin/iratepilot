@@ -126,6 +126,26 @@ describe("PMS integration foundation", () => {
     expect(JSON.stringify(provider)).not.toContain(secret);
   });
 
+  it("uses the Clock PMS+ credential contract implemented by its server adapter", () => {
+    const secret = "clock-api-key-value";
+    const result = buildPmsReadiness({
+      PMS_CLOCK_BASE_URL: "https://sky-eu1.clock-software.com/pms_api/11111/22222/",
+      PMS_CLOCK_API_USER: "iratepilot-api-user",
+      PMS_CLOCK_API_KEY: secret,
+      PMS_CLOCK_AVAILABILITY_PATH: "rates_availability.json",
+      PMS_CLOCK_CREATE_RESERVATION_PATH: "bookings.json",
+      PMS_CLOCK_CANCEL_RESERVATION_PATH: "bookings/{bookingId}/cancel.json",
+      PMS_CLOCK_CURRENCY: "USD",
+    });
+    const clock = result.find((provider) => provider.id === "clock-pms-plus");
+
+    expect(clock?.status).toBe("ready_for_validation");
+    expect(clock?.missingConfiguration).toEqual([]);
+    expect(clock?.invalidConfiguration).toEqual([]);
+    expect(clock?.notes).toContain("real pilot Clock hotel");
+    expect(JSON.stringify(clock)).not.toContain(secret);
+  });
+
   it("validates the exact credential contract used by the Mews transport", () => {
     const result = buildPmsReadiness({
       PMS_MEWS_BASE_URL: "https://api.mews-demo.com",
