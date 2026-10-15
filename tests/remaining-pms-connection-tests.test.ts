@@ -16,7 +16,6 @@ const remainingProviders = [
   "planet-protel",
   "guestline",
   "ezee-absolute",
-  "clock-pms-plus",
   "hotelogix",
 ] as const satisfies readonly StandardPmsProviderId[];
 
