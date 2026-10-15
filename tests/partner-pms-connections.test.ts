@@ -4,6 +4,8 @@ import { pmsConnectionSchema } from "../lib/validation";
 
 const route = readFileSync(new URL("../app/api/partner/integrations/pms/route.ts", import.meta.url), "utf8");
 const component = readFileSync(new URL("../components/dashboard/partner-pms-connections.tsx", import.meta.url), "utf8");
+const migration = readFileSync(new URL("../supabase/migrations/202610150167_pms_vendor_account_reference.sql", import.meta.url), "utf8");
+const enforcementMigration = readFileSync(new URL("../supabase/migrations/202610150168_require_clock_subscription_id.sql", import.meta.url), "utf8");
 
 describe("partner PMS connections", () => {
   it("requires an approved partner and verifies property ownership", () => {
@@ -36,6 +38,7 @@ describe("partner PMS connections", () => {
       propertyId: "11111111-1111-4111-8111-111111111111",
       providerId: "hotelkey" as const,
       externalPropertyCode: "128",
+      vendorAccountReference: "hotelkey-account-128",
       hotelAuthorized: true,
       roomTypeMapping: "",
       ratePlanMapping: "",
@@ -52,6 +55,37 @@ describe("partner PMS connections", () => {
       ...declaration,
       cancellationPolicyMapping: "your policy name mapped to its HotelKey code",
     }).success).toBe(false);
+  });
+
+  it("requires Clock's non-secret Subscription ID without conflating it with the property code", () => {
+    const declaration = {
+      propertyId: "11111111-1111-4111-8111-111111111111",
+      providerId: "clock-pms-plus" as const,
+      externalPropertyCode: "hotel-128",
+      vendorAccountReference: "subscription-456",
+      hotelAuthorized: true,
+      roomTypeMapping: "",
+      ratePlanMapping: "",
+      taxFeeMapping: "",
+      cancellationPolicyMapping: "",
+    };
+
+    expect(pmsConnectionSchema.safeParse(declaration).success).toBe(true);
+    expect(pmsConnectionSchema.safeParse({ ...declaration, vendorAccountReference: "" }).success).toBe(false);
+    expect(pmsConnectionSchema.safeParse({ ...declaration, vendorAccountReference: "do not use spaces" }).success).toBe(false);
+    expect(component).toContain("Clock PMS+ Subscription ID");
+    expect(component).toContain("separate from the hotel/property code");
+    expect(route).toContain("vendor_account_reference");
+  });
+
+  it("adds a nullable, constrained vendor reference without changing row access", () => {
+    expect(migration).toContain("add column if not exists vendor_account_reference text");
+    expect(migration).toContain("property_pms_connections_vendor_account_reference_format");
+    expect(migration).toContain("Never stores credentials");
+    expect(migration).not.toMatch(/create policy|enable row level security/i);
+    expect(enforcementMigration).toContain("provider_id <> 'clock-pms-plus' or vendor_account_reference is not null");
+    expect(enforcementMigration).toContain("Requires a non-secret Subscription ID for Clock PMS+");
+    expect(enforcementMigration).not.toMatch(/create policy|enable row level security/i);
   });
 });
 

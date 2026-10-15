@@ -145,11 +145,23 @@ export const pmsConnectionSchema = z.object({
     "thinkreservations", "siteminder", "roomraccoon",
   ]),
   externalPropertyCode: z.string().trim().min(1).max(120),
+  vendorAccountReference: z.string().trim().max(120)
+    .regex(/^[A-Za-z0-9._:/-]*$/, "Use only the non-secret account or subscription identifier assigned by the PMS vendor.")
+    .optional()
+    .default(""),
   hotelAuthorized: z.boolean(),
   roomTypeMapping: pmsMappingSchema,
   ratePlanMapping: pmsMappingSchema,
   taxFeeMapping: pmsMappingSchema,
   cancellationPolicyMapping: pmsMappingSchema,
+}).superRefine((value, context) => {
+  if (value.providerId === "clock-pms-plus" && !value.vendorAccountReference) {
+    context.addIssue({
+      code: "custom",
+      path: ["vendorAccountReference"],
+      message: "Clock PMS+ Subscription ID is required for the Clock integration application.",
+    });
+  }
 });
 
 export const synxisOnboardingRequestSchema = z.object({
