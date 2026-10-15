@@ -274,7 +274,9 @@ export function AdminSettings() {
       const body = await response.json();
       if (!response.ok) throw new Error(body.error || "Configuration test failed.");
       setCredentialMessage(body.passed
-        ? "Encrypted configuration passed validation. No live vendor request was sent."
+        ? body.liveVendorConnectionTested
+          ? "Sandbox provider request passed validation. This validation did not change live-traffic authorization."
+          : "Encrypted configuration passed validation. No vendor request was sent."
         : "Encrypted configuration did not pass validation.");
     } catch (error) {
       setCredentialMessage(error instanceof Error ? error.message : "Configuration test failed.");

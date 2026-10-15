@@ -60,4 +60,10 @@ describe("PMS credential vault", () => {
   it("returns Apaleo callbacks to the credential vault", () => {
     expect(settings).toMatch(/id="pms-credential-vault"[\s\S]{0,300}<h2[^>]*>PMS credential vault<\/h2>/);
   });
+
+  it("distinguishes a live sandbox request from a configuration-only check", () => {
+    expect(settings).toContain("body.liveVendorConnectionTested");
+    expect(settings).toContain("Sandbox provider request passed validation. This validation did not change live-traffic authorization.");
+    expect(settings).toContain("Encrypted configuration passed validation. No vendor request was sent.");
+  });
 });
