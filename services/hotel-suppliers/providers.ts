@@ -212,10 +212,13 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
   {
     id: "clock-pms-plus", name: "Clock PMS+", vendor: "Clock Software",
     accessModel: "vendor_partnership", capabilities: fullReservationCapabilities,
-    certificationRequired: true, environmentPrefix: "PMS_CLOCK_PMS_PLUS",
-    requiredConfiguration: standardValidationConfiguration,
+    certificationRequired: true, environmentPrefix: "PMS_CLOCK",
+    requiredConfiguration: [
+      "BASE_URL", "API_USER", "API_KEY", "AVAILABILITY_PATH",
+      "CREATE_RESERVATION_PATH", "CANCEL_RESERVATION_PATH", "CURRENCY",
+    ],
     documentationUrl: "https://api-docs.clock-software.com/",
-    notes: "Activate after Clock Software approves the integration and property access.",
+    notes: "The current server adapter covers Clock's property-scoped REST API. Public OTA distribution uses Clock's separate SOAP OTA Channel Connect flow, requires a real pilot Clock hotel and Subscription ID before sandbox access, and must remain disabled until Clock completes end-to-end production validation.",
   },
   {
     id: "hotelogix", name: "Hotelogix", vendor: "Hotelogix",

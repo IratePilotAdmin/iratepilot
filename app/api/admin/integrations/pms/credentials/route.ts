@@ -8,6 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import {
   ApaleoConnectionTestError,
   CloudbedsConnectionTestError,
+  ClockPmsConnectionTestError,
   getPmsProvider,
   HiltonPepConnectionTestError,
   HiltonOnQConnectionTestError,
@@ -26,6 +27,7 @@ import {
   ThinkReservationsConnectionTestError,
   testApaleoSandboxConnection,
   testCloudbedsSandboxConnection,
+  testClockPmsConnection,
   testHiltonPepSandboxConnection,
   testHiltonOnQSandboxConnection,
   testHotelKeySandboxConnection,
@@ -473,6 +475,26 @@ export async function POST(request: Request) {
         detailCode = error instanceof ShijiConnectionTestError
           ? error.detailCode
           : "shiji_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "clock-pms-plus") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testClockPmsConnection({
+          baseUrl: credentials.PMS_CLOCK_BASE_URL,
+          apiUser: credentials.PMS_CLOCK_API_USER,
+          apiKey: credentials.PMS_CLOCK_API_KEY,
+          availabilityPath: credentials.PMS_CLOCK_AVAILABILITY_PATH,
+          propertyCode: selected.external_property_code,
+          timeoutMs: 15_000,
+        });
+        resourceCount = result.resourceCount;
+        detailCode = "clock_pms_validation_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof ClockPmsConnectionTestError
+          ? error.detailCode
+          : "clock_pms_connection_unreachable";
       }
     } else if (configurationPassed && isStandardPmsProvider(provider.id)) {
       validationMode = "vendor_sandbox";

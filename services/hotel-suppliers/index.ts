@@ -139,9 +139,11 @@ export { EzeeAbsoluteBookingMapper, createEzeeAbsoluteSyncAdapter, loadEzeeAbsol
 export type { EzeeAbsoluteBookingMapperConfig, EzeeAbsoluteConfig, EzeeAbsoluteEndpoint, EzeeAbsoluteFetch, EzeeAbsoluteSyncEnvironment } from "./ezee-absolute";
 export { ClockPmsHttpTransport, ClockPmsTransportError } from "./clock-pms-plus";
 export { ClockPmsBookingMapper, createClockPmsSyncAdapter, loadClockPmsSyncConfig } from "./clock-pms-plus";
+export { ClockPmsConnectionTestError, testClockPmsConnection } from "./clock-pms-plus";
 export type {
   ClockPmsAuthRequest, ClockPmsBookingMapperConfig, ClockPmsConfig, ClockPmsDigestSigner,
-  ClockPmsEndpoint, ClockPmsFetch, ClockPmsSyncEnvironment,
+  ClockPmsConnectionTestConfig, ClockPmsConnectionTestResult, ClockPmsEndpoint,
+  ClockPmsFetch, ClockPmsSyncEnvironment,
 } from "./clock-pms-plus";
 export { HotelogixHttpTransport, HotelogixTransportError } from "./hotelogix";
 export { HotelogixBookingMapper, createHotelogixSyncAdapter, loadHotelogixSyncConfig } from "./hotelogix";
