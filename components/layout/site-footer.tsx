@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FLORIDA_SELLER_OF_TRAVEL_DISCLOSURE } from "@/lib/legal/seller-of-travel";
 
 export function SiteFooter() {
   const groups = [
@@ -22,8 +23,9 @@ export function SiteFooter() {
           </div>
         ))}
       </div>
-      <div className="border-t border-slate-200 py-5 text-center text-xs uppercase tracking-[.12em] text-slate-500">
-        © 2026 IRATEPILOT GROUP, LLC. All rights reserved.
+      <div className="border-t border-slate-200 px-4 py-5 text-center text-xs text-slate-500">
+        <p>{FLORIDA_SELLER_OF_TRAVEL_DISCLOSURE}</p>
+        <p className="mt-2 uppercase tracking-[.12em]">© 2026 IRATEPILOT GROUP, LLC. All rights reserved.</p>
       </div>
     </footer>
   );
