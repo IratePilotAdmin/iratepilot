@@ -293,7 +293,7 @@ export function AdminSettings() {
         <div className="mt-5 flex flex-wrap gap-5 text-sm"><span><strong>{data.summary.ready}</strong> ready</span><span><strong>{data.summary.attention}</strong> need attention</span><span><strong>{data.summary.off}</strong> intentionally off</span></div>
       </section>
 
-      <section className="card mt-6 p-6">
+      <section className="card mt-6 p-6" id="pms-credential-vault">
         <h2 className="text-xl font-semibold">Transactional email test</h2>
         <p className="mt-2 text-sm text-slate-600">Send one operational test message to the signed-in administrator. This creates no booking, payment, refund, or partner transfer.</p>
         <button className="btn-primary mt-4" disabled={emailTestBusy} onClick={sendEmailTest}>{emailTestBusy ? "Sending…" : "Send test email"}</button>
@@ -529,6 +529,10 @@ export function AdminSettings() {
             <div className="flex flex-wrap gap-3">
               <button className="btn-primary" disabled={credentialBusy} type="submit">{credentialBusy ? "Working…" : "Encrypt and save"}</button>
               <button className="btn-secondary" disabled={credentialBusy || !selectedConnection.credentials_configured} onClick={testCredentials} type="button">Validate stored configuration</button>
+              {selectedConnection.provider_id === "apaleo" && selectedConnection.credentials_configured && <a
+                className="btn-secondary"
+                href={`/api/admin/integrations/pms/apaleo/connect?connectionId=${encodeURIComponent(selectedConnection.id)}`}
+              >Connect Apaleo account</a>}
             </div>
           </>}
           {credentialMessage && <p className="text-sm" role="status">{credentialMessage}</p>}

@@ -34,6 +34,20 @@ describe("Apaleo sandbox connection test", () => {
       .toBe("Bearer short-lived-token");
   });
 
+  it("uses a stored refresh token for an Apaleo Connect app", async () => {
+    const fetcher = vi.fn<ApaleoFetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        access_token: "connected-access-token",
+        refresh_token: "rotated-refresh-token",
+      })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ properties: [{ id: "BER" }] })));
+
+    await expect(testApaleoSandboxConnection({ ...config, refreshToken: "saved-refresh-token" }, fetcher))
+      .resolves.toEqual({ propertyCount: 1, refreshToken: "rotated-refresh-token" });
+    expect(String(fetcher.mock.calls[0]?.[1]?.body))
+      .toBe("grant_type=refresh_token&refresh_token=saved-refresh-token");
+  });
+
   it("requires HTTPS and complete client credentials", async () => {
     await expect(testApaleoSandboxConnection({ ...config, baseUrl: "http://api.test" }))
       .rejects.toThrow("must use HTTPS");

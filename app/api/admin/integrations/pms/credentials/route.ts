@@ -336,9 +336,24 @@ export async function POST(request: Request) {
           baseUrl: credentials.PMS_APALEO_BASE_URL,
           clientId: credentials.PMS_APALEO_CLIENT_ID,
           clientSecret: credentials.PMS_APALEO_CLIENT_SECRET,
+          refreshToken: credentials.PMS_APALEO_REFRESH_TOKEN,
         });
         propertyCount = result.propertyCount;
         detailCode = "apaleo_properties_read_succeeded";
+        if (result.refreshToken && result.refreshToken !== credentials.PMS_APALEO_REFRESH_TOKEN) {
+          const rotatedValues = structuredClone(credentials);
+          rotatedValues.PMS_APALEO_REFRESH_TOKEN = result.refreshToken;
+          const rotated = encryptPmsCredentials(rotatedValues);
+          const refreshed = await admin.from("property_pms_credentials").update({
+            ciphertext: rotated.ciphertext,
+            initialization_vector: rotated.initializationVector,
+            authentication_tag: rotated.authenticationTag,
+            key_version: rotated.keyVersion,
+            configured_by: auth.user.id,
+            updated_at: new Date().toISOString(),
+          }).eq("connection_id", selected.id);
+          if (refreshed.error) throw refreshed.error;
+        }
       } catch (error) {
         passed = false;
         detailCode = error instanceof ApaleoConnectionTestError
