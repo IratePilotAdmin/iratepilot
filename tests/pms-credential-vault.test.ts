@@ -56,4 +56,8 @@ describe("PMS credential vault", () => {
     expect(settings).toContain("formElement.reset();");
     expect(settings).not.toContain("event.currentTarget.reset();");
   });
+
+  it("returns Apaleo callbacks to the credential vault", () => {
+    expect(settings).toMatch(/id="pms-credential-vault"[\s\S]{0,300}<h2[^>]*>PMS credential vault<\/h2>/);
+  });
 });

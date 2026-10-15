@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  apaleoOAuthCookieOptions,
   createApaleoOAuthMarker,
   verifyApaleoOAuthMarker,
 } from "../lib/integrations/apaleo-oauth-state";
@@ -9,6 +10,14 @@ describe("Apaleo OAuth state", () => {
 
   afterEach(() => {
     process.env.PMS_CREDENTIAL_ENCRYPTION_KEY = previous;
+  });
+
+  it("uses a valid root path for the __Host cookie", () => {
+    expect(apaleoOAuthCookieOptions).toMatchObject({
+      httpOnly: true,
+      path: "/",
+      secure: true,
+    });
   });
 
   it("binds state to the admin, connection, and short expiry", () => {

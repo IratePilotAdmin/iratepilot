@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, hkdfSync, timingSafeEqual } from "node:crypto";
 
 export const apaleoOAuthCookieName = "__Host-iratepilot-apaleo-oauth";
 export const apaleoOAuthMaxAge = 10 * 60;
@@ -6,7 +6,7 @@ export const apaleoOAuthCookieOptions = {
   httpOnly: true,
   secure: true,
   sameSite: "lax" as const,
-  path: "/api/admin/integrations/pms/apaleo/callback",
+  path: "/",
 };
 
 type ApaleoOAuthPayload = {
@@ -16,13 +16,20 @@ type ApaleoOAuthPayload = {
   sub: string;
 };
 
-function signingSecret() {
-  const secret = process.env.PMS_CREDENTIAL_ENCRYPTION_KEY;
-  return secret && secret.length >= 32 ? secret : null;
+function signingKey() {
+  const rootKey = process.env.PMS_CREDENTIAL_ENCRYPTION_KEY;
+  if (!rootKey || rootKey.length < 32) return null;
+  return hkdfSync(
+    "sha256",
+    Buffer.from(rootKey, "utf8"),
+    Buffer.from("iratepilot-pms-vault", "utf8"),
+    Buffer.from("apaleo-oauth-state-v1", "utf8"),
+    32,
+  );
 }
 
-function sign(encodedPayload: string, secret: string) {
-  return createHmac("sha256", secret)
+function sign(encodedPayload: string, key: ArrayBuffer) {
+  return createHmac("sha256", Buffer.from(key))
     .update(`iratepilot-apaleo-oauth-v1.${encodedPayload}`)
     .digest("base64url");
 }
@@ -31,8 +38,8 @@ export function createApaleoOAuthMarker(
   input: { connectionId: string; state: string; userId: string },
   now = Date.now(),
 ) {
-  const secret = signingSecret();
-  if (!secret) throw new Error("Apaleo OAuth state signing is not configured.");
+  const key = signingKey();
+  if (!key) throw new Error("Apaleo OAuth state signing is not configured.");
   const payload: ApaleoOAuthPayload = {
     connectionId: input.connectionId,
     exp: Math.floor(now / 1000) + apaleoOAuthMaxAge,
@@ -40,7 +47,7 @@ export function createApaleoOAuthMarker(
     sub: input.userId,
   };
   const encoded = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
-  return `${encoded}.${sign(encoded, secret)}`;
+  return `${encoded}.${sign(encoded, key)}`;
 }
 
 export function verifyApaleoOAuthMarker(
@@ -48,11 +55,11 @@ export function verifyApaleoOAuthMarker(
   input: { state: string; userId: string },
   now = Date.now(),
 ) {
-  const secret = signingSecret();
-  if (!marker || !secret) return null;
+  const key = signingKey();
+  if (!marker || !key) return null;
   const [encoded, providedSignature, extra] = marker.split(".");
   if (!encoded || !providedSignature || extra) return null;
-  const expected = Buffer.from(sign(encoded, secret), "utf8");
+  const expected = Buffer.from(sign(encoded, key), "utf8");
   const provided = Buffer.from(providedSignature, "utf8");
   if (expected.length !== provided.length || !timingSafeEqual(expected, provided)) return null;
   try {
