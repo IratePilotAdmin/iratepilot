@@ -33,5 +33,7 @@ describe("Apaleo OAuth state", () => {
     expect(verifyApaleoOAuthMarker(marker, { state: "wrong", userId: "admin-1" }, now + 1_000)).toBeNull();
     expect(verifyApaleoOAuthMarker(marker, { state: "state-1", userId: "other" }, now + 1_000)).toBeNull();
     expect(verifyApaleoOAuthMarker(marker, { state: "state-1", userId: "admin-1" }, now + 601_000)).toBeNull();
+    const tampered = `${marker.slice(0, -1)}${marker.endsWith("A") ? "B" : "A"}`;
+    expect(verifyApaleoOAuthMarker(tampered, { state: "state-1", userId: "admin-1" }, now + 1_000)).toBeNull();
   });
 });

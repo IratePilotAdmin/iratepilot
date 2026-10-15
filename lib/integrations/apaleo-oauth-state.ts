@@ -1,4 +1,8 @@
-import { createHmac, hkdfSync, timingSafeEqual } from "node:crypto";
+import {
+  decryptPmsCredentials,
+  encryptPmsCredentials,
+  type EncryptedPmsCredentials,
+} from "./pms-credentials";
 
 export const apaleoOAuthCookieName = "__Host-iratepilot-apaleo-oauth";
 export const apaleoOAuthMaxAge = 10 * 60;
@@ -16,38 +20,20 @@ type ApaleoOAuthPayload = {
   sub: string;
 };
 
-function signingKey() {
-  const rootKey = process.env.PMS_CREDENTIAL_ENCRYPTION_KEY;
-  if (!rootKey || rootKey.length < 32) return null;
-  return hkdfSync(
-    "sha256",
-    Buffer.from(rootKey, "utf8"),
-    Buffer.from("iratepilot-pms-vault", "utf8"),
-    Buffer.from("apaleo-oauth-state-v1", "utf8"),
-    32,
-  );
-}
-
-function sign(encodedPayload: string, key: ArrayBuffer) {
-  return createHmac("sha256", Buffer.from(key))
-    .update(`iratepilot-apaleo-oauth-v1.${encodedPayload}`)
-    .digest("base64url");
-}
-
 export function createApaleoOAuthMarker(
   input: { connectionId: string; state: string; userId: string },
   now = Date.now(),
 ) {
-  const key = signingKey();
-  if (!key) throw new Error("Apaleo OAuth state signing is not configured.");
   const payload: ApaleoOAuthPayload = {
     connectionId: input.connectionId,
     exp: Math.floor(now / 1000) + apaleoOAuthMaxAge,
     state: input.state,
     sub: input.userId,
   };
-  const encoded = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
-  return `${encoded}.${sign(encoded, key)}`;
+  const encrypted = encryptPmsCredentials({
+    payload: JSON.stringify(payload),
+  });
+  return Buffer.from(JSON.stringify(encrypted), "utf8").toString("base64url");
 }
 
 export function verifyApaleoOAuthMarker(
@@ -55,15 +41,13 @@ export function verifyApaleoOAuthMarker(
   input: { state: string; userId: string },
   now = Date.now(),
 ) {
-  const key = signingKey();
-  if (!marker || !key) return null;
-  const [encoded, providedSignature, extra] = marker.split(".");
-  if (!encoded || !providedSignature || extra) return null;
-  const expected = Buffer.from(sign(encoded, key), "utf8");
-  const provided = Buffer.from(providedSignature, "utf8");
-  if (expected.length !== provided.length || !timingSafeEqual(expected, provided)) return null;
+  if (!marker) return null;
   try {
-    const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")) as Partial<ApaleoOAuthPayload>;
+    const encrypted = JSON.parse(
+      Buffer.from(marker, "base64url").toString("utf8"),
+    ) as EncryptedPmsCredentials;
+    const values = decryptPmsCredentials(encrypted);
+    const payload = JSON.parse(values.payload) as Partial<ApaleoOAuthPayload>;
     if (payload.sub !== input.userId
       || payload.state !== input.state
       || !payload.connectionId
