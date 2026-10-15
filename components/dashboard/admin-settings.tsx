@@ -507,7 +507,7 @@ export function AdminSettings() {
         </div>}
       </section>
 
-      <section className="card mt-6 p-6">
+      <section className="card mt-6 p-6" id="pms-credential-vault">
         <span className="text-xs uppercase tracking-wider text-slate-500">Administrators only</span>
         <h2 className="mt-2 text-xl font-semibold">PMS credential vault</h2>
         <p className="mt-2 text-sm text-slate-600">Store sandbox credentials with server-side encryption. Saved values are never returned to this page or exposed to hotel partners.</p>
@@ -529,6 +529,10 @@ export function AdminSettings() {
             <div className="flex flex-wrap gap-3">
               <button className="btn-primary" disabled={credentialBusy} type="submit">{credentialBusy ? "Working…" : "Encrypt and save"}</button>
               <button className="btn-secondary" disabled={credentialBusy || !selectedConnection.credentials_configured} onClick={testCredentials} type="button">Validate stored configuration</button>
+              {selectedConnection.provider_id === "apaleo" && selectedConnection.credentials_configured && <a
+                className="btn-secondary"
+                href={`/api/admin/integrations/pms/apaleo/connect?connectionId=${encodeURIComponent(selectedConnection.id)}`}
+              >Connect Apaleo account</a>}
             </div>
           </>}
           {credentialMessage && <p className="text-sm" role="status">{credentialMessage}</p>}

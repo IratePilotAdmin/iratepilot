@@ -57,7 +57,7 @@ export { CloudbedsConnectionTestError, testCloudbedsSandboxConnection } from "./
 export type { CloudbedsConnectionTestResult } from "./cloudbeds";
 export { ApaleoAdapter } from "./apaleo";
 export { ApaleoBookingMapper, createApaleoSyncAdapter, loadApaleoSyncConfig } from "./apaleo";
-export { ApaleoConnectionTestError, testApaleoSandboxConnection } from "./apaleo";
+export { ApaleoConnectionTestError, exchangeApaleoAuthorizationCode, testApaleoSandboxConnection } from "./apaleo";
 export type { ApaleoConnectionTestConfig, ApaleoConnectionTestResult } from "./apaleo";
 export { StayntouchHttpTransport, StayntouchTransportError } from "./stayntouch";
 export { StayntouchBookingMapper, createStayntouchSyncAdapter, loadStayntouchSyncConfig } from "./stayntouch";
