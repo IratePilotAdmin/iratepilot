@@ -18,7 +18,7 @@ describe("PMS credential vault", () => {
   it("is admin-only and stores credentials through the service role", () => {
     expect(route).toContain('requireRole(["admin"])');
     expect(route).toContain("createAdminClient()");
-    expect(route).toContain("encryptPmsCredentials(environment)");
+    expect(route).toContain("encryptPmsCredentials(credentialsToStore)");
   });
 
   it("never returns credential values and labels tests honestly", () => {

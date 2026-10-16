@@ -10,6 +10,7 @@ import {
   PMS_VENDOR_REFERENCE_PENDING,
   PMS_PILOT_PREFLIGHT_PENDING,
   PMS_PILOT_WITH_VENDOR_REFERENCE_PENDING,
+  PMS_PILOT_PREVIEW_PROJECT_REF,
   PRODUCTION_PROJECT_REF,
   reconcilePreviewMigrations,
   REQUIRED_PREVIEW_BASELINE,
@@ -20,7 +21,7 @@ const migration = readFileSync(
   "utf8",
 );
 
-const previewRef = "tztrvyhqyhkjhjwhrbaa";
+const previewRef = PMS_PILOT_PREVIEW_PROJECT_REF;
 const previewUrl = `postgresql://postgres.${previewRef}:password@aws-0-us-east-1.pooler.supabase.com:6543/postgres`;
 const migrationVersions = [
   "001",
@@ -59,7 +60,7 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
   it("recognizes the repository migration chain through the OTA delivery migrations before reconciling Preview", () => {
     const versions = listMigrationVersions();
     expect(versions).toEqual(expect.arrayContaining(REQUIRED_PREVIEW_BASELINE));
-    expect(versions.at(-1)).toBe("202610150168");
+    expect(versions.at(-1)).toBe("202610160170");
     expect(assertPreviewMigrationTarget({
       PREVIEW_SUPABASE_DB_URL: previewUrl,
       PREVIEW_SUPABASE_PROJECT_REF: previewRef,

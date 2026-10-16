@@ -47,6 +47,8 @@ export const PINNED_NON_FLIGHT_MIGRATIONS = Object.freeze([
   ["202610140166", "202610140166_unique_siteminder_hotel_codes.sql"],
   ["202610150167", "202610150167_pms_vendor_account_reference.sql"],
   ["202610150168", "202610150168_require_clock_subscription_id.sql"],
+  ["202610150169", "202610150169_apaleo_webhook_receipts.sql"],
+  ["202610160170", "202610160170_apaleo_reservation_reconciliation.sql"],
 ].map(([version, filename]) => Object.freeze({ version, filename })));
 
 export const RETIRED_FLIGHT_MIGRATION_VERSIONS = Object.freeze([
