@@ -76,6 +76,32 @@ describe("Apaleo webhook receiver", () => {
     expect(mocks.insert).not.toHaveBeenCalled();
   });
 
+  it("accepts a health check when Apaleo includes other authorized properties", async () => {
+    const response = await POST(request({
+      id: "healthcheck-1",
+      topic: "system",
+      type: "healthcheck",
+      propertyIds: ["LND", "MUC", "BER"],
+      timestamp: Date.now(),
+    }), context);
+
+    expect(response.status).toBe(204);
+    expect(mocks.insert).not.toHaveBeenCalled();
+  });
+
+  it("rejects a health check that omits the selected property", async () => {
+    const response = await POST(request({
+      id: "healthcheck-1",
+      topic: "system",
+      type: "healthcheck",
+      propertyIds: ["LND", "BER"],
+      timestamp: Date.now(),
+    }), context);
+
+    expect(response.status).toBe(403);
+    expect(mocks.insert).not.toHaveBeenCalled();
+  });
+
   it("rejects an invalid endpoint token before reading the body", async () => {
     const response = await POST(request({
       id: "event-1",
