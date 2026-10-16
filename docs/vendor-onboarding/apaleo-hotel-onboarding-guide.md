@@ -29,7 +29,8 @@ Do not send passwords, client secrets, refresh tokens, card data, or one-time co
 After connection, the certified flow will:
 
 - store the authorized property allowlist;
-- create only the Apaleo webhook subscriptions required for those properties;
+- create only a `reservation/*` Apaleo webhook subscription for the selected property after an explicit admin action;
+- authenticate incoming events with a unique endpoint token kept in the encrypted credential vault and retain only digest evidence;
 - use Apaleo's IBE channel when retrieving offers and creating bookings;
 - refresh access tokens without asking the hotel to reconnect each hour; and
 - keep Apaleo credentials and payment references on the server.

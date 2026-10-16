@@ -111,7 +111,37 @@ export async function PUT(request: Request) {
       }, { status: 400 });
     }
 
-    const encrypted = encryptPmsCredentials(environment);
+    let credentialsToStore = environment;
+    if (provider.id === "apaleo") {
+      const existing = await admin.from("property_pms_credentials")
+        .select("ciphertext,initialization_vector,authentication_tag,key_version")
+        .eq("connection_id", selected.id)
+        .maybeSingle();
+      if (existing.error) throw existing.error;
+      if (existing.data) {
+        const current = decryptPmsCredentials({
+          ciphertext: existing.data.ciphertext,
+          initializationVector: existing.data.initialization_vector,
+          authenticationTag: existing.data.authentication_tag,
+          keyVersion: existing.data.key_version,
+        });
+        if (current.PMS_APALEO_WEBHOOK_SECRET || current.PMS_APALEO_WEBHOOK_SUBSCRIPTION_ID) {
+          return NextResponse.json({
+            error: "Remove the Apaleo webhook subscription before replacing credentials.",
+          }, { status: 409 });
+        }
+        const sameOAuthClient = current.PMS_APALEO_CLIENT_ID === environment.PMS_APALEO_CLIENT_ID
+          && current.PMS_APALEO_CLIENT_SECRET === environment.PMS_APALEO_CLIENT_SECRET;
+        if (sameOAuthClient && current.PMS_APALEO_REFRESH_TOKEN) {
+          credentialsToStore = {
+            ...environment,
+            PMS_APALEO_REFRESH_TOKEN: current.PMS_APALEO_REFRESH_TOKEN,
+          };
+        }
+      }
+    }
+
+    const encrypted = encryptPmsCredentials(credentialsToStore);
     const stored = await admin.from("property_pms_credentials").upsert({
       connection_id: selected.id,
       ciphertext: encrypted.ciphertext,

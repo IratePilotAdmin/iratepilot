@@ -169,6 +169,29 @@ describe("Apaleo property selection route", () => {
     expect(mocks.connectionUpdate).not.toHaveBeenCalled();
   });
 
+  it("requires webhook cleanup before changing the subscribed property", async () => {
+    mocks.decryptPmsCredentials.mockReturnValueOnce({
+      PMS_APALEO_BASE_URL: "https://api.apaleo.com",
+      PMS_APALEO_CLIENT_ID: "client-id",
+      PMS_APALEO_CLIENT_SECRET: "client-secret",
+      PMS_APALEO_REFRESH_TOKEN: "saved-refresh-token",
+      PMS_APALEO_WEBHOOK_SUBSCRIPTION_ID: "subscription-1",
+      PMS_APALEO_WEBHOOK_PROPERTY_CODE: "OLD",
+    });
+
+    const response = await PATCH(new Request("https://iratepilot.test/api/admin/integrations/pms/apaleo/properties", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ connectionId: "connection-1", propertyCode: "MUC" }),
+    }));
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error: "Remove the existing Apaleo webhook subscription before changing properties.",
+    });
+    expect(mocks.connectionUpdate).not.toHaveBeenCalled();
+  });
+
   it("saves an authorized property while keeping live traffic disabled", async () => {
     const response = await PATCH(new Request("https://iratepilot.test/api/admin/integrations/pms/apaleo/properties", {
       method: "PATCH",

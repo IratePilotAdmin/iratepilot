@@ -58,14 +58,22 @@ export type { CloudbedsConnectionTestResult } from "./cloudbeds";
 export { ApaleoAdapter } from "./apaleo";
 export { ApaleoBookingMapper, createApaleoSyncAdapter, loadApaleoSyncConfig } from "./apaleo";
 export {
+  ApaleoWebhookError,
+  createApaleoWebhookSubscription,
+  deleteApaleoWebhookSubscription,
+} from "./apaleo";
+export type { ApaleoWebhookSubscription } from "./apaleo";
+export {
   ApaleoConnectionTestError,
   exchangeApaleoAuthorizationCode,
+  getApaleoAccessToken,
   listApaleoProperties,
   testApaleoSandboxConnection,
 } from "./apaleo";
 export type {
   ApaleoConnectionTestConfig,
   ApaleoConnectionTestResult,
+  ApaleoAccessTokenResult,
   ApaleoProperty,
   ApaleoPropertyListResult,
 } from "./apaleo";

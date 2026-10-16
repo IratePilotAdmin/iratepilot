@@ -130,6 +130,14 @@ export async function PATCH(request: Request) {
   try {
     const loaded = await fetchAuthorizedProperties(connectionId, auth.user.id);
     if (!loaded.ok) return loaded.response;
+    if (
+      loaded.credentials.PMS_APALEO_WEBHOOK_SUBSCRIPTION_ID
+      && loaded.credentials.PMS_APALEO_WEBHOOK_PROPERTY_CODE !== propertyCode
+    ) {
+      return NextResponse.json({
+        error: "Remove the existing Apaleo webhook subscription before changing properties.",
+      }, { status: 409 });
+    }
     const selected = loaded.properties.find((property) => property.id === propertyCode);
     if (!selected) {
       return NextResponse.json({ error: "Choose a property authorized for this Apaleo account." }, { status: 409 });

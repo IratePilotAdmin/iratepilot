@@ -64,6 +64,7 @@ describe("Apaleo sandbox connection test", () => {
 
     await expect(listApaleoProperties({ ...config, refreshToken: "saved-refresh-token" }, fetcher))
       .resolves.toEqual({
+        accessToken: "connected-access-token",
         properties: [
           { id: "MUC", name: "Munich Test Hotel" },
           { id: "BER", name: "BER" },

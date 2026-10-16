@@ -19,7 +19,13 @@ export type ApaleoProperty = {
 };
 
 export type ApaleoPropertyListResult = {
+  accessToken: string;
   properties: ApaleoProperty[];
+  refreshToken?: string;
+};
+
+export type ApaleoAccessTokenResult = {
+  accessToken: string;
   refreshToken?: string;
 };
 
@@ -171,29 +177,24 @@ export async function testApaleoSandboxConnection(
   };
 }
 
-export async function listApaleoProperties(
+export async function getApaleoAccessToken(
   config: ApaleoConnectionTestConfig,
   fetcher: ApaleoFetch = fetch,
-): Promise<ApaleoPropertyListResult> {
-  const baseUrl = validate(config);
-  const propertiesEndpoint = new URL("/inventory/v1/properties", baseUrl);
-  if (propertiesEndpoint.origin !== baseUrl.origin) {
-    throw new Error("Apaleo connection test must remain on the configured API origin");
-  }
-
+): Promise<ApaleoAccessTokenResult> {
+  validate(config);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), config.timeoutMs ?? 15_000);
   try {
-      const tokenBody = config.refreshToken
-        ? new URLSearchParams({ grant_type: "refresh_token", refresh_token: config.refreshToken })
-        : new URLSearchParams({ grant_type: "client_credentials" });
-      const tokenResponse = await fetcher("https://identity.apaleo.com/connect/token", {
+    const tokenBody = config.refreshToken
+      ? new URLSearchParams({ grant_type: "refresh_token", refresh_token: config.refreshToken })
+      : new URLSearchParams({ grant_type: "client_credentials" });
+    const tokenResponse = await fetcher("https://identity.apaleo.com/connect/token", {
       method: "POST",
       headers: {
         authorization: `Basic ${btoa(`${config.clientId}:${config.clientSecret}`)}`,
         "content-type": "application/x-www-form-urlencoded",
       },
-        body: tokenBody,
+      body: tokenBody,
       signal: controller.signal,
     });
     const tokenPayload = await tokenResponse.json().catch(() => undefined);
@@ -205,19 +206,46 @@ export async function listApaleoProperties(
         detail.code || "apaleo_identity_rejected",
       );
     }
-      const token = tokenValues(tokenPayload);
-      const accessToken = token.accessToken;
-    if (typeof accessToken !== "string" || !accessToken.trim()) {
+    const token = tokenValues(tokenPayload);
+    if (!token.accessToken?.trim()) {
       throw new ApaleoConnectionTestError(
         "Apaleo identity returned an invalid token response",
         502,
         "apaleo_invalid_token_response",
       );
     }
+    return {
+      accessToken: token.accessToken,
+      ...(token.refreshToken ? { refreshToken: token.refreshToken } : {}),
+    };
+  } catch (error) {
+    if (error instanceof ApaleoConnectionTestError) throw error;
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new ApaleoConnectionTestError("Apaleo authorization timed out", 504, "apaleo_authorization_timeout");
+    }
+    throw new ApaleoConnectionTestError("Apaleo authorization failed", 502, "apaleo_authorization_unreachable");
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
+export async function listApaleoProperties(
+  config: ApaleoConnectionTestConfig,
+  fetcher: ApaleoFetch = fetch,
+): Promise<ApaleoPropertyListResult> {
+  const baseUrl = validate(config);
+  const propertiesEndpoint = new URL("/inventory/v1/properties", baseUrl);
+  if (propertiesEndpoint.origin !== baseUrl.origin) {
+    throw new Error("Apaleo connection test must remain on the configured API origin");
+  }
+
+  const token = await getApaleoAccessToken(config, fetcher);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), config.timeoutMs ?? 15_000);
+  try {
     const propertiesResponse = await fetcher(propertiesEndpoint, {
       method: "GET",
-      headers: { authorization: `Bearer ${accessToken}` },
+      headers: { authorization: `Bearer ${token.accessToken}` },
       signal: controller.signal,
     });
     const propertiesPayload = await propertiesResponse.json().catch(() => undefined);
@@ -238,6 +266,7 @@ export async function listApaleoProperties(
       );
     }
     return {
+      accessToken: token.accessToken,
       properties,
       ...(token.refreshToken ? { refreshToken: token.refreshToken } : {}),
     };

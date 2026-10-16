@@ -30,9 +30,24 @@ export const PMS_VENDOR_REFERENCE_PENDING = [
   "202610150168",
 ];
 
+// Digest-only Apaleo webhook receipts are isolated so Preview can validate the
+// receiver schema without broadening approval to unrelated migrations.
+export const APALEO_WEBHOOK_RECEIPT_PENDING = [
+  "202610150169",
+];
+
+export const PMS_VENDOR_REFERENCE_AND_APALEO_WEBHOOK_PENDING = [
+  ...PMS_VENDOR_REFERENCE_PENDING,
+  ...APALEO_WEBHOOK_RECEIPT_PENDING,
+];
+
 export const PMS_CATALOG_AND_VENDOR_REFERENCE_PENDING = [
   ...PMS_CATALOG_EXPANSION_PENDING,
   ...PMS_VENDOR_REFERENCE_PENDING,
+];
+export const PMS_CATALOG_VENDOR_REFERENCE_AND_APALEO_WEBHOOK_PENDING = [
+  ...PMS_CATALOG_AND_VENDOR_REFERENCE_PENDING,
+  ...APALEO_WEBHOOK_RECEIPT_PENDING,
 ];
 
 // Observed on the Preview dashboard. This is a read-only preflight target, not push approval.
@@ -47,6 +62,10 @@ export const PMS_PILOT_PREFLIGHT_PENDING = [
 export const PMS_PILOT_WITH_VENDOR_REFERENCE_PENDING = [
   ...PMS_PILOT_PREFLIGHT_PENDING,
   ...PMS_VENDOR_REFERENCE_PENDING,
+];
+export const PMS_PILOT_WITH_VENDOR_REFERENCE_AND_APALEO_WEBHOOK_PENDING = [
+  ...PMS_PILOT_WITH_VENDOR_REFERENCE_PENDING,
+  ...APALEO_WEBHOOK_RECEIPT_PENDING,
 ];
 export const PMS_PILOT_PREVIEW_PROJECT_REF = "tztrvyhqyhkjhjwhrbaa";
 
@@ -131,6 +150,9 @@ export function assertPreviewRemoteMigrationState(
     PMS_CATALOG_EXPANSION_PENDING,
     PMS_VENDOR_REFERENCE_PENDING,
     PMS_CATALOG_AND_VENDOR_REFERENCE_PENDING,
+    APALEO_WEBHOOK_RECEIPT_PENDING,
+    PMS_VENDOR_REFERENCE_AND_APALEO_WEBHOOK_PENDING,
+    PMS_CATALOG_VENDOR_REFERENCE_AND_APALEO_WEBHOOK_PENDING,
     [],
   ],
 ) {
@@ -208,6 +230,9 @@ export function reconcilePreviewMigrations(
       PMS_CATALOG_EXPANSION_PENDING,
       PMS_VENDOR_REFERENCE_PENDING,
       PMS_CATALOG_AND_VENDOR_REFERENCE_PENDING,
+      APALEO_WEBHOOK_RECEIPT_PENDING,
+      PMS_VENDOR_REFERENCE_AND_APALEO_WEBHOOK_PENDING,
+      PMS_CATALOG_VENDOR_REFERENCE_AND_APALEO_WEBHOOK_PENDING,
     ],
     latestRepositoryMigration: plan.migrationVersions.at(-1),
   };
@@ -233,7 +258,13 @@ export function reconcilePreviewMigrations(
     const observed = assertPreviewRemoteMigrationState(
       beforeOutput,
       plan.migrationVersions,
-      [PMS_PILOT_PREFLIGHT_PENDING, PMS_PILOT_WITH_VENDOR_REFERENCE_PENDING, []],
+      [
+        PMS_PILOT_PREFLIGHT_PENDING,
+        PMS_PILOT_WITH_VENDOR_REFERENCE_PENDING,
+        PMS_PILOT_WITH_VENDOR_REFERENCE_AND_APALEO_WEBHOOK_PENDING,
+        APALEO_WEBHOOK_RECEIPT_PENDING,
+        [],
+      ],
     );
     const dryRunOutput = runner(
       command,

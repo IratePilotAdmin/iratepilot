@@ -30,6 +30,8 @@ The repository contains a server-side Apaleo connector with:
 - refresh-token rotation during connection validation;
 - a property-read connection test using `GET /inventory/v1/properties`;
 - an admin property selector that reads only the authorized Apaleo properties, revalidates the selected property against Apaleo before saving it, and leaves live traffic disabled;
+- explicit creation and deletion of an Apaleo `reservation/*` webhook subscription restricted to the selected property;
+- an HTTPS webhook receiver protected by a unique encrypted endpoint token, property checks, event-ID deduplication, payload-size limits, and digest-only event receipts ordered by provider timestamp;
 - offer search using `GET /booking/v1/offers` with `channelCode=Ibe`;
 - booking creation using `POST /booking/v1/bookings` with an idempotency key;
 - reservation cancellation using `PUT /booking/v1/reservation-actions/{id}/cancel`;
@@ -44,9 +46,9 @@ Do not describe the integration as certification-ready until these items are imp
 
 1. Move the property selector into the hotel-facing onboarding flow, or obtain Apaleo confirmation that the current admin-managed mapping satisfies certification.
 2. Enforcement that property reads, offer searches, bookings, and webhook subscriptions remain within those selected properties.
-3. Webhook subscription creation during onboarding for selected properties only.
-4. An HTTPS webhook receiver with authentication, deduplication by event ID, out-of-order handling, retry-safe processing, and sanitized operational evidence.
-5. Webhook subscription deletion during disconnect/offboarding, with proof that no orphaned subscription remains.
+3. Move webhook creation and deletion into the hotel-facing onboarding and disconnect flows, then prove the lifecycle against Apaleo's test account.
+4. Add retry-safe reservation reconciliation from the authenticated digest receipt. The current receiver records ordering and deduplication evidence but intentionally performs no reservation mutation.
+5. Produce certification evidence that subscription deletion leaves no orphaned Apaleo subscription.
 6. Mandatory services displayed before booking, optional service offers, and correct service inclusion in the booking request.
 7. Correct display and accounting for `totalGrossAmount`, `prePaymentGrossAmount`, city tax, and additional mandatory fees.
 8. Apaleo's required payment flow for `Prepayment` and `CreditCard` guarantee types, including 3-D Secure, declines, `transactionReference`, and payment-account references. No payment assumption should be made before Apaleo confirms the approved processor and flow.

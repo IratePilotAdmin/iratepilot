@@ -5,14 +5,22 @@ export type { ApaleoSyncConfig, ApaleoSyncEnvironment } from "./sync";
 export { ApaleoHttpTransport, ApaleoTransportError } from "./transport";
 export type { ApaleoConfig, ApaleoFetch } from "./transport";
 export {
+  ApaleoWebhookError,
+  createApaleoWebhookSubscription,
+  deleteApaleoWebhookSubscription,
+} from "./webhooks";
+export type { ApaleoWebhookSubscription } from "./webhooks";
+export {
   ApaleoConnectionTestError,
   exchangeApaleoAuthorizationCode,
+  getApaleoAccessToken,
   listApaleoProperties,
   testApaleoSandboxConnection,
 } from "./connection-test";
 export type {
   ApaleoConnectionTestConfig,
   ApaleoConnectionTestResult,
+  ApaleoAccessTokenResult,
   ApaleoProperty,
   ApaleoPropertyListResult,
 } from "./connection-test";

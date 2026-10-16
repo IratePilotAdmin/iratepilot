@@ -136,6 +136,9 @@ export function AdminSettings() {
   const [apaleoProperties, setApaleoProperties] = useState<ApaleoProperty[]>([]);
   const [apaleoPropertyCode, setApaleoPropertyCode] = useState("");
   const [apaleoPropertyBusy, setApaleoPropertyBusy] = useState(false);
+  const [apaleoWebhookActive, setApaleoWebhookActive] = useState<boolean | null>(null);
+  const [apaleoWebhookPropertyCode, setApaleoWebhookPropertyCode] = useState("");
+  const [apaleoWebhookBusy, setApaleoWebhookBusy] = useState(false);
   const selectedConnection = useMemo(
     () => pmsConnections.find((connection) => connection.id === selectedConnectionId),
     [pmsConnections, selectedConnectionId],
@@ -340,6 +343,72 @@ export function AdminSettings() {
       setCredentialMessage(error instanceof Error ? error.message : "The Apaleo property selection could not be saved.");
     } finally {
       setApaleoPropertyBusy(false);
+    }
+  }
+
+  async function loadApaleoWebhookStatus() {
+    if (!selectedConnection || selectedConnection.provider_id !== "apaleo") return;
+    setApaleoWebhookBusy(true);
+    setCredentialMessage("");
+    try {
+      const response = await fetch(
+        `/api/admin/integrations/pms/apaleo/webhook?connectionId=${encodeURIComponent(selectedConnection.id)}`,
+        { cache: "no-store" },
+      );
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "The Apaleo webhook status could not be loaded.");
+      setApaleoWebhookActive(Boolean(body.active));
+      setApaleoWebhookPropertyCode(body.propertyCode ?? "");
+      setCredentialMessage(body.active
+        ? `Apaleo reservation events are subscribed for ${body.propertyCode}.`
+        : "No Apaleo webhook subscription is active.");
+    } catch (error) {
+      setCredentialMessage(error instanceof Error ? error.message : "The Apaleo webhook status could not be loaded.");
+    } finally {
+      setApaleoWebhookBusy(false);
+    }
+  }
+
+  async function enableApaleoWebhook() {
+    if (!selectedConnection || selectedConnection.provider_id !== "apaleo") return;
+    setApaleoWebhookBusy(true);
+    setCredentialMessage("");
+    try {
+      const response = await fetch("/api/admin/integrations/pms/apaleo/webhook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ connectionId: selectedConnection.id }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "The Apaleo webhook could not be enabled.");
+      setApaleoWebhookActive(true);
+      setApaleoWebhookPropertyCode(body.propertyCode ?? "");
+      setCredentialMessage(body.message);
+    } catch (error) {
+      setCredentialMessage(error instanceof Error ? error.message : "The Apaleo webhook could not be enabled.");
+    } finally {
+      setApaleoWebhookBusy(false);
+    }
+  }
+
+  async function removeApaleoWebhook() {
+    if (!selectedConnection || selectedConnection.provider_id !== "apaleo") return;
+    setApaleoWebhookBusy(true);
+    setCredentialMessage("");
+    try {
+      const response = await fetch(
+        `/api/admin/integrations/pms/apaleo/webhook?connectionId=${encodeURIComponent(selectedConnection.id)}`,
+        { method: "DELETE" },
+      );
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "The Apaleo webhook could not be removed.");
+      setApaleoWebhookActive(false);
+      setApaleoWebhookPropertyCode("");
+      setCredentialMessage(body.message);
+    } catch (error) {
+      setCredentialMessage(error instanceof Error ? error.message : "The Apaleo webhook could not be removed.");
+    } finally {
+      setApaleoWebhookBusy(false);
     }
   }
 
@@ -578,6 +647,8 @@ export function AdminSettings() {
               setCredentialMessage("");
               setApaleoProperties([]);
               setApaleoPropertyCode("");
+              setApaleoWebhookActive(null);
+              setApaleoWebhookPropertyCode("");
             }} required>
               {pmsConnections.map((connection) => <option key={connection.id} value={connection.id}>{connection.property_name} — {connection.provider_id}</option>)}
             </select>
@@ -616,6 +687,20 @@ export function AdminSettings() {
                   </label>
                   <button className="btn-primary" disabled={apaleoPropertyBusy || !apaleoPropertyCode} onClick={saveApaleoProperty} type="button">Save property selection</button>
                 </>}
+              </div>
+              <div className="mt-4 border-t pt-4">
+                <h3 className="text-sm font-semibold">Property-scoped reservation webhook</h3>
+                <p className="mt-1 text-xs text-slate-500">Subscribe only to reservation events for the selected property. Incoming events are authenticated, deduplicated, and stored as digest-only receipts; they do not enable consumer booking or mutate reservations.</p>
+                {apaleoWebhookActive !== null && <p className="mt-2 text-xs font-medium">
+                  Status: {apaleoWebhookActive ? `active for ${apaleoWebhookPropertyCode}` : "not active"}
+                </p>}
+                <div className="mt-3 flex flex-wrap gap-3">
+                  <button className="btn-secondary" disabled={apaleoWebhookBusy} onClick={loadApaleoWebhookStatus} type="button">
+                    {apaleoWebhookBusy ? "Working…" : "Check webhook status"}
+                  </button>
+                  {apaleoWebhookActive === false && <button className="btn-primary" disabled={apaleoWebhookBusy} onClick={enableApaleoWebhook} type="button">Enable reservation webhook</button>}
+                  {apaleoWebhookActive === true && <button className="btn-secondary" disabled={apaleoWebhookBusy} onClick={removeApaleoWebhook} type="button">Remove reservation webhook</button>}
+                </div>
               </div>
             </div>}
           </>}
