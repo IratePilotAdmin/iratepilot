@@ -29,6 +29,7 @@ The repository contains a server-side Apaleo connector with:
 - encrypted storage of the returned refresh token in the PMS credential vault;
 - refresh-token rotation during connection validation;
 - a property-read connection test using `GET /inventory/v1/properties`;
+- an admin property selector that reads only the authorized Apaleo properties, revalidates the selected property against Apaleo before saving it, and leaves live traffic disabled;
 - offer search using `GET /booking/v1/offers` with `channelCode=Ibe`;
 - booking creation using `POST /booking/v1/bookings` with an idempotency key;
 - reservation cancellation using `PUT /booking/v1/reservation-actions/{id}/cancel`;
@@ -41,7 +42,7 @@ The OAuth authorization request currently asks for `offline_access openid profil
 
 Do not describe the integration as certification-ready until these items are implemented and proven:
 
-1. A hotel-facing property selector that stores the properties explicitly enabled for iRatePilot.
+1. Move the property selector into the hotel-facing onboarding flow, or obtain Apaleo confirmation that the current admin-managed mapping satisfies certification.
 2. Enforcement that property reads, offer searches, bookings, and webhook subscriptions remain within those selected properties.
 3. Webhook subscription creation during onboarding for selected properties only.
 4. An HTTPS webhook receiver with authentication, deduplication by event ID, out-of-order handling, retry-safe processing, and sanitized operational evidence.

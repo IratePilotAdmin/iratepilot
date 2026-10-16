@@ -43,6 +43,11 @@ type PmsConnection = {
   credentials_updated_at: string | null;
 };
 
+type ApaleoProperty = {
+  id: string;
+  name: string;
+};
+
 type PriorityPmsProductionReadiness = {
   id: PriorityPmsProviderId;
   name: string;
@@ -128,6 +133,9 @@ export function AdminSettings() {
   const [pmsMessage, setPmsMessage] = useState("Checking PMS connections…");
   const [credentialBusy, setCredentialBusy] = useState(false);
   const [credentialMessage, setCredentialMessage] = useState("");
+  const [apaleoProperties, setApaleoProperties] = useState<ApaleoProperty[]>([]);
+  const [apaleoPropertyCode, setApaleoPropertyCode] = useState("");
+  const [apaleoPropertyBusy, setApaleoPropertyBusy] = useState(false);
   const selectedConnection = useMemo(
     () => pmsConnections.find((connection) => connection.id === selectedConnectionId),
     [pmsConnections, selectedConnectionId],
@@ -283,6 +291,55 @@ export function AdminSettings() {
       setCredentialMessage(error instanceof Error ? error.message : "Configuration test failed.");
     } finally {
       setCredentialBusy(false);
+    }
+  }
+
+  async function loadApaleoProperties() {
+    if (!selectedConnection || selectedConnection.provider_id !== "apaleo") return;
+    setApaleoPropertyBusy(true);
+    setCredentialMessage("");
+    try {
+      const response = await fetch(
+        `/api/admin/integrations/pms/apaleo/properties?connectionId=${encodeURIComponent(selectedConnection.id)}`,
+        { cache: "no-store" },
+      );
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Authorized Apaleo properties could not be loaded.");
+      setApaleoProperties(body.properties ?? []);
+      setApaleoPropertyCode(body.selectedPropertyCode ?? selectedConnection.external_property_code);
+      setCredentialMessage((body.properties ?? []).length > 0
+        ? "Choose the Apaleo property this iRatePilot hotel is authorized to use."
+        : "This Apaleo account returned no authorized properties.");
+    } catch (error) {
+      setCredentialMessage(error instanceof Error ? error.message : "Authorized Apaleo properties could not be loaded.");
+    } finally {
+      setApaleoPropertyBusy(false);
+    }
+  }
+
+  async function saveApaleoProperty() {
+    if (!selectedConnection || !apaleoPropertyCode) return;
+    setApaleoPropertyBusy(true);
+    setCredentialMessage("");
+    try {
+      const response = await fetch("/api/admin/integrations/pms/apaleo/properties", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          connectionId: selectedConnection.id,
+          propertyCode: apaleoPropertyCode,
+        }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "The Apaleo property selection could not be saved.");
+      setPmsConnections((items) => items.map((item) => item.id === selectedConnection.id
+        ? { ...item, external_property_code: body.selectedPropertyCode }
+        : item));
+      setCredentialMessage(body.message);
+    } catch (error) {
+      setCredentialMessage(error instanceof Error ? error.message : "The Apaleo property selection could not be saved.");
+    } finally {
+      setApaleoPropertyBusy(false);
     }
   }
 
@@ -516,7 +573,12 @@ export function AdminSettings() {
         <p className="mt-2 text-sm text-slate-600">Store sandbox credentials with server-side encryption. Saved values are never returned to this page or exposed to hotel partners.</p>
         {pmsConnections.length === 0 ? <p className="mt-4 text-sm text-slate-500">A partner must declare a hotel PMS before credentials can be configured.</p> : <form key={selectedConnectionId} className="mt-5 grid gap-4" onSubmit={saveCredentials}>
           <label className="text-sm font-medium">Hotel connection
-            <select className="input mt-2" value={selectedConnectionId} onChange={(event) => { setSelectedConnectionId(event.target.value); setCredentialMessage(""); }} required>
+            <select className="input mt-2" value={selectedConnectionId} onChange={(event) => {
+              setSelectedConnectionId(event.target.value);
+              setCredentialMessage("");
+              setApaleoProperties([]);
+              setApaleoPropertyCode("");
+            }} required>
               {pmsConnections.map((connection) => <option key={connection.id} value={connection.id}>{connection.property_name} — {connection.provider_id}</option>)}
             </select>
           </label>
@@ -538,6 +600,24 @@ export function AdminSettings() {
                 href={`/api/admin/integrations/pms/apaleo/connect?connectionId=${encodeURIComponent(selectedConnection.id)}`}
               >Connect Apaleo account</a>}
             </div>
+            {selectedConnection.provider_id === "apaleo" && selectedConnection.credentials_configured && <div className="rounded-lg border p-4">
+              <h3 className="text-sm font-semibold">Authorized Apaleo property</h3>
+              <p className="mt-1 text-xs text-slate-500">Load the properties granted to this Apaleo connection, then bind this iRatePilot hotel to exactly one authorized property. This sends a read-only request to Apaleo and does not enable booking traffic.</p>
+              <div className="mt-3 flex flex-wrap items-end gap-3">
+                <button className="btn-secondary" disabled={apaleoPropertyBusy} onClick={loadApaleoProperties} type="button">
+                  {apaleoPropertyBusy ? "Working…" : "Load authorized properties"}
+                </button>
+                {apaleoProperties.length > 0 && <>
+                  <label className="min-w-64 flex-1 text-sm font-medium">Apaleo property
+                    <select className="input mt-2" onChange={(event) => setApaleoPropertyCode(event.target.value)} value={apaleoPropertyCode}>
+                      <option value="">Choose a property</option>
+                      {apaleoProperties.map((property) => <option key={property.id} value={property.id}>{property.name} — {property.id}</option>)}
+                    </select>
+                  </label>
+                  <button className="btn-primary" disabled={apaleoPropertyBusy || !apaleoPropertyCode} onClick={saveApaleoProperty} type="button">Save property selection</button>
+                </>}
+              </div>
+            </div>}
           </>}
           {credentialMessage && <p className="text-sm" role="status">{credentialMessage}</p>}
         </form>}

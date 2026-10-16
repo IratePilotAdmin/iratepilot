@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   ApaleoConnectionTestError,
+  listApaleoProperties,
   testApaleoSandboxConnection,
 } from "../services/hotel-suppliers/apaleo";
 import type { ApaleoFetch } from "../services/hotel-suppliers/apaleo";
@@ -46,6 +47,29 @@ describe("Apaleo sandbox connection test", () => {
       .resolves.toEqual({ propertyCount: 1, refreshToken: "rotated-refresh-token" });
     expect(String(fetcher.mock.calls[0]?.[1]?.body))
       .toBe("grant_type=refresh_token&refresh_token=saved-refresh-token");
+  });
+
+  it("returns a sanitized property selector list", async () => {
+    const fetcher = vi.fn<ApaleoFetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        access_token: "connected-access-token",
+        refresh_token: "rotated-refresh-token",
+      })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        properties: [
+          { id: "MUC", name: "Munich Test Hotel", ignored: "not returned" },
+          { id: "BER" },
+        ],
+      })));
+
+    await expect(listApaleoProperties({ ...config, refreshToken: "saved-refresh-token" }, fetcher))
+      .resolves.toEqual({
+        properties: [
+          { id: "MUC", name: "Munich Test Hotel" },
+          { id: "BER", name: "BER" },
+        ],
+        refreshToken: "rotated-refresh-token",
+      });
   });
 
   it("requires HTTPS and complete client credentials", async () => {

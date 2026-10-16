@@ -13,6 +13,16 @@ export type ApaleoConnectionTestResult = {
   refreshToken?: string;
 };
 
+export type ApaleoProperty = {
+  id: string;
+  name: string;
+};
+
+export type ApaleoPropertyListResult = {
+  properties: ApaleoProperty[];
+  refreshToken?: string;
+};
+
 export type ApaleoAuthorizationCodeConfig = {
   clientId: string;
   clientSecret: string;
@@ -67,6 +77,24 @@ function propertiesFrom(payload: unknown) {
   if (Array.isArray(source.properties)) return source.properties;
   if (Array.isArray(source.data)) return source.data;
   return undefined;
+}
+
+function propertyValues(payload: unknown): ApaleoProperty[] | undefined {
+  const properties = propertiesFrom(payload);
+  if (!properties) return undefined;
+  const result: ApaleoProperty[] = [];
+  for (const value of properties) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+    const source = value as Record<string, unknown>;
+    if (typeof source.id !== "string" || !source.id.trim() || source.id.trim().length > 120) {
+      return undefined;
+    }
+    const name = typeof source.name === "string" && source.name.trim()
+      ? source.name.trim()
+      : source.id.trim();
+    result.push({ id: source.id.trim(), name: name.slice(0, 200) });
+  }
+  return result;
 }
 
 function tokenValues(payload: unknown) {
@@ -136,6 +164,17 @@ export async function testApaleoSandboxConnection(
   config: ApaleoConnectionTestConfig,
   fetcher: ApaleoFetch = fetch,
 ): Promise<ApaleoConnectionTestResult> {
+  const result = await listApaleoProperties(config, fetcher);
+  return {
+    propertyCount: result.properties.length,
+    ...(result.refreshToken ? { refreshToken: result.refreshToken } : {}),
+  };
+}
+
+export async function listApaleoProperties(
+  config: ApaleoConnectionTestConfig,
+  fetcher: ApaleoFetch = fetch,
+): Promise<ApaleoPropertyListResult> {
   const baseUrl = validate(config);
   const propertiesEndpoint = new URL("/inventory/v1/properties", baseUrl);
   if (propertiesEndpoint.origin !== baseUrl.origin) {
@@ -190,7 +229,7 @@ export async function testApaleoSandboxConnection(
         detail.code || "apaleo_sandbox_rejected",
       );
     }
-    const properties = propertiesFrom(propertiesPayload);
+    const properties = propertyValues(propertiesPayload);
     if (!properties) {
       throw new ApaleoConnectionTestError(
         "Apaleo API returned an invalid properties response",
@@ -198,7 +237,10 @@ export async function testApaleoSandboxConnection(
         "apaleo_invalid_properties_response",
       );
     }
-      return { propertyCount: properties.length, refreshToken: token.refreshToken };
+    return {
+      properties,
+      ...(token.refreshToken ? { refreshToken: token.refreshToken } : {}),
+    };
   } catch (error) {
     if (error instanceof ApaleoConnectionTestError) throw error;
     if (error instanceof Error && error.name === "AbortError") {
