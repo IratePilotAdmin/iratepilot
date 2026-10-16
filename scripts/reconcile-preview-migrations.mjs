@@ -88,7 +88,9 @@ export const PMS_PILOT_WITH_VENDOR_REFERENCE_AND_APALEO_RECONCILIATION_PENDING =
   ...PMS_PILOT_WITH_VENDOR_REFERENCE_AND_APALEO_WEBHOOK_PENDING,
   ...APALEO_RESERVATION_RECONCILIATION_PENDING,
 ];
-export const PMS_PILOT_PREVIEW_PROJECT_REF = "tztrvyhqyhkjhjwhrbaa";
+// This is the Supabase project embedded in the active Vercel Preview bundle.
+// Keep this pinned so a stale rehearsal project cannot receive Preview pushes.
+export const PMS_PILOT_PREVIEW_PROJECT_REF = "eiqmdldjnedqgbtoozqa";
 
 export const PRODUCTION_PROJECT_REF = "allliumarkejinplrggl";
 
