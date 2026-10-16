@@ -88,8 +88,10 @@ export async function POST(
     }
 
     if (topic.toLowerCase() === "system" && eventType.toLowerCase() === "healthcheck") {
-      const propertyIds = Array.isArray(payload.propertyIds) ? payload.propertyIds : [];
-      return propertyIds.length === 1 && propertyIds[0] === propertyCode ? noStore(204) : noStore(403);
+      const propertyIds = Array.isArray(payload.propertyIds)
+        ? payload.propertyIds.filter((value): value is string => typeof value === "string")
+        : [];
+      return propertyIds.includes(propertyCode) ? noStore(204) : noStore(403);
     }
 
     const eventProperty = typeof payload.propertyId === "string" ? payload.propertyId.trim() : "";
