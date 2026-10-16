@@ -9,6 +9,7 @@ import {
   buildExpediaRapidSandboxAvailabilityRequest,
   buildHotelbedsSandboxAvailabilityRequest,
   buildRatehawkSandboxHotelSearchRequest,
+  buildStubaSandboxHotelSearchRequest,
   type InventorySandboxRequest,
 } from "../services/hotel-suppliers/inventory-sandbox-request.server";
 
@@ -36,6 +37,12 @@ function enabledEnvironment(supplierId: InventorySandboxRequest["supplierId"]) {
       HOTEL_INVENTORY_RATEHAWK_SANDBOX_ENABLED: "true",
       HOTEL_INVENTORY_RATEHAWK_KEY_ID: "partner-id",
       HOTEL_INVENTORY_RATEHAWK_API_KEY: "ratehawk-api-key",
+    };
+  }
+  if (supplierId === "stuba") {
+    return {
+      HOTEL_INVENTORY_STUBA_SANDBOX_ENABLED: "true",
+      HOTEL_INVENTORY_STUBA_AUTH_API_KEY: "issued-stuba-sandbox-key",
     };
   }
   return {
@@ -67,6 +74,10 @@ describe("inventory supplier sandbox transport", () => {
       sharedSecret: "expedia-shared-secret",
       timestampSeconds: 1_700_000_000,
       query: { property_id: "123", occupancy: 2 },
+    }),
+    buildStubaSandboxHotelSearchRequest({
+      authApiKey: "issued-stuba-sandbox-key",
+      payload: { Destination: "LON", CheckIn: "2026-10-22", CheckOut: "2026-10-25" },
     }),
   ])("executes a validated $supplierId sandbox request", async (request) => {
     const fetcher = vi.fn(async (
@@ -102,6 +113,39 @@ describe("inventory supplier sandbox transport", () => {
     const fetcher = vi.fn();
     await expect(executeInventorySandboxRequest(forged, {
       environment: enabledEnvironment(forged.supplierId),
+      fetcher,
+    })).rejects.toMatchObject({ code: "invalid_request" });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("rejects a forged Stuba endpoint before calling fetch", async () => {
+    const forged: InventorySandboxRequest = {
+      ...buildStubaSandboxHotelSearchRequest({
+        authApiKey: "issued-stuba-sandbox-key",
+        payload: { Destination: "LON" },
+      }),
+      url: "https://api.stuba.com/HotelSearch",
+    };
+    const fetcher = vi.fn();
+    await expect(executeInventorySandboxRequest(forged, {
+      environment: enabledEnvironment("stuba"),
+      fetcher,
+    })).rejects.toMatchObject({ code: "invalid_request" });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("rejects a Stuba request without its authentication header", async () => {
+    const request = buildStubaSandboxHotelSearchRequest({
+      authApiKey: "issued-stuba-sandbox-key",
+      payload: { Destination: "LON" },
+    });
+    const missingAuthentication: InventorySandboxRequest = {
+      ...request,
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+    };
+    const fetcher = vi.fn();
+    await expect(executeInventorySandboxRequest(missingAuthentication, {
+      environment: enabledEnvironment("stuba"),
       fetcher,
     })).rejects.toMatchObject({ code: "invalid_request" });
     expect(fetcher).not.toHaveBeenCalled();

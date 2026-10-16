@@ -60,11 +60,15 @@ function validateRequest(request: InventorySandboxRequest) {
       ? request.method === "POST"
         && url.href === "https://api-sandbox.ratehawk.com/api/b2b/v3/search/serp/hotels/"
         && request.headers.Authorization?.startsWith("Basic ")
-      : request.method === "GET"
-        && url.origin === "https://test.ean.com"
-        && url.pathname === "/v3/properties/availability"
-        && Boolean(url.search)
-        && request.headers.Authorization?.startsWith("EAN ");
+      : request.supplierId === "stuba"
+        ? request.method === "POST"
+          && url.href === "https://testapijson.stuba.com/HotelSearch"
+          && Boolean(request.headers.AuthApiKey)
+        : request.method === "GET"
+          && url.origin === "https://test.ean.com"
+          && url.pathname === "/v3/properties/availability"
+          && Boolean(url.search)
+          && request.headers.Authorization?.startsWith("EAN ");
   if (!validEndpoint) invalidRequest(request.supplierId);
 
   for (const value of Object.values(request.headers)) {
