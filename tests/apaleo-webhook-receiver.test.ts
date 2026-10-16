@@ -89,7 +89,7 @@ describe("Apaleo webhook receiver", () => {
     expect(mocks.insert).not.toHaveBeenCalled();
   });
 
-  it("stores only a digest receipt for a selected-property reservation event", async () => {
+  it("stores a minimal reconciliation receipt for a selected-property reservation event", async () => {
     const payload = {
       id: "event-1",
       topic: "Reservation",
@@ -109,11 +109,12 @@ describe("Apaleo webhook receiver", () => {
       topic: "Reservation",
       event_type: "amended",
       property_code: "MUC",
+      provider_entity_id: "reservation-contains-sensitive-provider-reference",
       provider_occurred_at: new Date(payload.timestamp).toISOString(),
       payload_sha256: createHash("sha256").update(raw).digest("hex"),
       tracking_id_sha256: createHash("sha256").update("tracking-1").digest("hex"),
     });
-    expect(JSON.stringify(mocks.insert.mock.calls[0][0])).not.toContain("sensitive-provider-reference");
+    expect(JSON.stringify(mocks.insert.mock.calls[0][0])).not.toMatch(/guest|email|phone|primaryGuest/i);
   });
 
   it("acknowledges duplicate event IDs without creating a retry loop", async () => {
@@ -125,9 +126,23 @@ describe("Apaleo webhook receiver", () => {
       type: "created",
       propertyId: "MUC",
       timestamp: Date.now(),
+      data: { entityId: "reservation-1" },
     }), context);
 
     expect(response.status).toBe(204);
+  });
+
+  it("rejects a reservation event that cannot be tied to a provider entity", async () => {
+    const response = await POST(request({
+      id: "event-1",
+      topic: "reservation",
+      type: "created",
+      propertyId: "MUC",
+      timestamp: Date.now(),
+    }), context);
+
+    expect(response.status).toBe(400);
+    expect(mocks.insert).not.toHaveBeenCalled();
   });
 
   it("rejects events for a property outside the saved selection", async () => {

@@ -139,6 +139,7 @@ export function AdminSettings() {
   const [apaleoWebhookActive, setApaleoWebhookActive] = useState<boolean | null>(null);
   const [apaleoWebhookPropertyCode, setApaleoWebhookPropertyCode] = useState("");
   const [apaleoWebhookBusy, setApaleoWebhookBusy] = useState(false);
+  const [apaleoReconciliationBusy, setApaleoReconciliationBusy] = useState(false);
   const selectedConnection = useMemo(
     () => pmsConnections.find((connection) => connection.id === selectedConnectionId),
     [pmsConnections, selectedConnectionId],
@@ -409,6 +410,30 @@ export function AdminSettings() {
       setCredentialMessage(error instanceof Error ? error.message : "The Apaleo webhook could not be removed.");
     } finally {
       setApaleoWebhookBusy(false);
+    }
+  }
+
+  async function runApaleoReservationReconciliation() {
+    if (!selectedConnection || selectedConnection.provider_id !== "apaleo") return;
+    setApaleoReconciliationBusy(true);
+    setCredentialMessage("");
+    try {
+      const response = await fetch(
+        `/api/cron/apaleo-reservations?connectionId=${encodeURIComponent(selectedConnection.id)}`,
+        { method: "POST" },
+      );
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Apaleo reservation reconciliation could not run.");
+      const summary = body.summary ?? {};
+      setCredentialMessage(
+        `Apaleo reconciliation finished: ${Number(summary.reconciled || 0)} reconciled, ${Number(summary.deleted || 0)} deleted, ${Number(summary.failed || 0)} queued for retry. No booking or reservation was changed.`,
+      );
+    } catch (error) {
+      setCredentialMessage(error instanceof Error
+        ? error.message
+        : "Apaleo reservation reconciliation could not run.");
+    } finally {
+      setApaleoReconciliationBusy(false);
     }
   }
 
@@ -690,7 +715,7 @@ export function AdminSettings() {
               </div>
               <div className="mt-4 border-t pt-4">
                 <h3 className="text-sm font-semibold">Property-scoped reservation webhook</h3>
-                <p className="mt-1 text-xs text-slate-500">Subscribe only to reservation events for the selected property. Incoming events are authenticated, deduplicated, and stored as digest-only receipts; they do not enable consumer booking or mutate reservations.</p>
+                <p className="mt-1 text-xs text-slate-500">Subscribe only to reservation events for the selected property. Incoming events are authenticated and deduplicated. Reconciliation reads the current provider record and stores a PII-free digest; it does not enable consumer booking or mutate reservations.</p>
                 {apaleoWebhookActive !== null && <p className="mt-2 text-xs font-medium">
                   Status: {apaleoWebhookActive ? `active for ${apaleoWebhookPropertyCode}` : "not active"}
                 </p>}
@@ -700,6 +725,9 @@ export function AdminSettings() {
                   </button>
                   {apaleoWebhookActive === false && <button className="btn-primary" disabled={apaleoWebhookBusy} onClick={enableApaleoWebhook} type="button">Enable reservation webhook</button>}
                   {apaleoWebhookActive === true && <button className="btn-secondary" disabled={apaleoWebhookBusy} onClick={removeApaleoWebhook} type="button">Remove reservation webhook</button>}
+                  {apaleoWebhookActive === true && <button className="btn-secondary" disabled={apaleoReconciliationBusy} onClick={runApaleoReservationReconciliation} type="button">
+                    {apaleoReconciliationBusy ? "Reconciling…" : "Run safe reconciliation"}
+                  </button>}
                 </div>
               </div>
             </div>}

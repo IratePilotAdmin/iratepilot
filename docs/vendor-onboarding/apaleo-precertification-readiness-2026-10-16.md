@@ -31,7 +31,8 @@ The repository contains a server-side Apaleo connector with:
 - a property-read connection test using `GET /inventory/v1/properties`;
 - an admin property selector that reads only the authorized Apaleo properties, revalidates the selected property against Apaleo before saving it, and leaves live traffic disabled;
 - explicit creation and deletion of an Apaleo `reservation/*` webhook subscription restricted to the selected property;
-- an HTTPS webhook receiver protected by a unique encrypted endpoint token, property checks, event-ID deduplication, payload-size limits, and digest-only event receipts ordered by provider timestamp;
+- an HTTPS webhook receiver protected by a unique encrypted endpoint token, property checks, event-ID deduplication, payload-size limits, and minimal event receipts ordered by provider timestamp;
+- a retry-safe, service-role-only reconciliation worker that claims receipts with `FOR UPDATE SKIP LOCKED`, retrieves the current reservation with `GET /booking/v1/reservations/{id}`, validates the selected property, and stores only a PII-free state digest and provider status;
 - offer search using `GET /booking/v1/offers` with `channelCode=Ibe`;
 - booking creation using `POST /booking/v1/bookings` with an idempotency key;
 - reservation cancellation using `PUT /booking/v1/reservation-actions/{id}/cancel`;
@@ -47,12 +48,12 @@ Do not describe the integration as certification-ready until these items are imp
 1. Move the property selector into the hotel-facing onboarding flow, or obtain Apaleo confirmation that the current admin-managed mapping satisfies certification.
 2. Enforcement that property reads, offer searches, bookings, and webhook subscriptions remain within those selected properties.
 3. Move webhook creation and deletion into the hotel-facing onboarding and disconnect flows, then prove the lifecycle against Apaleo's test account.
-4. Add retry-safe reservation reconciliation from the authenticated digest receipt. The current receiver records ordering and deduplication evidence but intentionally performs no reservation mutation.
+4. Prove the implemented retry-safe reservation reconciliation against Apaleo's test account, including duplicate, out-of-order, deleted, timeout, and retry cases. The worker intentionally performs no reservation mutation.
 5. Produce certification evidence that subscription deletion leaves no orphaned Apaleo subscription.
 6. Mandatory services displayed before booking, optional service offers, and correct service inclusion in the booking request.
 7. Correct display and accounting for `totalGrossAmount`, `prePaymentGrossAmount`, city tax, and additional mandatory fees.
 8. Apaleo's required payment flow for `Prepayment` and `CreditCard` guarantee types, including 3-D Secure, declines, `transactionReference`, and payment-account references. No payment assumption should be made before Apaleo confirms the approved processor and flow.
-9. Reservation retrieval and reconciliation after create/cancel and after relevant webhook events.
+9. End-to-end reservation retrieval and reconciliation evidence after create/cancel and after relevant webhook events.
 10. Graceful 404 behavior, `pageSize=200` where pagination applies, one-hour access-token expiry, and complete end-to-end test evidence.
 11. A live disconnect-and-reconnect demonstration in the Apaleo test account.
 12. Apaleo review and certification approval before Store publication or any real hotel activation.
@@ -100,4 +101,5 @@ The pre-certification call may advance the integration into the certification bu
 - `https://apaleo.dev/guides/business-cases/ibe/create-the-booking.html`
 - `https://apaleo.dev/guides/webhook/configuration.html`
 - `https://apaleo.dev/guides/webhook/best-practices.html`
+- `https://apaleo.dev/guides/webhook/webhooks-payload.html`
 

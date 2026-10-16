@@ -9,6 +9,7 @@ export const runtime = "nodejs";
 const maxPayloadBytes = 32_768;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const identifierPattern = /^[A-Za-z0-9][A-Za-z0-9_-]{0,119}$/;
+const entityIdentifierPattern = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
 const eventNamePattern = /^[A-Za-z][A-Za-z0-9_-]{0,79}$/;
 
 function sha256(value: string) {
@@ -94,6 +95,11 @@ export async function POST(
     const eventProperty = typeof payload.propertyId === "string" ? payload.propertyId.trim() : "";
     if (eventProperty !== propertyCode) return noStore(403);
     if (topic.toLowerCase() !== "reservation") return noStore(204);
+    const data = payload.data && typeof payload.data === "object" && !Array.isArray(payload.data)
+      ? payload.data as Record<string, unknown>
+      : undefined;
+    const entityId = typeof data?.entityId === "string" ? data.entityId.trim() : "";
+    if (!entityIdentifierPattern.test(entityId)) return noStore(400);
 
     const trackingId = request.headers.get("apaleo-tracking-id")?.trim();
     const inserted = await admin.from("pms_webhook_event_receipts").insert({
@@ -103,6 +109,7 @@ export async function POST(
       topic,
       event_type: eventType,
       property_code: eventProperty,
+      provider_entity_id: entityId,
       provider_occurred_at: occurredAt.toISOString(),
       payload_sha256: sha256(raw),
       tracking_id_sha256: trackingId && trackingId.length <= 300 ? sha256(trackingId) : null,

@@ -11,6 +11,14 @@ export {
 } from "./webhooks";
 export type { ApaleoWebhookSubscription } from "./webhooks";
 export {
+  ApaleoReservationReadError,
+  fetchApaleoReservation,
+} from "./reservations";
+export type {
+  ApaleoReservationReadConfig,
+  ApaleoReservationSnapshot,
+} from "./reservations";
+export {
   ApaleoConnectionTestError,
   exchangeApaleoAuthorizationCode,
   getApaleoAccessToken,

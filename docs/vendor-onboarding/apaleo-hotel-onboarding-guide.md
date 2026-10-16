@@ -30,7 +30,8 @@ After connection, the certified flow will:
 
 - store the authorized property allowlist;
 - create only a `reservation/*` Apaleo webhook subscription for the selected property after an explicit admin action;
-- authenticate incoming events with a unique endpoint token kept in the encrypted credential vault and retain only digest evidence;
+- authenticate incoming events with a unique endpoint token kept in the encrypted credential vault and retain only the provider entity reference and digest evidence needed for reconciliation;
+- retrieve the current Apaleo reservation through a retry-safe worker, validate it against the selected property, and retain a PII-free state digest without changing the reservation or an iRatePilot booking;
 - use Apaleo's IBE channel when retrieving offers and creating bookings;
 - refresh access tokens without asking the hotel to reconnect each hour; and
 - keep Apaleo credentials and payment references on the server.

@@ -64,6 +64,14 @@ export {
 } from "./apaleo";
 export type { ApaleoWebhookSubscription } from "./apaleo";
 export {
+  ApaleoReservationReadError,
+  fetchApaleoReservation,
+} from "./apaleo";
+export type {
+  ApaleoReservationReadConfig,
+  ApaleoReservationSnapshot,
+} from "./apaleo";
+export {
   ApaleoConnectionTestError,
   exchangeApaleoAuthorizationCode,
   getApaleoAccessToken,
