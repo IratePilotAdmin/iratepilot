@@ -17,6 +17,7 @@ export default async function SyntheticFlightOfferPage({ params, searchParams }:
   const { id } = await params;
   const search = parseFlightSearch(await searchParams);
   if (!search.query) notFound();
+  if (search.query.tripType === "multicity") notFound();
   const plan = await repriceSyntheticFlightOffer(search.query, id);
   if (!plan) notFound();
   const { offer, receipt } = plan;

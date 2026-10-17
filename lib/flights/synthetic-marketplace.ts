@@ -223,6 +223,9 @@ async function executeSyntheticSearch(
   providerResult: FlightProviderSearchResult;
   plan: SyntheticFlightSearchPlan;
 }> {
+  if (query.tripType === "multicity") {
+    throw new SyntheticFlightMarketplaceError("Synthetic offers currently support only one-way and round-trip requests.");
+  }
   if ((query.tripType === "roundtrip") !== (query.returnDate !== null)) {
     throw new SyntheticFlightMarketplaceError("Trip type and return date must describe the same itinerary shape.");
   }
@@ -333,7 +336,7 @@ export async function repriceSyntheticFlightOffer(
 }
 
 export function flightSearchQueryString(query: FlightPlanningQuery) {
-  return new URLSearchParams({
+  const params = new URLSearchParams({
     tripType: query.tripType,
     origin: query.origin,
     destination: query.destination,
@@ -341,7 +344,15 @@ export function flightSearchQueryString(query: FlightPlanningQuery) {
     ...(query.returnDate ? { returnDate: query.returnDate } : {}),
     travelers: String(query.travelers),
     cabin: query.cabin,
-  }).toString();
+  });
+  if (query.tripType === "multicity") {
+    for (const segment of query.segments) {
+      params.append("segmentOrigin", segment.origin);
+      params.append("segmentDestination", segment.destination);
+      params.append("segmentDepartureDate", segment.departureDate);
+    }
+  }
+  return params.toString();
 }
 
 export function formatSyntheticFlightMoney(amount: string, currency = "USD") {

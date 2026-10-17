@@ -41,6 +41,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Sear
                   <select name="tripType" defaultValue={values.tripType} className="input mt-2">
                     <option value="roundtrip">Round trip</option>
                     <option value="oneway">One way</option>
+                    <option value="multicity">Multi-city</option>
                   </select>
                 </label>
                 <label className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600">
@@ -51,18 +52,18 @@ export default async function FlightsPage({ searchParams }: { searchParams: Sear
                 </label>
                 <label className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600">
                   From
-                  <input name="origin" defaultValue={values.origin} className="input mt-2 uppercase" placeholder="ORD" maxLength={3} pattern="[A-Za-z]{3}" autoComplete="off" required />
+                  <input name="origin" defaultValue={values.origin} className="input mt-2 uppercase" placeholder="ORD" maxLength={3} pattern="[A-Za-z]{3}" autoComplete="off" />
                 </label>
                 <label className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600">
                   To
-                  <input name="destination" defaultValue={values.destination} className="input mt-2 uppercase" placeholder="MIA" maxLength={3} pattern="[A-Za-z]{3}" autoComplete="off" required />
+                  <input name="destination" defaultValue={values.destination} className="input mt-2 uppercase" placeholder="MIA" maxLength={3} pattern="[A-Za-z]{3}" autoComplete="off" />
                 </label>
                 <label className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600">
                   Depart
-                  <input name="departureDate" defaultValue={values.departureDate} className="input mt-2" type="date" min={today} required />
+                  <input name="departureDate" defaultValue={values.departureDate} className="input mt-2" type="date" min={today} />
                 </label>
                 <label className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600">
-                  Return {values.tripType === "oneway" && <span className="normal-case tracking-normal text-neutral-400">(ignored for one way)</span>}
+                  Return {(values.tripType === "oneway" || values.tripType === "multicity") && <span className="normal-case tracking-normal text-neutral-400">(ignored for {values.tripType === "multicity" ? "multi-city" : "one way"})</span>}
                   <input name="returnDate" defaultValue={values.returnDate} className="input mt-2" type="date" min={values.departureDate || today} />
                 </label>
                 <label className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600 sm:col-span-2">
@@ -72,6 +73,29 @@ export default async function FlightsPage({ searchParams }: { searchParams: Sear
                   </select>
                 </label>
               </div>
+              <details className="mt-6 border border-neutral-300 bg-neutral-50 p-4">
+                <summary className="cursor-pointer text-sm font-semibold text-neutral-800">Multi-city legs (use when Trip type is Multi-city)</summary>
+                <p className="mt-3 text-xs leading-5 text-neutral-500">Add 2–4 connected legs. Each leg must depart from the previous leg’s arrival airport, and dates cannot move backwards.</p>
+                <div className="mt-4 grid gap-4">
+                  {[0, 1, 2, 3].map((index) => (
+                    <fieldset key={index} className="grid gap-4 border-t border-neutral-200 pt-4 sm:grid-cols-[1fr_1fr_1fr]">
+                      <legend className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600">Leg {index + 1}{index < 2 ? " · required for multi-city" : " · optional"}</legend>
+                      <label className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600">
+                        From
+                        <input name="segmentOrigin" defaultValue={values.segments[index]?.origin ?? ""} className="input mt-2 uppercase" placeholder="ORD" maxLength={3} pattern="[A-Za-z]{3}" autoComplete="off" />
+                      </label>
+                      <label className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600">
+                        To
+                        <input name="segmentDestination" defaultValue={values.segments[index]?.destination ?? ""} className="input mt-2 uppercase" placeholder="MIA" maxLength={3} pattern="[A-Za-z]{3}" autoComplete="off" />
+                      </label>
+                      <label className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600">
+                        Depart
+                        <input name="segmentDepartureDate" defaultValue={values.segments[index]?.departureDate ?? ""} className="input mt-2" type="date" min={today} />
+                      </label>
+                    </fieldset>
+                  ))}
+                </div>
+              </details>
               <button type="submit" className="btn-primary mt-6 w-full gap-2">Preview synthetic options <ArrowRight className="h-4 w-4" /></button>
               <p className="mt-3 text-xs leading-5 text-neutral-500">This validates planning details and displays deterministic product fixtures only. It does not reserve a seat, quote a live fare, contact an airline, or create a charge.</p>
             </form>
@@ -92,7 +116,12 @@ export default async function FlightsPage({ searchParams }: { searchParams: Sear
             <div className="grid gap-7 border border-black p-7 lg:grid-cols-[1.2fr_.8fr] lg:p-9">
               <div>
                 <span className="section-kicker">Validated planning request</span>
-                <h2 className="mt-3 text-4xl">{search.query.origin} <span aria-hidden="true">→</span> {search.query.destination}</h2>
+                <h2 className="mt-3 text-4xl">{search.query.tripType === "multicity" ? "Multi-city itinerary" : <>{search.query.origin} <span aria-hidden="true">→</span> {search.query.destination}</>}</h2>
+                {search.query.tripType === "multicity" && (
+                  <ol className="mt-6 space-y-3 border border-neutral-300 bg-white p-5">
+                    {search.query.segments.map((segment, index) => <li key={`${segment.origin}-${segment.destination}-${segment.departureDate}`} className="flex gap-3 text-sm"><strong>{index + 1}.</strong><span>{segment.origin} <span aria-hidden="true">→</span> {segment.destination} · {formatFlightDate(segment.departureDate)}</span></li>)}
+                  </ol>
+                )}
                 <div className="mt-7 grid gap-px border border-neutral-300 bg-neutral-300 sm:grid-cols-2">
                   <div className="bg-white p-5"><CalendarDays className="h-5 w-5" /><strong className="mt-4 block">{formatFlightDate(search.query.departureDate)}</strong><span className="mt-1 block text-sm text-neutral-500">{search.query.returnDate ? `Return ${formatFlightDate(search.query.returnDate)}` : "One-way trip"}</span></div>
                   <div className="bg-white p-5"><Users className="h-5 w-5" /><strong className="mt-4 block">{search.query.travelers} {search.query.travelers === 1 ? "traveler" : "travelers"}</strong><span className="mt-1 block text-sm text-neutral-500">{formatFlightCabin(search.query.cabin)}</span></div>
