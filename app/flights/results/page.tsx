@@ -13,7 +13,9 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function FlightResultsPage({ searchParams }: { searchParams: SearchParams }) {
   const search = parseFlightSearch(await searchParams);
-  const offers = search.query ? await buildSyntheticFlightOffers(search.query) : [];
+  const offers = search.query && search.query.tripType !== "multicity"
+    ? await buildSyntheticFlightOffers(search.query)
+    : [];
   const queryString = search.query ? flightSearchQueryString(search.query) : "";
   return (
     <>
@@ -37,10 +39,20 @@ export default async function FlightResultsPage({ searchParams }: { searchParams
         ) : search.query ? (
           <>
             <section className="mt-8 border border-black bg-neutral-950 p-6 text-white">
-              <strong className="text-2xl">{search.query.origin} → {search.query.destination}</strong>
-              <p className="mt-2 text-sm text-neutral-300">{search.query.tripType === "roundtrip" ? "Round trip" : "One way"} · {search.query.travelers} traveler{search.query.travelers === 1 ? "" : "s"} · {formatFlightCabin(search.query.cabin)}</p>
+              <strong className="text-2xl">{search.query.tripType === "multicity" ? "Multi-city itinerary" : <>{search.query.origin} → {search.query.destination}</>}</strong>
+              <p className="mt-2 text-sm text-neutral-300">{search.query.tripType === "multicity" ? "Multi-city planning" : search.query.tripType === "roundtrip" ? "Round trip" : "One way"} · {search.query.travelers} traveler{search.query.travelers === 1 ? "" : "s"} · {formatFlightCabin(search.query.cabin)}</p>
             </section>
-            <section className="mt-7 grid gap-5" aria-label="Synthetic flight options">
+            {search.query.tripType === "multicity" ? (
+              <section className="mt-7 border border-amber-300 bg-amber-50 p-6" aria-label="Multi-city planning summary">
+                <h2 className="text-2xl text-amber-950">Multi-city planning is validated</h2>
+                <ol className="mt-5 space-y-3 text-sm text-amber-950">
+                  {search.query.segments.map((segment, index) => <li key={`${segment.origin}-${segment.destination}-${segment.departureDate}`}><strong>{index + 1}.</strong> {segment.origin} → {segment.destination} · {segment.departureDate}</li>)}
+                </ol>
+                <p className="mt-5 text-sm leading-6 text-amber-900">Synthetic shopping fixtures are currently available only for one-way and round-trip requests. No live airline search, booking, payment, or ticketing action was made.</p>
+                <Link href={`/flights?${queryString}`} className="btn-secondary mt-6 inline-flex">Edit planning request</Link>
+              </section>
+            ) : (
+              <section className="mt-7 grid gap-5" aria-label="Synthetic flight options">
               {offers.map((offer) => {
                 const outbound = offer.slices[0];
                 return <article key={offer.id} className="grid gap-6 border border-neutral-300 bg-white p-6 lg:grid-cols-[1fr_auto] lg:items-center">
@@ -57,7 +69,8 @@ export default async function FlightResultsPage({ searchParams }: { searchParams
                   </div>
                 </article>;
               })}
-            </section>
+              </section>
+            )}
           </>
         ) : (
           <section className="mt-8 border border-neutral-300 p-7"><h2 className="text-2xl">Start with a flight request</h2><Link href="/flights" className="btn-primary mt-5 inline-flex">Open flight planner</Link></section>
