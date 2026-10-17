@@ -102,7 +102,7 @@ describe("flight planning phase 1", () => {
   });
 
   it("keeps the consumer surface supplier-offline and clearly disclosed", () => {
-    const page = read("app/flights/page.tsx");
+    const page = `${read("app/flights/page.tsx")}\n${read("app/flights/flight-planner-form.tsx")}`;
     const navigation = read("data/navigation.ts");
     const footer = read("components/layout/site-footer.tsx");
     const sitemap = read("app/sitemap.ts");

@@ -49,7 +49,7 @@ export default async function FlightResultsPage({ searchParams }: { searchParams
                   {search.query.segments.map((segment, index) => <li key={`${segment.origin}-${segment.destination}-${segment.departureDate}`}><strong>{index + 1}.</strong> {segment.origin} → {segment.destination} · {segment.departureDate}</li>)}
                 </ol>
                 <p className="mt-5 text-sm leading-6 text-amber-900">Synthetic shopping fixtures are currently available only for one-way and round-trip requests. No live airline search, booking, payment, or ticketing action was made.</p>
-                <Link href="/flights" className="btn-secondary mt-6 inline-flex">Edit planning request</Link>
+                <Link href={`/flights?${queryString}`} className="btn-secondary mt-6 inline-flex">Edit planning request</Link>
               </section>
             ) : (
               <section className="mt-7 grid gap-5" aria-label="Synthetic flight options">

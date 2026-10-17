@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { ArrowRight, CalendarDays, CircleDollarSign, Plane, Route, ShieldCheck, TicketCheck, Users } from "lucide-react";
+import { CalendarDays, CircleDollarSign, Plane, Route, ShieldCheck, TicketCheck, Users } from "lucide-react";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
-import { flightCabins, formatFlightCabin, formatFlightDate, parseFlightSearch } from "@/lib/flights/search";
+import { formatFlightCabin, formatFlightDate, parseFlightSearch } from "@/lib/flights/search";
+import { FlightPlannerForm } from "@/app/flights/flight-planner-form";
 
 export const metadata: Metadata = {
   title: "Flight planning preview",
@@ -34,71 +35,7 @@ export default async function FlightsPage({ searchParams }: { searchParams: Sear
               </div>
             </div>
 
-            <form action="/flights/results" method="get" className="border border-black bg-white p-5 sm:p-7">
-              <div className="grid gap-5 sm:grid-cols-2">
-                <label className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600">
-                  Trip type
-                  <select name="tripType" defaultValue={values.tripType} className="input mt-2">
-                    <option value="roundtrip">Round trip</option>
-                    <option value="oneway">One way</option>
-                    <option value="multicity">Multi-city</option>
-                  </select>
-                </label>
-                <label className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600">
-                  Travelers
-                  <select name="travelers" defaultValue={values.travelers} className="input mt-2">
-                    {Array.from({ length: 9 }, (_, index) => index + 1).map((count) => <option key={count} value={count}>{count}</option>)}
-                  </select>
-                </label>
-                <label className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600">
-                  From
-                  <input name="origin" defaultValue={values.origin} className="input mt-2 uppercase" placeholder="ORD" maxLength={3} pattern="[A-Za-z]{3}" autoComplete="off" />
-                </label>
-                <label className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600">
-                  To
-                  <input name="destination" defaultValue={values.destination} className="input mt-2 uppercase" placeholder="MIA" maxLength={3} pattern="[A-Za-z]{3}" autoComplete="off" />
-                </label>
-                <label className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600">
-                  Depart
-                  <input name="departureDate" defaultValue={values.departureDate} className="input mt-2" type="date" min={today} />
-                </label>
-                <label className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600">
-                  Return {(values.tripType === "oneway" || values.tripType === "multicity") && <span className="normal-case tracking-normal text-neutral-400">(ignored for {values.tripType === "multicity" ? "multi-city" : "one way"})</span>}
-                  <input name="returnDate" defaultValue={values.returnDate} className="input mt-2" type="date" min={values.departureDate || today} />
-                </label>
-                <label className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600 sm:col-span-2">
-                  Cabin
-                  <select name="cabin" defaultValue={values.cabin} className="input mt-2">
-                    {flightCabins.map((cabin) => <option key={cabin} value={cabin}>{formatFlightCabin(cabin)}</option>)}
-                  </select>
-                </label>
-              </div>
-              <details className="mt-6 border border-neutral-300 bg-neutral-50 p-4">
-                <summary className="cursor-pointer text-sm font-semibold text-neutral-800">Multi-city legs (use when Trip type is Multi-city)</summary>
-                <p className="mt-3 text-xs leading-5 text-neutral-500">Add 2–4 connected legs. Each leg must depart from the previous leg’s arrival airport, and dates cannot move backwards.</p>
-                <div className="mt-4 grid gap-4">
-                  {[0, 1, 2, 3].map((index) => (
-                    <fieldset key={index} className="grid gap-4 border-t border-neutral-200 pt-4 sm:grid-cols-[1fr_1fr_1fr]">
-                      <legend className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600">Leg {index + 1}{index < 2 ? " · required for multi-city" : " · optional"}</legend>
-                      <label className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600">
-                        From
-                        <input name="segmentOrigin" defaultValue={values.segments[index]?.origin ?? ""} className="input mt-2 uppercase" placeholder="ORD" maxLength={3} pattern="[A-Za-z]{3}" autoComplete="off" />
-                      </label>
-                      <label className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600">
-                        To
-                        <input name="segmentDestination" defaultValue={values.segments[index]?.destination ?? ""} className="input mt-2 uppercase" placeholder="MIA" maxLength={3} pattern="[A-Za-z]{3}" autoComplete="off" />
-                      </label>
-                      <label className="text-xs font-semibold uppercase tracking-[.12em] text-neutral-600">
-                        Depart
-                        <input name="segmentDepartureDate" defaultValue={values.segments[index]?.departureDate ?? ""} className="input mt-2" type="date" min={today} />
-                      </label>
-                    </fieldset>
-                  ))}
-                </div>
-              </details>
-              <button type="submit" className="btn-primary mt-6 w-full gap-2">Preview synthetic options <ArrowRight className="h-4 w-4" /></button>
-              <p className="mt-3 text-xs leading-5 text-neutral-500">This validates planning details and displays deterministic product fixtures only. It does not reserve a seat, quote a live fare, contact an airline, or create a charge.</p>
-            </form>
+            <FlightPlannerForm values={values} today={today} />
           </div>
         </section>
 
