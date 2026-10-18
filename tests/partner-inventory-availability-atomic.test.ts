@@ -6,6 +6,10 @@ const migration = await readFile(
   new URL("../supabase/migrations/202610180172_atomic_partner_inventory_availability.sql", import.meta.url),
   "utf8",
 );
+const rollback = await readFile(
+  new URL("../supabase/rollbacks/202610180172_atomic_partner_inventory_availability.rollback.sql", import.meta.url),
+  "utf8",
+);
 
 describe("atomic partner inventory availability", () => {
   it("rolls back every night if a saved night is missing or a booking hold blocks one night", async () => {
@@ -74,6 +78,17 @@ describe("atomic partner inventory availability", () => {
       `)).rows;
       expect(rows.map((row) => row.available_units)).toEqual([6, 6]);
       expect(rows.map((row) => Number(row.rate))).toEqual([120, 130]);
+
+      await db.exec("reset role");
+      await db.exec(rollback);
+      expect((await db.query<{ exists: boolean }>(`
+        select to_regprocedure('public.set_partner_inventory_availability(uuid,date,date,integer)') is not null as exists
+      `)).rows[0].exists).toBe(false);
+      const afterRollback = (await db.query<{ available_units: number; rate: number }>(`
+        select available_units, rate from public.inventory order by stay_date
+      `)).rows;
+      expect(afterRollback.map((row) => row.available_units)).toEqual([6, 6]);
+      expect(afterRollback.map((row) => Number(row.rate))).toEqual([120, 130]);
     } finally {
       await db.close();
     }
