@@ -169,28 +169,23 @@ export async function POST(request: Request) {
       const { startDate, endDate, availableUnits, roomId } = parsed.data;
       const dateError = getInventoryDateRangeError(startDate, endDate);
       if (dateError) return NextResponse.json({ error: dateError }, { status: 400 });
-      const expectedDates = eachDayOfInterval({ start: parseISO(startDate), end: parseISO(endDate) })
-        .map((date) => format(date, "yyyy-MM-dd"));
-      const { data: existing, error: existingError } = await auth.supabase.from("inventory")
-        .select("stay_date").eq("room_id", roomId).gte("stay_date", startDate).lte("stay_date", endDate);
-      if (existingError) throw existingError;
-      const savedDates = new Set((existing ?? []).map((row) => row.stay_date));
-      if (savedDates.size !== expectedDates.length || expectedDates.some((date) => !savedDates.has(date))) {
-        return NextResponse.json({ error: "One or more dates have no saved inventory. Ask an OTA administrator to review new dates before publishing them." }, { status: 409 });
-      }
-      const { data: updated, error: updateError } = await auth.supabase.from("inventory")
-        .update({ available_units: availableUnits })
-        .eq("room_id", roomId).gte("stay_date", startDate).lte("stay_date", endDate)
-        .select("stay_date");
+      const { data: updatedCount, error: updateError } = await auth.supabase.rpc("set_partner_inventory_availability", {
+        p_room_id: roomId,
+        p_start_date: startDate,
+        p_end_date: endDate,
+        p_available_units: availableUnits,
+      });
       if (updateError) throw updateError;
-      const updatedDates = new Set((updated ?? []).map((row) => row.stay_date));
-      if (updatedDates.size !== expectedDates.length || expectedDates.some((date) => !updatedDates.has(date))) {
-        return NextResponse.json({ error: "Availability needs review. Refresh the dates before taking another action." }, { status: 503 });
-      }
-      return NextResponse.json({ message: `${expectedDates.length} existing inventory dates updated; rates, taxes, and fees were unchanged.` });
+      return NextResponse.json({ message: `${updatedCount} existing inventory dates updated; rates, taxes, and fees were unchanged.` });
     }
     return NextResponse.json({ error: "Unknown inventory action." }, { status: 400 });
   } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "P0001"
+      && "message" in error && error.message === "One or more dates have no saved inventory") {
+      return NextResponse.json({
+        error: "One or more dates have no saved inventory. Ask an OTA administrator to review new dates before publishing them.",
+      }, { status: 409 });
+    }
     if (error && typeof error === "object" && "code" in error && error.code === "P0001"
       && "message" in error && error.message === "Active direct hotel offer inventory is immutable until release or expiry") {
       return NextResponse.json({

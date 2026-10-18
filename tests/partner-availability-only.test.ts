@@ -8,30 +8,20 @@ import { POST } from "../app/api/partner/rates/route";
 const roomId = "d498ed39-d34f-498f-84d3-9fe523f8ce65";
 const dates = ["2099-01-01", "2099-01-02"];
 
-function setup(savedDates = dates, pmsOnly = false, updateError: unknown = null) {
-  const update = vi.fn(() => ({
-    eq: () => ({ gte: () => ({ lte: () => ({
-      select: async () => ({ data: updateError ? null : dates.map((stay_date) => ({ stay_date })), error: updateError }),
-    }) }) }),
-  }));
+function setup(pmsOnly = false, rpcResult: { data: number | null; error: unknown } = { data: 2, error: null }) {
+  const rpc = vi.fn(async () => rpcResult);
   const from = vi.fn((table: string) => {
     if (table === "rooms") return {
       select: () => ({ eq: () => ({ maybeSingle: async () => ({
         data: { id: roomId, properties: { partner_id: "partner", pms_only: pmsOnly } }, error: null,
       }) }) }),
     };
-    if (table === "inventory") return {
-      select: () => ({ eq: () => ({ gte: () => ({
-        lte: async () => ({ data: savedDates.map((stay_date) => ({ stay_date })), error: null }),
-      }) }) }),
-      update,
-    };
     throw Error(`Unexpected table: ${table}`);
   });
   vi.mocked(requireRole).mockResolvedValue({
-    user: { id: "admin" }, profile: { role: "admin" }, supabase: { from },
+    user: { id: "admin" }, profile: { role: "admin" }, supabase: { from, rpc },
   } as never);
-  return { from, update };
+  return { from, rpc };
 }
 
 function request() {
@@ -45,37 +35,42 @@ function request() {
 afterEach(() => vi.resetAllMocks());
 
 describe("availability-only partner rate editor", () => {
-  it("updates saved dates without sending price, tax, or fee fields", async () => {
-    const { update } = setup();
+  it("requests one atomic availability-only operation", async () => {
+    const { from, rpc } = setup();
     const response = await POST(request());
     expect(response.status).toBe(200);
-    expect(update).toHaveBeenCalledOnce();
-    expect(update).toHaveBeenCalledWith({ available_units: 2 });
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("set_partner_inventory_availability", {
+      p_room_id: roomId, p_start_date: dates[0], p_end_date: dates[1], p_available_units: 2,
+    });
+    expect(from).toHaveBeenCalledTimes(1);
     expect((await response.json()).message).toContain("rates, taxes, and fees were unchanged");
   });
 
-  it("refuses a date range with a missing saved night before writing", async () => {
-    const { update } = setup([dates[0]]);
+  it("explains a missing saved night without retrying", async () => {
+    const { rpc } = setup(false, { data: null, error: {
+      code: "P0001", message: "One or more dates have no saved inventory",
+    } });
     const response = await POST(request());
     expect(response.status).toBe(409);
-    expect(update).not.toHaveBeenCalled();
+    expect(rpc).toHaveBeenCalledOnce();
+    expect((await response.json()).error).toContain("no saved inventory");
   });
 
   it("keeps PMS-only inventory read-only", async () => {
-    const { from, update } = setup(dates, true);
+    const { from, rpc } = setup(true);
     const response = await POST(request());
     expect(response.status).toBe(409);
     expect(from).toHaveBeenCalledTimes(1);
-    expect(update).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
   });
 
   it("explains an active booking hold without retrying a blocked change", async () => {
-    const { update } = setup(dates, false, {
+    const { rpc } = setup(false, { data: null, error: {
       code: "P0001", message: "Active direct hotel offer inventory is immutable until release or expiry",
-    });
+    } });
     const response = await POST(request());
     expect(response.status).toBe(409);
-    expect(update).toHaveBeenCalledOnce();
+    expect(rpc).toHaveBeenCalledOnce();
     expect((await response.json()).error).toContain("active direct booking request");
   });
 });
