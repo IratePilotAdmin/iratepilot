@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ requireRole: vi.fn(), createAdminClient: vi.fn(), enqueue: vi.fn(), inventory: [] as object[] }));
+const mocks = vi.hoisted(() => ({ requireRole: vi.fn(), createAdminClient: vi.fn(), enqueue: vi.fn(),
+  inventory: [] as object[], rooms: [] as { id: string }[], mappings: [] as object[], ranges: [] as [number, number][] }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/auth/require-role", () => ({ requireRole: mocks.requireRole }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: mocks.createAdminClient }));
@@ -17,7 +18,10 @@ function query(data: unknown) {
   const result = { data, error: null };
   const chain = {
     select: () => chain, eq: () => chain, in: () => chain, gte: () => chain, lte: () => chain,
-    order: () => chain, limit: () => Promise.resolve(result), maybeSingle: () => Promise.resolve(result),
+    order: () => chain, range: (from: number, to: number) => {
+      mocks.ranges.push([from, to]);
+      return Promise.resolve({ data: Array.isArray(data) ? data.slice(from, Math.min(to + 1, from + 1_000)) : data, error: null });
+    }, maybeSingle: () => Promise.resolve(result),
     then: (resolve: (value: typeof result) => unknown) => Promise.resolve(result).then(resolve),
   };
   return chain;
@@ -36,11 +40,14 @@ beforeEach(() => {
     room_id: roomId, stay_date: new Date(Date.UTC(2026, 10, 1 + offset)).toISOString().slice(0, 10),
     available_units: 1, rate: "125.00",
   }));
+  mocks.rooms = [{ id: roomId }];
+  mocks.mappings = [{ provider_room_type_id: "NDQ2", provider_rate_plan_id: "BAR", local_room_id: roomId }];
+  mocks.ranges = [];
   mocks.requireRole.mockResolvedValue({ user: { id: "owner" }, profile: { role: "partner" }, supabase: {
     from(table: string) {
       if (table === "partners") return query({ id: partnerId, status: "approved" });
       if (table === "properties") return query({ id: propertyId, active: true });
-      if (table === "rooms") return query([{ id: roomId }]);
+      if (table === "rooms") return query(mocks.rooms);
       if (table === "inventory") return query(mocks.inventory);
       throw new Error(`Unexpected partner table ${table}`);
     },
@@ -51,9 +58,7 @@ beforeEach(() => {
       if (table === "irp_ota_channel_connections") return query({
         connection_id: connectionId, property_id: propertyId, provider_property_id: "test-hotel-1", environment: "test",
       });
-      if (table === "irp_ota_channel_room_mappings") return query([{
-        provider_room_type_id: "NDQ2", provider_rate_plan_id: "BAR", local_room_id: roomId,
-      }]);
+      if (table === "irp_ota_channel_room_mappings") return query(mocks.mappings);
       throw new Error(`Unexpected admin table ${table}`);
     },
     rpc: mocks.enqueue,
@@ -75,6 +80,23 @@ describe("Booking.com year-window sync API", () => {
     const response = await POST(request(0));
     expect(response.status).toBe(409);
     expect(mocks.enqueue).not.toHaveBeenCalled();
+  });
+
+  it("loads a 12-room window beyond the default 1,000-row API cap before queueing", async () => {
+    mocks.rooms = Array.from({ length: 12 }, (_, index) => ({
+      id: `33333333-3333-4333-8333-${index.toString(16).padStart(12, "0")}`,
+    }));
+    mocks.mappings = mocks.rooms.map((room, index) => ({
+      provider_room_type_id: `TYPE${index}`, provider_rate_plan_id: "BAR", local_room_id: room.id,
+    }));
+    mocks.inventory = Array.from({ length: 90 }, (_, offset) => mocks.rooms.map((room) => ({
+      room_id: room.id, stay_date: new Date(Date.UTC(2026, 10, 1 + offset)).toISOString().slice(0, 10),
+      available_units: 1, rate: "125.00",
+    }))).flat();
+    const response = await POST(request(0));
+    expect(response.status).toBe(200);
+    expect(mocks.ranges).toEqual([[0, 999], [1_000, 1_999], [1_080, 2_079]]);
+    expect(mocks.enqueue).toHaveBeenCalled();
   });
 
   it("rejects an out-of-range year window", async () => {

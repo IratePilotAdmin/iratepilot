@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { parseBookingComSyncInput, parseBookingComYearWindowRequest, queueBookingComInventorySync, type BookingComSyncStore } from "@/services/hotel-channels/booking-com/sync";
+import { loadBookingComInventoryPages } from "@/services/hotel-channels/booking-com/inventory-pages";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -47,11 +48,11 @@ export async function POST(request: Request) {
       ]);
       if (roomsError || mappingsError || !rooms?.length || !mappings?.length) throw new Error("booking_com_sync_mapping_unavailable");
       const roomIds = rooms.map((room) => room.id);
-      const { data: inventory, error: inventoryError } = await auth.supabase.from("inventory")
+      const inventory = await loadBookingComInventoryPages(async (from, to) => auth.supabase.from("inventory")
         .select("room_id,stay_date,available_units,rate")
         .in("room_id", roomIds).gte("stay_date", input.startDate).lte("stay_date", input.endDate)
-        .order("stay_date").limit(50_000);
-      if (inventoryError || !inventory?.length) throw new Error("booking_com_sync_inventory_unavailable");
+        .order("stay_date").order("room_id").range(from, to));
+      if (!inventory.length) throw new Error("booking_com_sync_inventory_unavailable");
       return {
         propertyId: input.propertyId,
         connectionId: input.connectionId,
