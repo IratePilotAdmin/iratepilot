@@ -190,7 +190,7 @@ export function PaymentReadiness() {
         </p>
         {!responseData?.evidenceAvailable ? (
           <p className="mt-4 text-sm text-amber-800">The approval evidence ledger is unavailable. Apply its database migration before recording evidence.</p>
-        ) : data.productionConfiguration.launchAuthorized ? (
+        ) : data.productionConfiguration.authorization ? (
           <>
             <dl className="mt-4 grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
               <div><dt className="font-semibold">Approval reference</dt><dd>{data.productionConfiguration.authorization?.approvalReference}</dd></div>

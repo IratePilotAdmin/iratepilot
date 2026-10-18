@@ -64,10 +64,25 @@ try {
       exists(select 1 from information_schema.columns where table_schema = 'public'
         and table_name = 'booking_financials' and column_name = 'reward_program_fee') as fee_column,
       exists(select 1 from pg_proc where oid =
-        to_regprocedure('public.replace_revenue_recommendations(uuid,jsonb)')) as revenue_rpc
+        to_regprocedure('public.replace_revenue_recommendations(uuid,jsonb)')) as revenue_rpc,
+      exists(select 1 from information_schema.columns where table_schema = 'public'
+        and table_name = 'pms_webhook_event_receipts'
+        and column_name = 'reservation_snapshot_sha256') as apaleo_reconciliation_digest,
+      exists(select 1 from pg_proc where oid =
+        to_regprocedure('public.claim_apaleo_reservation_reconciliation_receipt(uuid)')) as apaleo_claim_rpc,
+      has_function_privilege(
+        'service_role',
+        'public.claim_apaleo_reservation_reconciliation_receipt(uuid)',
+        'execute'
+      ) as apaleo_claim_service_role,
+      not has_function_privilege(
+        'authenticated',
+        'public.claim_apaleo_reservation_reconciliation_receipt(uuid)',
+        'execute'
+      ) as apaleo_claim_not_authenticated
   `);
   if (!Object.values(rows[0]).every(Boolean)) {
-    throw new Error(`Replay missing required Revenue AI objects: ${JSON.stringify(rows[0])}`);
+    throw new Error(`Replay missing required schema objects: ${JSON.stringify(rows[0])}`);
   }
   const bootstrap = await readFile(path.join(root, 'supabase/migrations/202607260000_initial_schema_bootstrap.sql'), 'utf8');
   const before = (await db.query("select count(*)::integer as n from pg_class where relnamespace = 'public'::regnamespace")).rows[0].n;

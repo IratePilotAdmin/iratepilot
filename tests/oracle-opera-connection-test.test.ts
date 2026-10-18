@@ -10,6 +10,8 @@ const config = {
   clientId: "client-id",
   clientSecret: "client-secret",
   appKey: "app-key",
+  enterpriseId: "ENTERPRISE-1",
+  scope: "urn:opc:hgbu:ws:__myscopes__",
   hotelId: "HOTEL-1",
   timeoutMs: 5_000,
 };

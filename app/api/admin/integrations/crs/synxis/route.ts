@@ -5,7 +5,7 @@ import {
   buildSynxisRequestMonitor,
   type SynxisRequestJournalRow,
 } from "@/lib/integrations/synxis-request-monitor";
-import { isVerifiedActivationDetail } from "@/services/hotel-suppliers/priority-readiness";
+import { areVerifiedActivationDetails } from "@/services/hotel-suppliers/activation-evidence";
 import {
   buildVerifiedSynxisGates,
   buildVerifiedSynxisReadiness,
@@ -169,12 +169,7 @@ function buildResponse(
 ) {
   const verifiedGates = buildVerifiedSynxisGates(process.env, evidence);
   const readiness = buildVerifiedSynxisReadiness(process.env, evidence);
-  const activationDetailsComplete = [
-    evidence.vendorApprovalReference,
-    evidence.approvedEnvironment,
-    evidence.propertyCode,
-    evidence.supportContact,
-  ].every(isVerifiedActivationDetail);
+  const activationDetailsComplete = areVerifiedActivationDetails(evidence);
   return {
     evidence,
     verifiedGates,
@@ -393,8 +388,7 @@ export async function PATCH(request: Request) {
       propertyCode: typeof details.propertyCode === "string" ? details.propertyCode : current.propertyCode,
       supportContact: typeof details.supportContact === "string" ? details.supportContact : current.supportContact,
     };
-    if (patch.liveEnabled === true
-      && Object.values(nextDetails).some((value) => !isVerifiedActivationDetail(value))) {
+    if (patch.liveEnabled === true && !areVerifiedActivationDetails(nextDetails)) {
       return noStore({ error: "Verified vendor approval, certification environment, real property code, and support contact details are required before live traffic is enabled." }, { status: 409 });
     }
     const preActivationReadiness = buildVerifiedSynxisReadiness(process.env, {

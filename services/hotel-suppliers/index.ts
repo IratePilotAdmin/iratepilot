@@ -11,6 +11,7 @@ export type {
 } from "./inventory-readiness";
 export {
   auditPriorityPmsProductionReadiness,
+  areVerifiedActivationDetails,
   isVerifiedActivationDetail,
   priorityPmsProductionManifest,
   priorityPmsProviderIds,
@@ -56,8 +57,34 @@ export { CloudbedsConnectionTestError, testCloudbedsSandboxConnection } from "./
 export type { CloudbedsConnectionTestResult } from "./cloudbeds";
 export { ApaleoAdapter } from "./apaleo";
 export { ApaleoBookingMapper, createApaleoSyncAdapter, loadApaleoSyncConfig } from "./apaleo";
-export { ApaleoConnectionTestError, testApaleoSandboxConnection } from "./apaleo";
-export type { ApaleoConnectionTestConfig, ApaleoConnectionTestResult } from "./apaleo";
+export {
+  ApaleoWebhookError,
+  createApaleoWebhookSubscription,
+  deleteApaleoWebhookSubscription,
+} from "./apaleo";
+export type { ApaleoWebhookSubscription } from "./apaleo";
+export {
+  ApaleoReservationReadError,
+  fetchApaleoReservation,
+} from "./apaleo";
+export type {
+  ApaleoReservationReadConfig,
+  ApaleoReservationSnapshot,
+} from "./apaleo";
+export {
+  ApaleoConnectionTestError,
+  exchangeApaleoAuthorizationCode,
+  getApaleoAccessToken,
+  listApaleoProperties,
+  testApaleoSandboxConnection,
+} from "./apaleo";
+export type {
+  ApaleoConnectionTestConfig,
+  ApaleoConnectionTestResult,
+  ApaleoAccessTokenResult,
+  ApaleoProperty,
+  ApaleoPropertyListResult,
+} from "./apaleo";
 export { StayntouchHttpTransport, StayntouchTransportError } from "./stayntouch";
 export { StayntouchBookingMapper, createStayntouchSyncAdapter, loadStayntouchSyncConfig } from "./stayntouch";
 export {
@@ -138,9 +165,11 @@ export { EzeeAbsoluteBookingMapper, createEzeeAbsoluteSyncAdapter, loadEzeeAbsol
 export type { EzeeAbsoluteBookingMapperConfig, EzeeAbsoluteConfig, EzeeAbsoluteEndpoint, EzeeAbsoluteFetch, EzeeAbsoluteSyncEnvironment } from "./ezee-absolute";
 export { ClockPmsHttpTransport, ClockPmsTransportError } from "./clock-pms-plus";
 export { ClockPmsBookingMapper, createClockPmsSyncAdapter, loadClockPmsSyncConfig } from "./clock-pms-plus";
+export { ClockPmsConnectionTestError, testClockPmsConnection } from "./clock-pms-plus";
 export type {
   ClockPmsAuthRequest, ClockPmsBookingMapperConfig, ClockPmsConfig, ClockPmsDigestSigner,
-  ClockPmsEndpoint, ClockPmsFetch, ClockPmsSyncEnvironment,
+  ClockPmsConnectionTestConfig, ClockPmsConnectionTestResult, ClockPmsEndpoint,
+  ClockPmsFetch, ClockPmsSyncEnvironment,
 } from "./clock-pms-plus";
 export { HotelogixHttpTransport, HotelogixTransportError } from "./hotelogix";
 export { HotelogixBookingMapper, createHotelogixSyncAdapter, loadHotelogixSyncConfig } from "./hotelogix";
@@ -250,6 +279,35 @@ export type {
   OracleOperaConnectionTestResult,
   OracleOperaRequestOptions,
 } from "./oracle-opera";
+export {
+  loadThinkReservationsConfig,
+  testThinkReservationsConnection,
+  ThinkReservationsClient,
+  ThinkReservationsClientError,
+  ThinkReservationsConnectionTestError,
+} from "./thinkreservations";
+export {
+  buildSiteMinderErrorResponse,
+  buildSiteMinderRoomsAndRatesResponse,
+  parseSiteMinderMappings,
+  parseSiteMinderRequest,
+  siteMinderCredentialsMatch,
+  SITE_MINDER_MAX_XML_BYTES,
+} from "./siteminder";
+export type {
+  SiteMinderRatePlanMapping,
+  SiteMinderRoomRateMapping,
+  SiteMinderRoomMapping,
+  SiteMinderRoomsAndRatesRequest,
+} from "./siteminder";
+export type {
+  ThinkReservationsClientConfig,
+  ThinkReservationsConnectionTestConfig,
+  ThinkReservationsConnectionTestResult,
+  ThinkReservationsEnvironment,
+  ThinkReservationsFetch,
+  ThinkReservationsHotel,
+} from "./thinkreservations";
 export type {
   HotelSupplier,
   PmsAccessModel,

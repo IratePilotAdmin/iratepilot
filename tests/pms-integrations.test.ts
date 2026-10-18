@@ -37,8 +37,46 @@ describe("PMS integration foundation", () => {
       "ezee-absolute",
       "clock-pms-plus",
       "hotelogix",
+      "thinkreservations",
+      "siteminder",
+      "roomraccoon",
     ]);
-    expect(new Set(pmsProviders.map((provider) => provider.id)).size).toBe(22);
+    expect(new Set(pmsProviders.map((provider) => provider.id)).size).toBe(25);
+  });
+
+  it.each([
+    ["thinkreservations", "PMS_THINKRESERVATIONS", ["BASE_URL", "CLIENT_ID", "CLIENT_SECRET", "TOKEN_URL", "AUDIENCE"]],
+    ["siteminder", "PMS_SITEMINDER", ["USERNAME", "PASSWORD", "PRICING_MODEL"]],
+    ["roomraccoon", "PMS_ROOMRACCOON", ["BASE_URL", "API_CREDENTIAL", "VALIDATION_PATH"]],
+  ] as const)("registers guarded partner configuration for %s", (providerId, prefix, suffixes) => {
+    const environment = Object.fromEntries(suffixes.map((suffix) => {
+      if (suffix.endsWith("URL")) return [`${prefix}_${suffix}`, `https://${providerId}.example.com`];
+      if (suffix.endsWith("PATH")) return [`${prefix}_${suffix}`, "/v1/validation"];
+      if (suffix === "PRICING_MODEL") return [`${prefix}_${suffix}`, "PDP"];
+      if (providerId === "siteminder" && suffix === "PASSWORD") {
+        return [`${prefix}_${suffix}`, "Strong-SiteMinder-Pass9!"];
+      }
+      return [`${prefix}_${suffix}`, `${providerId}-${suffix.toLowerCase()}-value`];
+    }));
+    const provider = buildPmsReadiness(environment).find((item) => item.id === providerId);
+
+    expect(provider).toMatchObject({
+      status: "ready_for_validation",
+      certificationRequired: true,
+      missingConfiguration: [],
+      invalidConfiguration: [],
+    });
+    expect(JSON.stringify(provider)).not.toContain("secret-value");
+  });
+
+  it("enforces SiteMinder's documented WS-Security password policy", () => {
+    const result = buildPmsReadiness({
+      PMS_SITEMINDER_USERNAME: "iratepilot-channel",
+      PMS_SITEMINDER_PASSWORD: "weak-password",
+      PMS_SITEMINDER_PRICING_MODEL: "PDP",
+    }).find((item) => item.id === "siteminder");
+    expect(result?.status).toBe("invalid_configuration");
+    expect(result?.invalidConfiguration).toEqual(["PMS_SITEMINDER_PASSWORD"]);
   });
 
   it("does not report a provider ready until all server credentials exist", () => {
@@ -52,6 +90,8 @@ describe("PMS integration foundation", () => {
     expect(opera?.missingConfiguration).toEqual([
       "PMS_ORACLE_OPERA_CLIENT_SECRET",
       "PMS_ORACLE_OPERA_APP_KEY",
+      "PMS_ORACLE_OPERA_ENTERPRISE_ID",
+      "PMS_ORACLE_OPERA_SCOPE",
       "PMS_ORACLE_OPERA_HOTEL_ID",
     ]);
   });
@@ -84,6 +124,26 @@ describe("PMS integration foundation", () => {
     expect(provider?.status).toBe("ready_for_validation");
     expect(provider?.invalidConfiguration).toEqual([]);
     expect(JSON.stringify(provider)).not.toContain(secret);
+  });
+
+  it("uses the Clock PMS+ credential contract implemented by its server adapter", () => {
+    const secret = "clock-api-key-value";
+    const result = buildPmsReadiness({
+      PMS_CLOCK_BASE_URL: "https://sky-eu1.clock-software.com/pms_api/11111/22222/",
+      PMS_CLOCK_API_USER: "iratepilot-api-user",
+      PMS_CLOCK_API_KEY: secret,
+      PMS_CLOCK_AVAILABILITY_PATH: "rates_availability.json",
+      PMS_CLOCK_CREATE_RESERVATION_PATH: "bookings.json",
+      PMS_CLOCK_CANCEL_RESERVATION_PATH: "bookings/{bookingId}/cancel.json",
+      PMS_CLOCK_CURRENCY: "USD",
+    });
+    const clock = result.find((provider) => provider.id === "clock-pms-plus");
+
+    expect(clock?.status).toBe("ready_for_validation");
+    expect(clock?.missingConfiguration).toEqual([]);
+    expect(clock?.invalidConfiguration).toEqual([]);
+    expect(clock?.notes).toContain("real pilot Clock hotel");
+    expect(JSON.stringify(clock)).not.toContain(secret);
   });
 
   it("validates the exact credential contract used by the Mews transport", () => {

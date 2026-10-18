@@ -6,7 +6,11 @@ import {
   assertPreviewMigrationTarget,
   assertPreviewRemoteMigrationState,
   listMigrationVersions,
+  PMS_CATALOG_EXPANSION_PENDING,
+  PMS_VENDOR_REFERENCE_PENDING,
   PMS_PILOT_PREFLIGHT_PENDING,
+  PMS_PILOT_WITH_VENDOR_REFERENCE_PENDING,
+  PMS_PILOT_PREVIEW_PROJECT_REF,
   PRODUCTION_PROJECT_REF,
   reconcilePreviewMigrations,
   REQUIRED_PREVIEW_BASELINE,
@@ -17,7 +21,7 @@ const migration = readFileSync(
   "utf8",
 );
 
-const previewRef = "tztrvyhqyhkjhjwhrbaa";
+const previewRef = PMS_PILOT_PREVIEW_PROJECT_REF;
 const previewUrl = `postgresql://postgres.${previewRef}:password@aws-0-us-east-1.pooler.supabase.com:6543/postgres`;
 const migrationVersions = [
   "001",
@@ -56,7 +60,7 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
   it("recognizes the repository migration chain through the OTA delivery migrations before reconciling Preview", () => {
     const versions = listMigrationVersions();
     expect(versions).toEqual(expect.arrayContaining(REQUIRED_PREVIEW_BASELINE));
-    expect(versions.at(-1)).toBe("202609300162");
+    expect(versions.at(-1)).toBe("202610160170");
     expect(assertPreviewMigrationTarget({
       PREVIEW_SUPABASE_DB_URL: previewUrl,
       PREVIEW_SUPABASE_PROJECT_REF: previewRef,
@@ -85,6 +89,26 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
       migrationList(migrationVersions, migrationVersions),
       migrationVersions,
     ).pendingVersions).toEqual([]);
+  });
+
+  it("approves the isolated PMS catalog migration for Preview reconciliation", () => {
+    const versions = listMigrationVersions();
+    const applied = versions.filter((version) => !PMS_CATALOG_EXPANSION_PENDING.includes(version));
+
+    expect(assertPreviewRemoteMigrationState(
+      migrationList(versions, applied),
+      versions,
+    ).pendingVersions).toEqual(PMS_CATALOG_EXPANSION_PENDING);
+  });
+
+  it("approves the isolated PMS vendor-reference migration for Preview reconciliation", () => {
+    const versions = listMigrationVersions();
+    const applied = versions.filter((version) => !PMS_VENDOR_REFERENCE_PENDING.includes(version));
+
+    expect(assertPreviewRemoteMigrationState(
+      migrationList(versions, applied),
+      versions,
+    ).pendingVersions).toEqual(PMS_VENDOR_REFERENCE_PENDING);
   });
 
   it("rejects missing history, unexpected remote versions, and unexpected pending migrations", () => {
@@ -161,6 +185,37 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
         PREVIEW_SUPABASE_PROJECT_REF: previewRef,
       }, ["--preflight"], runner)).toMatchObject({
         projectRef: previewRef, pendingVersions: PMS_PILOT_PREFLIGHT_PENDING, dryRunOnly: true,
+      });
+    } finally { console.log = log; }
+    expect(calls.map((args) => args.slice(0, 2))).toEqual([
+      ["migration", "list"], ["db", "push"],
+    ]);
+    expect(calls[1]).toContain("--dry-run");
+    expect(calls.flat()).not.toContain("--yes");
+  });
+
+  it("preflights the observed PMS pilot ledger plus the vendor-reference release", () => {
+    const versions = listMigrationVersions();
+    const applied = versions.filter((version) => !PMS_PILOT_WITH_VENDOR_REFERENCE_PENDING.includes(version));
+    const calls: string[][] = [];
+    const outputs = [
+      migrationList(versions, applied),
+      PMS_PILOT_WITH_VENDOR_REFERENCE_PENDING.map((version) => `Would push migration ${version}.sql`).join("\n"),
+    ];
+    const runner = (_command: string, args: string[]) => {
+      calls.push(args);
+      return outputs.shift() ?? "";
+    };
+    const log = console.log;
+    console.log = () => {};
+    try {
+      expect(reconcilePreviewMigrations({
+        PREVIEW_SUPABASE_DB_URL: previewUrl,
+        PREVIEW_SUPABASE_PROJECT_REF: previewRef,
+      }, ["--preflight"], runner)).toMatchObject({
+        projectRef: previewRef,
+        pendingVersions: PMS_PILOT_WITH_VENDOR_REFERENCE_PENDING,
+        dryRunOnly: true,
       });
     } finally { console.log = log; }
     expect(calls.map((args) => args.slice(0, 2))).toEqual([

@@ -1,3 +1,10 @@
+import {
+  isVerifiedPropertyCode,
+  isVerifiedProviderEnvironment,
+  isVerifiedSupportContact,
+  isVerifiedVendorApprovalReference,
+} from "../activation-evidence";
+
 export const synxisCrsProvider = {
   id: "sabre-synxis",
   name: "Sabre SynXis Central Reservation System",
@@ -131,14 +138,14 @@ export function buildVerifiedSynxisGates(
 ) {
   const readiness = buildSynxisReadiness(environment, evidence);
   const vendorApproved = evidence.vendorApproved === true
-    && isVerifiedSynxisDetail(evidence.vendorApprovalReference);
+    && isVerifiedVendorApprovalReference(evidence.vendorApprovalReference);
   const certificationEnvironmentApproved = vendorApproved
     && evidence.certificationEnvironmentApproved === true
-    && isVerifiedSynxisDetail(evidence.approvedEnvironment);
+    && isVerifiedProviderEnvironment(evidence.approvedEnvironment);
   const propertyMapped = certificationEnvironmentApproved
     && evidence.propertyMapped === true
-    && isVerifiedSynxisDetail(evidence.propertyCode)
-    && isVerifiedSynxisDetail(evidence.supportContact);
+    && isVerifiedPropertyCode(evidence.propertyCode)
+    && isVerifiedSupportContact(evidence.supportContact);
   const sandboxValidated = propertyMapped && evidence.sandboxValidated === true;
   const productionConfigurationValid = readiness.missingEnvironmentKeys.length === 0
     && readiness.invalidEnvironmentKeys.length === 0;
@@ -162,13 +169,6 @@ export function buildVerifiedSynxisReadiness(
     ...verifiedGates,
     liveEnabled: verifiedGates.productionSmokeValidated && evidence.liveEnabled === true,
   });
-}
-
-const placeholderEvidencePattern = /(?:^|\b)(?:test hotel|example|placeholder|tbd|unknown|n\/a)(?:\b|$)/i;
-
-function isVerifiedSynxisDetail(value: string | undefined) {
-  const normalized = value?.trim() ?? "";
-  return normalized.length > 1 && !placeholderEvidencePattern.test(normalized);
 }
 
 export { buildSynxisInventoryXml, buildSynxisRateAmountXml } from "./ari";

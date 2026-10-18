@@ -17,6 +17,7 @@ const oneWay: FlightPlanningQuery = {
   destination: "MIA",
   departureDate: "2027-01-10",
   returnDate: null,
+  segments: [{ origin: "ORD", destination: "MIA", departureDate: "2027-01-10" }],
   travelers: 2,
   cabin: "economy",
 };
@@ -115,6 +116,27 @@ describe("synthetic flight marketplace", () => {
   it("round-trips the non-sensitive search contract into links", () => {
     const params = new URLSearchParams(flightSearchQueryString(oneWay));
     expect(Object.fromEntries(params)).toEqual({ tripType: "oneway", origin: "ORD", destination: "MIA", departureDate: "2027-01-10", travelers: "2", cabin: "economy" });
+  });
+
+  it("preserves multi-city legs in non-sensitive links while keeping offers disabled", async () => {
+    const multiCity: FlightPlanningQuery = {
+      tripType: "multicity",
+      origin: "ORD",
+      destination: "SEA",
+      departureDate: "2027-01-10",
+      returnDate: null,
+      segments: [
+        { origin: "ORD", destination: "LAX", departureDate: "2027-01-10" },
+        { origin: "LAX", destination: "SEA", departureDate: "2027-01-14" },
+      ],
+      travelers: 2,
+      cabin: "economy",
+    };
+    const params = new URLSearchParams(flightSearchQueryString(multiCity));
+    expect(params.getAll("segmentOrigin")).toEqual(["ORD", "LAX"]);
+    expect(params.getAll("segmentDestination")).toEqual(["LAX", "SEA"]);
+    await expect(buildSyntheticFlightOffers(multiCity, new Date("2026-08-23T12:00:00.000Z")))
+      .rejects.toThrow("only one-way and round-trip requests");
   });
 
   it("labels preview references so they cannot be mistaken for provider confirmations", () => {

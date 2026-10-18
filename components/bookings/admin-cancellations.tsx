@@ -15,6 +15,7 @@ type Request = {
     check_out: string;
     total: number | string;
     status: string;
+    stripe_payment_mode: "test" | "live" | null;
     properties: { name?: string } | null;
     rooms: { name?: string } | null;
     profiles: { full_name?: string } | null;
@@ -61,7 +62,7 @@ export function AdminCancellations() {
         <div>
           <strong>{booking?.properties?.name} — {booking?.rooms?.name}</strong>
           <p className="mt-1 text-sm text-slate-500">{booking?.profiles?.full_name || "Traveler"} · {booking?.check_in} to {booking?.check_out}</p>
-          <p className="mt-2 text-xs uppercase tracking-wider text-slate-500">{booking?.confirmation_code} · {item.status}</p>
+          <p className="mt-2 text-xs uppercase tracking-wider text-slate-500">{booking?.confirmation_code} · {item.status} · {booking?.stripe_payment_mode === "live" ? "Live payment" : booking?.stripe_payment_mode === "test" ? "Test payment" : "No payment"}</p>
           <p className="mt-3 text-sm"><span className="text-slate-500">Reason:</span> {item.reason}</p>
           {item.stripe_refund_id && <p className="mt-2 text-xs text-slate-500">Stripe refund: {item.stripe_refund_id}</p>}
         </div>

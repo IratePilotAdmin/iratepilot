@@ -12,18 +12,17 @@ iRatePilot uses one normalized supplier contract for availability, rates, invent
 | Marriott FOSSE | Marriott certification and issued connectivity specification | Adapter manifest and credential readiness |
 | Marriott FS-PMS | Marriott certification and issued connectivity specification | Adapter manifest and credential readiness |
 | HotelKey | HotelKey partnership, documentation, and property authorization | Adapter manifest and credential readiness |
+| ThinkReservations | Platform-partner agreement and issued machine-to-machine OAuth client | Partner intake and credential readiness; booking activation blocked pending certification |
+| SiteMinder | SiteMinder OTA/channel partner approval and issued specification | Partner intake and credential readiness; booking activation blocked pending certification |
+| RoomRaccoon | Connectivity-partner application, certification, and mutual pilot property | Partner intake and credential readiness; booking activation blocked pending certification |
 
 These systems are not anonymous public inventory feeds. Do not scrape them, reverse engineer hotel systems, or accept credentials from a hotel before the brand/vendor confirms that iRatePilot is authorized to use them.
 
 ## Server-only configuration
 
-Each provider uses an environment prefix and required configuration list declared in `services/hotel-suppliers/providers.ts`. Every provider requires these server-side values:
+Each provider uses an environment prefix and a provider-specific required configuration list declared in `services/hotel-suppliers/providers.ts`. OAuth providers typically require a base URL, client ID, and client secret. API-key providers use the exact credential and header scheme issued by the vendor. Validation paths must be vendor-issued and remain on the configured HTTPS origin.
 
-- `<PREFIX>_BASE_URL`
-- `<PREFIX>_CLIENT_ID`
-- `<PREFIX>_CLIENT_SECRET`
-
-Oracle OPERA also requires `PMS_ORACLE_OPERA_APP_KEY`. Its token endpoint defaults to `<BASE_URL>/oauth/v1/tokens`; an issued alternative can be set with `PMS_ORACLE_OPERA_TOKEN_URL`. Request timeouts default to 15 seconds and can be overridden with `PMS_ORACLE_OPERA_TIMEOUT_MS`.
+Oracle OPERA also requires `PMS_ORACLE_OPERA_APP_KEY`, `PMS_ORACLE_OPERA_ENTERPRISE_ID`, and `PMS_ORACLE_OPERA_SCOPE`. The OCIM scope issued by Oracle is normally `urn:opc:hgbu:ws:__myscopes__`. Its token endpoint defaults to `<BASE_URL>/oauth/v1/tokens`; an issued alternative can be set with `PMS_ORACLE_OPERA_TOKEN_URL`. Request timeouts default to 15 seconds and can be overridden with `PMS_ORACLE_OPERA_TIMEOUT_MS`.
 
 Never prefix these variables with `NEXT_PUBLIC_`. The admin-only endpoint `GET /api/admin/integrations/pms` reports missing variable names and readiness, but never returns their values.
 

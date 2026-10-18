@@ -10,7 +10,6 @@ import { refundUnfinalizedBookingPayment } from "@/lib/bookings/complete-paid-te
 import { createClient } from "@/lib/supabase/server";
 import { queueBookingNotification } from "@/lib/email/booking-notifications";
 import { getApprovedBookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
-import { isHotelMarketplaceLaunchAuthorized } from "@/lib/hotels/marketplace-launch-authorization";
 
 const requestSchema = z.object({ paymentIntentId: z.string().startsWith("pi_") });
 const bookingIdSchema = z.string().uuid();
@@ -18,11 +17,6 @@ const bookingIdSchema = z.string().uuid();
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const paymentMode = getApprovedBookingPaymentMode();
   if (!paymentMode) return NextResponse.json({ error: "Approved-reservation payments are disabled." }, { status: 503 });
-  if (paymentMode === "live" && !await isHotelMarketplaceLaunchAuthorized()) {
-    return NextResponse.json({
-      error: "Live payment completion requires every production launch gate to pass."
-    }, { status: 503 });
-  }
   const { id } = await params;
   if (!bookingIdSchema.safeParse(id).success) return NextResponse.json({ error: "Invalid booking ID." }, { status: 400 });
   const parsed = requestSchema.safeParse(await request.json());

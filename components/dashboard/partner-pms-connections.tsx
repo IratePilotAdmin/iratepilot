@@ -6,6 +6,7 @@ type Provider = { id: string; name: string; vendor: string; certificationRequire
 type Connection = {
   provider_id: string;
   external_property_code: string;
+  vendor_account_reference: string | null;
   hotel_authorized: boolean;
   room_type_mapping: string | null;
   rate_plan_mapping: string | null;
@@ -20,9 +21,11 @@ export function PartnerPmsConnections() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
   const [propertyId, setPropertyId] = useState("");
+  const [providerId, setProviderId] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const selected = useMemo(() => properties.find((property) => property.id === propertyId), [properties, propertyId]);
+  const selectedProviderId = providerId || selected?.connection?.provider_id || "";
 
   const load = useCallback(async () => {
     const response = await fetch("/api/partner/integrations/pms", { cache: "no-store" });
@@ -47,8 +50,9 @@ export function PartnerPmsConnections() {
       method: "PUT", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         propertyId,
-        providerId: form.get("providerId"),
+        providerId: selectedProviderId,
         externalPropertyCode: form.get("externalPropertyCode"),
+        vendorAccountReference: form.get("vendorAccountReference"),
         hotelAuthorized: form.get("hotelAuthorized") === "on",
         roomTypeMapping: form.get("roomTypeMapping"),
         ratePlanMapping: form.get("ratePlanMapping"),
@@ -67,14 +71,15 @@ export function PartnerPmsConnections() {
       <div className="border-b p-6"><h2 className="text-xl font-semibold">Hotel PMS status</h2><p className="mt-1 text-sm text-slate-500">Credentials are exchanged securely after vendor approval and are never entered in this portal.</p></div>
       <div className="divide-y">{properties.length === 0 && <p className="p-6 text-sm text-slate-500">Add an approved property before configuring a PMS.</p>}{properties.map((property) => {
         const provider = providers.find((item) => item.id === property.connection?.provider_id);
-        return <article key={property.id} className="flex items-center justify-between gap-4 p-6"><div><strong>{property.name}</strong><p className="mt-1 text-sm text-slate-500">{provider ? `${provider.name} Â· ${property.connection?.external_property_code}` : "No PMS declared"}</p></div><span className="badge">{property.connection?.connection_status.replaceAll("_", " ") || "not configured"}</span></article>;
+        return <article key={property.id} className="flex items-center justify-between gap-4 p-6"><div><strong>{property.name}</strong><p className="mt-1 text-sm text-slate-500">{provider ? `${provider.name} · ${property.connection?.external_property_code}` : "No PMS declared"}</p></div><span className="badge">{property.connection?.connection_status.replaceAll("_", " ") || "not configured"}</span></article>;
       })}</div>
     </section>
     <form key={propertyId || "empty"} onSubmit={submit} className="card grid h-fit gap-4 p-6">
       <div><h2 className="text-xl font-semibold">Declare a PMS</h2><p className="mt-1 text-sm text-slate-500">Select the system used by this hotel. Do not paste passwords, API keys, or client secrets.</p></div>
-      <label className="text-sm font-medium">Property<select className="input mt-2" value={propertyId} onChange={(event) => setPropertyId(event.target.value)} required><option value="">Select property</option>{properties.map((property) => <option key={property.id} value={property.id}>{property.name}</option>)}</select></label>
-      <label className="text-sm font-medium">PMS provider<select name="providerId" className="input mt-2" defaultValue={selected?.connection?.provider_id || ""} required><option value="">Select provider</option>{providers.map((provider) => <option key={provider.id} value={provider.id}>{provider.name} — {provider.vendor}</option>)}</select></label>
+      <label className="text-sm font-medium">Property<select className="input mt-2" value={propertyId} onChange={(event) => { const nextPropertyId = event.target.value; setPropertyId(nextPropertyId); setProviderId(properties.find((property) => property.id === nextPropertyId)?.connection?.provider_id || ""); }} required><option value="">Select property</option>{properties.map((property) => <option key={property.id} value={property.id}>{property.name}</option>)}</select></label>
+      <label className="text-sm font-medium">PMS provider<select name="providerId" className="input mt-2" value={selectedProviderId} onChange={(event) => setProviderId(event.target.value)} required><option value="">Select provider</option>{providers.map((provider) => <option key={provider.id} value={provider.id}>{provider.name} — {provider.vendor}</option>)}</select></label>
       <label className="text-sm font-medium">Hotel/property code<input name="externalPropertyCode" className="input mt-2" defaultValue={selected?.connection?.external_property_code || ""} maxLength={120} required /><small className="mt-1 block text-slate-500">Use the non-secret identifier assigned to the hotel in its PMS.</small></label>
+      <label className="text-sm font-medium">{selectedProviderId === "clock-pms-plus" ? "Clock PMS+ Subscription ID" : "Vendor account/subscription reference (optional)"}<input name="vendorAccountReference" className="input mt-2" defaultValue={selected?.connection?.vendor_account_reference || ""} maxLength={120} pattern="[A-Za-z0-9._:/-]*" required={selectedProviderId === "clock-pms-plus"} /><small className="mt-1 block text-slate-500">{selectedProviderId === "clock-pms-plus" ? "Enter the non-secret Clock Subscription ID required for the integration application. This is separate from the hotel/property code." : "Use only a non-secret vendor account or subscription identifier. Do not enter usernames, passwords, API keys, or tokens."}</small></label>
       <fieldset className="grid gap-4 border-t pt-4">
         <legend className="text-sm font-semibold">Pilot-hotel authorization and mappings</legend>
         <label className="flex items-start gap-3 text-sm"><input className="mt-1" name="hotelAuthorized" type="checkbox" defaultChecked={selected?.connection?.hotel_authorized || false} /><span>I confirm that the hotel owner or authorized manager approved this PMS connection.</span></label>

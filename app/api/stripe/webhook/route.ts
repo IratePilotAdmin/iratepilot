@@ -18,10 +18,13 @@ import { isRetryableStripeWebhookClaim } from "@/lib/stripe/webhook-retry";
 import { getVerifiedPartnerSubscriptionPlan } from "@/lib/stripe/partner-subscription-pricing";
 import { getVerifiedMembershipSubscriptionTier } from "@/lib/stripe/membership-subscription-pricing";
 import { queueBookingNotification } from "@/lib/email/booking-notifications";
-import { getApprovedBookingMetadataMode, getStripeWebhookMode } from "@/lib/stripe/booking-payment-mode";
+import {
+  getApprovedBookingMetadataMode,
+  getStripeWebhookMode,
+  stripeLivemodeMatchesPaymentMode,
+} from "@/lib/stripe/booking-payment-mode";
 import { reconcileStripeBookingRefund, type StripeRefundReconciliation } from "@/lib/bookings/stripe-refund-reconciliation";
 import { drainNativePmsEvents } from "@/services/hotel-suppliers/iratepilot-pms/native-delivery";
-import { isHotelMarketplaceLaunchAuthorized } from "@/lib/hotels/marketplace-launch-authorization";
 
 function deliverCancellationToNativePms() {
   after(async () => {
@@ -47,16 +50,11 @@ export async function POST(request: Request) {
 
   const webhookMode = getStripeWebhookMode();
   if (!webhookMode) return NextResponse.json({ error: "Stripe webhooks are disabled." }, { status: 503 });
-  if (
-    webhookMode === "live"
-    && event.type === "payment_intent.succeeded"
-    && !await isHotelMarketplaceLaunchAuthorized()
-  ) {
+  if (!stripeLivemodeMatchesPaymentMode(event.livemode, webhookMode)) {
     return NextResponse.json({
-      error: "Live payment completion requires every production launch gate to pass.",
-    }, { status: 503 });
+      error: "Stripe event mode does not match the configured webhook mode.",
+    }, { status: 400 });
   }
-
   const admin = createAdminClient();
   const eventCreatedAt = new Date(event.created * 1000).toISOString();
   let financialId: string | null = null;

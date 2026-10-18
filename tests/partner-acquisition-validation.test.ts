@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { isPartnerSelfServiceEnabled } from "../config/partner-acquisition";
 import {
-  getPartnerDraftProgress, partnerDraftDetailsSchema, partnerDraftSubmissionSchema,
+  getPartnerDraftProgress, isCompleteHotelPartnerApplication, partnerDraftDetailsSchema, partnerDraftSubmissionSchema,
   partnerRegistrationNextPath, partnerRegistrationRequestSchema, partnerRegistrationSchema,
   readPartnerAcquisitionAttribution,
 } from "../lib/partner/acquisition";
@@ -82,5 +82,27 @@ describe("partner acquisition registration and initial application", () => {
       expect(partnerDraftSubmissionSchema.safeParse({ ...complete, [key]: false }).success).toBe(false);
     }
     expect(partnerDraftSubmissionSchema.safeParse({ ...complete, active: true }).success).toBe(false);
+  });
+
+  it("excludes incomplete legacy records from the production acquisition funnel", () => {
+    const application = {
+      star_rating: 4, contact_role: "owner", phone: "+15555550100",
+      website_url: "https://hotel.example", address_line1: "123 Example Avenue",
+      city: "Navarre", postal_code: "32566", country: "US",
+      description: "Verified hotel description", amenities: ["Parking"],
+      photo_source_url: "https://hotel.example/lobby.jpg", hotel_authorized: true,
+      content_rights_confirmed: true, information_accurate: true,
+      commercial_terms_acknowledged: true,
+      commercial_terms_version_acknowledged: "hotel_partner_fee_disclosure_13_3_2026-08-22_v1",
+    };
+    expect(isCompleteHotelPartnerApplication(application)).toBe(true);
+    expect(isCompleteHotelPartnerApplication({ ...application, star_rating: null })).toBe(false);
+    expect(isCompleteHotelPartnerApplication({ ...application, star_rating: 3 })).toBe(false);
+    expect(isCompleteHotelPartnerApplication({ ...application, hotel_authorized: false })).toBe(false);
+    expect(isCompleteHotelPartnerApplication({ ...application, amenities: [] })).toBe(false);
+    expect(isCompleteHotelPartnerApplication({
+      ...application,
+      commercial_terms_version_acknowledged: "legacy_14_percent",
+    })).toBe(false);
   });
 });

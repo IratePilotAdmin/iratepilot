@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import {
+  HOTEL_PARTNER_DISCLOSURE_VERSION,
+  isCompleteHotelPartnerApplication,
+} from "@/lib/partner/acquisition";
 
 type Application = {
   id: string;
@@ -47,8 +51,6 @@ const reviewChecklist = [
   ["inactiveDraftScopeConfirmed", "I understand approval creates only an inactive private draft; publication, bookings, payouts, and connectivity remain separate gates."],
 ] as const;
 
-const currentFeeDisclosureVersion = "hotel_partner_fee_disclosure_13_3_2026-08-22_v1";
-
 type ReviewCheck = (typeof reviewChecklist)[number][0];
 type ReviewChecklist = Record<ReviewCheck, boolean>;
 
@@ -58,27 +60,6 @@ function hasCompletedReview(checklist?: Partial<ReviewChecklist>) {
 
 function formatLabel(value: string | null) {
   return value?.replaceAll("_", " ") || "Not provided";
-}
-
-function hasCompleteIntake(application: Application) {
-  return Boolean(
-    application.star_rating
-    && application.contact_role
-    && application.phone
-    && application.website_url
-    && application.address_line1
-    && application.city
-    && application.postal_code
-    && application.country
-    && application.description
-    && application.amenities?.length
-    && application.photo_source_url
-    && application.hotel_authorized
-    && application.content_rights_confirmed
-    && application.information_accurate
-    && application.commercial_terms_acknowledged
-    && application.commercial_terms_version_acknowledged === currentFeeDisclosureVersion,
-  );
 }
 
 export function AdminPartnerApplications() {
@@ -153,7 +134,7 @@ export function AdminPartnerApplications() {
           <p className="p-6 text-sm text-slate-500">No hotel intakes yet.</p>
         )}
         {applications.map((application) => {
-          const complete = hasCompleteIntake(application);
+          const complete = isCompleteHotelPartnerApplication(application);
           const verifiedApproval = application.status === "approved"
             && application.approval_evidence_verified
             && Boolean(application.property_id);
@@ -227,7 +208,7 @@ export function AdminPartnerApplications() {
                 <p className={application.hotel_authorized ? "text-emerald-800" : "text-rose-700"}>{application.hotel_authorized ? "✓" : "✕"} Manager attested to hotel authorization: {application.hotel_authorized ? "Yes" : "No"}</p>
                 <p className={application.content_rights_confirmed ? "text-emerald-800" : "text-rose-700"}>{application.content_rights_confirmed ? "✓" : "✕"} Manager attested to content rights: {application.content_rights_confirmed ? "Yes" : "No"}</p>
                 <p className={application.information_accurate ? "text-emerald-800" : "text-rose-700"}>{application.information_accurate ? "✓" : "✕"} Manager attested to information accuracy: {application.information_accurate ? "Yes" : "No"}</p>
-                <p className={application.commercial_terms_acknowledged && application.commercial_terms_version_acknowledged === currentFeeDisclosureVersion ? "text-emerald-800" : "text-rose-700"}>{application.commercial_terms_acknowledged && application.commercial_terms_version_acknowledged === currentFeeDisclosureVersion ? "✓" : "✕"} Applicant acknowledged the current 13% commission + mandatory 3% rewards disclosure: {application.commercial_terms_acknowledged && application.commercial_terms_version_acknowledged === currentFeeDisclosureVersion ? "Yes" : "No"}</p>
+                <p className={application.commercial_terms_acknowledged && application.commercial_terms_version_acknowledged === HOTEL_PARTNER_DISCLOSURE_VERSION ? "text-emerald-800" : "text-rose-700"}>{application.commercial_terms_acknowledged && application.commercial_terms_version_acknowledged === HOTEL_PARTNER_DISCLOSURE_VERSION ? "✓" : "✕"} Applicant acknowledged the current 13% commission + mandatory 3% rewards disclosure: {application.commercial_terms_acknowledged && application.commercial_terms_version_acknowledged === HOTEL_PARTNER_DISCLOSURE_VERSION ? "Yes" : "No"}</p>
               </div>
 
               {application.status !== "approved" && (

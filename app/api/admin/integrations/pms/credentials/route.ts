@@ -8,6 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import {
   ApaleoConnectionTestError,
   CloudbedsConnectionTestError,
+  ClockPmsConnectionTestError,
   getPmsProvider,
   HiltonPepConnectionTestError,
   HiltonOnQConnectionTestError,
@@ -23,8 +24,10 @@ import {
   SihotConnectionTestError,
   StayntouchConnectionTestError,
   StandardPmsConnectionTestError,
+  ThinkReservationsConnectionTestError,
   testApaleoSandboxConnection,
   testCloudbedsSandboxConnection,
+  testClockPmsConnection,
   testHiltonPepSandboxConnection,
   testHiltonOnQSandboxConnection,
   testHotelKeySandboxConnection,
@@ -38,6 +41,7 @@ import {
   testSihotSandboxConnection,
   testStayntouchSandboxConnection,
   testStandardPmsConnection,
+  testThinkReservationsConnection,
   validatePmsConfiguration,
 } from "@/services/hotel-suppliers";
 
@@ -107,7 +111,37 @@ export async function PUT(request: Request) {
       }, { status: 400 });
     }
 
-    const encrypted = encryptPmsCredentials(environment);
+    let credentialsToStore = environment;
+    if (provider.id === "apaleo") {
+      const existing = await admin.from("property_pms_credentials")
+        .select("ciphertext,initialization_vector,authentication_tag,key_version")
+        .eq("connection_id", selected.id)
+        .maybeSingle();
+      if (existing.error) throw existing.error;
+      if (existing.data) {
+        const current = decryptPmsCredentials({
+          ciphertext: existing.data.ciphertext,
+          initializationVector: existing.data.initialization_vector,
+          authenticationTag: existing.data.authentication_tag,
+          keyVersion: existing.data.key_version,
+        });
+        if (current.PMS_APALEO_WEBHOOK_SECRET || current.PMS_APALEO_WEBHOOK_SUBSCRIPTION_ID) {
+          return NextResponse.json({
+            error: "Remove the Apaleo webhook subscription before replacing credentials.",
+          }, { status: 409 });
+        }
+        const sameOAuthClient = current.PMS_APALEO_CLIENT_ID === environment.PMS_APALEO_CLIENT_ID
+          && current.PMS_APALEO_CLIENT_SECRET === environment.PMS_APALEO_CLIENT_SECRET;
+        if (sameOAuthClient && current.PMS_APALEO_REFRESH_TOKEN) {
+          credentialsToStore = {
+            ...environment,
+            PMS_APALEO_REFRESH_TOKEN: current.PMS_APALEO_REFRESH_TOKEN,
+          };
+        }
+      }
+    }
+
+    const encrypted = encryptPmsCredentials(credentialsToStore);
     const stored = await admin.from("property_pms_credentials").upsert({
       connection_id: selected.id,
       ciphertext: encrypted.ciphertext,
@@ -184,6 +218,8 @@ export async function POST(request: Request) {
           clientId: credentials.PMS_ORACLE_OPERA_CLIENT_ID,
           clientSecret: credentials.PMS_ORACLE_OPERA_CLIENT_SECRET,
           appKey: credentials.PMS_ORACLE_OPERA_APP_KEY,
+          enterpriseId: credentials.PMS_ORACLE_OPERA_ENTERPRISE_ID,
+          scope: credentials.PMS_ORACLE_OPERA_SCOPE,
           hotelId: credentials.PMS_ORACLE_OPERA_HOTEL_ID,
           timeoutMs: 15_000,
         });
@@ -332,14 +368,50 @@ export async function POST(request: Request) {
           baseUrl: credentials.PMS_APALEO_BASE_URL,
           clientId: credentials.PMS_APALEO_CLIENT_ID,
           clientSecret: credentials.PMS_APALEO_CLIENT_SECRET,
+          refreshToken: credentials.PMS_APALEO_REFRESH_TOKEN,
         });
         propertyCount = result.propertyCount;
         detailCode = "apaleo_properties_read_succeeded";
+        if (result.refreshToken && result.refreshToken !== credentials.PMS_APALEO_REFRESH_TOKEN) {
+          const rotatedValues = structuredClone(credentials);
+          rotatedValues.PMS_APALEO_REFRESH_TOKEN = result.refreshToken;
+          const rotated = encryptPmsCredentials(rotatedValues);
+          const refreshed = await admin.from("property_pms_credentials").update({
+            ciphertext: rotated.ciphertext,
+            initialization_vector: rotated.initializationVector,
+            authentication_tag: rotated.authenticationTag,
+            key_version: rotated.keyVersion,
+            configured_by: auth.user.id,
+            updated_at: new Date().toISOString(),
+          }).eq("connection_id", selected.id);
+          if (refreshed.error) throw refreshed.error;
+        }
       } catch (error) {
         passed = false;
         detailCode = error instanceof ApaleoConnectionTestError
           ? error.detailCode
           : "apaleo_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "thinkreservations") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testThinkReservationsConnection({
+          baseUrl: credentials.PMS_THINKRESERVATIONS_BASE_URL,
+          tokenUrl: credentials.PMS_THINKRESERVATIONS_TOKEN_URL,
+          clientId: credentials.PMS_THINKRESERVATIONS_CLIENT_ID,
+          clientSecret: credentials.PMS_THINKRESERVATIONS_CLIENT_SECRET,
+          audience: credentials.PMS_THINKRESERVATIONS_AUDIENCE,
+          hotelId: selected.external_property_code,
+          timeoutMs: 15_000,
+        });
+        hotelCount = result.hotelCount;
+        detailCode = "thinkreservations_hotels_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof ThinkReservationsConnectionTestError
+          ? error.detailCode
+          : "thinkreservations_connection_unreachable";
       }
     } else if (configurationPassed && provider.id === "stayntouch") {
       validationMode = "vendor_sandbox";
@@ -433,6 +505,26 @@ export async function POST(request: Request) {
         detailCode = error instanceof ShijiConnectionTestError
           ? error.detailCode
           : "shiji_sandbox_unreachable";
+      }
+    } else if (configurationPassed && provider.id === "clock-pms-plus") {
+      validationMode = "vendor_sandbox";
+      liveVendorConnectionTested = true;
+      try {
+        const result = await testClockPmsConnection({
+          baseUrl: credentials.PMS_CLOCK_BASE_URL,
+          apiUser: credentials.PMS_CLOCK_API_USER,
+          apiKey: credentials.PMS_CLOCK_API_KEY,
+          availabilityPath: credentials.PMS_CLOCK_AVAILABILITY_PATH,
+          propertyCode: selected.external_property_code,
+          timeoutMs: 15_000,
+        });
+        resourceCount = result.resourceCount;
+        detailCode = "clock_pms_validation_read_succeeded";
+      } catch (error) {
+        passed = false;
+        detailCode = error instanceof ClockPmsConnectionTestError
+          ? error.detailCode
+          : "clock_pms_connection_unreachable";
       }
     } else if (configurationPassed && isStandardPmsProvider(provider.id)) {
       validationMode = "vendor_sandbox";

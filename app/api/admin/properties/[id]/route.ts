@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/require-role";
 import { isHotelPublicationEnabled } from "@/lib/hotels/publication-gate";
-import { isHotelMarketplaceLaunchAuthorized } from "@/lib/hotels/marketplace-launch-authorization";
+import { isHotelMarketplacePublicationAuthorized } from "@/lib/hotels/marketplace-launch-authorization";
 import { getPropertyReadiness, type PropertyReadinessInput } from "@/lib/property-readiness";
 
 const decisionSchema = z.object({ active: z.boolean() });
@@ -22,7 +22,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
           error: "Hotel publication is locked until the production release gate is approved."
         }, { status: 409 });
       }
-      if (!await isHotelMarketplaceLaunchAuthorized()) {
+      if (!await isHotelMarketplacePublicationAuthorized()) {
         return NextResponse.json({
           error: "Hotel publication is blocked until every production launch gate passes."
         }, { status: 409 });

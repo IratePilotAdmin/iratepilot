@@ -7,7 +7,7 @@ import {
   buildPmsReadiness,
   pmsProviders,
   priorityPmsProviderIds,
-  isVerifiedActivationDetail,
+  areVerifiedActivationDetails,
 } from "@/services/hotel-suppliers";
 import type { PriorityPmsLaunchEvidence, PriorityPmsProviderId } from "@/services/hotel-suppliers";
 import { evaluateInventorySandboxRuntimeGate } from "@/services/hotel-suppliers/inventory-runtime-gate.server";
@@ -23,7 +23,7 @@ export async function GET() {
 
     const admin = createAdminClient();
     const [connectionsResult, propertiesResult, credentialsResult, evidenceResult] = await Promise.all([
-      admin.from("property_pms_connections").select("id,property_id,provider_id,external_property_code,connection_status,last_validated_at").order("updated_at", { ascending: false }),
+      admin.from("property_pms_connections").select("id,property_id,provider_id,external_property_code,vendor_account_reference,connection_status,last_validated_at").order("updated_at", { ascending: false }),
       admin.from("properties").select("id,name"),
       admin.from("property_pms_credentials").select("connection_id,updated_at"),
       admin.from("priority_pms_launch_evidence").select("provider_id,vendor_approved,property_mapped,sandbox_validated,webhook_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact,verification_notes,updated_at"),
@@ -227,7 +227,7 @@ export async function PATCH(request: Request) {
       propertyCode: typeof details.propertyCode === "string" ? details.propertyCode : current.property_code,
       supportContact: typeof details.supportContact === "string" ? details.supportContact : current.support_contact,
     };
-    if (patch.liveEnabled === true && Object.values(nextDetails).some((value) => !isVerifiedActivationDetail(value ?? ""))) {
+    if (patch.liveEnabled === true && !areVerifiedActivationDetails(nextDetails)) {
       return NextResponse.json({ error: "Verified vendor approval, environment, real property code, and support contact details are required before live traffic is enabled." }, { status: 409 });
     }
     const preActivationReadiness = auditPriorityPmsProductionReadiness(process.env, {

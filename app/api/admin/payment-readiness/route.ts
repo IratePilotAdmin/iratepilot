@@ -9,7 +9,7 @@ const timestampSchema = z.string().datetime({ offset: true });
 const authorizationSchema = z.object({
   action: z.literal("record"),
   approvalReference: z.string().trim().min(8).max(160).regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{7,159}$/),
-  stripeAccountReference: z.string().trim().regex(/^acct_[A-Za-z0-9]{6,64}$/),
+  stripeAccountReference: z.string().trim().regex(/^acct_[A-Za-z0-9]{8,127}$/),
   approvedAt: timestampSchema,
   expiresAt: timestampSchema,
   reviewNotes: z.string().trim().min(20).max(2000),

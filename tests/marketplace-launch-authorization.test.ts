@@ -14,6 +14,7 @@ const liveEnvironment = {
   STRIPE_SECRET_KEY: "sk_live_example",
   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: "pk_live_example",
   STRIPE_WEBHOOK_SECRET: "whsec_example",
+  STRIPE_LIVE_ACCOUNT_ID: "acct_liveexample123",
   BOOKING_PAYMENT_MODE: "live",
   STRIPE_WEBHOOK_MODE: "live",
   CRS_SYNXIS_BASE_URL: "https://example.test",
@@ -27,6 +28,8 @@ const liveEnvironment = {
 const liveEvidence = {
   releaseAuthorizationValid: true,
   paymentAuthorizationValid: true,
+  hotelCommerceStateAvailable: true,
+  commercialHotelInventoryReady: true,
   supplierStateAvailable: true,
   priorityPmsEvidence: {},
   synxisEvidence: {
@@ -64,6 +67,30 @@ describe("hotel marketplace launch authorization", () => {
     })).toBe(false);
   });
 
+  it("revalidates current hotel intake, inventory, and commercial evidence", () => {
+    expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
+      ...liveEvidence,
+      commercialHotelInventoryReady: false,
+    })).toBe(false);
+    expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
+      ...liveEvidence,
+      hotelCommerceStateAvailable: false,
+    })).toBe(false);
+    expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
+      ...liveEvidence,
+      commercialHotelInventoryReady: false,
+    }, {
+      allowUnavailableCommercialInventoryForPublication: true,
+    })).toBe(true);
+    expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
+      ...liveEvidence,
+      hotelCommerceStateAvailable: false,
+      commercialHotelInventoryReady: false,
+    }, {
+      allowUnavailableCommercialInventoryForPublication: true,
+    })).toBe(false);
+  });
+
   it("fails closed for supplier or operations evidence errors", () => {
     expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
       ...liveEvidence,
@@ -95,6 +122,11 @@ describe("hotel marketplace launch authorization", () => {
     expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, payoutExceptionEvidence, {
       allowPayoutExceptionsForReconciliation: true,
     })).toBe(true);
+    expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
+      ...payoutExceptionEvidence,
+      hotelCommerceStateAvailable: false,
+      commercialHotelInventoryReady: false,
+    }, { allowPayoutExceptionsForReconciliation: true })).toBe(true);
     expect(evaluateHotelMarketplaceLaunchAuthorization(liveEnvironment, {
       ...payoutExceptionEvidence,
       deliveryFailures: 1,

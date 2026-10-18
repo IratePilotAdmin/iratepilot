@@ -114,3 +114,26 @@ export function buildExpediaRapidSandboxAvailabilityRequest(input: {
     },
   };
 }
+
+export function buildStubaSandboxHotelSearchRequest(input: {
+  authApiKey: string;
+  payload: JsonObject;
+}): InventorySandboxRequest {
+  const authApiKey = input.authApiKey.trim();
+  if (!authApiKey || authApiKey.length > 4096 || unsafeTextPattern.test(authApiKey)) {
+    throw new Error("Stuba sandbox API key is invalid.");
+  }
+
+  return {
+    supplierId: "stuba",
+    url: "https://testapijson.stuba.com/HotelSearch",
+    method: "POST",
+    headers: {
+      AuthApiKey: authApiKey,
+      Accept: "application/json",
+      "Accept-Encoding": "gzip,br",
+      "Content-Type": "application/json",
+    },
+    body: serializeJsonObject(input.payload),
+  };
+}

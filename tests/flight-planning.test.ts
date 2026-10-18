@@ -61,14 +61,55 @@ describe("flight planning phase 1", () => {
     }, now).query?.returnDate).toBeNull();
   });
 
+  it("accepts a connected two-to-four-leg multi-city itinerary", () => {
+    expect(parseFlightSearch({
+      tripType: "multicity",
+      segmentOrigin: ["ORD", "LAX", "SFO", ""],
+      segmentDestination: ["LAX", "SFO", "SEA", ""],
+      segmentDepartureDate: ["2026-09-10", "2026-09-14", "2026-09-18", ""],
+      travelers: "2",
+      cabin: "business",
+    }, now)).toMatchObject({
+      errors: [],
+      query: {
+        tripType: "multicity",
+        origin: "ORD",
+        destination: "SEA",
+        departureDate: "2026-09-10",
+        returnDate: null,
+        travelers: 2,
+        cabin: "business",
+        segments: [
+          { origin: "ORD", destination: "LAX", departureDate: "2026-09-10" },
+          { origin: "LAX", destination: "SFO", departureDate: "2026-09-14" },
+          { origin: "SFO", destination: "SEA", departureDate: "2026-09-18" },
+        ],
+      },
+    });
+  });
+
+  it("rejects disconnected multi-city legs", () => {
+    const result = parseFlightSearch({
+      tripType: "multicity",
+      segmentOrigin: ["ORD", "JFK"],
+      segmentDestination: ["LAX", "MIA"],
+      segmentDepartureDate: ["2026-09-10", "2026-09-14"],
+      travelers: "1",
+      cabin: "economy",
+    }, now);
+    expect(result.query).toBeNull();
+    expect(result.errors).toContain("Multi-city leg 2 must depart from LAX, the prior leg's arrival airport.");
+  });
+
   it("keeps the consumer surface supplier-offline and clearly disclosed", () => {
-    const page = read("app/flights/page.tsx");
+    const page = `${read("app/flights/page.tsx")}\n${read("app/flights/flight-planner-form.tsx")}`;
     const navigation = read("data/navigation.ts");
     const footer = read("components/layout/site-footer.tsx");
     const sitemap = read("app/sitemap.ts");
     expect(FLIGHT_SUPPLIER_MODE).toBe("offline_planning");
     expect(page).toContain("No airline API request or payment is made");
     expect(page).toContain("Live fares are unavailable");
+    expect(page).toContain('value="multicity"');
     expect(page).toMatch(/<input name="returnDate"[^>]*\/>/);
     expect(page).not.toMatch(/<input name="returnDate"[^>]*\brequired\b/);
     expect(page).not.toContain("fetch(");

@@ -114,6 +114,7 @@ export function AdminHotelLaunchReadiness() {
 
   if (error) return <p className="mt-8 rounded-xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-900" role="alert">{error}</p>;
   if (!data) return <p className="mt-8 text-sm text-slate-500">Checking live launch evidence…</p>;
+  const prerequisiteGates = data.gates.filter(({ id }) => id !== "production_release");
 
   return (
     <div className="mt-8 grid gap-6">
@@ -134,8 +135,8 @@ export function AdminHotelLaunchReadiness() {
 
       <section className="card overflow-hidden">
         <div className="border-b p-6">
-          <h2 className="text-xl font-semibold">Seven production gates</h2>
-          <p className="mt-1 text-sm text-slate-500">Each result comes from current applications, property records, immutable agreement evidence, provider checks, configuration, and operating queues.</p>
+          <h2 className="text-xl font-semibold">Eight production gates</h2>
+          <p className="mt-1 text-sm text-slate-500">Each result comes from the combined external approval path, current applications, property records, immutable agreement evidence, provider checks, configuration, and operating queues.</p>
         </div>
         <div className="divide-y">
           {data.gates.map((item, index) => {
@@ -167,7 +168,7 @@ export function AdminHotelLaunchReadiness() {
         <span className="text-xs font-semibold uppercase tracking-[.18em] text-slate-500">Final release control</span>
         <h2 className="mt-2 text-xl font-semibold">Marketplace release authorization</h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-          A current, revocable receipt is required in addition to all six production prerequisites and the server publication switch. Recording this evidence never changes a runtime switch.
+          A current, revocable receipt is required in addition to all seven production prerequisites and the server publication switch. Recording this evidence never changes a runtime switch.
         </p>
         {!data.releaseAuthorizationEvidenceAvailable ? (
           <p className="mt-4 text-sm text-amber-800">The release authorization ledger is unavailable. Publication remains blocked.</p>
@@ -190,17 +191,17 @@ export function AdminHotelLaunchReadiness() {
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="text-sm font-medium">Approval reference<input className="input mt-1" name="approvalReference" required minLength={8} maxLength={160} /></label>
               <span className="self-end rounded-lg border bg-slate-50 p-3 text-sm">
-                Prerequisites: <strong>{data.gates.slice(0, 6).filter((gate) => gate.status === "ready").length}/6 complete</strong>
+                Prerequisites: <strong>{prerequisiteGates.filter((gate) => gate.status === "ready").length}/7 complete</strong>
               </span>
               <label className="text-sm font-medium">Approved at<input className="input mt-1" name="approvedAt" type="datetime-local" required /></label>
               <label className="text-sm font-medium">Expires at<input className="input mt-1" name="expiresAt" type="datetime-local" required /></label>
             </div>
             <label className="flex gap-2 text-sm"><input name="rollbackPlanVerified" type="checkbox" required />The rollback plan and accountable release owner have been verified.</label>
             <label className="text-sm font-medium">Release review notes<textarea className="input mt-1 min-h-24" name="reviewNotes" required minLength={20} maxLength={2000} /></label>
-            <button className="btn-primary w-fit" disabled={authorizationBusy || !data.gates.slice(0, 6).every((gate) => gate.status === "ready")} type="submit">
+            <button className="btn-primary w-fit" disabled={authorizationBusy || !prerequisiteGates.every((gate) => gate.status === "ready")} type="submit">
               {authorizationBusy ? "Recording…" : "Record release authorization"}
             </button>
-            {!data.gates.slice(0, 6).every((gate) => gate.status === "ready") && <p className="text-xs text-amber-800">This control unlocks only after the first six production gates pass.</p>}
+            {!prerequisiteGates.every((gate) => gate.status === "ready") && <p className="text-xs text-amber-800">This control unlocks only after all seven production prerequisites pass.</p>}
           </form>
         )}
         {authorizationMessage && <p className="mt-4 text-sm" role="status">{authorizationMessage}</p>}
