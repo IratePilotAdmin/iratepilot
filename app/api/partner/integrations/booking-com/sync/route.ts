@@ -96,12 +96,14 @@ export async function POST(request: Request) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     const conflict = message === "booking_com_sync_not_approved";
+    const incomplete = message === "booking_com_sync_incomplete_inventory" || message === "booking_com_sync_inventory_outside_window";
     const invalid = message === "booking_com_sync_scope_mismatch" || message === "booking_com_sync_too_many_requests";
     return NextResponse.json({ error: conflict
       ? "This test connection is not approved for ARI synchronization. Ask the OTA administrator to complete approval and certification first."
-      : invalid ? "The selected sync scope is invalid. Review its mappings and requested date range."
+      : incomplete ? "Every mapped room needs a saved rate and availability for each requested night before ARI can be queued. Review the inventory calendar and retry."
+        : invalid ? "The selected sync scope is invalid. Review its mappings and requested date range."
         : "Rates and availability could not be queued. Confirm saved inventory and mappings, then try again." }, {
-      status: conflict ? 409 : invalid ? 400 : 503,
+      status: conflict || incomplete ? 409 : invalid ? 400 : 503,
       headers: NO_STORE,
     });
   }
