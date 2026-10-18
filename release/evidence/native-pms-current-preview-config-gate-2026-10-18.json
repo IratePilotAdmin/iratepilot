@@ -20,9 +20,18 @@
     ],
     "productionIrpPmsVariablesAlsoPresent": true,
     "sharedIrpPmsSearchResults": 0,
-    "currentBranchHasMatchingScopedVariables": false
+    "currentBranchHasMatchingScopedVariables": false,
+    "genericPreviewPublicSupabaseProjectRef": "eiqmdldjnedqgbtoozqa",
+    "genericPreviewPublicSupabaseProjectIsLivePms": true
   },
-  "conclusion": "The current draft Preview has no verified isolated branch-scoped configuration for the synthetic scheduled cancellation. Keep all delivery and receiver switches off; do not use production-scoped values or infer that the older branch settings apply.",
+  "conclusion": "The current draft Preview has no verified isolated branch-scoped configuration for the synthetic scheduled cancellation, and its generic Preview public URL points at the live PMS project. Keep all delivery and receiver switches off; do not use this Preview for synthetic writes or infer that the older branch settings apply.",
   "secretsRevealed": false,
-  "hostedDeliveryAttempted": false
+  "hostedDeliveryAttempted": false,
+  "isolatedCronProject": {
+    "name": "iratepilot-cron-rehearsal-20261005",
+    "productionScopedRequiredVariableNamesPresent": true,
+    "irpPmsSyncEnabled": false,
+    "secretValuesRevealed": false,
+    "databaseAndReceiverBindingRevalidated": false
+  }
 }
