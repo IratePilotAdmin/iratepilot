@@ -9,6 +9,11 @@
     "outboxStateCounts": {
       "delivered": 5,
       "pending": 2
+    },
+    "pendingSequence": {
+      "distinctBookings": 1,
+      "minimumSourceVersion": 1,
+      "maximumSourceVersion": 2
     }
   },
   "receiver": {
