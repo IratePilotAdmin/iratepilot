@@ -36,6 +36,7 @@ export function RatesInventoryManager() {
   const propertyNames = useMemo(() => new Map(properties.map((property) => [property.id, property.name])), [properties]);
   const selectedRoom = useMemo(() => rooms.find((room) => room.id === selectedRoomId), [rooms, selectedRoomId]);
   const inventoryRoom = useMemo(() => rooms.find((room) => room.id === inventoryRoomId), [rooms, inventoryRoomId]);
+  const inventoryProperty = properties.find((property) => property.id === inventoryRoom?.property_id);
   const partnerSelectionRequired = accessOptions.length > 1 && !selectedPartnerId;
 
   const load = useCallback(async () => {
@@ -148,6 +149,7 @@ export function RatesInventoryManager() {
       <form onSubmit={(event) => send(event, "set_inventory")} className="card grid gap-4 p-6">
         <div><h2 className="text-xl font-semibold">Set dated inventory</h2><p className="mt-1 text-sm text-slate-500">Update up to 366 consecutive dates with the full guest price. Enter 0 when no tax or mandatory fee applies.</p></div>
         <label className="text-sm font-medium">Room type<select name="roomId" value={inventoryRoomId} onChange={(event) => setInventoryRoomId(event.target.value)} className="input mt-2" required><option value="">Select room</option>{rooms.map((room) => <option key={room.id} value={room.id}>{propertyNames.get(room.property_id)} — {room.name}</option>)}</select></label>
+        {inventoryProperty?.active && <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">This hotel is published. You can adjust availability on existing dates while keeping the saved rate, taxes, and fees. To add dates or change prices, ask an OTA administrator to pause the listing in Admin → Properties, review the changes, then publish it again.</p>}
         <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Start date<input name="startDate" type="date" min={today} className="input mt-2" required disabled={!inventoryRoom} /></label><label className="text-sm font-medium">End date<input name="endDate" type="date" min={today} className="input mt-2" required disabled={!inventoryRoom} /></label></div>
         <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Available units<input name="availableUnits" type="number" min="0" max="500" className="input mt-2" required disabled={!inventoryRoom} /></label><label className="text-sm font-medium">Nightly rate<input key={`${inventoryRoomId}-inventory-rate`} name="rate" type="number" min="25" step="0.01" defaultValue={inventoryRoom?.base_rate} className="input mt-2" required disabled={!inventoryRoom} /></label></div>
         <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Taxes per night<input name="taxAmount" type="number" min="0" max="25000" step="0.01" defaultValue="0" className="input mt-2" required disabled={!inventoryRoom} /></label><label className="text-sm font-medium">Mandatory fees per night<input name="mandatoryFeeAmount" type="number" min="0" max="25000" step="0.01" defaultValue="0" className="input mt-2" required disabled={!inventoryRoom} /></label></div>

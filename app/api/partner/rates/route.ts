@@ -160,7 +160,7 @@ export async function POST(request: Request) {
     if (error && typeof error === "object" && "code" in error && error.code === "P0001"
       && "message" in error && error.message === "Unpublish the property before changing commercial inventory terms") {
       return NextResponse.json({
-        error: "This published hotel's commercial terms are locked. Ask an OTA administrator to unpublish it, review and save the new inventory dates, then republish it.",
+        error: "This published hotel's commercial terms are locked. Ask an OTA administrator to pause the listing in Admin → Properties, review and save the new inventory dates, then publish it again.",
       }, { status: 409 });
     }
     return NextResponse.json({ error: "Rates and inventory could not be saved." }, { status: 503 });
