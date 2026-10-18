@@ -1,0 +1,31 @@
+{
+  "observedAtLocalDate": "2026-10-18",
+  "source": {
+    "projectRef": "onbdizzwwubfdgkgaphx",
+    "method": "Read-only aggregate queries in the signed-in isolated Supabase SQL Editor",
+    "connectionCount": 1,
+    "captureEnabledCount": 0,
+    "deliveryEnabledCount": 0,
+    "outboxStateCounts": {
+      "delivered": 5,
+      "pending": 2
+    }
+  },
+  "receiver": {
+    "projectRef": "wjosvslkselpauyftias",
+    "method": "Read-only aggregate query in the signed-in isolated Supabase SQL Editor",
+    "gatewayConnectionCount": 2,
+    "enabledConnectionCount": 0
+  },
+  "preview": {
+    "sourceCommit": "3160ac9",
+    "adminSettingsObservation": "The current iratepilotadmin Preview redirected /admin/settings to /login?next=%2Fadmin%2Fsettings. No administrator action was taken."
+  },
+  "localVerification": {
+    "focusedNativeConnectorTestFilesPassed": 6,
+    "focusedNativeConnectorTestsPassed": 29,
+    "failures": 0
+  },
+  "conclusion": "The isolated synthetic source has two undelivered events, and both ends of the connector remain disabled. The focused source tests do not supply a new hosted booking or cancellation receipt.",
+  "productionChanged": false
+}
