@@ -97,6 +97,8 @@ describe("Booking.com year-window sync API", () => {
     expect(response.status).toBe(200);
     expect(mocks.ranges).toEqual([[0, 999], [1_000, 1_999], [1_080, 2_079]]);
     expect(mocks.enqueue).toHaveBeenCalled();
+    expect(mocks.enqueue.mock.calls.some(([, job]) =>
+      job.p_request_xml.includes('InvTypeCode="TYPE11"') && job.p_request_xml.includes('Start="2027-01-29"'))).toBe(true);
   });
 
   it("rejects an out-of-range year window", async () => {
