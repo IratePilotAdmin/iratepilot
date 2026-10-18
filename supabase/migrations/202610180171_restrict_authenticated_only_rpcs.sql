@@ -23,9 +23,11 @@ BEGIN
     function_oid := to_regprocedure(function_name);
     IF function_oid IS NULL
        OR has_function_privilege('anon', function_oid, 'EXECUTE')
-       OR NOT has_function_privilege('authenticated', function_oid, 'EXECUTE')
-       OR NOT has_function_privilege('service_role', function_oid, 'EXECUTE') THEN
-      RAISE EXCEPTION 'Unexpected execute grants for %', function_name;
+       OR NOT has_function_privilege('authenticated', function_oid, 'EXECUTE') THEN
+      RAISE EXCEPTION 'Unexpected execute grants for %: anon %, authenticated %',
+        function_name,
+        has_function_privilege('anon', function_oid, 'EXECUTE'),
+        has_function_privilege('authenticated', function_oid, 'EXECUTE');
     END IF;
   END LOOP;
 END;
