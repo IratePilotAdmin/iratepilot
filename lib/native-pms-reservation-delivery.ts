@@ -152,16 +152,22 @@ function readConnections(value: unknown): Array<{ scope: Omit<Connection, "secre
     const property = String(row.property_id ?? "");
     const tenant = String(row.tenant_id ?? "");
     const pmsProperty = String(row.pms_property_id ?? "");
+    const credentialMissing = row.secret_ciphertext === null
+      && row.secret_initialization_vector === null && row.secret_authentication_tag === null
+      && row.secret_key_version === null;
     if (!connectionId.test(id) || !uuid.test(property) || !uuid.test(tenant) || !uuid.test(pmsProperty)
-      || typeof row.secret_ciphertext !== "string" || !/^[A-Za-z0-9+/]+={0,2}$/.test(row.secret_ciphertext) || row.secret_ciphertext.length > 4096
-      || typeof row.secret_initialization_vector !== "string" || !/^[A-Za-z0-9+/]{16}$/.test(row.secret_initialization_vector)
-      || typeof row.secret_authentication_tag !== "string" || !/^[A-Za-z0-9+/]{22}==$/.test(row.secret_authentication_tag)
-      || typeof row.secret_key_version !== "number" || !Number.isInteger(row.secret_key_version) || row.secret_key_version !== 1
       || seenConnections.has(id) || seenProperties.has(property)) {
       throw new Error("Reservation worker connection registry is invalid.");
     }
     seenConnections.add(id);
     seenProperties.add(property);
+    if (credentialMissing) return null;
+    if (typeof row.secret_ciphertext !== "string" || !/^[A-Za-z0-9+/]+={0,2}$/.test(row.secret_ciphertext) || row.secret_ciphertext.length > 4096
+      || typeof row.secret_initialization_vector !== "string" || !/^[A-Za-z0-9+/]{16}$/.test(row.secret_initialization_vector)
+      || typeof row.secret_authentication_tag !== "string" || !/^[A-Za-z0-9+/]{22}==$/.test(row.secret_authentication_tag)
+      || typeof row.secret_key_version !== "number" || !Number.isInteger(row.secret_key_version) || row.secret_key_version !== 1) {
+      throw new Error("Reservation worker connection registry is invalid.");
+    }
     return {
       scope: { connection_id: id, property_id: property, tenant_id: tenant, pms_property_id: pmsProperty },
       encrypted: {
@@ -171,7 +177,7 @@ function readConnections(value: unknown): Array<{ scope: Omit<Connection, "secre
         keyVersion: row.secret_key_version,
       },
     };
-  });
+  }).filter((item): item is NonNullable<typeof item> => item !== null);
 }
 
 function sign(secret: string, timestamp: string, connection: string, rawBody: string) {
@@ -198,8 +204,11 @@ export async function runNativePmsReservationDelivery(
   now = Date.now(),
 ): Promise<NativePmsReservationDeliveryResult> {
   const config = parseSettings(input);
-  const listed = readConnections(await callRpc(fetcher, config.rpcUrl, config.serviceRoleKey, "irp_pms_list_configured_delivery_connections"));
-  if (!listed.length) return { outcome: "idle" };
+  const registry = await callRpc(fetcher, config.rpcUrl, config.serviceRoleKey, "irp_pms_list_configured_delivery_connections");
+  const listed = readConnections(registry);
+  if (!listed.length) return Array.isArray(registry) && registry.length > 0
+    ? { outcome: "idle", code: "no_valid_connection_credentials" }
+    : { outcome: "idle" };
   const connections = listed.map((item) => {
     let secret = "";
     try {

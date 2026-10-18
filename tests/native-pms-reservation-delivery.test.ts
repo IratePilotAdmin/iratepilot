@@ -103,6 +103,45 @@ describe("native PMS reservation delivery worker", () => {
     await expect(runNativePmsReservationDelivery(config, fetcher)).resolves.toEqual({ outcome: "idle" });
   });
 
+  it("reports an enabled sandbox connection with no stored signing credential without claiming an event", async () => {
+    const missing = { ...registry[0], secret_ciphertext: null, secret_initialization_vector: null,
+      secret_authentication_tag: null, secret_key_version: null };
+    const calls: string[] = [];
+    const fetcher: typeof fetch = async (input) => {
+      calls.push(String(input));
+      return rpcResponse([missing]);
+    };
+    await expect(runNativePmsReservationDelivery(config, fetcher)).resolves.toEqual({
+      outcome: "idle", code: "no_valid_connection_credentials",
+    });
+    expect(calls).toHaveLength(1);
+  });
+
+  it("keeps a separate configured connection eligible when another scope lacks credentials", async () => {
+    const missing = { ...registry[0], connection_id: "unconfigured-sandbox",
+      property_id: "88888888-8888-4888-8888-888888888888", secret_ciphertext: null,
+      secret_initialization_vector: null, secret_authentication_tag: null, secret_key_version: null };
+    const fetcher: typeof fetch = async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("/irp_pms_list_configured_delivery_connections")) return rpcResponse([missing, ...registry]);
+      if (url.endsWith("/irp_pms_claim_configured_event")) {
+        expect(JSON.parse(String(init?.body)).p_connections).toEqual([{
+          connection_id: connectionId, property_id: propertyId, tenant_id: tenantId, pms_property_id: pmsPropertyId,
+        }]);
+        return rpcResponse([]);
+      }
+      throw new Error("Unexpected worker request.");
+    };
+    await expect(runNativePmsReservationDelivery(config, fetcher)).resolves.toEqual({ outcome: "idle" });
+  });
+
+  it("rejects partially missing signing material rather than treating it as unconfigured", async () => {
+    const partial = { ...registry[0], secret_ciphertext: null };
+    const fetcher: typeof fetch = async () => rpcResponse([partial]);
+    await expect(runNativePmsReservationDelivery(config, fetcher))
+      .rejects.toThrow("Reservation worker connection registry is invalid.");
+  });
+
   it.each([
     [503, "retry", "http_503"], [429, "retry", "http_429"],
     [422, "review", "http_422"], [409, "review", "http_409"],
