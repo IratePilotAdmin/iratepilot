@@ -156,7 +156,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: `${rows.length} inventory dates updated.` });
     }
     return NextResponse.json({ error: "Unknown inventory action." }, { status: 400 });
-  } catch {
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "P0001"
+      && "message" in error && error.message === "Unpublish the property before changing commercial inventory terms") {
+      return NextResponse.json({
+        error: "This published hotel's commercial terms are locked. Ask an OTA administrator to unpublish it, review and save the new inventory dates, then republish it.",
+      }, { status: 409 });
+    }
     return NextResponse.json({ error: "Rates and inventory could not be saved." }, { status: 503 });
   }
 }
