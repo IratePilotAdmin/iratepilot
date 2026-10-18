@@ -140,3 +140,11 @@ The source release now covers the supported folio subset described above, includ
 ## Lockfile advisory remediation (September 30, 2026)
 
 A read-only npm registry advisory scan of the 505 package names and versions in `package-lock.json` identified vulnerable `brace-expansion` pins at 1.1.18 and 5.0.9. Both are transitive development dependencies; the `pnpm-lock.yaml` already resolved patched versions 1.1.21 and 5.0.12. The npm lockfile now matches those registry versions and integrity digests. A repeated scan returned no advisory matches. The GitHub push notice still reports alerts on the repository's default branch until this branch is merged; this scan covers the npm lockfile only. Targeted OTA and admin-inbox tests and TypeScript pass after the lockfile update.
+
+## Synthetic pilot checkpoint (October 18, 2026)
+
+The first connector pilot will use an existing **synthetic hotel**, not Red Roof Inn Ridgeland or another real property. Prior hosted rehearsal evidence in `PMS_REHEARSAL_DATA_API_ACTIVATION_2026-10-05.md` and `PMS_SCHEDULED_RECOVERY_GATE_2026-10-05.md` records a synthetic OTA booking delivered through the signed isolated PMS gateway, durable retries, a manually invoked hosted worker, and an unattended version-5 delivery from an isolated Vercel cron project. This proves the isolated path; the public iRatePilot.com deployment has not been activated.
+
+Read-only aggregate checks on October 18 found one property, one booking and five outbox events in isolated OTA source `onbdizzwwubfdgkgaphx`, with zero enabled source connections and zero delivery-enabled connections. Isolated PMS receiver `wjosvslkselpauyftias` has two native OTA reservations, a maximum source version of five, and zero enabled gateway connections. The 25-check local two-database connector rehearsal and 36 focused tests in the current reconciled OTA branch passed. No test traffic or live hotel data changed in this recheck.
+
+The next supervised synthetic gate is a hosted cancellation with matching source outbox, receiver receipt and inventory reversal evidence. Keep both connections disabled outside that test. Production publication still needs the reviewed connector/migration rollout, real hotel authority and content rights, property mapping, payment and operational acceptance, and separate approval/certification for external OTAs.
