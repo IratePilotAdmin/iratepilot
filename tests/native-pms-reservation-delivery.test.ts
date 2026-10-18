@@ -82,6 +82,27 @@ describe("native PMS reservation delivery worker", () => {
     expect(calls).toHaveLength(4);
   });
 
+  it("sends a modern Supabase secret key only as an API key", async () => {
+    const modern = { ...config, serviceRoleKey: `sb_secret_${"a".repeat(32)}` };
+    const fetcher: typeof fetch = async (_input, init) => {
+      const headers = new Headers(init?.headers);
+      expect(headers.get("apikey")).toBe(modern.serviceRoleKey);
+      expect(headers.has("authorization")).toBe(false);
+      return rpcResponse([]);
+    };
+    await expect(runNativePmsReservationDelivery(modern, fetcher)).resolves.toEqual({ outcome: "idle" });
+  });
+
+  it("keeps the JWT bearer header for legacy service-role keys", async () => {
+    const fetcher: typeof fetch = async (_input, init) => {
+      const headers = new Headers(init?.headers);
+      expect(headers.get("apikey")).toBe(config.serviceRoleKey);
+      expect(headers.get("authorization")).toBe(`Bearer ${config.serviceRoleKey}`);
+      return rpcResponse([]);
+    };
+    await expect(runNativePmsReservationDelivery(config, fetcher)).resolves.toEqual({ outcome: "idle" });
+  });
+
   it.each([
     [503, "retry", "http_503"], [429, "retry", "http_429"],
     [422, "review", "http_422"], [409, "review", "http_409"],

@@ -76,9 +76,12 @@ function parseSettings(input: NativePmsReservationDeliveryConfig) {
 }
 
 async function callRpc(fetcher: typeof fetch, base: string, key: string, name: string, args: Record<string, unknown> = {}) {
+  const headers: Record<string, string> = { apikey: key, "Content-Type": "application/json" };
+  // Modern Supabase secret keys are API keys, not JWT bearer tokens.
+  if (!key.startsWith("sb_secret_")) headers.Authorization = `Bearer ${key}`;
   const response = await fetcher(base + name, {
     method: "POST", redirect: "error", cache: "no-store",
-    headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(args), signal: AbortSignal.timeout(12000),
   });
   const text = await readBoundedText(response, 512 * 1024);
