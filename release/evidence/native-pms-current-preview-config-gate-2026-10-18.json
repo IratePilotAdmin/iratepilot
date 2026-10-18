@@ -32,6 +32,8 @@
     "productionScopedRequiredVariableNamesPresent": true,
     "irpPmsSyncEnabled": false,
     "secretValuesRevealed": false,
-    "databaseAndReceiverBindingRevalidated": false
+    "sourcePublicUrlVisiblePrefixMatches": "onbdizzwwubfdgkgaphx",
+    "destinationPublicUrlVisiblePrefixMatches": "wjosvslkselpauyftias",
+    "fullUrlsAndCredentialAlignmentRevalidated": false
   }
 }
