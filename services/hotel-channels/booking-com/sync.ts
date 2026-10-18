@@ -38,6 +38,7 @@ export type BookingComSyncInput = {
 };
 
 export type BookingComYearSyncInput = Omit<BookingComSyncInput, "endDate">;
+export type BookingComYearWindowRequest = BookingComYearSyncInput & { windowIndex: number };
 
 /** Splits 366 consecutive nights into stable, non-overlapping 90-day test scopes. */
 export function planBookingComYearSync(input: BookingComYearSyncInput): BookingComSyncInput[] {
@@ -45,6 +46,9 @@ export function planBookingComYearSync(input: BookingComYearSyncInput): BookingC
     throw new Error("booking_com_sync_input_invalid");
   }
   const start = Date.parse(`${input.startDate}T00:00:00Z`);
+  if (!validDate(new Date(start + 365 * 86_400_000).toISOString().slice(0, 10))) {
+    throw new Error("booking_com_sync_input_invalid");
+  }
   const windows: BookingComSyncInput[] = [];
   for (let offset = 0; offset < 366; offset += 90) {
     const endOffset = Math.min(offset + 89, 365);
@@ -59,6 +63,21 @@ export function planBookingComYearSync(input: BookingComYearSyncInput): BookingC
     });
   }
   return windows;
+}
+
+/** Resolves one year-load call to exactly one bounded, idempotent scope. */
+export function parseBookingComYearWindowRequest(value: unknown): { input: BookingComSyncInput; windowIndex: number } | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const row = value as Record<string, unknown>;
+  if (Object.keys(row).some((key) => !["propertyId", "connectionId", "syncId", "startDate", "currency", "priceBasis", "windowIndex"].includes(key))
+    || !Number.isInteger(row.windowIndex) || (row.windowIndex as number) < 0 || (row.windowIndex as number) > 4) return null;
+  const { windowIndex, ...yearInput } = row as BookingComYearWindowRequest;
+  if (!parseBookingComSyncInput({ ...yearInput, endDate: yearInput.startDate })) return null;
+  try {
+    return { input: planBookingComYearSync(yearInput)[windowIndex], windowIndex };
+  } catch {
+    return null;
+  }
 }
 
 export function parseBookingComSyncInput(value: unknown): BookingComSyncInput | null {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { queueBookingComInventorySync, parseBookingComSyncInput, planBookingComYearSync, type BookingComSyncStore } from "@/services/hotel-channels/booking-com/sync";
+import { queueBookingComInventorySync, parseBookingComSyncInput, parseBookingComYearWindowRequest, planBookingComYearSync, type BookingComSyncStore } from "@/services/hotel-channels/booking-com/sync";
 
 const input = {
   propertyId: "11111111-1111-4111-8111-111111111111",
@@ -65,6 +65,23 @@ describe("Booking.com inventory sync queue", () => {
     expect(planBookingComYearSync({ ...yearInput, startDate: "2028-02-29" })[4].endDate).toBe("2029-02-28");
     expect(() => planBookingComYearSync({ ...yearInput, startDate: "2026-02-30" }))
       .toThrow("booking_com_sync_input_invalid");
+    expect(() => planBookingComYearSync({ ...yearInput, startDate: "9999-12-31" }))
+      .toThrow("booking_com_sync_input_invalid");
+  });
+
+  it("resolves one year window at a time and rejects forged or extra fields", () => {
+    const yearInput = {
+      propertyId: input.propertyId, connectionId: input.connectionId, syncId: input.syncId,
+      startDate: input.startDate, currency: input.currency, priceBasis: input.priceBasis,
+    };
+    const first = parseBookingComYearWindowRequest({ ...yearInput, windowIndex: 0 });
+    const last = parseBookingComYearWindowRequest({ ...yearInput, windowIndex: 4 });
+    expect(first?.input).toEqual(planBookingComYearSync(yearInput)[0]);
+    expect(last?.input).toEqual(planBookingComYearSync(yearInput)[4]);
+    expect(parseBookingComYearWindowRequest({ ...yearInput, windowIndex: 5 })).toBeNull();
+    expect(parseBookingComYearWindowRequest({ ...yearInput, windowIndex: 0, endDate: input.endDate })).toBeNull();
+    expect(parseBookingComYearWindowRequest({ ...yearInput, windowIndex: "0" })).toBeNull();
+    expect(parseBookingComYearWindowRequest({ ...yearInput, startDate: "9999-12-31", windowIndex: 0 })).toBeNull();
   });
 
   it("generates exact property-scoped request XML, hashes it, and queues using caller idempotency", async () => {

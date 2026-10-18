@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { parseBookingComSyncInput, queueBookingComInventorySync, type BookingComSyncStore } from "@/services/hotel-channels/booking-com/sync";
+import { parseBookingComSyncInput, parseBookingComYearWindowRequest, queueBookingComInventorySync, type BookingComSyncStore } from "@/services/hotel-channels/booking-com/sync";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -22,8 +22,9 @@ export async function POST(request: Request) {
   } catch { return NextResponse.json({ error: "The sync request could not be read." }, { status: 400, headers: NO_STORE }); }
   let value: unknown;
   try { value = JSON.parse(raw); } catch { return NextResponse.json({ error: "Send valid JSON sync details." }, { status: 400, headers: NO_STORE }); }
-  const input = parseBookingComSyncInput(value);
-  if (!input) return NextResponse.json({ error: "Enter a property, test connection, sync ID, valid date range (up to 90 days), currency, and price basis." }, { status: 400, headers: NO_STORE });
+  const yearWindow = parseBookingComYearWindowRequest(value);
+  const input = yearWindow?.input ?? parseBookingComSyncInput(value);
+  if (!input) return NextResponse.json({ error: "Enter a property, test connection, sync ID, currency, price basis, and either a date range up to 90 days or a valid year window index." }, { status: 400, headers: NO_STORE });
 
   const { data: property, error: propertyError } = await auth.supabase.from("properties")
     .select("id,active").eq("id", input.propertyId).eq("partner_id", partner.id).maybeSingle();
@@ -92,7 +93,9 @@ export async function POST(request: Request) {
 
   try {
     const result = await queueBookingComInventorySync(input, store);
-    return NextResponse.json({ ...result, message: "ARI changes are queued for provider-approved test delivery. No live OTA traffic was sent by this request." }, { headers: NO_STORE });
+    return NextResponse.json({ ...result,
+      ...(yearWindow ? { yearWindowIndex: yearWindow.windowIndex, yearWindowCount: 5, startDate: input.startDate, endDate: input.endDate } : {}),
+      message: "ARI changes are queued for provider-approved test delivery. No live OTA traffic was sent by this request." }, { headers: NO_STORE });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     const conflict = message === "booking_com_sync_not_approved";
