@@ -77,7 +77,7 @@ function parseSettings(input: NativePmsReservationDeliveryConfig) {
 
 async function callRpc(fetcher: typeof fetch, base: string, key: string, name: string, args: Record<string, unknown> = {}) {
   const headers: Record<string, string> = { apikey: key, "Content-Type": "application/json" };
-  // Modern Supabase secret keys are API keys, not JWT bearer tokens.
+  // Supabase's modern secret keys are API keys, not JWT bearer tokens.
   if (!key.startsWith("sb_secret_")) headers.Authorization = `Bearer ${key}`;
   const response = await fetcher(base + name, {
     method: "POST", redirect: "error", cache: "no-store",
@@ -86,7 +86,7 @@ async function callRpc(fetcher: typeof fetch, base: string, key: string, name: s
   });
   const text = await readBoundedText(response, 512 * 1024);
   if (text === null) throw new Error("Reservation worker database response is too large.");
-  if (!response.ok) throw new Error(`Reservation worker database call failed: ${name}.`);
+  if (!response.ok) throw new Error(`Reservation worker database call failed: ${name} (HTTP ${response.status}).`);
   try { return JSON.parse(text) as unknown; } catch { throw new Error(`Reservation worker database response is invalid: ${name}.`); }
 }
 
@@ -186,7 +186,7 @@ function classifyResponse(status: number, body: unknown, eventId: string, source
       && typeof outcome === "string" && allowedOutcomes.has(outcome)) {
       return { outcome: "acknowledged", code: `pms_${outcome}` };
     }
-    return { outcome: "review-required", code: "invalid_pms_ack" };
+    return { outcome: "retry", code: "invalid_pms_ack" };
   }
   if ([408, 425, 429].includes(status) || status >= 500) return { outcome: "retry", code: `http_${status}` };
   return { outcome: "review-required", code: `http_${status}` };
@@ -247,12 +247,12 @@ export async function runNativePmsReservationDelivery(
         } else if (body && typeof body === "object" && !Array.isArray(body)) {
           const gatewayReply = body as Record<string, unknown>;
           if (typeof gatewayReply.status !== "number" || !Number.isInteger(gatewayReply.status)) {
-            decision = { outcome: "review-required", code: "invalid_gateway_ack" };
+            decision = { outcome: "retry", code: "invalid_gateway_ack" };
           } else {
             decision = classifyResponse(gatewayReply.status, gatewayReply.body, claimed.eventId, claimed.sourceVersion);
           }
         } else {
-          decision = { outcome: "review-required", code: "invalid_gateway_ack" };
+          decision = { outcome: "retry", code: "invalid_gateway_ack" };
         }
       } catch {
         decision = { outcome: "retry", code: "transport_failure" };
@@ -276,4 +276,19 @@ export function nativePmsReservationSignature(secret: string, timestamp: string,
     throw new Error("Reservation signature inputs are invalid.");
   }
   return sign(secret, timestamp, connection, rawBody);
+}
+
+export async function drainNativePmsReservationDelivery(
+  input: NativePmsReservationDeliveryConfig,
+  fetcher: typeof fetch = fetch,
+  limit = 3,
+): Promise<NativePmsReservationDeliveryResult[]> {
+  const bounded = Number.isInteger(limit) ? Math.max(1, Math.min(limit, 3)) : 3;
+  const results: NativePmsReservationDeliveryResult[] = [];
+  for (let index = 0; index < bounded; index += 1) {
+    const result = await runNativePmsReservationDelivery(input, fetcher);
+    results.push(result);
+    if (result.outcome !== "delivered") break;
+  }
+  return results;
 }
