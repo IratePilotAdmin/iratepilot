@@ -68,7 +68,7 @@ export function RatesInventoryManager() {
     };
   }, [load]);
 
-  async function send(event: FormEvent<HTMLFormElement>, action: "create_room" | "update_room" | "set_inventory") {
+  async function send(event: FormEvent<HTMLFormElement>, action: "create_room" | "update_room" | "set_inventory" | "set_availability") {
     event.preventDefault();
     const form = event.currentTarget;
     setBusy(true);
@@ -149,13 +149,23 @@ export function RatesInventoryManager() {
       <form onSubmit={(event) => send(event, "set_inventory")} className="card grid gap-4 p-6">
         <div><h2 className="text-xl font-semibold">Set dated inventory</h2><p className="mt-1 text-sm text-slate-500">Update up to 366 consecutive dates with the full guest price. Enter 0 when no tax or mandatory fee applies.</p></div>
         <label className="text-sm font-medium">Room type<select name="roomId" value={inventoryRoomId} onChange={(event) => setInventoryRoomId(event.target.value)} className="input mt-2" required><option value="">Select room</option>{rooms.map((room) => <option key={room.id} value={room.id}>{propertyNames.get(room.property_id)} — {room.name}</option>)}</select></label>
-        {inventoryProperty?.active && <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">This hotel is published. You can adjust availability on existing dates while keeping the saved rate, taxes, and fees. To add dates or change prices, ask an OTA administrator to pause the listing in Admin → Properties, review the changes, then publish it again.</p>}
+        {inventoryProperty?.active && <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">This hotel is published. Use “Adjust available rooms on saved dates” below for availability changes. To add dates or change prices, ask an OTA administrator to pause the listing in Admin → Properties, review the changes, then publish it again.</p>}
         <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Start date<input name="startDate" type="date" min={today} className="input mt-2" required disabled={!inventoryRoom} /></label><label className="text-sm font-medium">End date<input name="endDate" type="date" min={today} className="input mt-2" required disabled={!inventoryRoom} /></label></div>
         <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Available units<input name="availableUnits" type="number" min="0" max="500" className="input mt-2" required disabled={!inventoryRoom} /></label><label className="text-sm font-medium">Nightly rate<input key={`${inventoryRoomId}-inventory-rate`} name="rate" type="number" min="25" step="0.01" defaultValue={inventoryRoom?.base_rate} className="input mt-2" required disabled={!inventoryRoom} /></label></div>
         <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Taxes per night<input name="taxAmount" type="number" min="0" max="25000" step="0.01" defaultValue="0" className="input mt-2" required disabled={!inventoryRoom} /></label><label className="text-sm font-medium">Mandatory fees per night<input name="mandatoryFeeAmount" type="number" min="0" max="25000" step="0.01" defaultValue="0" className="input mt-2" required disabled={!inventoryRoom} /></label></div>
-        <button disabled={busy || partnerSelectionRequired || !inventoryRoom} className="btn-primary">Update inventory</button>
+        <button disabled={busy || partnerSelectionRequired || !inventoryRoom || inventoryProperty?.active} className="btn-primary">Update inventory</button>
       </form>
     </div>
+    <form onSubmit={(event) => send(event, "set_availability")} className="card grid gap-4 p-6">
+      <div><h2 className="text-xl font-semibold">Adjust available rooms on saved dates</h2><p className="mt-1 text-sm text-slate-500">Change only the remaining units for dates that already have inventory. Saved rates, taxes, and mandatory fees stay the same. Adding dates or changing prices for a published hotel requires an OTA administrator to pause, review, and republish the listing.</p></div>
+      <label className="text-sm font-medium">Room type<select name="roomId" value={inventoryRoomId} onChange={(event) => setInventoryRoomId(event.target.value)} className="input mt-2" required><option value="">Select room</option>{rooms.map((room) => <option key={room.id} value={room.id}>{propertyNames.get(room.property_id)} — {room.name}</option>)}</select></label>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <label className="text-sm font-medium">Start date<input name="startDate" type="date" min={today} className="input mt-2" required disabled={!inventoryRoom} /></label>
+        <label className="text-sm font-medium">End date<input name="endDate" type="date" min={today} className="input mt-2" required disabled={!inventoryRoom} /></label>
+        <label className="text-sm font-medium">Available units<input name="availableUnits" type="number" min="0" max="500" className="input mt-2" required disabled={!inventoryRoom} /></label>
+      </div>
+      <button disabled={busy || partnerSelectionRequired || !inventoryRoom} className="btn-primary">Save available units</button>
+    </form>
     {message && <p role="status" className="card p-4 text-sm">{message}</p>}
   </div>;
 }

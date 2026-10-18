@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { eachDayOfInterval, parseISO, format } from "date-fns";
 import { requireRole } from "@/lib/auth/require-role";
 import { resolvePartnerHotelAccess, type PartnerHotelAccessResult } from "@/lib/partner/hotel-access";
-import { inventorySchema, roomSchema, roomUpdateSchema } from "@/lib/validation";
+import { inventoryAvailabilitySchema, inventorySchema, roomSchema, roomUpdateSchema } from "@/lib/validation";
 import { getInventoryDateRangeError, getUpcomingInventory } from "@/lib/inventory-dates";
 import { isPmsOnlyRoom } from "@/lib/pms-only-room";
 
@@ -155,8 +155,48 @@ export async function POST(request: Request) {
       if (result.error) throw result.error;
       return NextResponse.json({ message: `${rows.length} inventory dates updated.` });
     }
+    if (body.action === "set_availability") {
+      const parsed = inventoryAvailabilitySchema.safeParse(body);
+      if (!parsed.success) return NextResponse.json({ error: "Check the room, date range, and available units." }, { status: 400 });
+      let roomQuery = auth.supabase.from("rooms").select("id,properties!inner(partner_id,pms_only)").eq("id", parsed.data.roomId);
+      if (partnerId) roomQuery = roomQuery.eq("properties.partner_id", partnerId);
+      const { data: room, error: roomError } = await roomQuery.maybeSingle();
+      if (roomError) throw roomError;
+      if (!room) return NextResponse.json({ error: "Room type not found." }, { status: 404 });
+      if (isPmsOnlyRoom(room.properties)) {
+        return NextResponse.json({ error: "PMS-only inventory is read-only in the rate editor." }, { status: 409 });
+      }
+      const { startDate, endDate, availableUnits, roomId } = parsed.data;
+      const dateError = getInventoryDateRangeError(startDate, endDate);
+      if (dateError) return NextResponse.json({ error: dateError }, { status: 400 });
+      const expectedDates = eachDayOfInterval({ start: parseISO(startDate), end: parseISO(endDate) })
+        .map((date) => format(date, "yyyy-MM-dd"));
+      const { data: existing, error: existingError } = await auth.supabase.from("inventory")
+        .select("stay_date").eq("room_id", roomId).gte("stay_date", startDate).lte("stay_date", endDate);
+      if (existingError) throw existingError;
+      const savedDates = new Set((existing ?? []).map((row) => row.stay_date));
+      if (savedDates.size !== expectedDates.length || expectedDates.some((date) => !savedDates.has(date))) {
+        return NextResponse.json({ error: "One or more dates have no saved inventory. Ask an OTA administrator to review new dates before publishing them." }, { status: 409 });
+      }
+      const { data: updated, error: updateError } = await auth.supabase.from("inventory")
+        .update({ available_units: availableUnits })
+        .eq("room_id", roomId).gte("stay_date", startDate).lte("stay_date", endDate)
+        .select("stay_date");
+      if (updateError) throw updateError;
+      const updatedDates = new Set((updated ?? []).map((row) => row.stay_date));
+      if (updatedDates.size !== expectedDates.length || expectedDates.some((date) => !updatedDates.has(date))) {
+        return NextResponse.json({ error: "Availability needs review. Refresh the dates before taking another action." }, { status: 503 });
+      }
+      return NextResponse.json({ message: `${expectedDates.length} existing inventory dates updated; rates, taxes, and fees were unchanged.` });
+    }
     return NextResponse.json({ error: "Unknown inventory action." }, { status: 400 });
   } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "P0001"
+      && "message" in error && error.message === "Active direct hotel offer inventory is immutable until release or expiry") {
+      return NextResponse.json({
+        error: "An active direct booking request holds inventory on one of these dates. Release or expire the request before changing availability.",
+      }, { status: 409 });
+    }
     if (error && typeof error === "object" && "code" in error && error.code === "P0001"
       && "message" in error && error.message === "Unpublish the property before changing commercial inventory terms") {
       return NextResponse.json({
