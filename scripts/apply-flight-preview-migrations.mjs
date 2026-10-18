@@ -91,6 +91,7 @@ export const PINNED_NON_FLIGHT_MIGRATIONS = Object.freeze([
   ["202610150169", "202610150169_apaleo_webhook_receipts.sql"],
   ["202610160170", "202610160170_apaleo_reservation_reconciliation.sql"],
   ["202610180171", "202610180171_restrict_authenticated_only_rpcs.sql"],
+  ["202610180172", "202610180172_atomic_partner_inventory_availability.sql"],
 ].map(([version, filename]) => Object.freeze({ version, filename })));
 
 export const RETIRED_FLIGHT_MIGRATION_VERSIONS = Object.freeze([
