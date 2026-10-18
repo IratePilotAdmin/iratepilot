@@ -1,0 +1,35 @@
+{
+  "observedAt": "2026-10-18",
+  "vercelProject": "iratepilotadmin",
+  "environment": "Preview",
+  "gitBranch": "codex/native-ota-current-reconcile",
+  "sourceCommit": "6940458812f9843430ae60bf1787f2a8309cffed",
+  "before": {
+    "deploymentUrl": "https://iratepilotadmin-imke8fxoz-irate-pilot.vercel.app",
+    "adminSettingsResult": "HTTP 503: This Preview needs an isolated database before use.",
+    "genericPreviewPublicDatabaseProjectRef": "eiqmdldjnedqgbtoozqa"
+  },
+  "branchScopedConfig": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://onbdizzwwubfdgkgaphx.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "set from the same isolated source project's existing public configuration; value intentionally omitted",
+    "productionIncluded": false,
+    "serverKeyOrSigningSecretChanged": false,
+    "deliverySwitchChanged": false
+  },
+  "redeployment": {
+    "deploymentId": "FsFPuPsH1qTY31aN8BZuHupoQrZN",
+    "url": "https://iratepilotadmin-1ttk29o9v-irate-pilot.vercel.app",
+    "environment": "Preview",
+    "sameSourceCommit": true,
+    "vercelStatus": "Ready"
+  },
+  "hostedReadOnlyChecks": {
+    "adminSettings": "Redirects to an enabled email/password sign-in for /admin/settings",
+    "capabilities": "The authenticated in-app browser displayed the JSON capabilities response: native PMS ARI implementation available with trafficEnabled false; Booking.com development only; Expedia and other named providers not connected. An unauthenticated terminal request redirected to Vercel protection (HTTP 302), so public HTTP 200 is not claimed.",
+    "ownerSignedIn": false,
+    "bookingOrPaymentAttempted": false
+  },
+  "signInScreenshot": "release/evidence/ota-preview-isolated-signin-2026-10-18.png",
+  "remaining": "Verify an actual signed-in admin session and isolated source role, then add a branch-scoped isolated server key and other worker credentials only after separate scope review. Keep source and receiver delivery switches disabled until a supervised synthetic receipt test.",
+  "livePmsDatabaseChanged": false
+}
