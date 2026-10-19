@@ -1,0 +1,25 @@
+{
+  "scope": "Read-only comparison of the live hotel room board and isolated PMS rehearsal restore",
+  "isolatedProjectRef": "zvdbqwdctrmeupszwrxc",
+  "property": "Red Roof Inn Ridgeland, MS",
+  "liveRoomBoardCount": 113,
+  "restoredRoomRecordCount": 113,
+  "roomTypesMatchingLiveInventory": {
+    "NADK1": 34,
+    "NADQ2": 64,
+    "NDK1": 0,
+    "NDQ2": 0,
+    "NSK1": 15
+  },
+  "changesToLiveOrRestoredHotelData": false,
+  "recoveryProved": false,
+  "stillRequired": [
+    "Verify restored owner and staff sign-in and property permissions",
+    "Verify reservations, folios, payments, and a full operating-day workflow against the restore",
+    "Confirm backup timestamp and recovery procedure before launch"
+  ],
+  "evidenceScreenshots": [
+    "pms-isolated-restore-113-rooms-2026-10-18.png",
+    "pms-isolated-restore-room-types-2026-10-18.png"
+  ]
+}
