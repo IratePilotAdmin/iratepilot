@@ -1,0 +1,17 @@
+{
+  "checkedAt": "2026-10-18T21:29:11-05:00",
+  "receiverProject": "wjosvslkselpauyftias",
+  "sqlEditorUrl": "https://supabase.com/dashboard/project/wjosvslkselpauyftias/sql/6bd2b304-4b18-451c-8ac9-9d07eba9449b",
+  "query": "release/isolated-native-pms-receiver-preflight.sql",
+  "result": {
+    "disabledMatchingConnection": 1,
+    "activeMappedPlan": 1,
+    "mappedNightlyRate": 1,
+    "availableUnit": 1,
+    "replayBookingReceipts": 0,
+    "stayChangeCommands": 0
+  },
+  "dataChanged": false,
+  "meaning": "The synthetic receiver has the matching disabled gateway, active rate plan, $109 night and one capacity unit, with no prior receipt for this booking or queued stay-change command.",
+  "remaining": "A matching encrypted signing credential is still absent from the isolated OTA source. Source and receiver must be rechecked just before activation; this receiver preflight is not a signed create/cancel replay or production acceptance."
+}
