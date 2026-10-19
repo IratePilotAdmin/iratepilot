@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-10-18T21:29:56-05:00",
+  "sourceProject": "onbdizzwwubfdgkgaphx",
+  "sqlEditorUrl": "https://supabase.com/dashboard/project/onbdizzwwubfdgkgaphx/sql/86db62d6-4276-4952-943a-cb9845c55267",
+  "query": "release/isolated-native-pms-source-preflight.sql",
+  "result": {
+    "disabledSourceScope": 1,
+    "disabledCredentialScope": 0,
+    "cancelledSyntheticBooking": 1,
+    "restoredSourceNight": 1,
+    "duePendingEvents": 2,
+    "dueDistinctVersions": 2,
+    "unexpectedEventStates": 0
+  },
+  "dataChanged": false,
+  "meaning": "The synthetic cancelled booking and two ordered pending events remain ready. Source capture and delivery are off. No matching disabled encrypted-credential connection exists yet.",
+  "remaining": "The user must enter the existing signing credential in the protected OTA Preview form and save the disabled connection. Recheck these counts immediately before supervised activation; do not enable the worker while the credential scope count is zero."
+}
