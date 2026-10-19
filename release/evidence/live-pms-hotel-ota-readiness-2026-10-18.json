@@ -23,7 +23,7 @@
     "stripe": "Server test settings present; sandbox only, USD. Account, webhook and successful payment unverified.",
     "nativeOta": "Source integrated; live use unverified",
     "thirdPartyOtas": "Not certified for live reservations",
-    "deliveryReview": "One applied entry showed review:capacity_missing"
+    "deliveryReview": "The table displayed applied with an old review:capacity_missing reason. A read-only October 18 isolated restore check found the September 22 event had resolution_outcome applied; the reason is historical, not an outstanding capacity failure."
   },
   "changesToHotelData": false,
   "hostedBookingVerified": false,
