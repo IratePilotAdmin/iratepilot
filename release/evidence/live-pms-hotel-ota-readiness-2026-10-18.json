@@ -1,0 +1,32 @@
+{
+  "scope": "Read-only signed-in owner review of the live PMS hotel workspace",
+  "observedAtPropertyBusinessDate": "2026-10-18",
+  "property": "Red Roof Inn Ridgeland, MS",
+  "todayRoomBoard": {
+    "allRooms": 113,
+    "readyRooms": 113,
+    "inHouse": 0,
+    "arrivalsToday": 0,
+    "departuresToday": 0,
+    "roomsToPrepare": 0
+  },
+  "currentNightCapacity": {
+    "NADK1": 34,
+    "NSK1": 15,
+    "NADQ2": 64,
+    "NDK1": 0,
+    "NDQ2": 0
+  },
+  "connectionsPage": {
+    "firstAttempt": "Three Connections sections displayed a loading error",
+    "afterReload": "Connections loaded",
+    "stripe": "Server test settings present; sandbox only, USD. Account, webhook and successful payment unverified.",
+    "nativeOta": "Source integrated; live use unverified",
+    "thirdPartyOtas": "Not certified for live reservations",
+    "deliveryReview": "One applied entry showed review:capacity_missing"
+  },
+  "changesToHotelData": false,
+  "hostedBookingVerified": false,
+  "hotelLaunchAccepted": false,
+  "evidenceScreenshot": "live-pms-room-count-2026-10-18.png"
+}
