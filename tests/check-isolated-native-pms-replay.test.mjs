@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { test } from "node:test";
+import { test } from "vitest";
 import { assessIsolatedReplayPreflight } from "../scripts/check-isolated-native-pms-replay.mjs";
 
 const source = JSON.parse(await readFile(new URL("../release/evidence/native-pms-source-replay-preflight-2026-10-18.json", import.meta.url), "utf8"));
