@@ -36,9 +36,10 @@
     "verified": true
   },
   "quote_check": {
-    "attempted_from": "Supabase SQL Editor without a staff JWT",
-    "result": "Property access denied",
-    "implication": "The staff-scoped quote flow still requires an authenticated browser check; the SQL Editor result does not establish a rate or capacity failure."
+    "attempted_from": "Supabase SQL Editor with a statement-local simulated Test Hotel manager claim",
+    "quote_id": "e21a99d3-52b8-4bfc-b579-6ec66a680bf4",
+    "result": "2026-10-25 to 2026-10-26, 1 guest, USD 109.00 total, inventory_held=false",
+    "implication": "The isolated PMS rate and capacity path succeeds under a Test Hotel manager claim. This does not prove a real browser sign-in or a reservation round trip."
   },
   "native_connection": {
     "ota_connection_count_before_pairing": 0,
@@ -51,7 +52,7 @@
   "open_gates": [
     "Create and verify a separate disabled signing-secret pairing in both isolated projects after action-time approval.",
     "Complete a synthetic reservation round trip with delivery still controlled.",
-    "Run an authenticated staff quote for the October 25 test night.",
+    "Run an authenticated browser quote for the October 25 test night.",
     "Verify Stripe TEST checkout on the branch-scoped Preview before any public booking."
   ],
   "production_changed": false
