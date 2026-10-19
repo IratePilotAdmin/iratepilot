@@ -32,6 +32,7 @@ const db = new PGlite();
 const propertyId = "11111111-1111-4111-8111-111111111111";
 const partnerId = "22222222-2222-4222-8222-222222222222";
 const roomId = "33333333-3333-4333-8333-333333333333";
+const secondRoomId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
 const actorId = "44444444-4444-4444-8444-444444444444";
 
 async function sqlCode(operation: () => Promise<unknown>, expectedCode: string) {
@@ -112,7 +113,9 @@ describe("native OTA ordered migration chain", () => {
       INSERT INTO auth.users(id) VALUES ('${actorId}');
       INSERT INTO public.partners(id, status, owner_id) VALUES ('${partnerId}', 'approved', '${actorId}');
       INSERT INTO public.properties(id, partner_id, active) VALUES ('${propertyId}', '${partnerId}', true);
-      INSERT INTO public.rooms(id, property_id, active) VALUES ('${roomId}', '${propertyId}', true);
+      INSERT INTO public.rooms(id, property_id, active) VALUES
+        ('${roomId}', '${propertyId}', true),
+        ('${secondRoomId}', '${propertyId}', true);
     `);
 
     for (const migration of migrations) await db.exec(migration);
@@ -141,14 +144,17 @@ describe("native OTA ordered migration chain", () => {
       "55555555-5555-4555-8555-555555555555", actorId, propertyId, "redroof-ridgeland-test",
       "66666666-6666-4666-8666-666666666666", propertyId,
       "c".repeat(64), "i".repeat(16), "t".repeat(16), 1,
-      JSON.stringify([{ roomTypeId: "NDQ2", ratePlanId: "BAR", otaRoomId: roomId }]),
+      JSON.stringify([
+        { roomTypeId: "NDQ2", ratePlanId: "BAR", otaRoomId: roomId },
+        { roomTypeId: "KING", ratePlanId: "BAR", otaRoomId: secondRoomId },
+      ]),
     ]);
     expect(configured.rows[0].result).toMatchObject({
       captureEnabled: false,
       deliveryEnabled: false,
       environment: "sandbox",
       reservationConnection: { captureEnabled: false, deliveryEnabled: false, outcome: "created" },
-      ariConnection: { enabled: false, mappingCount: 1 },
+      ariConnection: { enabled: false, mappingCount: 2 },
     });
 
     const switches = await db.query<{ reservation_capture: boolean; reservation_delivery: boolean; ari_enabled: boolean; mapping_count: string }>(`
@@ -165,7 +171,7 @@ describe("native OTA ordered migration chain", () => {
       reservation_capture: false,
       reservation_delivery: false,
       ari_enabled: false,
-      mapping_count: "1",
+      mapping_count: "2",
     });
 
     const baseline = await db.query<{ result: { eligibleForCapture: boolean; reservationCount: number } }>(
@@ -198,17 +204,12 @@ describe("native OTA ordered migration chain", () => {
     const dateResult = await db.query<{ stay_date: string }>("SELECT (current_date + 2)::text AS stay_date");
     const stayDate = dateResult.rows[0].stay_date;
     const nextDate = await db.query<{ stay_date: string }>("SELECT ($1::date + 1)::text AS stay_date", [stayDate]);
-    const ariUpdate = [{
-      date: stayDate,
-      roomTypeId: "NDQ2",
-      ratePlanId: "BAR",
-      available: 3,
-      rateMinor: 10900,
-      currency: "USD",
-      minimumStay: 1,
-      maximumStay: null,
-      restrictions: [],
-    }];
+    const ariUpdate = [
+      { date: stayDate, roomTypeId: "NDQ2", ratePlanId: "BAR", available: 70, rateMinor: 10900,
+        currency: "USD", minimumStay: 1, maximumStay: null, restrictions: [] },
+      { date: stayDate, roomTypeId: "KING", ratePlanId: "BAR", available: 43, rateMinor: 12900,
+        currency: "USD", minimumStay: 1, maximumStay: null, restrictions: [] },
+    ];
     const firstAri = await db.query<{ result: { outcome: string } }>(`
       SELECT public.irp_pms_apply_native_ari($1,$2,1,$3,$4::timestamptz,$5::jsonb) AS result
     `, ["redroof-ridgeland-test", "ari-chain-1", "a".repeat(64), new Date().toISOString(), JSON.stringify(ariUpdate)]);
@@ -235,8 +236,16 @@ describe("native OTA ordered migration chain", () => {
       WHERE i.room_id = $2::uuid AND i.stay_date = $3::date
     `, [propertyId, roomId, stayDate]);
     expect(roundTrip.rows).toHaveLength(1);
-    expect(roundTrip.rows[0]).toMatchObject({ available_units: 2, source_version: "1", guest_name: "Test Guest" });
+    expect(roundTrip.rows[0]).toMatchObject({ available_units: 69, source_version: "1", guest_name: "Test Guest" });
     expect(Number(roundTrip.rows[0].rate)).toBe(109);
+    const roomTypeInventory = await db.query<{ available_units: number; rate: string }>(`
+      SELECT available_units, rate::text FROM public.inventory
+      WHERE room_id = $1::uuid AND stay_date = $2::date
+    `, [secondRoomId, stayDate]);
+    expect(roomTypeInventory.rows).toHaveLength(1);
+    expect(roomTypeInventory.rows[0].available_units).toBe(43);
+    expect(Number(roomTypeInventory.rows[0].rate)).toBe(129);
+    expect(roundTrip.rows[0].available_units + roomTypeInventory.rows[0].available_units).toBe(112);
   });
 
   it("retains the migration filenames in strictly increasing order", () => {

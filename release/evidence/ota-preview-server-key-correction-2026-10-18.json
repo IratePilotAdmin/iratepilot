@@ -1,0 +1,23 @@
+{
+  "scope": "isolated OTA Vercel Preview only",
+  "branch": "codex/native-ota-current-reconcile",
+  "isolatedOtaProjectRef": "onbdizzwwubfdgkgaphx",
+  "credentialSource": "isolated Supabase project's default server-only secret",
+  "credentialDestination": "Vercel Secret SUPABASE_SERVICE_ROLE_KEY, Preview branch codex/native-ota-current-reconcile only",
+  "credentialValueRecorded": false,
+  "productionScopeSelected": false,
+  "sameCommitRedeployment": {
+    "deployment": "dpl_5Ki6nUsZ9TjvS2YssQcZg9uGgE4h",
+    "commit": "6940458812f9843430ae60bf1787f2a8309cffed",
+    "host": "iratepilotadmin-9buxf6j8x-irate-pilot.vercel.app",
+    "environment": "Preview",
+    "status": "Ready"
+  },
+  "adminSettingsVerification": "Pending separate test-account sign-in on the new deployment host",
+  "hostedBookingVerified": false,
+  "connectionOrWorkerEnabled": false,
+  "evidenceScreenshots": [
+    "ota-preview-server-key-saved-2026-10-18.png",
+    "ota-preview-server-key-redeploy-ready-2026-10-18.png"
+  ]
+}
