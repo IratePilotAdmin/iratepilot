@@ -55,6 +55,34 @@ describe("native PMS reservation recovery route", () => {
     expect(runWorker).toHaveBeenCalledTimes(1);
   });
 
+  it("fails the scheduled run when an enabled connection has no valid signing credential", async () => {
+    vi.stubEnv("CRON_SECRET", "secret-for-tests");
+    vi.stubEnv("IRP_PMS_SYNC_ENABLED", "true");
+    vi.stubEnv("PMS_CREDENTIAL_ENCRYPTION_KEY", "encryption-key-fixture");
+    vi.stubEnv("IRP_PMS_DESTINATION_URL", "https://pms.supabase.co/rest/v1/rpc/irp_pms_ota_gateway");
+    vi.stubEnv("IRP_PMS_DESTINATION_PUBLISHABLE_KEY", "sb_publishable_abcdefghijklmnop");
+    runWorker.mockResolvedValueOnce([{ outcome: "idle", code: "no_valid_connection_credentials" }]);
+    const response = await GET(new Request("https://ota.example/api/cron/native-pms-reservations", {
+      headers: { authorization: "Bearer secret-for-tests" },
+    }));
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ ok: false, outcomes: [{ outcome: "idle", code: "no_valid_connection_credentials" }] });
+  });
+
+  it("keeps an empty, correctly configured queue healthy", async () => {
+    vi.stubEnv("CRON_SECRET", "secret-for-tests");
+    vi.stubEnv("IRP_PMS_SYNC_ENABLED", "true");
+    vi.stubEnv("PMS_CREDENTIAL_ENCRYPTION_KEY", "encryption-key-fixture");
+    vi.stubEnv("IRP_PMS_DESTINATION_URL", "https://pms.supabase.co/rest/v1/rpc/irp_pms_ota_gateway");
+    vi.stubEnv("IRP_PMS_DESTINATION_PUBLISHABLE_KEY", "sb_publishable_abcdefghijklmnop");
+    runWorker.mockResolvedValueOnce([{ outcome: "idle" }]);
+    const response = await GET(new Request("https://ota.example/api/cron/native-pms-reservations", {
+      headers: { authorization: "Bearer secret-for-tests" },
+    }));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true, outcomes: [{ outcome: "idle" }] });
+  });
+
   it("reports a bounded source failure code without leaking the underlying error", async () => {
     vi.stubEnv("CRON_SECRET", "secret-for-tests");
     vi.stubEnv("IRP_PMS_SYNC_ENABLED", "true");

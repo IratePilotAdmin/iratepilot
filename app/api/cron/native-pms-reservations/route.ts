@@ -45,7 +45,8 @@ export async function GET(request: Request) {
       endpoint: destinationUrl,
       publishableKey: destinationPublishableKey,
     }, async (input, init) => fetch(input, init));
-    const retryPending = results.some(({ outcome }) => outcome === "retry" || outcome === "lease_lost");
+    const retryPending = results.some(({ outcome, code }) => outcome === "retry" || outcome === "lease_lost"
+      || code === "no_valid_connection_credentials");
     return NextResponse.json({
       ok: !retryPending,
       outcomes: results.map(({ outcome, code }) => ({ outcome, code })),
