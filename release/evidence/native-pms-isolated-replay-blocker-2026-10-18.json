@@ -1,0 +1,40 @@
+{
+  "date_local": "2026-10-18",
+  "scope": "Isolated OTA project onbdizzwwubfdgkgaphx to isolated PMS receiver wjosvslkselpauyftias only",
+  "connection_id": "SYNTHPMS001",
+  "worker_deployment_for_test": "dpl_7uHRRkHXv7FzoVbNueG9F6Pro9zL",
+  "worker_deployment_after_rollback": "dpl_6Poicx4LP7wUz7x5SF3PxPDsQ6U6",
+  "preflight": {
+    "pending_events": 2,
+    "distinct_synthetic_bookings": 1,
+    "first_event_status": "confirmed",
+    "second_event_status": "cancelled",
+    "versions": [1, 2],
+    "all_events_due": true,
+    "enabled_worker_scopes_during_test": 1,
+    "worker_scopes_with_encrypted_signing_credential": 0,
+    "matching_native_ari_connection_exists": false,
+    "receiver_rate_plans_for_mapped_property": 0
+  },
+  "test_outcome": "Stopped before event claim because no matching encrypted signing credential was configured. The signed create/cancel round trip has not been verified.",
+  "rollback": {
+    "source_capture_enabled": false,
+    "source_delivery_enabled": false,
+    "receiver_connection_enabled": false,
+    "worker_sync_enabled": false,
+    "worker_rollback_deployment_status": "Ready",
+    "pending_events": 2,
+    "historically_delivered_events": 5,
+    "other_event_states": 0,
+    "new_receiver_reservations_for_booking": 0,
+    "receiver_ota_stay_change_commands": 0
+  },
+  "next_gate": "While all switches remain off, configure a matching synthetic connection signing credential and an actual mapped rate plan. Repeat the supervised two-event replay and compare source and receiver receipts.",
+  "screenshots": [
+    "native-pms-replay-rollback-deployment-2026-10-18.png",
+    "native-pms-replay-worker-off-2026-10-18.png",
+    "native-pms-replay-source-rollback-2026-10-18.png",
+    "native-pms-replay-receiver-rollback-2026-10-18.png",
+    "native-pms-replay-missing-credential-2026-10-18.png"
+  ]
+}
