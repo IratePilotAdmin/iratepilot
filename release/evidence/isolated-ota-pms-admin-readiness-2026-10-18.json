@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-18",
+  "environment": "isolated OTA Preview only",
+  "supabaseProjectRef": "onbdizzwwubfdgkgaphx",
+  "previewUrl": "https://iratepilotadmin-9buxf6j8x-irate-pilot.vercel.app/admin/settings",
+  "before": {
+    "pmsIntegrationReadiness": "could not be loaded",
+    "cause": "GET /api/admin/integrations/pms selected property_pms_connections.vendor_account_reference, which was absent from the isolated database"
+  },
+  "preflight": {
+    "propertyPmsConnections": 0,
+    "requiredTablesPresent": ["property_pms_connections", "property_pms_credentials", "priority_pms_launch_evidence", "properties"]
+  },
+  "appliedExistingMigrations": [
+    "202610140165_expand_pms_catalog",
+    "202610140166_unique_siteminder_hotel_codes",
+    "202610150167_pms_vendor_account_reference",
+    "202610150168_require_clock_subscription_id"
+  ],
+  "verification": {
+    "catalogConstraintIncludesClockPmsPlus": true,
+    "siteminderUniqueIndexCount": 1,
+    "vendorAccountReferenceColumnCount": 1,
+    "clockSubscriptionConstraintPresent": true,
+    "migrationLedgerEntriesRecorded": 4,
+    "previewPmsReadinessPanelLoads": true,
+    "providers": 25,
+    "providersReadyForValidation": 2,
+    "providersNeedConfiguration": 23,
+    "productionPmsProvidersLive": 0,
+    "screenshot": "isolated-ota-pms-readiness-2026-10-18.png"
+  },
+  "limitations": [
+    "This verifies the isolated admin readiness display, not a reservation or payment round trip.",
+    "Other migrations absent from this isolated database remain a separate parity check.",
+    "No production Supabase project, live PMS, provider credentials, or traffic flags were changed."
+  ]
+}
