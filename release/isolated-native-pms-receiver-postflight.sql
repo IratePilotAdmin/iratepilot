@@ -20,6 +20,10 @@ select jsonb_build_object(
       where tenant_id='b0fee4d2-9c8f-427a-b673-1eefe4cb649b'
         and property_id='9fd1e544-d737-4023-ac51-49408166a15f'
         and booking_id='88000000-0000-4000-8000-000000000089'),
+    'otherScopeReceipts', (select count(*) from irp_pms.inbound_events
+      where booking_id='88000000-0000-4000-8000-000000000089'
+        and (tenant_id<>'b0fee4d2-9c8f-427a-b673-1eefe4cb649b'
+          or property_id<>'9fd1e544-d737-4023-ac51-49408166a15f')),
     'reservation', (select coalesce(jsonb_agg(jsonb_build_object(
       'sourceVersion', source_version, 'status', status
     )), '[]'::jsonb)

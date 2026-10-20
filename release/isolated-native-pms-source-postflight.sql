@@ -27,8 +27,11 @@ select jsonb_build_object(
       from public.irp_pms_outbox
       where booking_id='88000000-0000-4000-8000-000000000089'
         and property_id='33000000-0000-4000-8000-000000000033'),
-    'otherConnectionEvents', (select count(*) from public.irp_pms_outbox
+    'otherScopeEvents', (select count(*) from public.irp_pms_outbox
       where booking_id='88000000-0000-4000-8000-000000000089'
-        and connection_id<>'SYNTHPMS001')
+        and (connection_id<>'SYNTHPMS001'
+          or property_id<>'33000000-0000-4000-8000-000000000033'
+          or tenant_id<>'b0fee4d2-9c8f-427a-b673-1eefe4cb649b'
+          or pms_property_id<>'9fd1e544-d737-4023-ac51-49408166a15f'))
   )
 ) as evidence;

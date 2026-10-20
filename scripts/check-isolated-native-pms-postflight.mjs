@@ -48,8 +48,9 @@ export function assessIsolatedReplayPostflight(sourceInput, receiverInput, now =
   count(s?.disabledSourceScope, 1, "source disabledSourceScope", failures);
   count(s?.disabledCredentialScope, 1, "source disabledCredentialScope", failures);
   count(s?.cancelledSyntheticBooking, 1, "source cancelledSyntheticBooking", failures);
-  count(s?.otherConnectionEvents, 0, "source otherConnectionEvents", failures);
+  count(s?.otherScopeEvents, 0, "source otherScopeEvents", failures);
   count(r?.disabledMatchingConnection, 1, "receiver disabledMatchingConnection", failures);
+  count(r?.otherScopeReceipts, 0, "receiver otherScopeReceipts", failures);
   count(r?.stayChangeCommands, 0, "receiver stayChangeCommands", failures);
 
   const events = s?.events;

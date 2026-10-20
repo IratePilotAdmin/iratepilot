@@ -7,7 +7,7 @@ const ids = ["11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-22
 const source = {
   sourceProject: "onbdizzwwubfdgkgaphx", checkedAt: "2026-10-20T19:59:00Z", dataChanged: false,
   result: {
-    disabledSourceScope: 1, disabledCredentialScope: 1, cancelledSyntheticBooking: 1, otherConnectionEvents: 0,
+    disabledSourceScope: 1, disabledCredentialScope: 1, cancelledSyntheticBooking: 1, otherScopeEvents: 0,
     events: ids.map((eventId, index) => ({ eventId, sourceVersion: index + 1, state: "delivered", attempts: 1,
       resultCode: index === 0 ? "pms_reservation-staged" : "pms_cancellation-staged" })),
   },
@@ -15,7 +15,7 @@ const source = {
 const receiver = {
   receiverProject: "wjosvslkselpauyftias", checkedAt: "2026-10-20T19:58:00Z", dataChanged: false,
   result: {
-    disabledMatchingConnection: 1, stayChangeCommands: 0,
+    disabledMatchingConnection: 1, otherScopeReceipts: 0, stayChangeCommands: 0,
     receipts: ids.map((eventId, index) => ({ eventId, sourceVersion: index + 1, applicationOutcome: "applied", resolutionOutcome: null })),
     reservation: [{ sourceVersion: 2, status: "Cancelled" }],
   },
@@ -43,7 +43,8 @@ test("rejects any enabled switch, wrong project, extra event, or replayed side e
     [{ ...source, result: { ...source.result, disabledSourceScope: 0 } }, receiver],
     [source, { ...receiver, result: { ...receiver.result, disabledMatchingConnection: 0 } }],
     [{ ...source, sourceProject: "live" }, receiver],
-    [{ ...source, result: { ...source.result, otherConnectionEvents: 1 } }, receiver],
+    [{ ...source, result: { ...source.result, otherScopeEvents: 1 } }, receiver],
+    [source, { ...receiver, result: { ...receiver.result, otherScopeReceipts: 1 } }],
     [source, { ...receiver, result: { ...receiver.result, stayChangeCommands: 1 } }],
   ];
   for (const [s, r] of changed) assert.equal(assessIsolatedReplayPostflight(s, r, now).passed, false);
