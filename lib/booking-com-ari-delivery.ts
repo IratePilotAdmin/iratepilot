@@ -20,7 +20,21 @@ type AriJob = {
 
 type AriStore = {
   claim(limit: number): Promise<AriJob[]>;
+  validateScope(job: AriJob): Promise<"ready" | "paused" | "stale" | "unavailable">;
   finish(jobId: string, leaseToken: string, outcome: "sent" | "retry" | "review", httpStatus: number | null, safeResult: Record<string, unknown>): Promise<void>;
+};
+
+type AriConnection = {
+  connection_id: string;
+  property_id: string;
+  machine_account_id: string | null;
+  provider_property_id: string;
+  provider: string;
+  environment: string;
+  enabled: boolean;
+  partner_approved: boolean;
+  ari_endpoint_approved: boolean;
+  certification_complete: boolean;
 };
 
 type WorkerOptions = {
@@ -54,6 +68,17 @@ function parseJob(value: unknown): AriJob | null {
   return row as unknown as AriJob;
 }
 
+export function assessBookingComAriScope(job: AriJob, connection: AriConnection | null): "ready" | "paused" | "stale" {
+  if (!connection || connection.connection_id !== job.connectionId
+    || connection.property_id !== job.propertyId
+    || connection.machine_account_id !== job.machineAccountId
+    || connection.provider_property_id !== job.providerPropertyId
+    || connection.provider !== "booking_com" || connection.environment !== "test") return "stale";
+  if (!connection.enabled || !connection.partner_approved
+    || !connection.ari_endpoint_approved || !connection.certification_complete) return "paused";
+  return "ready";
+}
+
 function createStore(): AriStore {
   return {
     async claim(limit) {
@@ -61,6 +86,19 @@ function createStore(): AriStore {
       if (error) throw new Error("booking_com_ari_claim_failed");
       if (!Array.isArray(data)) throw new Error("booking_com_ari_claim_response_invalid");
       return data as AriJob[];
+    },
+    async validateScope(job) {
+      try {
+        const { data, error } = await createAdminClient()
+          .from("irp_ota_channel_connections")
+          .select("connection_id,property_id,machine_account_id,provider_property_id,provider,environment,enabled,partner_approved,ari_endpoint_approved,certification_complete")
+          .eq("connection_id", job.connectionId)
+          .maybeSingle();
+        if (error) return "unavailable";
+        return assessBookingComAriScope(job, data as AriConnection | null);
+      } catch {
+        return "unavailable";
+      }
     },
     async finish(jobId, leaseToken, outcome, httpStatus, safeResult) {
       const { data, error } = await createAdminClient().rpc("irp_ota_finish_booking_com_ari", {
@@ -111,6 +149,10 @@ export async function runBookingComAriDelivery(options: WorkerOptions = {}) {
       if (actualHash !== job.requestSha256) throw new Error("booking_com_ari_payload_integrity_failed");
       const month = /\bStart="(\d{4}-\d{2})-\d{2}"/.exec(job.requestXml)?.[1];
       if (!month) throw new Error("booking_com_ari_payload_invalid");
+      // A queued job can outlive its connection's approval or property mapping.
+      // Recheck the exact scope before loading credentials or contacting the provider.
+      const scope = await store.validateScope(job);
+      if (scope !== "ready") throw new Error(`booking_com_ari_scope_${scope}`);
       const token = await getToken(job.machineAccountId, fetcher);
       const ack = await postBookingComAriTestRequest({
         channelPropertyId: job.providerPropertyId,
@@ -129,11 +171,11 @@ export async function runBookingComAriDelivery(options: WorkerOptions = {}) {
       outcome = ack.outcome === "accepted" || ack.outcome === "accepted_with_warnings"
         ? "sent" : ack.outcome === "retryable" ? "retry" : "review";
     } catch (error) {
-      const code = error instanceof Error && /^(booking_com_auth_temporarily_unavailable|booking_com_auth_transport_failed|booking_com_auth_timeout)$/.test(error.message)
+      const code = error instanceof Error && /^(booking_com_auth_temporarily_unavailable|booking_com_auth_transport_failed|booking_com_auth_timeout|booking_com_ari_scope_paused|booking_com_ari_scope_stale|booking_com_ari_scope_unavailable)$/.test(error.message)
         ? error.message
         : error instanceof Error && /^(booking_com_ari_payload_integrity_failed|booking_com_ari_payload_invalid)$/.test(error.message)
           ? error.message : "provider_auth_or_dispatch_rejected";
-      outcome = /^booking_com_auth_(temporarily_unavailable|transport_failed|timeout)$/.test(code) ? "retry" : "review";
+      outcome = /^(booking_com_auth_(temporarily_unavailable|transport_failed|timeout)|booking_com_ari_scope_(paused|unavailable))$/.test(code) ? "retry" : "review";
       result = { code };
     }
 

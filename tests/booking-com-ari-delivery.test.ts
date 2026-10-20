@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 import { createHash } from "node:crypto";
-import { runBookingComAriDelivery } from "@/lib/booking-com-ari-delivery";
+import { assessBookingComAriScope, runBookingComAriDelivery } from "@/lib/booking-com-ari-delivery";
 
 const xml = `<?xml version="1.0" encoding="UTF-8"?><OTA_HotelAvailNotifRQ><AvailStatusMessages><AvailStatusMessage BookingLimit="2"><StatusApplicationControl Start="2026-10-01" End="2026-10-01" InvTypeCode="NDQ2"/></AvailStatusMessage></AvailStatusMessages></OTA_HotelAvailNotifRQ>`;
 const job = {
@@ -18,20 +18,56 @@ const job = {
   leaseToken: "44444444-4444-4444-8444-444444444444",
 };
 
-function dependencies(overrides: { claim?: unknown[]; status?: number; body?: string; tokenError?: Error } = {}) {
+const connection = {
+  connection_id: job.connectionId,
+  property_id: job.propertyId,
+  machine_account_id: job.machineAccountId,
+  provider_property_id: job.providerPropertyId,
+  provider: "booking_com",
+  environment: "test",
+  enabled: true,
+  partner_approved: true,
+  ari_endpoint_approved: true,
+  certification_complete: true,
+};
+
+function dependencies(overrides: { claim?: unknown[]; status?: number; body?: string; tokenError?: Error; scope?: "ready" | "paused" | "stale" | "unavailable" } = {}) {
   const finish = vi.fn(async () => undefined);
   const fetcher = vi.fn(async () => new Response(overrides.body ?? `<OTA_HotelAvailNotifRS><Success/></OTA_HotelAvailNotifRS>`, { status: overrides.status ?? 200 }));
   const getToken = vi.fn(async () => {
     if (overrides.tokenError) throw overrides.tokenError;
     return "a.very-long-test-token.with-enough-length";
   });
+  const validateScope = vi.fn(async () => overrides.scope ?? "ready" as const);
   return {
-    finish, fetcher, getToken,
-    options: { store: { claim: async () => (overrides.claim ?? [job]) as never[], finish }, fetcher: fetcher as typeof fetch, getToken },
+    finish, fetcher, getToken, validateScope,
+    options: { store: { claim: async () => (overrides.claim ?? [job]) as never[], validateScope, finish }, fetcher: fetcher as typeof fetch, getToken },
   };
 }
 
 describe("Booking.com ARI delivery worker", () => {
+  it("refuses a queued job after its property mapping changes or approval is withdrawn", async () => {
+    expect(assessBookingComAriScope(job, connection)).toBe("ready");
+    expect(assessBookingComAriScope(job, { ...connection, provider_property_id: "other-hotel" })).toBe("stale");
+    expect(assessBookingComAriScope(job, { ...connection, property_id: "55555555-5555-4555-8555-555555555555" })).toBe("stale");
+    expect(assessBookingComAriScope(job, { ...connection, machine_account_id: "66666666-6666-4666-8666-666666666666" })).toBe("stale");
+    expect(assessBookingComAriScope(job, { ...connection, certification_complete: false })).toBe("paused");
+    expect(assessBookingComAriScope(job, null)).toBe("stale");
+  });
+
+  it.each([
+    ["stale", "review", "booking_com_ari_scope_stale"],
+    ["paused", "retry", "booking_com_ari_scope_paused"],
+    ["unavailable", "retry", "booking_com_ari_scope_unavailable"],
+  ] as const)("holds a %s scope without loading credentials or calling the provider", async (scope, outcome, code) => {
+    const deps = dependencies({ scope });
+    await runBookingComAriDelivery(deps.options);
+    expect(deps.validateScope).toHaveBeenCalledWith(job);
+    expect(deps.getToken).not.toHaveBeenCalled();
+    expect(deps.fetcher).not.toHaveBeenCalled();
+    expect(deps.finish).toHaveBeenCalledWith(job.jobId, job.leaseToken, outcome, null, { code });
+  });
+
   it("sends only the claimed test job and durably records provider success", async () => {
     const deps = dependencies();
     const result = await runBookingComAriDelivery(deps.options);
