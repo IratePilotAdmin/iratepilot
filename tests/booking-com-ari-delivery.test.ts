@@ -42,7 +42,7 @@ describe("Booking.com ARI delivery worker", () => {
     expect(new Headers(init.headers).get("authorization")).toBe("Bearer a.very-long-test-token.with-enough-length");
     expect(init.body).toBe(xml);
     expect(deps.finish).toHaveBeenCalledWith(job.jobId, job.leaseToken, "sent", 200, {
-      outcome: "accepted", errors: [], warnings: [],
+      outcome: "accepted", errorCount: 0, warningCount: 0,
     });
   });
 
@@ -51,7 +51,7 @@ describe("Booking.com ARI delivery worker", () => {
     const result = await runBookingComAriDelivery(deps.options);
     expect(result).toMatchObject({ retry: 1, sent: 0 });
     expect(deps.finish).toHaveBeenCalledWith(job.jobId, job.leaseToken, "retry", 503, {
-      outcome: "retryable", errors: [], warnings: [],
+      outcome: "retryable", errorCount: 0, warningCount: 0,
     });
   });
 
@@ -61,6 +61,7 @@ describe("Booking.com ARI delivery worker", () => {
     const result = await runBookingComAriDelivery(deps.options);
     expect(result.review).toBe(1);
     expect(deps.fetcher).not.toHaveBeenCalled();
+    expect(deps.getToken).not.toHaveBeenCalled();
     expect(deps.finish).toHaveBeenCalledWith(job.jobId, job.leaseToken, "review", null, {
       code: "booking_com_ari_payload_integrity_failed",
     });
@@ -81,7 +82,17 @@ describe("Booking.com ARI delivery worker", () => {
     const deps = dependencies({ body: `<OTA_HotelAvailNotifRS/>` });
     expect(await runBookingComAriDelivery(deps.options)).toMatchObject({ review: 1, sent: 0 });
     expect(deps.finish).toHaveBeenCalledWith(job.jobId, job.leaseToken, "review", 200, {
-      outcome: "unknown", errors: [], warnings: [],
+      outcome: "unknown", errorCount: 0, warningCount: 0,
     });
+  });
+
+  it("stores only counts when provider errors contain guest information", async () => {
+    const privateText = "Guest Jane Example, booking RP-1234";
+    const deps = dependencies({ status: 400, body: `<OTA_HotelAvailNotifRS><Errors><Error Code="${privateText}" ShortText="${privateText}"/></Errors><Warnings><Warning Code="${privateText}" ShortText="${privateText}"/></Warnings></OTA_HotelAvailNotifRS>` });
+    expect(await runBookingComAriDelivery(deps.options)).toMatchObject({ review: 1, sent: 0 });
+    expect(deps.finish).toHaveBeenCalledWith(job.jobId, job.leaseToken, "review", 400, {
+      outcome: "rejected", errorCount: 1, warningCount: 1,
+    });
+    expect(JSON.stringify(deps.finish.mock.calls)).not.toContain(privateText);
   });
 });

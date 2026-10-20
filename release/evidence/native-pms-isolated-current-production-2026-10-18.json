@@ -1,0 +1,46 @@
+{
+  "observed_at_utc": "2026-10-19T01:14:57Z",
+  "project": "iratepilot-cron-rehearsal-20261005",
+  "deployment_id": "dpl_4VXHSP3kH9EF14KviE4VtbDtWXEL",
+  "environment": "Production of the isolated rehearsal project only",
+  "source_branch": "codex/native-ota-current-reconcile",
+  "source_commit": "2ed0897f772618bdaff24dc4492bc95ac119dff1",
+  "deployment_status": "Ready and assigned to iratepilot-cron-rehearsal-20261005.vercel.app",
+  "source_supabase_project": "onbdizzwwubfdgkgaphx",
+  "destination_supabase_project": "wjosvslkselpauyftias",
+  "worker_switch": "IRP_PMS_SYNC_ENABLED=false",
+  "anonymous_worker_result": "401 Unauthorized",
+  "postdeploy_source_connection": {
+    "connection_id": "SYNTHPMS001",
+    "enabled": false,
+    "pending": 2,
+    "delivered": 5,
+    "other_states": 0
+  },
+  "secret_values_read": false,
+  "events_delivered_by_this_deployment": 0,
+  "private_availability_preview": {
+    "property": "Synthetic Approval Hotel",
+    "check_in": "2026-10-25",
+    "check_out": "2026-10-26",
+    "guests": 2,
+    "available_room_types": 1,
+    "room_type": "Synthetic King",
+    "stay_subtotal_usd": 109,
+    "booking_enabled": false
+  },
+  "receiver_baseline": {
+    "gateway_connections": 2,
+    "enabled_connections": 0,
+    "existing_reservations": 2,
+    "ota_stay_change_commands": 0,
+    "synthetic_connection_enabled": false
+  },
+  "limitations": "The authenticated worker was not invoked. The two pending events, receiver scope, signing secret, and reservation round trip still require a supervised isolated test. This deployment is not the production iRatePilot.com OTA site.",
+  "screenshots": [
+    "isolated-cron-current-production-2026-10-18.png",
+    "isolated-cron-disabled-config-2026-10-18.png",
+    "isolated-cron-postdeploy-outbox-2026-10-18.png",
+    "native-pms-private-availability-2026-10-18.png"
+  ]
+}
