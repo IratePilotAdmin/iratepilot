@@ -77,8 +77,9 @@ function createStore(): AriStore {
 function safeAcknowledgement(result: BookingComAcknowledgement) {
   return {
     outcome: result.outcome,
-    errors: result.errors.slice(0, 25).map(({ code, message }) => ({ code: code?.slice(0, 100), message: message?.slice(0, 300) })),
-    warnings: result.warnings.slice(0, 25).map(({ code, message }) => ({ code: code?.slice(0, 100), message: message?.slice(0, 300) })),
+    // Provider-supplied codes and prose are untrusted and can contain guest identifiers.
+    errorCount: result.errors.length,
+    warningCount: result.warnings.length,
   };
 }
 
@@ -106,11 +107,11 @@ export async function runBookingComAriDelivery(options: WorkerOptions = {}) {
     let httpStatus: number | null = null;
     let result: Record<string, unknown> = { code: "job_invalid" };
     try {
-      const token = await getToken(job.machineAccountId, fetcher);
       const actualHash = createHash("sha256").update(job.requestXml, "utf8").digest("hex");
       if (actualHash !== job.requestSha256) throw new Error("booking_com_ari_payload_integrity_failed");
       const month = /\bStart="(\d{4}-\d{2})-\d{2}"/.exec(job.requestXml)?.[1];
       if (!month) throw new Error("booking_com_ari_payload_invalid");
+      const token = await getToken(job.machineAccountId, fetcher);
       const ack = await postBookingComAriTestRequest({
         channelPropertyId: job.providerPropertyId,
         month,
