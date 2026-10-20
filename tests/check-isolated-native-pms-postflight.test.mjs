@@ -20,11 +20,18 @@ const receiver = {
     reservation: [{ sourceVersion: 2, status: "Cancelled" }],
   },
 };
+const worker = {
+  workerProject: "iratepilot-cron-rehearsal-20261005", environment: "Production",
+  sourceProject: "onbdizzwwubfdgkgaphx", receiverProject: "wjosvslkselpauyftias",
+  destinationUrl: "https://wjosvslkselpauyftias.supabase.co/rest/v1/rpc/irp_pms_ota_gateway",
+  deploymentId: "dpl_isolated_test", deploymentState: "Ready", syncEnabled: false,
+  checkedAt: "2026-10-20T19:59:30Z", dataChanged: false,
+};
 
-test("verifies exact, fresh, disabled source and receiver evidence", () => {
-  assert.deepEqual(assessIsolatedReplayPostflight(source, receiver, now), { passed: true, failures: [] });
-  assert.equal(assessIsolatedReplayPostflight([{ evidence: source }], { evidence: receiver }, now).passed, true);
-  assert.equal(assessIsolatedReplayPostflight({ ...source, result: { ...source.result, events: source.result.events.map((e) => ({ ...e, resultCode: "pms_duplicate" })) } }, receiver, now).passed, true);
+test("verifies exact, fresh, disabled source, receiver, and worker evidence", () => {
+  assert.deepEqual(assessIsolatedReplayPostflight(source, receiver, worker, now), { passed: true, failures: [] });
+  assert.equal(assessIsolatedReplayPostflight([{ evidence: source }], { evidence: receiver }, worker, now).passed, true);
+  assert.equal(assessIsolatedReplayPostflight({ ...source, result: { ...source.result, events: source.result.events.map((e) => ({ ...e, resultCode: "pms_duplicate" })) } }, receiver, worker, now).passed, true);
 });
 
 test("rejects missing, crossed, stale, or held receipts", () => {
@@ -35,7 +42,7 @@ test("rejects missing, crossed, stale, or held receipts", () => {
     [{ ...source, checkedAt: "2026-10-20T19:40:00Z" }, receiver],
     [source, { ...receiver, result: { ...receiver.result, reservation: [{ sourceVersion: 1, status: "Confirmed" }] } }],
   ];
-  for (const [s, r] of changed) assert.equal(assessIsolatedReplayPostflight(s, r, now).passed, false);
+  for (const [s, r] of changed) assert.equal(assessIsolatedReplayPostflight(s, r, worker, now).passed, false);
 });
 
 test("rejects any enabled switch, wrong project, extra event, or replayed side effect", () => {
@@ -47,5 +54,12 @@ test("rejects any enabled switch, wrong project, extra event, or replayed side e
     [source, { ...receiver, result: { ...receiver.result, otherScopeReceipts: 1 } }],
     [source, { ...receiver, result: { ...receiver.result, stayChangeCommands: 1 } }],
   ];
-  for (const [s, r] of changed) assert.equal(assessIsolatedReplayPostflight(s, r, now).passed, false);
+  for (const [s, r] of changed) assert.equal(assessIsolatedReplayPostflight(s, r, worker, now).passed, false);
+});
+
+test("rejects a running, wrong, stale, or unverified scheduled worker", () => {
+  for (const value of [null, { ...worker, syncEnabled: true }, { ...worker, workerProject: "live" },
+    { ...worker, checkedAt: "2026-10-20T19:40:00Z" }, { ...worker, deploymentState: "Building" }]) {
+    assert.equal(assessIsolatedReplayPostflight(source, receiver, value, now).passed, false);
+  }
 });

@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { checkIsolatedWorkerOff } from "./isolated-native-pms-worker-evidence.mjs";
 
 const SOURCE_PROJECT = "onbdizzwwubfdgkgaphx";
 const RECEIVER_PROJECT = "wjosvslkselpauyftias";
@@ -16,7 +17,7 @@ function exactResults(actual, expected, label, failures) {
   }
 }
 
-export function assessIsolatedReplayPreflight(source, receiver, now = Date.now()) {
+export function assessIsolatedReplayPreflight(source, receiver, worker, now = Date.now()) {
   const failures = [];
   if (source?.sourceProject !== SOURCE_PROJECT || receiver?.receiverProject !== RECEIVER_PROJECT) {
     failures.push("isolated project IDs do not match the approved replay");
@@ -47,18 +48,19 @@ export function assessIsolatedReplayPreflight(source, receiver, now = Date.now()
     replayBookingReceipts: 0,
     stayChangeCommands: 0,
   }, "receiver", failures);
+  failures.push(...checkIsolatedWorkerOff(worker, now));
   return { ready: failures.length === 0, failures };
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
-  const [sourcePath, receiverPath] = process.argv.slice(2);
-  if (!sourcePath || !receiverPath) {
-    console.error("Usage: node scripts/check-isolated-native-pms-replay.mjs SOURCE_EVIDENCE.json RECEIVER_EVIDENCE.json");
+  const [sourcePath, receiverPath, workerPath] = process.argv.slice(2);
+  if (!sourcePath || !receiverPath || !workerPath) {
+    console.error("Usage: node scripts/check-isolated-native-pms-replay.mjs SOURCE_EVIDENCE.json RECEIVER_EVIDENCE.json WORKER_EVIDENCE.json");
     process.exitCode = 2;
   } else {
     try {
-      const [source, receiver] = await Promise.all([sourcePath, receiverPath].map(async (path) => JSON.parse(await readFile(path, "utf8"))));
-      const result = assessIsolatedReplayPreflight(source, receiver);
+      const [source, receiver, worker] = await Promise.all([sourcePath, receiverPath, workerPath].map(async (path) => JSON.parse(await readFile(path, "utf8"))));
+      const result = assessIsolatedReplayPreflight(source, receiver, worker);
       console.log(result.ready ? "Isolated two-event replay preflight ready; delivery remains disabled until supervised activation." : `Replay blocked:\n${result.failures.map((failure) => `- ${failure}`).join("\n")}`);
       if (!result.ready) process.exitCode = 1;
     } catch {
