@@ -64,6 +64,10 @@ describe("secure transactional email worker", () => {
         schedule: "*/5 * * * *",
       },
       {
+        path: "/api/cron/booking-com-ari",
+        schedule: "*/5 * * * *",
+      },
+      {
         path: "/api/cron/booking-com-reservation-retention",
         schedule: "20 5 * * *",
       },

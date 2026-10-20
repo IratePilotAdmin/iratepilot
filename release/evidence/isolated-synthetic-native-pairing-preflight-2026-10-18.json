@@ -1,0 +1,59 @@
+{
+  "date": "2026-10-18",
+  "scope": "isolated test databases only",
+  "ota_project": "onbdizzwwubfdgkgaphx",
+  "pms_project": "zvdbqwdctrmeupszwrxc",
+  "marketplace_property": {
+    "id": "33000000-0000-4000-8000-000000000033",
+    "name": "Synthetic Approval Hotel",
+    "active": true
+  },
+  "marketplace_room": {
+    "id": "44000000-0000-4000-8000-000000000044",
+    "name": "Synthetic King",
+    "active": true,
+    "october_25_2026_inventory_units": 1,
+    "october_25_2026_rate_usd": 109
+  },
+  "pms_property": {
+    "tenant_id": "faa76112-c793-43db-92bd-f9faecd8d93a",
+    "id": "b81d2680-5bf4-4e7e-b79c-65349b3d865f",
+    "name": "Test Hotel"
+  },
+  "pms_room_type": {
+    "id": "0e7b9c3c-dcd9-4487-b401-b31ad5b778a4",
+    "name": "TEST Standard King",
+    "physical_rooms": 2
+  },
+  "pms_rate_plan": {
+    "id": "4a74dbaf-a39e-4951-b3af-c62335f163e5",
+    "name": "TEST Flexible",
+    "active": true
+  },
+  "isolated_pms_october_25_2026_fixture": {
+    "capacity_units": 1,
+    "nightly_rate_minor_usd": 10900,
+    "verified": true
+  },
+  "quote_check": {
+    "attempted_from": "Supabase SQL Editor with a statement-local simulated Test Hotel manager claim",
+    "quote_id": "e21a99d3-52b8-4bfc-b579-6ec66a680bf4",
+    "result": "2026-10-25 to 2026-10-26, 1 guest, USD 109.00 total, inventory_held=false",
+    "implication": "The isolated PMS rate and capacity path succeeds under a Test Hotel manager claim. This does not prove a real browser sign-in or a reservation round trip."
+  },
+  "native_connection": {
+    "ota_connection_count_before_pairing": 0,
+    "pms_test_hotel_existing_connection_count": 1,
+    "existing_pms_connection_enabled": false,
+    "new_pairing_created": false,
+    "reservation_delivery_enabled": false,
+    "rate_delivery_enabled": false
+  },
+  "open_gates": [
+    "Create and verify a separate disabled signing-secret pairing in both isolated projects after action-time approval.",
+    "Complete a synthetic reservation round trip with delivery still controlled.",
+    "Run an authenticated browser quote for the October 25 test night.",
+    "Verify Stripe TEST checkout on the branch-scoped Preview before any public booking."
+  ],
+  "production_changed": false
+}

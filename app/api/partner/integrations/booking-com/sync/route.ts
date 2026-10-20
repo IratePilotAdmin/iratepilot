@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { parseBookingComSyncInput, queueBookingComInventorySync, type BookingComSyncStore } from "@/services/hotel-channels/booking-com/sync";
+import { parseBookingComSyncInput, parseBookingComYearWindowRequest, queueBookingComInventorySync, type BookingComSyncStore } from "@/services/hotel-channels/booking-com/sync";
+import { loadBookingComInventoryPages } from "@/services/hotel-channels/booking-com/inventory-pages";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -22,8 +23,9 @@ export async function POST(request: Request) {
   } catch { return NextResponse.json({ error: "The sync request could not be read." }, { status: 400, headers: NO_STORE }); }
   let value: unknown;
   try { value = JSON.parse(raw); } catch { return NextResponse.json({ error: "Send valid JSON sync details." }, { status: 400, headers: NO_STORE }); }
-  const input = parseBookingComSyncInput(value);
-  if (!input) return NextResponse.json({ error: "Enter a property, test connection, sync ID, valid date range (up to 90 days), currency, and price basis." }, { status: 400, headers: NO_STORE });
+  const yearWindow = parseBookingComYearWindowRequest(value);
+  const input = yearWindow?.input ?? parseBookingComSyncInput(value);
+  if (!input) return NextResponse.json({ error: "Enter a property, test connection, sync ID, currency, price basis, and either a date range up to 90 days or a valid year window index." }, { status: 400, headers: NO_STORE });
 
   const { data: property, error: propertyError } = await auth.supabase.from("properties")
     .select("id,active").eq("id", input.propertyId).eq("partner_id", partner.id).maybeSingle();
@@ -46,11 +48,11 @@ export async function POST(request: Request) {
       ]);
       if (roomsError || mappingsError || !rooms?.length || !mappings?.length) throw new Error("booking_com_sync_mapping_unavailable");
       const roomIds = rooms.map((room) => room.id);
-      const { data: inventory, error: inventoryError } = await auth.supabase.from("inventory")
+      const inventory = await loadBookingComInventoryPages(async (from, to) => auth.supabase.from("inventory")
         .select("room_id,stay_date,available_units,rate")
         .in("room_id", roomIds).gte("stay_date", input.startDate).lte("stay_date", input.endDate)
-        .order("stay_date").limit(50_000);
-      if (inventoryError || !inventory?.length) throw new Error("booking_com_sync_inventory_unavailable");
+        .order("stay_date").order("room_id").range(from, to));
+      if (!inventory.length) throw new Error("booking_com_sync_inventory_unavailable");
       return {
         propertyId: input.propertyId,
         connectionId: input.connectionId,
@@ -92,16 +94,20 @@ export async function POST(request: Request) {
 
   try {
     const result = await queueBookingComInventorySync(input, store);
-    return NextResponse.json({ ...result, message: "ARI changes are queued for provider-approved test delivery. No live OTA traffic was sent by this request." }, { headers: NO_STORE });
+    return NextResponse.json({ ...result,
+      ...(yearWindow ? { yearWindowIndex: yearWindow.windowIndex, yearWindowCount: 5, startDate: input.startDate, endDate: input.endDate } : {}),
+      message: "ARI changes are queued for provider-approved test delivery. No live OTA traffic was sent by this request." }, { headers: NO_STORE });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     const conflict = message === "booking_com_sync_not_approved";
+    const incomplete = message === "booking_com_sync_incomplete_inventory" || message === "booking_com_sync_inventory_outside_window";
     const invalid = message === "booking_com_sync_scope_mismatch" || message === "booking_com_sync_too_many_requests";
     return NextResponse.json({ error: conflict
       ? "This test connection is not approved for ARI synchronization. Ask the OTA administrator to complete approval and certification first."
-      : invalid ? "The selected sync scope is invalid. Review its mappings and requested date range."
+      : incomplete ? "Every mapped room needs a saved rate and availability for each requested night before ARI can be queued. Review the inventory calendar and retry."
+        : invalid ? "The selected sync scope is invalid. Review its mappings and requested date range."
         : "Rates and availability could not be queued. Confirm saved inventory and mappings, then try again." }, {
-      status: conflict ? 409 : invalid ? 400 : 503,
+      status: conflict || incomplete ? 409 : invalid ? 400 : 503,
       headers: NO_STORE,
     });
   }

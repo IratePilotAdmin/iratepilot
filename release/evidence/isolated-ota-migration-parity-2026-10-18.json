@@ -1,0 +1,40 @@
+{
+  "date": "2026-10-18",
+  "environment": "isolated OTA test database",
+  "projectRef": "onbdizzwwubfdgkgaphx",
+  "source": "Existing SQL files in supabase/migrations; applied through the signed-in Supabase SQL Editor and recorded with their exact source text in supabase_migrations.schema_migrations.",
+  "installedThisGate": [
+    "202610050163_bind_hotel_payment_authorization_account",
+    "202610050164_revalidate_live_hotel_commerce",
+    "202610150169_apaleo_webhook_receipts",
+    "202610160170_apaleo_reservation_reconciliation",
+    "202610180171_restrict_authenticated_only_rpcs"
+  ],
+  "previousGate": [
+    "202610140165_expand_pms_catalog",
+    "202610140166_unique_siteminder_hotel_codes",
+    "202610150167_pms_vendor_account_reference",
+    "202610150168_require_clock_subscription_id"
+  ],
+  "verification": {
+    "expectedRecentLedgerRowsPresent": 10,
+    "paymentAccountBoundGatePresent": true,
+    "bookableHotelRevalidationGatePresent": true,
+    "apaleoClaimFunctionPresent": true,
+    "apaleoReceiptsTablePresent": true,
+    "apaleoReceiptsRlsAndForceRls": true,
+    "anonymousProfileUpdateExecute": false,
+    "signedInPreviewAdminSettingsLoads": true,
+    "previewPmsProviders": 25,
+    "previewPmsProvidersLive": 0,
+    "previewPaymentMode": "disabled",
+    "previewStripeTestGates": "7/10",
+    "ledgerScreenshot": "isolated-ota-migration-ledger-2026-10-18.png"
+  },
+  "limits": [
+    "This is an isolated schema and admin-page check, not a Stripe payment or PMS reservation round trip.",
+    "No vendor certification or provider traffic was enabled.",
+    "The live PMS database and production OTA database were not changed.",
+    "The ChatGPT Sites management connector was unavailable to this task, so the local PMS front-desk fix remains unpublished."
+  ]
+}

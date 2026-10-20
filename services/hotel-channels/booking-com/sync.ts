@@ -37,6 +37,49 @@ export type BookingComSyncInput = {
   priceBasis: "before_tax" | "after_tax";
 };
 
+export type BookingComYearSyncInput = Omit<BookingComSyncInput, "endDate">;
+export type BookingComYearWindowRequest = BookingComYearSyncInput & { windowIndex: number };
+
+/** Splits 366 consecutive nights into stable, non-overlapping 90-day test scopes. */
+export function planBookingComYearSync(input: BookingComYearSyncInput): BookingComSyncInput[] {
+  if (!parseBookingComSyncInput({ ...input, endDate: input?.startDate })) {
+    throw new Error("booking_com_sync_input_invalid");
+  }
+  const start = Date.parse(`${input.startDate}T00:00:00Z`);
+  if (!validDate(new Date(start + 365 * 86_400_000).toISOString().slice(0, 10))) {
+    throw new Error("booking_com_sync_input_invalid");
+  }
+  const windows: BookingComSyncInput[] = [];
+  for (let offset = 0; offset < 366; offset += 90) {
+    const endOffset = Math.min(offset + 89, 365);
+    const digest = createHash("sha256").update(`booking-com-year-v1:${input.syncId}:${offset}`).digest();
+    digest[6] = (digest[6] & 0x0f) | 0x50;
+    digest[8] = (digest[8] & 0x3f) | 0x80;
+    const hex = digest.subarray(0, 16).toString("hex");
+    const syncId = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+    windows.push({ ...input, syncId,
+      startDate: new Date(start + offset * 86_400_000).toISOString().slice(0, 10),
+      endDate: new Date(start + endOffset * 86_400_000).toISOString().slice(0, 10),
+    });
+  }
+  return windows;
+}
+
+/** Resolves one year-load call to exactly one bounded, idempotent scope. */
+export function parseBookingComYearWindowRequest(value: unknown): { input: BookingComSyncInput; windowIndex: number } | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const row = value as Record<string, unknown>;
+  if (Object.keys(row).some((key) => !["propertyId", "connectionId", "syncId", "startDate", "currency", "priceBasis", "windowIndex"].includes(key))
+    || !Number.isInteger(row.windowIndex) || (row.windowIndex as number) < 0 || (row.windowIndex as number) > 4) return null;
+  const { windowIndex, ...yearInput } = row as BookingComYearWindowRequest;
+  if (!parseBookingComSyncInput({ ...yearInput, endDate: yearInput.startDate })) return null;
+  try {
+    return { input: planBookingComYearSync(yearInput)[windowIndex], windowIndex };
+  } catch {
+    return null;
+  }
+}
+
 export function parseBookingComSyncInput(value: unknown): BookingComSyncInput | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const row = value as Record<string, unknown>;
@@ -54,6 +97,29 @@ export function parseBookingComSyncInput(value: unknown): BookingComSyncInput | 
   return row as unknown as BookingComSyncInput;
 }
 
+function requireCompleteInventoryWindow(input: BookingComSyncInput, source: BookingComInventoryPlan) {
+  if (!Array.isArray(source.mappings) || !Array.isArray(source.inventory)) return;
+  const mappedRooms = new Set(source.mappings.map((mapping) => mapping.localRoomId));
+  // The payload builder reports the existing invalid-plan error for no mappings.
+  if (mappedRooms.size === 0) return;
+  const datesByRoom = new Map<string, Set<string>>();
+  for (const row of source.inventory) {
+    if (row.date < input.startDate || row.date > input.endDate) throw new Error("booking_com_sync_inventory_outside_window");
+    if (!mappedRooms.has(row.roomId)) continue;
+    const dates = datesByRoom.get(row.roomId) ?? new Set<string>();
+    dates.add(row.date);
+    datesByRoom.set(row.roomId, dates);
+  }
+  const start = Date.parse(`${input.startDate}T00:00:00Z`);
+  const end = Date.parse(`${input.endDate}T00:00:00Z`);
+  for (let day = start; day <= end; day += 86_400_000) {
+    const date = new Date(day).toISOString().slice(0, 10);
+    for (const roomId of mappedRooms) {
+      if (!datesByRoom.get(roomId)?.has(date)) throw new Error("booking_com_sync_incomplete_inventory");
+    }
+  }
+}
+
 /** Builds and durably queues an idempotent 90-day maximum test-mode ARI sync. */
 export async function queueBookingComInventorySync(
   input: BookingComSyncInput,
@@ -67,6 +133,7 @@ export async function queueBookingComInventorySync(
   if (source.propertyId !== input.propertyId || source.connectionId !== input.connectionId) {
     throw new Error("booking_com_sync_scope_mismatch");
   }
+  requireCompleteInventoryWindow(input, source);
   const requests = buildBookingComInventoryAriPlan({ ...source, now });
   if (requests.length > 1000) throw new Error("booking_com_sync_too_many_requests");
   const jobs = [];

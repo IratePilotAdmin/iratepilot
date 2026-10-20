@@ -1,0 +1,64 @@
+{
+  "scope": "Read-only comparison of the live hotel room board and isolated PMS rehearsal restore",
+  "isolatedProjectRef": "zvdbqwdctrmeupszwrxc",
+  "property": "Red Roof Inn Ridgeland, MS",
+  "liveRoomBoardCount": 113,
+  "restoredRoomRecordCount": 113,
+  "roomTypesMatchingLiveInventory": {
+    "NADK1": 34,
+    "NADQ2": 64,
+    "NDK1": 0,
+    "NDQ2": 0,
+    "NSK1": 15
+  },
+  "restoredCeoAuthUser": {
+    "matchingAccounts": 1,
+    "emailConfirmed": 1,
+    "passwordSignInTested": false
+  },
+  "restoredHotelReservations": {
+    "count": 6,
+    "bySourceAndStatus": {
+      "directCancelled": 1,
+      "directCheckedOut": 1,
+      "directConfirmed": 2,
+      "iratepilotOtaConfirmed": 2
+    },
+    "livePmsAllReservationsObserved": 8,
+    "liveRecentActivity": "Two reservation-created events were displayed on October 18; they may explain the count difference, but the exact backup cutoff remains unverified.",
+    "countParityProved": false
+  },
+  "restoredHotelFinancialRecords": {
+    "billingAccountInvoices": 0,
+    "billingAccountPayments": 0,
+    "billingCashierPayments": 0,
+    "folioEntries": 0,
+    "folioOpenings": 0,
+    "cashierGuestPayments": 0,
+    "financialRecoveryProved": false
+  },
+  "restoredSyntheticFolioIntegrity": {
+    "properties": {
+      "Test Hotel": 13,
+      "TEST Vacation Home": 7,
+      "TEST Corrections QA": 2
+    },
+    "folioEntries": 22,
+    "folioOpenings": 12,
+    "missingReservationReferences": 0,
+    "missingTargetEntryReferences": 0,
+    "writeAndReadWorkflowRehearsed": false
+  },
+  "changesToLiveOrRestoredHotelData": false,
+  "recoveryProved": false,
+  "stillRequired": [
+    "Verify restored owner and staff sign-in and property permissions",
+    "Establish the backup cutoff and compare reservations as of that cutoff",
+    "Rehearse a signed-in synthetic folio and payment recovery workflow; the existing restored synthetic folio rows have intact references",
+    "Confirm backup timestamp and recovery procedure before launch"
+  ],
+  "evidenceScreenshots": [
+    "pms-isolated-restore-113-rooms-2026-10-18.png",
+    "pms-isolated-restore-room-types-2026-10-18.png"
+  ]
+}

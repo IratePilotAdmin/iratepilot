@@ -1,0 +1,30 @@
+{
+  "scope": "isolated OTA Vercel Preview only",
+  "deployment": "dpl_FsFPuPsH1qTY31aN8BZuHupoQrZN",
+  "branch": "codex/native-ota-current-reconcile",
+  "host": "iratepilotadmin-1ttk29o9v-irate-pilot.vercel.app",
+  "isolatedOtaProjectRef": "onbdizzwwubfdgkgaphx",
+  "observation": {
+    "signedInAdminSettingsReached": true,
+    "pmsIntegrationApiStatus": 503,
+    "pmsIntegrationLogMessage": "Invalid API key",
+    "synxisReadApiStatus": 503,
+    "synxisReadLogMessage": "Invalid API key",
+    "databaseReadiness": "Administrative database query unavailable",
+    "nativeAriConfiguration": "unavailable"
+  },
+  "vercelServerKeyScopesObserved": [
+    "Preview: codex/ota-main-integration (October 5)",
+    "Preview: all branches (August 17)",
+    "Production (August 14)"
+  ],
+  "interpretation": "The isolated public Supabase binding and the effective server key do not match. The observed invalid-key error is definitive; the effective secret's value and owning project were not exposed.",
+  "preparedCorrection": "A new SUPABASE_SERVICE_ROLE_KEY Secret scoped only to Preview branch codex/native-ota-current-reconcile, with Production unselected. Secret value is empty and the form has not been saved.",
+  "correctionApplied": false,
+  "previewRedeployed": false,
+  "hostedBookingVerified": false,
+  "evidenceScreenshots": [
+    "ota-preview-invalid-server-key-2026-10-18.png",
+    "ota-preview-server-key-target-2026-10-18.png"
+  ]
+}

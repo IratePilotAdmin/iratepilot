@@ -18,6 +18,7 @@ export function PartnerBookingComMappings() {
   const [busy, setBusy] = useState(false);
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
+  const [yearMessage, setYearMessage] = useState("");
   const syncId = useRef("");
   const selectedConnection = useMemo(() => connections.find((item) => item.connection_id === connectionId), [connections, connectionId]);
   const propertyRooms = useMemo(() => rooms.filter((room) => room.property_id === selectedConnection?.property_id && room.active), [rooms, selectedConnection]);
@@ -108,6 +109,59 @@ export function PartnerBookingComMappings() {
     }
   }
 
+  async function queueYear(form: HTMLFormElement) {
+    if (!selectedConnection || syncBusy) return;
+    const values = new FormData(form);
+    const startDate = String(values.get("startDate") ?? "");
+    const currency = String(values.get("currency") ?? "");
+    const priceBasis = String(values.get("priceBasis") ?? "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^[A-Z]{3}$/.test(currency)
+      || (priceBasis !== "before_tax" && priceBasis !== "after_tax")) {
+      setYearMessage("Enter a valid start date, currency, and rate amount basis first.");
+      return;
+    }
+    const key = `booking-com-year-v1:${connectionId}:${startDate}:${currency}:${priceBasis}`;
+    let rootSyncId: string;
+    try {
+      const savedId = localStorage.getItem(key);
+      rootSyncId = savedId && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(savedId)
+        ? savedId : crypto.randomUUID();
+      localStorage.setItem(key, rootSyncId);
+    } catch {
+      setYearMessage("Browser storage is unavailable. Enable storage before queueing so retries can reuse the same request ID.");
+      return;
+    }
+    setSyncBusy(true);
+    setYearMessage("Queueing window 1 of 5…");
+    let completed = 0;
+    try {
+      for (let windowIndex = 0; windowIndex < 5; windowIndex += 1) {
+        const response = await fetch("/api/partner/integrations/booking-com/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            propertyId: selectedConnection.property_id, connectionId,
+            syncId: rootSyncId, startDate, currency, priceBasis, windowIndex,
+          }),
+        });
+        const body = await response.json();
+        if (!response.ok) throw new Error(`Window ${windowIndex + 1} of 5: ${body.error || "Queueing failed."}`);
+        if (body.yearWindowIndex !== windowIndex || body.yearWindowCount !== 5) {
+          throw new Error("The server returned a different year window. Retry with the same request ID.");
+        }
+        completed += 1;
+        setYearMessage(`Queued ${completed} of 5 test windows through ${body.endDate}.`);
+      }
+      localStorage.removeItem(key);
+      setYearMessage("All five test windows were queued. Review the provider-approved delivery and inventory calendar before relying on this year load.");
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : "Queueing failed.";
+      setYearMessage(`${detail} ${completed} of 5 windows completed in this attempt. Fix the issue, then retry the same year load; its request ID is saved in this browser.`);
+    } finally {
+      setSyncBusy(false);
+    }
+  }
+
   return <div className="mt-8 grid gap-8 xl:grid-cols-[1fr_420px]">
     <section className="card overflow-hidden">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b p-6">
@@ -168,6 +222,14 @@ export function PartnerBookingComMappings() {
       <p className="text-xs text-amber-700">This only queues test updates. Sending remains blocked until iRatePilot administrator approval, endpoint access, certification, and the test worker are enabled.</p>
       {syncMessage && <p className="text-sm" role="status">{syncMessage}</p>}
       <button className="btn-primary" disabled={syncBusy || !selectedConnection}>{syncBusy ? "Queueing…" : "Queue test sync"}</button>
+      <div className="border-t pt-4">
+        <p className="text-sm text-slate-600">For initial year coverage, save inventory for every mapped room and night, then queue five bounded test windows beginning on the start date. If interrupted, retry in this browser to reuse the same request IDs.</p>
+        {yearMessage && <p className="mt-3 text-sm" role="status">{yearMessage}</p>}
+        <button className="btn-secondary mt-3" type="button" disabled={syncBusy || !selectedConnection}
+          onClick={(event) => { if (event.currentTarget.form) void queueYear(event.currentTarget.form); }}>
+          {syncBusy ? "Queueing…" : "Queue one year of test rates"}
+        </button>
+      </div>
     </form>
   </div>;
 }
