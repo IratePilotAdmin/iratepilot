@@ -41,9 +41,8 @@ type Connection = {
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const connectionId = /^[A-Za-z0-9_-]{1,80}$/;
-const allowedOutcomes = new Set([
-  "applied", "duplicate", "stale", "review-required", "reservation-staged", "cancellation-staged",
-]);
+const appliedOutcomes = new Set(["applied", "duplicate", "reservation-staged", "cancellation-staged"]);
+const heldOutcomes = new Set(["stale", "review-required"]);
 const byteLength = (value: string) => new TextEncoder().encode(value).byteLength;
 
 function parseSettings(input: NativePmsReservationDeliveryConfig) {
@@ -188,9 +187,11 @@ function classifyResponse(status: number, body: unknown, eventId: string, source
   if (status >= 200 && status < 300) {
     const receipt = body && typeof body === "object" ? body as Record<string, unknown> : null;
     const outcome = receipt?.outcome;
-    if (receipt?.eventId === eventId && receipt.sourceVersion === sourceVersion
-      && typeof outcome === "string" && allowedOutcomes.has(outcome)) {
-      return { outcome: "acknowledged", code: `pms_${outcome}` };
+    if (receipt?.eventId === eventId && receipt.sourceVersion === sourceVersion && typeof outcome === "string") {
+      if (appliedOutcomes.has(outcome)) return { outcome: "acknowledged", code: `pms_${outcome}` };
+      // The receiver did not apply a stale or review-required event. Preserve
+      // the durable source event for an operator instead of counting delivery.
+      if (heldOutcomes.has(outcome)) return { outcome: "review-required", code: `pms_${outcome}` };
     }
     return { outcome: "retry", code: "invalid_pms_ack" };
   }

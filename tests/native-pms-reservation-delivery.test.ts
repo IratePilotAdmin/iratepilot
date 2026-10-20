@@ -179,6 +179,42 @@ describe("native PMS reservation delivery worker", () => {
     expect(finishArgs).toMatchObject({ p_outcome: "retry", p_code: "invalid_pms_ack" });
   });
 
+  it.each(["stale", "review-required"])("holds a matching %s receiver receipt for review instead of marking the event delivered", async (receiverOutcome) => {
+    let finishArgs: Record<string, unknown> | null = null;
+    const fetcher: typeof fetch = async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("/irp_pms_list_configured_delivery_connections")) return rpcResponse(registry);
+      if (url.endsWith("/irp_pms_claim_configured_event")) return rpcResponse([claimed]);
+      if (url.endsWith("/irp_pms_finish_event")) {
+        finishArgs = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        return rpcResponse(true);
+      }
+      return rpcResponse({ status: 200, body: { outcome: receiverOutcome, eventId, sourceVersion: 1 } });
+    };
+    expect(await runNativePmsReservationDelivery(config, fetcher)).toEqual({
+      outcome: "review", eventId, code: `pms_${receiverOutcome}`,
+    });
+    expect(finishArgs).toMatchObject({ p_outcome: "review-required", p_code: `pms_${receiverOutcome}` });
+  });
+
+  it("accepts a matching duplicate receipt as delivered", async () => {
+    let finishArgs: Record<string, unknown> | null = null;
+    const fetcher: typeof fetch = async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("/irp_pms_list_configured_delivery_connections")) return rpcResponse(registry);
+      if (url.endsWith("/irp_pms_claim_configured_event")) return rpcResponse([claimed]);
+      if (url.endsWith("/irp_pms_finish_event")) {
+        finishArgs = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        return rpcResponse(true);
+      }
+      return rpcResponse({ status: 200, body: { outcome: "duplicate", eventId, sourceVersion: 1 } });
+    };
+    expect(await runNativePmsReservationDelivery(config, fetcher)).toEqual({
+      outcome: "delivered", eventId, code: "pms_duplicate",
+    });
+    expect(finishArgs).toMatchObject({ p_outcome: "acknowledged", p_code: "pms_duplicate" });
+  });
+
   it("does not claim events if the stored property secret cannot be decrypted", async () => {
     const calls: string[] = [];
     const fetcher: typeof fetch = async (input) => {
