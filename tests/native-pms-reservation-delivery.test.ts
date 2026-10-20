@@ -243,6 +243,45 @@ describe("native PMS reservation delivery worker", () => {
     expect(finishArgs).toMatchObject({ p_outcome: "retry", p_code: "transport_failure" });
   });
 
+  it("reports the fifth failed attempt as review, matching the persisted terminal state", async () => {
+    let finishArgs: Record<string, unknown> | null = null;
+    const fetcher: typeof fetch = async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("/irp_pms_list_configured_delivery_connections")) return rpcResponse(registry);
+      if (url.endsWith("/irp_pms_claim_configured_event")) return rpcResponse([{ ...claimed, attempts: 5 }]);
+      if (url.endsWith("/irp_pms_finish_event")) {
+        finishArgs = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        return rpcResponse(true);
+      }
+      return new Response(JSON.stringify({ error: "temporary" }), { status: 503 });
+    };
+    expect(await runNativePmsReservationDelivery(config, fetcher)).toEqual({
+      outcome: "review", eventId, code: "http_503",
+    });
+    expect(finishArgs).toMatchObject({ p_outcome: "review-required", p_code: "http_503" });
+  });
+
+  it("does not resend an expired fifth lease claimed for a sixth attempt", async () => {
+    let finishArgs: Record<string, unknown> | null = null;
+    let gatewayCalls = 0;
+    const fetcher: typeof fetch = async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("/irp_pms_list_configured_delivery_connections")) return rpcResponse(registry);
+      if (url.endsWith("/irp_pms_claim_configured_event")) return rpcResponse([{ ...claimed, attempts: 6 }]);
+      if (url.endsWith("/irp_pms_finish_event")) {
+        finishArgs = JSON.parse(String(init?.body)) as Record<string, unknown>;
+        return rpcResponse(true);
+      }
+      gatewayCalls += 1;
+      return rpcResponse({ status: 200, body: { outcome: "reservation-staged", eventId, sourceVersion: 1 } });
+    };
+    expect(await runNativePmsReservationDelivery(config, fetcher)).toEqual({
+      outcome: "review", eventId, code: "retry_exhausted",
+    });
+    expect(gatewayCalls).toBe(0);
+    expect(finishArgs).toMatchObject({ p_outcome: "review-required", p_code: "retry_exhausted" });
+  });
+
   it("moves a claimed event to review when its property scope differs from the configured connection", async () => {
     let finishArgs: Record<string, unknown> | null = null;
     const mismatched = [{ ...claimed, pms_property_id: "88888888-8888-4888-8888-888888888888" }];

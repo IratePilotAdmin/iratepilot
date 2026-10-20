@@ -123,7 +123,7 @@ function readClaim(value: unknown): ClaimedReservation | null {
   if (!uuid.test(String(row.event_id)) || !connectionId.test(String(row.connection_id))
     || !uuid.test(String(row.property_id)) || !uuid.test(String(row.tenant_id)) || !uuid.test(String(row.pms_property_id))
     || !uuid.test(String(row.lease_token)) || typeof row.attempts !== "number"
-    || !Number.isInteger(row.attempts) || row.attempts < 1 || row.attempts > 5
+    || !Number.isSafeInteger(row.attempts) || row.attempts < 1
     || typeof row.source_version !== "number" || !Number.isSafeInteger(row.source_version) || row.source_version < 1
     || !payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new Error("Reservation worker claim row is invalid.");
@@ -226,7 +226,11 @@ export async function runNativePmsReservationDelivery(
   const connection = connections.find((item) => item.connection_id === claimed.connectionId
     && item.property_id === claimed.propertyId && item.tenant_id === claimed.tenantId && item.pms_property_id === claimed.pmsPropertyId);
   let decision: { outcome: "acknowledged" | "retry" | "review-required"; code: string };
-  if (!connection) {
+  if (claimed.attempt > 5) {
+    // A fifth lease can expire before finish_event runs. The claim RPC may
+    // lease it again; never send an exhausted event to the PMS a sixth time.
+    decision = { outcome: "review-required", code: "retry_exhausted" };
+  } else if (!connection) {
     decision = { outcome: "review-required", code: "connection_scope_mismatch" };
   } else {
     const secret = connection.secret;
@@ -270,6 +274,11 @@ export async function runNativePmsReservationDelivery(
     }
   }
 
+  // finish_event stores a fifth failed attempt as review, even when the
+  // requested outcome is retry. Report the same terminal state to callers.
+  if (claimed.attempt >= 5 && decision.outcome === "retry") {
+    decision = { ...decision, outcome: "review-required" };
+  }
   const saved = await callRpc(fetcher, config.rpcUrl, config.serviceRoleKey, "irp_pms_finish_event", {
     p_event: claimed.eventId,
     p_lease: claimed.leaseToken,
