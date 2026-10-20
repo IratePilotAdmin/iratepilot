@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { checkIsolatedWorkerOff } from "./isolated-native-pms-worker-evidence.mjs";
 
 const SOURCE_PROJECT = "onbdizzwwubfdgkgaphx";
 const RECEIVER_PROJECT = "wjosvslkselpauyftias";
@@ -27,7 +28,7 @@ function count(actual, expected, label, failures) {
   if (actual !== expected) failures.push(`${label} must equal ${expected}`);
 }
 
-export function assessIsolatedReplayPostflight(sourceInput, receiverInput, now = Date.now()) {
+export function assessIsolatedReplayPostflight(sourceInput, receiverInput, worker, now = Date.now()) {
   const source = evidence(sourceInput);
   const receiver = evidence(receiverInput);
   const failures = [];
@@ -42,6 +43,7 @@ export function assessIsolatedReplayPostflight(sourceInput, receiverInput, now =
   if (Number.isFinite(sourceTime) && Number.isFinite(receiverTime) && Math.abs(sourceTime - receiverTime) > MAX_SKEW_MS) {
     failures.push("source and receiver postflight checks must be within five minutes of each other");
   }
+  failures.push(...checkIsolatedWorkerOff(worker, now));
 
   const s = source?.result;
   const r = receiver?.result;
@@ -89,14 +91,14 @@ export function assessIsolatedReplayPostflight(sourceInput, receiverInput, now =
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
-  const [sourcePath, receiverPath] = process.argv.slice(2);
-  if (!sourcePath || !receiverPath) {
-    console.error("Usage: node scripts/check-isolated-native-pms-postflight.mjs SOURCE_EVIDENCE.json RECEIVER_EVIDENCE.json");
+  const [sourcePath, receiverPath, workerPath] = process.argv.slice(2);
+  if (!sourcePath || !receiverPath || !workerPath) {
+    console.error("Usage: node scripts/check-isolated-native-pms-postflight.mjs SOURCE_EVIDENCE.json RECEIVER_EVIDENCE.json WORKER_EVIDENCE.json");
     process.exitCode = 2;
   } else {
     try {
-      const [source, receiver] = await Promise.all([sourcePath, receiverPath].map(async (path) => JSON.parse(await readFile(path, "utf8"))));
-      const result = assessIsolatedReplayPostflight(source, receiver);
+      const [source, receiver, worker] = await Promise.all([sourcePath, receiverPath, workerPath].map(async (path) => JSON.parse(await readFile(path, "utf8"))));
+      const result = assessIsolatedReplayPostflight(source, receiver, worker);
       console.log(result.passed ? "Isolated two-event replay verified; all delivery switches are disabled." : `Replay unverified:\n${result.failures.map((failure) => `- ${failure}`).join("\n")}`);
       if (!result.passed) process.exitCode = 1;
     } catch {
