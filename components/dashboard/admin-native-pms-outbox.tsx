@@ -8,6 +8,14 @@ type DeliveryStatus = {
   checkedAt?: string;
   totals?: Record<State, number>;
   due?: number;
+  health?: {
+    level: "paused" | "clear" | "attention";
+    reviewEvents: number;
+    expiredLeases: number;
+    overdueEvents: number;
+    deliveryEnabledConnections: number;
+    checkedAt: string;
+  };
   connections?: Array<{
     connectionId: string;
     propertyId: string;
@@ -74,6 +82,14 @@ export function AdminNativePmsOutbox() {
     </p>}
     {data?.available && data.totals && <>
       <p className="mt-4 text-xs text-slate-500">Checked {new Date(data.checkedAt || "").toLocaleString()}</p>
+      {data.health && <div className={`card mt-4 p-5 text-sm ${data.health.level === "attention" ? "border-amber-300 bg-amber-50 text-amber-950" : "text-slate-700"}`} role="status">
+        <h3 className="font-semibold">{data.health.level === "attention" ? "PMS delivery needs investigation" : data.health.level === "paused" ? "PMS delivery is paused" : "PMS delivery has no aged alerts"}</h3>
+        <p className="mt-2">
+          {data.health.reviewEvents} needing review · {data.health.expiredLeases} expired processing leases · {data.health.overdueEvents} events due for more than 15 minutes.
+        </p>
+        {data.health.level === "attention" && <p className="mt-2">Inspect the recent event result codes and matching PMS receipts before resuming or retrying delivery. This page cannot change delivery state.</p>}
+        {data.health.level === "paused" && <p className="mt-2">All connector delivery switches are off. Queued events will stay queued until a separately supervised activation.</p>}
+      </div>}
       <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {(Object.keys(labels) as State[]).map((state) => <article className="card p-5" key={state}>
           <span className="text-sm text-slate-500">{labels[state]}</span>

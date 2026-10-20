@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/require-role";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { assessNativePmsDeliveryHealth } from "@/lib/native-pms-delivery-health";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ export async function GET() {
   try {
     const admin = createAdminClient();
     const checkedAt = new Date().toISOString();
+    const overdueAt = new Date(Date.parse(checkedAt) - 15 * 60 * 1000).toISOString();
     const [connections, recent, ...counts] = await Promise.all([
       admin.from("irp_pms_outbox_connections")
         .select("connection_id,property_id,environment,enabled,delivery_enabled")
@@ -37,17 +39,33 @@ export async function GET() {
         .eq("state", "pending").lte("due_at", checkedAt),
       admin.from("irp_pms_outbox").select("event_id", { count: "exact", head: true })
         .eq("state", "retry").lte("due_at", checkedAt),
+      admin.from("irp_pms_outbox").select("event_id", { count: "exact", head: true })
+        .eq("state", "leased").lte("lease_until", checkedAt),
+      admin.from("irp_pms_outbox").select("event_id", { count: "exact", head: true })
+        .eq("state", "pending").lte("due_at", overdueAt),
+      admin.from("irp_pms_outbox").select("event_id", { count: "exact", head: true })
+        .eq("state", "retry").lte("due_at", overdueAt),
+      admin.from("irp_pms_outbox_connections").select("connection_id", { count: "exact", head: true })
+        .eq("delivery_enabled", true),
     ]);
     const error = connections.error || recent.error || counts.find((result) => result.error)?.error || null;
     if (missingSchema(error)) return NextResponse.json({ available: false, reason: "migration_not_installed" }, { headers: NO_STORE });
     if (error) return NextResponse.json({ error: "Native PMS delivery status is temporarily unavailable." }, { status: 503, headers: NO_STORE });
 
     const totals = Object.fromEntries(states.map((state, index) => [state, counts[index]?.count ?? 0]));
+    const health = assessNativePmsDeliveryHealth({
+      reviewEvents: totals.review,
+      expiredLeases: counts[states.length + 2]?.count ?? 0,
+      overduePending: counts[states.length + 3]?.count ?? 0,
+      overdueRetry: counts[states.length + 4]?.count ?? 0,
+      deliveryEnabledConnections: counts[states.length + 5]?.count ?? 0,
+    }, checkedAt);
     return NextResponse.json({
       available: true,
       checkedAt,
       totals,
       due: (counts[states.length]?.count ?? 0) + (counts[states.length + 1]?.count ?? 0),
+      health,
       connections: (connections.data ?? []).map((row) => ({
         connectionId: row.connection_id,
         propertyId: row.property_id,
