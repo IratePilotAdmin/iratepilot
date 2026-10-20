@@ -46,7 +46,7 @@ describe("native PMS delivery monitoring", () => {
         event_payload: { guest: "Private Guest" } },
       { event_id: "other", connection_id: "SYNTHPMS001", property_id: "property", state: "retry", attempts: 1,
         due_at: "2026-10-20T00:00:00Z", created_at: "2026-10-20T00:00:00Z", result_code: "guest_name_in_error" }], error: null },
-      ...[2, 0, 1, 8, 1, 2, 1].map((count) => ({ count, error: null })),
+      ...[2, 0, 1, 8, 1, 2, 1, 1, 1, 0, 0].map((count) => ({ count, error: null })),
     ];
     setupQueries();
     const response = await GET();
@@ -57,10 +57,22 @@ describe("native PMS delivery monitoring", () => {
       available: true,
       totals: { pending: 2, leased: 0, retry: 1, delivered: 8, review: 1 },
       due: 3,
+      health: { level: "attention", reviewEvents: 1, expiredLeases: 1, overdueEvents: 1, deliveryEnabledConnections: 0 },
       connections: [{ connectionId: "SYNTHPMS001", captureEnabled: false, deliveryEnabled: false }],
       recent: [{ state: "review", resultCode: "pms_review-required" }, { state: "retry", resultCode: "unrecognized_result" }],
     });
     expect(JSON.stringify(body)).not.toMatch(/must-not-leak|Private Guest|guest_name_in_error/);
+  });
+
+  it("treats an overdue but intentionally paused queue as paused", async () => {
+    mocks.results = [
+      { data: [], error: null }, { data: [], error: null },
+      ...[2, 0, 0, 0, 0, 2, 0, 0, 2, 0, 0].map((count) => ({ count, error: null })),
+    ];
+    setupQueries();
+    const response = await GET();
+    const body = await response.json();
+    expect(body.health).toMatchObject({ level: "paused", overdueEvents: 2, deliveryEnabledConnections: 0 });
   });
 
   it("states clearly when the connector migration is absent", async () => {
