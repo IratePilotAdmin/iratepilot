@@ -1,0 +1,13 @@
+{
+  "observedAt": "2026-10-18",
+  "sourceCommit": "0b7a0a4",
+  "branch": "codex/native-ota-current-reconcile",
+  "command": "vitest run tests/native-pms-*.test.ts tests/native-ota-staging-preflight.test.ts tests/ota-capabilities-route.test.ts tests/partner-availability-only.test.ts (PowerShell-expanded file list)",
+  "result": {
+    "testFilesPassed": 17,
+    "testsPassed": 75,
+    "exitCode": 0
+  },
+  "scope": "Current local source regression for native PMS reservation/ARI paths, staging preflight, capability response and partner availability-only editor. It does not exercise the hosted source or receiver, actual credentials, signed delivery, payment or a production booking.",
+  "nextGate": "Supervised synthetic hosted new booking, amendment and cancellation with matching source outbox, signed PMS receipts, inventory and financial review; keep delivery disabled outside the test."
+}

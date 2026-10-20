@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-export const ORACLE_OPERA_PREVIEW_PROBE_CONFIRMATION =
+const ORACLE_OPERA_PREVIEW_PROBE_CONFIRMATION =
   "RUN_ORACLE_OHIP_PREVIEW_READ_ONLY_PROBE";
 
 function privateJson(body: unknown, status = 200) {

@@ -1,0 +1,24 @@
+{
+  "observedAtUtc": "2026-10-18T19:55:30Z",
+  "method": "Read-only browser visit to the Vercel Preview link on draft PR 386, then the same path on the public production domain",
+  "pullRequest": "https://github.com/IratePilotAdmin/iratepilot/pull/386",
+  "preview": {
+    "url": "https://iratepilotadmin-git-codex-native-ota-current-6b47b6-irate-pilot.vercel.app/api/ota/capabilities",
+    "responseVisible": true,
+    "contractVersion": 1,
+    "nativePmsAriImplementation": "available",
+    "nativePmsAriTrafficEnabled": false,
+    "externalOtaProviderStatus": "not_connected",
+    "bookingComStatus": "development_only",
+    "expediaStatus": "not_implemented",
+    "otherNamedProviderStatuses": "agoda, airbnb, and google_hotel not_implemented",
+    "deploymentCommitIndependentlyVerified": false
+  },
+  "production": {
+    "url": "https://www.iratepilot.com/api/ota/capabilities",
+    "visibleResult": "404 Page not found"
+  },
+  "conclusion": "The draft connector capability route is visible in Preview with traffic disabled. The public OTA domain still does not expose this route; this observation does not prove reservation delivery, payments, provider approval, or a production rollout.",
+  "databaseWrites": false,
+  "productionDeploymentChanged": false
+}

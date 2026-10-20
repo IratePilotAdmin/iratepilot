@@ -1,0 +1,39 @@
+{
+  "date": "2026-10-18",
+  "environment": "iratepilotadmin Vercel Preview for codex/native-ota-current-reconcile",
+  "method": "Signed-in admin Settings page and read-only Vercel Environment Variables names and scopes; no values revealed or edited",
+  "adminSettings": {
+    "nativeAriConfiguration": "unavailable",
+    "activeApprovedMarketplaceProperties": 0,
+    "nativeCaptureOrDeliveryChanged": false
+  },
+  "vercelProjectVariableScopes": {
+    "branchScopedToOlderPreview": "codex/ota-main-integration",
+    "olderPreviewVariablesObserved": [
+      "IRP_PMS_SYNC_ENABLED",
+      "IRP_PMS_DESTINATION_URL",
+      "IRP_PMS_DESTINATION_PUBLISHABLE_KEY",
+      "NEXT_PUBLIC_SUPABASE_URL",
+      "SUPABASE_SERVICE_ROLE_KEY",
+      "PMS_CREDENTIAL_ENCRYPTION_KEY",
+      "CRON_SECRET"
+    ],
+    "productionIrpPmsVariablesAlsoPresent": true,
+    "sharedIrpPmsSearchResults": 0,
+    "currentBranchHasMatchingScopedVariables": false,
+    "genericPreviewPublicSupabaseProjectRef": "eiqmdldjnedqgbtoozqa",
+    "genericPreviewPublicSupabaseProjectIsLivePms": true
+  },
+  "conclusion": "The current draft Preview has no verified isolated branch-scoped configuration for the synthetic scheduled cancellation, and its generic Preview public URL points at the live PMS project. Keep all delivery and receiver switches off; do not use this Preview for synthetic writes or infer that the older branch settings apply.",
+  "secretsRevealed": false,
+  "hostedDeliveryAttempted": false,
+  "isolatedCronProject": {
+    "name": "iratepilot-cron-rehearsal-20261005",
+    "productionScopedRequiredVariableNamesPresent": true,
+    "irpPmsSyncEnabled": false,
+    "secretValuesRevealed": false,
+    "sourcePublicUrlVisiblePrefixMatches": "onbdizzwwubfdgkgaphx",
+    "destinationPublicUrlVisiblePrefixMatches": "wjosvslkselpauyftias",
+    "fullUrlsAndCredentialAlignmentRevalidated": false
+  }
+}

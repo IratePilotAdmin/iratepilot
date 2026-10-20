@@ -1,0 +1,26 @@
+{
+  "dateLocal": "2026-10-18",
+  "scope": "Read-only preflight for SYNTHPMS001 between isolated OTA onbdizzwwubfdgkgaphx and isolated PMS receiver wjosvslkselpauyftias",
+  "sourceQueryUrl": "https://supabase.com/dashboard/project/onbdizzwwubfdgkgaphx/sql/59b8bbe8-1d0d-4679-895b-2bfd733e14d7",
+  "source": {
+    "disabledMatchingOutboxConnection": 1,
+    "disabledMatchingNativeCredentialConnection": 0,
+    "duePendingSyntheticEvents": 2
+  },
+  "receiverQueryUrl": "https://supabase.com/dashboard/project/wjosvslkselpauyftias/sql/63fc7f3b-90fb-471c-b10f-b42afc082a2f",
+  "receiver": {
+    "disabledMatchingGatewayConnection": 1,
+    "activeMappedRatePlan": 1,
+    "matching109DollarNightlyRate": 1,
+    "availableUnit": 1,
+    "replayBookingReceipts": 0
+  },
+  "preparedPreview": {
+    "url": "https://iratepilotadmin-git-codex-native-ota-current-6b47b6-irate-pilot.vercel.app/admin/settings",
+    "syntheticConnectionAndRoomRateFieldsFilled": true,
+    "signingSecretEnteredByAgent": false,
+    "connectionSubmittedByAgent": false
+  },
+  "conclusion": "Receiver pricing and capacity are ready for the one-night synthetic booking. The source still lacks the encrypted signing credential, so the signed create/cancel replay has not started. Both delivery switches remained off throughout this check.",
+  "nextGate": "Owner enters the existing shared signing secret in the prepared isolated Preview form and saves the disabled connection; then recheck both source and receiver before a supervised replay."
+}

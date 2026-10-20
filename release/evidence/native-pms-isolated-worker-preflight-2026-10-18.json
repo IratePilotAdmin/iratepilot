@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-18",
+  "method": "Read-only Vercel configuration and deployment UI plus read-only SQL Editor queries in the two isolated Supabase projects",
+  "sourceProjectRef": "onbdizzwwubfdgkgaphx",
+  "receiverProjectRef": "wjosvslkselpauyftias",
+  "workerDestinationUrl": "https://wjosvslkselpauyftias.supabase.co/rest/v1/rpc/irp_pms_ota_gateway",
+  "workerSwitchEnabled": false,
+  "sourceConnection": {
+    "connectionId": "SYNTHPMS001",
+    "otaPropertyId": "33000000-0000-4000-8000-000000000033",
+    "enabled": false,
+    "deliveryEnabled": false,
+    "pendingEvents": 2,
+    "previouslyDeliveredEvents": 5
+  },
+  "receiverConnection": {
+    "connectionId": "SYNTHPMS001",
+    "otaPropertyId": "33000000-0000-4000-8000-000000000033",
+    "enabled": false,
+    "otherConnectionsEnabled": 0
+  },
+  "isolatedCronLatestProduction": {
+    "date": "2026-10-07",
+    "branch": "codex/ota-main-integration",
+    "commit": "4b76a47"
+  },
+  "currentDraftBranch": "codex/native-ota-current-reconcile",
+  "currentDraftDeploymentEnvironment": "Preview",
+  "currentRequiredCi": "queued behind a live serialized run",
+  "secretValuesRead": false,
+  "dataChanged": false,
+  "deliveryAttempted": false
+}

@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-18",
+  "scope": "isolated synthetic OTA source and PMS receiver",
+  "source_project": "onbdizzwwubfdgkgaphx",
+  "receiver_project": "wjosvslkselpauyftias",
+  "synthetic_property_id": "33000000-0000-4000-8000-000000000033",
+  "synthetic_booking_id": "88000000-0000-4000-8000-000000000089",
+  "stay": { "arrival": "2026-10-25", "departure": "2026-10-26" },
+  "source_verified": {
+    "booking_status": "cancelled",
+    "available_units_after_cancellation": 1,
+    "outbox": [
+      { "source_version": 1, "state": "pending", "event_status": "confirmed" },
+      { "source_version": 2, "state": "pending", "event_status": "cancelled" }
+    ],
+    "connection_enabled": false,
+    "delivery_enabled": false,
+    "legacy_booking_approval_enabled": false
+  },
+  "receiver_verified": {
+    "capacity_units_on_arrival": 1,
+    "connection_enabled": false,
+    "matching_reservation_count": 0
+  },
+  "limits": [
+    "No source event has been delivered to the receiver for this booking.",
+    "No payment, checkout, real hotel data, or production traffic was used.",
+    "The published-property inventory upsert path cannot add a new future date under the current commercial-stability trigger."
+  ]
+}

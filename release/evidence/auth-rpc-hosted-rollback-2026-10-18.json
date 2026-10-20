@@ -1,0 +1,21 @@
+{
+  "observedAt": "2026-10-18",
+  "projectId": "onbdizzwwubfdgkgaphx",
+  "environment": "isolated OTA source, not the public OTA production database",
+  "method": "Supabase SQL Editor, one transaction with the five source REVOKE statements, a hosted grant invariant check, ROLLBACK, then a post-rollback read-only aggregate",
+  "before": {
+    "matchingFunctions": 5,
+    "anonExecutable": 0,
+    "authenticatedExecutable": 5,
+    "serviceRoleExecutable": 5
+  },
+  "result": {
+    "transactionCompletedWithoutError": true,
+    "rolledBack": true,
+    "postRollbackMatchingFunctions": 5,
+    "postRollbackAnonExecutable": 0,
+    "postRollbackAuthenticatedExecutable": 5
+  },
+  "limitations": "The five anonymous grants were already revoked in this isolated project, so this is a hosted syntax and idempotence check, not proof of a before/after security fix. The inline DO check was semantically equivalent to, but not byte-for-byte identical with, the migration file. This project lacks the two PMS receiver gateway functions, so their hosted grants were not assessed. No real JWT user workflow or current production database migration was tested.",
+  "productionChanged": false
+}

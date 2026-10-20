@@ -232,3 +232,10 @@ export const inventorySchema = z.object({
   mandatoryFeeAmount: z.coerce.number().min(0).max(inventoryLimits.maxNightlyRate),
 });
 
+export const inventoryAvailabilitySchema = inventorySchema.pick({
+  roomId: true,
+  startDate: true,
+  endDate: true,
+  availableUnits: true,
+});
+

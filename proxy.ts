@@ -1,9 +1,16 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabasePublicConfig } from "@/lib/supabase/config";
+import { previewUsesLivePmsDatabase } from "@/lib/supabase/preview-isolation";
 import { isPartnerSelfServiceEnabled } from "@/config/partner-acquisition";
 
 export async function proxy(request: NextRequest) {
+  if (previewUsesLivePmsDatabase(process.env.VERCEL_ENV, process.env.NEXT_PUBLIC_SUPABASE_URL)) {
+    return NextResponse.json(
+      { error: "This Preview needs an isolated database before use." },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
+  }
   const pathname = request.nextUrl.pathname;
   const protectedRoute = pathname.startsWith("/account")
     || pathname.startsWith("/partner/")
