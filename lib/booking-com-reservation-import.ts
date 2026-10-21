@@ -61,6 +61,8 @@ type Dependencies = {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const CONNECTION = /^[A-Za-z0-9_-]{1,80}$/;
 const PUBLISHABLE = /^sb_publishable_[A-Za-z0-9_-]{16,240}$/;
+const MAX_CHANNEL_CONNECTIONS = 50;
+const MAX_PMS_CONNECTIONS = 100;
 // Only these gateway receipts prove that a cancellation is already durable or
 // superseded. Review-required and reservation-staged are not acknowledgements.
 const CANCELLATION_RECEIPTS = new Set(["cancellation-staged", "duplicate", "stale"]);
@@ -83,17 +85,21 @@ function createStore(): Store {
           .select("connection_id,property_id,provider_property_id,machine_account_id")
           .eq("provider", "booking_com").eq("environment", "test").eq("enabled", true)
           .eq("partner_approved", true).eq("pii_compliance_approved", true)
-          .not("machine_account_id", "is", null).limit(50),
+          .not("machine_account_id", "is", null).limit(MAX_CHANNEL_CONNECTIONS + 1),
         client.from("irp_pms_outbox_connections")
           .select("property_id,connection_id,tenant_id,pms_property_id")
-          .eq("enabled", true).eq("delivery_enabled", true).eq("environment", "sandbox").limit(100),
+          .eq("enabled", true).eq("delivery_enabled", true).eq("environment", "sandbox").limit(MAX_PMS_CONNECTIONS + 1),
         client.from("irp_pms_native_ari_connections")
           .select("property_id,connection_id,enabled,secret_ciphertext,secret_initialization_vector,secret_authentication_tag,secret_key_version")
-          .eq("enabled", true).limit(100),
+          .eq("enabled", true).limit(MAX_PMS_CONNECTIONS + 1),
       ]);
       if (channelResult.error || sourceResult.error || secretResult.error
         || !Array.isArray(channelResult.data) || !Array.isArray(sourceResult.data) || !Array.isArray(secretResult.data)) {
         throw new Error("booking_com_reservation_import_registry_unavailable");
+      }
+      if (channelResult.data.length > MAX_CHANNEL_CONNECTIONS
+        || sourceResult.data.length > MAX_PMS_CONNECTIONS || secretResult.data.length > MAX_PMS_CONNECTIONS) {
+        throw new Error("booking_com_reservation_import_registry_limit_exceeded");
       }
       const sources = sourceResult.data as Array<Record<string, unknown>>;
       const secrets = secretResult.data as Array<Record<string, unknown>>;
@@ -188,7 +194,8 @@ export async function runBookingComReservationImport(
   const getToken = dependencies.getToken ?? ((id, transport) => getBookingComMachineAccountToken(id, { fetcher: transport }));
   const decryptSecret = dependencies.decryptSecret ?? decryptPmsCredentials;
   const connections = await store.listConnections();
-  if (connections.length > 50) throw new Error("booking_com_reservation_import_connection_limit_exceeded");
+  if (connections.length > MAX_CHANNEL_CONNECTIONS) throw new Error("booking_com_reservation_import_connection_limit_exceeded");
+  if (!connections.length) return { outcome: "idle" as const, code: "no_valid_connection_credentials" as const };
   const item = await store.claim();
   if (!item) return { outcome: "idle" as const };
   const connection = connections.find((row) => row.connectionId === item.connection_id && row.propertyId === item.property_id);

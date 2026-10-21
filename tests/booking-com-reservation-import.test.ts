@@ -66,6 +66,25 @@ function setup(fetcher: typeof fetch) {
 }
 
 describe("Booking.com reservation-to-PMS import", () => {
+  it("does not lease an event when no fully paired connection is available", async () => {
+    const claim = vi.fn(async () => item);
+    const fetcher = vi.fn<typeof fetch>();
+    const result = await runBookingComReservationImport(config, {
+      store: { listConnections: async () => [], claim, finish: vi.fn(async () => true) }, fetcher,
+    });
+    expect(result).toEqual({ outcome: "idle", code: "no_valid_connection_credentials" });
+    expect(claim).not.toHaveBeenCalled();
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("does not lease an event when the connection registry exceeds the supported bound", async () => {
+    const claim = vi.fn(async () => item);
+    await expect(runBookingComReservationImport(config, {
+      store: { listConnections: async () => Array.from({ length: 51 }, () => connection), claim, finish: vi.fn(async () => true) },
+    })).rejects.toThrow("booking_com_reservation_import_connection_limit_exceeded");
+    expect(claim).not.toHaveBeenCalled();
+  });
+
   it("persists a cancellation and only marks it imported after a valid provider acknowledgement", async () => {
     const fetcher = vi.fn<typeof fetch>()
       .mockResolvedValueOnce(new Response(JSON.stringify({ status: 200, body: { eventId: item.id, sourceVersion: item.source_version, outcome: "cancellation-staged" } }), { status: 200 }))
