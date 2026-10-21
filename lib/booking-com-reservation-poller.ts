@@ -37,7 +37,7 @@ function createStore(): PollStore {
         .select("connection_id,property_id,provider_property_id,machine_account_id")
         .eq("provider", "booking_com").eq("environment", "test")
         .eq("enabled", true).eq("partner_approved", true).eq("pii_compliance_approved", true)
-        .not("machine_account_id", "is", null).order("created_at", { ascending: true }).limit(50);
+        .not("machine_account_id", "is", null).order("created_at", { ascending: true }).limit(51);
       if (error || !Array.isArray(data)) throw new Error("booking_com_reservation_connection_list_failed");
       return data as PollConnection[];
     },
