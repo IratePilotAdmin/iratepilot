@@ -3,8 +3,14 @@ export const APPROVED_PREVIEW_PENDING: string[];
 export const PMS_CATALOG_EXPANSION_PENDING: string[];
 export const PMS_VENDOR_REFERENCE_PENDING: string[];
 export const PMS_CATALOG_AND_VENDOR_REFERENCE_PENDING: string[];
+export const APALEO_WEBHOOK_RECEIPT_PENDING: string[];
+export const APALEO_RESERVATION_RECONCILIATION_PENDING: string[];
+export const APALEO_WEBHOOK_AND_RECONCILIATION_PENDING: string[];
+export const DATA_API_GRANTS_PENDING: string[];
+export const DEFAULT_PREVIEW_ALLOWED_PENDING_SETS: string[][];
 export const PMS_PILOT_PREFLIGHT_PENDING: string[];
 export const PMS_PILOT_WITH_VENDOR_REFERENCE_PENDING: string[];
+export const PMS_PILOT_ALLOWED_PENDING_SETS: string[][];
 export const PMS_PILOT_PREVIEW_PROJECT_REF: string;
 export const PRODUCTION_PROJECT_REF: string;
 
