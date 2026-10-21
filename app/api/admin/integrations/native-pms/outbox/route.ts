@@ -14,8 +14,32 @@ function missingSchema(error: { code?: string } | null) {
 
 function safeResultCode(value: unknown) {
   if (typeof value !== "string") return null;
-  return /^(?:pms_(?:applied|duplicate|stale|review-required|reservation-staged|cancellation-staged)|http_[45]\d\d|invalid_pms_ack|invalid_gateway_ack|connection_scope_mismatch|payload_too_large|transport_failure|lease_lost)$/.test(value)
+  return /^(?:pms_(?:applied|duplicate|stale|review-required|reservation-staged|cancellation-staged)|http_[45]\d\d|invalid_pms_ack|invalid_gateway_ack|connection_scope_mismatch|payload_too_large|transport_failure|lease_lost|retry_exhausted)$/.test(value)
     ? value : "unrecognized_result";
+}
+
+type OutboxEvent = {
+  event_id: string;
+  connection_id: string;
+  property_id: string;
+  state: string;
+  attempts: number;
+  due_at: string;
+  created_at: string;
+  result_code: string | null;
+};
+
+function publicEvent(row: OutboxEvent) {
+  return {
+    eventId: row.event_id,
+    connectionId: row.connection_id,
+    propertyId: row.property_id,
+    state: row.state,
+    attempts: row.attempts,
+    dueAt: row.due_at,
+    createdAt: row.created_at,
+    resultCode: safeResultCode(row.result_code),
+  };
 }
 
 export async function GET() {
@@ -26,13 +50,16 @@ export async function GET() {
     const admin = createAdminClient();
     const checkedAt = new Date().toISOString();
     const overdueAt = new Date(Date.parse(checkedAt) - 15 * 60 * 1000).toISOString();
-    const [connections, recent, ...counts] = await Promise.all([
+    const [connections, recent, review, ...counts] = await Promise.all([
       admin.from("irp_pms_outbox_connections")
         .select("connection_id,property_id,environment,enabled,delivery_enabled")
         .order("connection_id").limit(100),
       admin.from("irp_pms_outbox")
         .select("event_id,connection_id,property_id,state,attempts,due_at,created_at,result_code")
         .order("created_at", { ascending: false }).limit(100),
+      admin.from("irp_pms_outbox")
+        .select("event_id,connection_id,property_id,state,attempts,due_at,created_at,result_code")
+        .eq("state", "review").order("created_at", { ascending: false }).limit(100),
       ...states.map((state) => admin.from("irp_pms_outbox")
         .select("event_id", { count: "exact", head: true }).eq("state", state)),
       admin.from("irp_pms_outbox").select("event_id", { count: "exact", head: true })
@@ -48,7 +75,7 @@ export async function GET() {
       admin.from("irp_pms_outbox_connections").select("connection_id", { count: "exact", head: true })
         .eq("delivery_enabled", true),
     ]);
-    const error = connections.error || recent.error || counts.find((result) => result.error)?.error || null;
+    const error = connections.error || recent.error || review.error || counts.find((result) => result.error)?.error || null;
     if (missingSchema(error)) return NextResponse.json({ available: false, reason: "migration_not_installed" }, { headers: NO_STORE });
     if (error) return NextResponse.json({ error: "Native PMS delivery status is temporarily unavailable." }, { status: 503, headers: NO_STORE });
 
@@ -73,16 +100,8 @@ export async function GET() {
         captureEnabled: row.enabled,
         deliveryEnabled: row.delivery_enabled,
       })),
-      recent: (recent.data ?? []).map((row) => ({
-        eventId: row.event_id,
-        connectionId: row.connection_id,
-        propertyId: row.property_id,
-        state: row.state,
-        attempts: row.attempts,
-        dueAt: row.due_at,
-        createdAt: row.created_at,
-        resultCode: safeResultCode(row.result_code),
-      })),
+      recent: (recent.data ?? []).map(publicEvent),
+      review: (review.data ?? []).map(publicEvent),
     }, { headers: NO_STORE });
   } catch {
     return NextResponse.json({ error: "Native PMS delivery status is temporarily unavailable." }, { status: 503, headers: NO_STORE });
