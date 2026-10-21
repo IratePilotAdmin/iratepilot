@@ -37,6 +37,24 @@ type AriConnection = {
   certification_complete: boolean;
 };
 
+type AriProperty = { id: string; partner_id: string; active: boolean };
+type AriPartner = { id: string; status: string };
+type AriMachineAccount = {
+  id: string;
+  property_id: string;
+  provider: string;
+  environment: string;
+  enabled: boolean;
+  partner_approved: boolean;
+  approved_at: string | null;
+};
+type AriDispatchScope = {
+  connection: AriConnection | null;
+  property: AriProperty | null;
+  partner: AriPartner | null;
+  machineAccount: AriMachineAccount | null;
+};
+
 type WorkerOptions = {
   store?: AriStore;
   fetcher?: typeof fetch;
@@ -68,14 +86,22 @@ function parseJob(value: unknown): AriJob | null {
   return row as unknown as AriJob;
 }
 
-export function assessBookingComAriScope(job: AriJob, connection: AriConnection | null): "ready" | "paused" | "stale" {
+export function assessBookingComAriScope(job: AriJob, scope: AriDispatchScope): "ready" | "paused" | "stale" {
+  const { connection, property, partner, machineAccount } = scope;
   if (!connection || connection.connection_id !== job.connectionId
     || connection.property_id !== job.propertyId
     || connection.machine_account_id !== job.machineAccountId
     || connection.provider_property_id !== job.providerPropertyId
-    || connection.provider !== "booking_com" || connection.environment !== "test") return "stale";
+    || connection.provider !== "booking_com" || connection.environment !== "test"
+    || !property || property.id !== job.propertyId || !property.partner_id
+    || !partner || partner.id !== property.partner_id
+    || !machineAccount || machineAccount.id !== job.machineAccountId
+    || machineAccount.property_id !== job.propertyId
+    || machineAccount.provider !== "booking_com" || machineAccount.environment !== "test") return "stale";
   if (!connection.enabled || !connection.partner_approved
-    || !connection.ari_endpoint_approved || !connection.certification_complete) return "paused";
+    || !connection.ari_endpoint_approved || !connection.certification_complete
+    || !property.active || partner.status !== "approved"
+    || !machineAccount.enabled || !machineAccount.partner_approved || !machineAccount.approved_at) return "paused";
   return "ready";
 }
 
@@ -89,13 +115,32 @@ function createStore(): AriStore {
     },
     async validateScope(job) {
       try {
-        const { data, error } = await createAdminClient()
+        const admin = createAdminClient();
+        const { data: connection, error: connectionError } = await admin
           .from("irp_ota_channel_connections")
           .select("connection_id,property_id,machine_account_id,provider_property_id,provider,environment,enabled,partner_approved,ari_endpoint_approved,certification_complete")
           .eq("connection_id", job.connectionId)
           .maybeSingle();
-        if (error) return "unavailable";
-        return assessBookingComAriScope(job, data as AriConnection | null);
+        if (connectionError) return "unavailable";
+        if (!connection) return "stale";
+        const [propertyResult, accountResult] = await Promise.all([
+          admin.from("properties").select("id,partner_id,active").eq("id", job.propertyId).maybeSingle(),
+          admin.from("irp_ota_machine_accounts")
+            .select("id,property_id,provider,environment,enabled,partner_approved,approved_at")
+            .eq("id", job.machineAccountId).maybeSingle(),
+        ]);
+        if (propertyResult.error || accountResult.error) return "unavailable";
+        const property = propertyResult.data as AriProperty | null;
+        if (!property) return "stale";
+        const { data: partner, error: partnerError } = await admin.from("partners")
+          .select("id,status").eq("id", property.partner_id).maybeSingle();
+        if (partnerError) return "unavailable";
+        return assessBookingComAriScope(job, {
+          connection: connection as AriConnection,
+          property,
+          partner: partner as AriPartner | null,
+          machineAccount: accountResult.data as AriMachineAccount | null,
+        });
       } catch {
         return "unavailable";
       }

@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
+vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: vi.fn() }));
 import { createHash } from "node:crypto";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { assessBookingComAriScope, runBookingComAriDelivery } from "@/lib/booking-com-ari-delivery";
 
 const xml = `<?xml version="1.0" encoding="UTF-8"?><OTA_HotelAvailNotifRQ><AvailStatusMessages><AvailStatusMessage BookingLimit="2"><StatusApplicationControl Start="2026-10-01" End="2026-10-01" InvTypeCode="NDQ2"/></AvailStatusMessage></AvailStatusMessages></OTA_HotelAvailNotifRQ>`;
@@ -30,6 +32,13 @@ const connection = {
   ari_endpoint_approved: true,
   certification_complete: true,
 };
+const property = { id: job.propertyId, partner_id: "55555555-5555-4555-8555-555555555555", active: true };
+const partner = { id: property.partner_id, status: "approved" };
+const machineAccount = {
+  id: job.machineAccountId, property_id: job.propertyId, provider: "booking_com",
+  environment: "test", enabled: true, partner_approved: true, approved_at: "2026-10-20T00:00:00Z",
+};
+const scope = { connection, property, partner, machineAccount };
 
 function dependencies(overrides: { claim?: unknown[]; status?: number; body?: string; tokenError?: Error; scope?: "ready" | "paused" | "stale" | "unavailable" } = {}) {
   const finish = vi.fn(async () => undefined);
@@ -47,12 +56,18 @@ function dependencies(overrides: { claim?: unknown[]; status?: number; body?: st
 
 describe("Booking.com ARI delivery worker", () => {
   it("refuses a queued job after its property mapping changes or approval is withdrawn", async () => {
-    expect(assessBookingComAriScope(job, connection)).toBe("ready");
-    expect(assessBookingComAriScope(job, { ...connection, provider_property_id: "other-hotel" })).toBe("stale");
-    expect(assessBookingComAriScope(job, { ...connection, property_id: "55555555-5555-4555-8555-555555555555" })).toBe("stale");
-    expect(assessBookingComAriScope(job, { ...connection, machine_account_id: "66666666-6666-4666-8666-666666666666" })).toBe("stale");
-    expect(assessBookingComAriScope(job, { ...connection, certification_complete: false })).toBe("paused");
-    expect(assessBookingComAriScope(job, null)).toBe("stale");
+    expect(assessBookingComAriScope(job, scope)).toBe("ready");
+    expect(assessBookingComAriScope(job, { ...scope, connection: { ...connection, provider_property_id: "other-hotel" } })).toBe("stale");
+    expect(assessBookingComAriScope(job, { ...scope, connection: { ...connection, property_id: "55555555-5555-4555-8555-555555555555" } })).toBe("stale");
+    expect(assessBookingComAriScope(job, { ...scope, connection: { ...connection, machine_account_id: "66666666-6666-4666-8666-666666666666" } })).toBe("stale");
+    expect(assessBookingComAriScope(job, { ...scope, connection: { ...connection, certification_complete: false } })).toBe("paused");
+    expect(assessBookingComAriScope(job, { ...scope, property: { ...property, active: false } })).toBe("paused");
+    expect(assessBookingComAriScope(job, { ...scope, partner: { ...partner, status: "suspended" } })).toBe("paused");
+    expect(assessBookingComAriScope(job, { ...scope, machineAccount: { ...machineAccount, enabled: false } })).toBe("paused");
+    expect(assessBookingComAriScope(job, { ...scope, machineAccount: { ...machineAccount, partner_approved: false, approved_at: null } })).toBe("paused");
+    expect(assessBookingComAriScope(job, { ...scope, machineAccount: { ...machineAccount, property_id: "66666666-6666-4666-8666-666666666666" } })).toBe("stale");
+    expect(assessBookingComAriScope(job, { ...scope, partner: null })).toBe("stale");
+    expect(assessBookingComAriScope(job, { ...scope, connection: null })).toBe("stale");
   });
 
   it.each([
@@ -66,6 +81,39 @@ describe("Booking.com ARI delivery worker", () => {
     expect(deps.getToken).not.toHaveBeenCalled();
     expect(deps.fetcher).not.toHaveBeenCalled();
     expect(deps.finish).toHaveBeenCalledWith(job.jobId, job.leaseToken, outcome, null, { code });
+  });
+
+  it.each([
+    ["inactive property", { property: { ...property, active: false } }, "booking_com_ari_scope_paused"],
+    ["suspended partner", { partner: { ...partner, status: "suspended" } }, "booking_com_ari_scope_paused"],
+    ["revoked machine account", { machineAccount: { ...machineAccount, enabled: false } }, "booking_com_ari_scope_paused"],
+    ["cross-property machine account", { machineAccount: { ...machineAccount, property_id: "66666666-6666-4666-8666-666666666666" } }, "booking_com_ari_scope_stale"],
+  ] as const)("rechecks a %s in the database before any provider call", async (_label, changes, code) => {
+    const current = { ...scope, ...changes };
+    const finish = vi.fn(async (args: { p_safe_result?: unknown }) => {
+      expect(args.p_safe_result).toEqual({ code });
+      return { data: { outcome: "retry" }, error: null };
+    });
+    vi.mocked(createAdminClient).mockReturnValue({
+      rpc: vi.fn((name: string, args: unknown) => name === "irp_ota_claim_booking_com_ari"
+        ? Promise.resolve({ data: [job], error: null }) : finish(args as { p_safe_result?: unknown })),
+      from: vi.fn((table: string) => {
+        const row = table === "irp_ota_channel_connections" ? current.connection
+          : table === "properties" ? current.property
+            : table === "partners" ? current.partner : current.machineAccount;
+        const query = { select: () => query, eq: () => query,
+          maybeSingle: async () => ({ data: row, error: null }) };
+        return query;
+      }),
+    } as never);
+    const getToken = vi.fn(async () => "test-token");
+    const fetcher = vi.fn(async () => new Response("ok"));
+    const result = await runBookingComAriDelivery({ getToken, fetcher: fetcher as typeof fetch });
+    expect(result).toMatchObject({ claimed: 1, sent: 0 });
+    expect(getToken).not.toHaveBeenCalled();
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(finish).toHaveBeenCalled();
+    expect(JSON.stringify(finish.mock.calls)).toContain(code);
   });
 
   it("sends only the claimed test job and durably records provider success", async () => {
