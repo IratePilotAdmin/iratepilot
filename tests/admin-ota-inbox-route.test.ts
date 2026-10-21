@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   auth: { user: { id: "admin-id" }, profile: { role: "admin" } } as unknown,
   results: [] as Array<{ data?: unknown; count?: number | null; error?: { code?: string } | null }>,
+  filters: [] as Array<{ method: string; args: unknown[] }>,
   adminClient: vi.fn(),
 }));
 
@@ -18,7 +19,10 @@ function setupQueries() {
     from: () => {
       const result = mocks.results[index++];
       const query: Record<string, unknown> = {};
-      for (const method of ["select", "order", "limit", "eq", "in"]) query[method] = () => query;
+      for (const method of ["select", "order", "limit", "eq", "in", "gte", "lte"]) query[method] = (...args: unknown[]) => {
+        mocks.filters.push({ method, args });
+        return query;
+      };
       query.then = (resolve: (value: unknown) => unknown) => Promise.resolve(result).then(resolve);
       return query;
     },
@@ -28,6 +32,7 @@ function setupQueries() {
 beforeEach(() => {
   vi.mocked(requireRole).mockResolvedValue({ user: { id: "admin-id" }, profile: { role: "admin" } } as never);
   mocks.results = [];
+  mocks.filters = [];
   mocks.adminClient.mockReset();
 });
 
@@ -43,7 +48,8 @@ describe("admin OTA inbox status", () => {
     mocks.results = [
       { data: [{ id: "new-event", connection_id: "connection", property_id: "property-id", event_kind: "new", status: "imported", received_at: "2026-09-30T12:00:00Z", attempt_count: 1, result_code: "pms_persisted_and_provider_acknowledged", pii_ciphertext: "secret", guest_name: "Guest" }], error: null },
       { data: [{ id: "older-review", connection_id: "connection", property_id: "property-id", event_kind: "modified", status: "review", received_at: "2026-09-29T12:00:00Z", attempt_count: 2, result_code: "payment_treatment_required", pii_ciphertext: "secret", guest_name: "Guest" }], error: null },
-      ...[2, 1, 10, 3].map((count) => ({ count, error: null })),
+      { data: [{ id: "stranded-event", connection_id: "connection", property_id: "property-id", event_kind: "cancelled", status: "leased", received_at: "2026-09-28T12:00:00Z", lease_until: "2026-09-28T12:01:00Z", attempt_count: 8, result_code: null, lease_token: "must-not-leak" }], error: null },
+      ...[2, 1, 10, 3, 1].map((count) => ({ count, error: null })),
       { data: [{ connection_id: "connection", provider: "booking_com" }], error: null },
     ];
     setupQueries();
@@ -55,19 +61,25 @@ describe("admin OTA inbox status", () => {
       available: true,
       scope: "all_external_ota_connections",
       totals: { received: 2, leased: 1, imported: 10, review: 3 },
+      exhaustedLeaseCount: 1,
       recent: [{ provider: "booking_com", eventKind: "new", status: "imported", attempts: 1 }],
       review: [{ id: "older-review", provider: "booking_com", eventKind: "modified", status: "review", attempts: 2, resultCode: "payment_treatment_required" }],
+      exhaustedLeases: [{ id: "stranded-event", provider: "booking_com", status: "leased", attempts: 8, leaseUntil: "2026-09-28T12:01:00Z" }],
     });
+    expect(mocks.filters.filter(({ method, args }) => method === "gte" && args[0] === "attempt_count" && args[1] === 8)).toHaveLength(2);
+    expect(mocks.filters.filter(({ method, args }) => method === "lte" && args[0] === "lease_until" && typeof args[1] === "string")).toHaveLength(2);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(JSON.stringify(body)).not.toContain("secret");
     expect(JSON.stringify(body)).not.toContain("Guest");
+    expect(JSON.stringify(body)).not.toContain("must-not-leak");
   });
 
   it("labels each staged channel from its connection and redacts unrecognized result codes", async () => {
     mocks.results = [
       { data: [{ id: "event-id", connection_id: "expedia-connection", property_id: "property-id", event_kind: "new", status: "review", received_at: "2026-09-30T12:00:00Z", attempt_count: 1, result_code: "guest_name_encoded" }], error: null },
       { data: [], error: null },
-      ...[0, 0, 0, 1].map((count) => ({ count, error: null })),
+      { data: [], error: null },
+      ...[0, 0, 0, 1, 0].map((count) => ({ count, error: null })),
       { data: [{ connection_id: "expedia-connection", provider: "expedia" }], error: null },
     ];
     setupQueries();
@@ -81,9 +93,9 @@ describe("admin OTA inbox status", () => {
 
   it("fails closed when review counts or connection ownership cannot be verified", async () => {
     mocks.results = [
-      { data: [], error: null }, { data: [], error: null },
+      { data: [], error: null }, { data: [], error: null }, { data: [], error: null },
       ...[0, 0, 0].map((count) => ({ count, error: null })),
-      { count: null, error: null },
+      { count: 0, error: null }, { count: null, error: null },
     ];
     setupQueries();
     expect((await GET()).status).toBe(503);
@@ -91,7 +103,8 @@ describe("admin OTA inbox status", () => {
     mocks.results = [
       { data: [{ id: "event-id", connection_id: "missing", property_id: "property-id", event_kind: "new", status: "review", received_at: "2026-09-30T12:00:00Z", attempt_count: 1, result_code: null }], error: null },
       { data: [], error: null },
-      ...[0, 0, 0, 1].map((count) => ({ count, error: null })),
+      { data: [], error: null },
+      ...[0, 0, 0, 1, 0].map((count) => ({ count, error: null })),
       { data: [], error: null },
     ];
     setupQueries();

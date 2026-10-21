@@ -28,6 +28,7 @@ type InboxRow = {
   received_at: string;
   attempt_count: number;
   result_code: string | null;
+  lease_until?: string | null;
 };
 
 function publicEvent(row: InboxRow, providers: Map<string, string>) {
@@ -40,6 +41,7 @@ function publicEvent(row: InboxRow, providers: Map<string, string>) {
     status: row.status,
     receivedAt: row.received_at,
     attempts: row.attempt_count,
+    leaseUntil: row.lease_until ?? null,
     resultCode: row.result_code === null ? null
       : RESULT_CODES.has(row.result_code) ? row.result_code : "unrecognized_result",
   };
@@ -55,7 +57,8 @@ export async function GET() {
 
   try {
     const admin = createAdminClient();
-    const [recent, review, ...counts] = await Promise.all([
+    const checkedAt = new Date().toISOString();
+    const [recent, review, exhaustedLeases, ...counts] = await Promise.all([
       admin.from("irp_ota_reservation_inbox")
         .select("id,connection_id,property_id,event_kind,status,received_at,attempt_count,result_code")
         .order("received_at", { ascending: false })
@@ -63,23 +66,29 @@ export async function GET() {
       admin.from("irp_ota_reservation_inbox")
         .select("id,connection_id,property_id,event_kind,status,received_at,attempt_count,result_code")
         .eq("status", "review").order("received_at", { ascending: false }).limit(100),
+      admin.from("irp_ota_reservation_inbox")
+        .select("id,connection_id,property_id,event_kind,status,received_at,attempt_count,result_code,lease_until")
+        .eq("status", "leased").gte("attempt_count", 8).lte("lease_until", checkedAt)
+        .order("lease_until", { ascending: true }).limit(100),
       ...states.map((status) => admin.from("irp_ota_reservation_inbox")
         .select("id", { count: "exact", head: true })
         .eq("status", status)),
+      admin.from("irp_ota_reservation_inbox").select("id", { count: "exact", head: true })
+        .eq("status", "leased").gte("attempt_count", 8).lte("lease_until", checkedAt),
     ]);
 
-    const error = recent.error || review.error || counts.find((result) => result.error)?.error || null;
+    const error = recent.error || review.error || exhaustedLeases.error || counts.find((result) => result.error)?.error || null;
     if (isMissingOtaSchema(error)) {
       return NextResponse.json({ available: false, reason: "migration_not_installed" }, {
         headers: NO_STORE,
       });
     }
-    if (error || !Array.isArray(recent.data) || !Array.isArray(review.data)
+    if (error || !Array.isArray(recent.data) || !Array.isArray(review.data) || !Array.isArray(exhaustedLeases.data)
       || counts.some((result) => typeof result.count !== "number" || result.count < 0)) {
       return NextResponse.json({ error: "OTA inbox status is temporarily unavailable." }, { status: 503, headers: NO_STORE });
     }
 
-    const connectionIds = [...new Set([...recent.data, ...review.data].map((row) => row.connection_id))];
+    const connectionIds = [...new Set([...recent.data, ...review.data, ...exhaustedLeases.data].map((row) => row.connection_id))];
     const providerResult = connectionIds.length ? await admin.from("irp_ota_channel_connections")
       .select("connection_id,provider").in("connection_id", connectionIds) : { data: [], error: null };
     if (isMissingOtaSchema(providerResult.error)) {
@@ -104,10 +113,13 @@ export async function GET() {
     const totals = Object.fromEntries(states.map((status, index) => [status, counts[index].count])) as Record<InboxState, number>;
     return NextResponse.json({
       available: true,
+      checkedAt,
       scope: "all_external_ota_connections",
       totals,
+      exhaustedLeaseCount: counts[states.length].count,
       recent: recent.data.map((row) => publicEvent(row, providers)),
       review: review.data.map((row) => publicEvent(row, providers)),
+      exhaustedLeases: exhaustedLeases.data.map((row) => publicEvent(row, providers)),
     }, { headers: NO_STORE });
   } catch {
     return NextResponse.json({ error: "OTA inbox status is temporarily unavailable." }, { status: 503, headers: NO_STORE });
