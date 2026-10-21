@@ -12,15 +12,19 @@ type InboxEvent = {
   status: InboxState;
   receivedAt: string;
   attempts: number;
+  leaseUntil?: string | null;
   resultCode: string | null;
 };
 type InboxResponse = {
   available: boolean;
   reason?: string;
   scope?: string;
+  checkedAt?: string;
   totals?: Record<InboxState, number>;
+  exhaustedLeaseCount?: number;
   recent?: InboxEvent[];
   review?: InboxEvent[];
+  exhaustedLeases?: InboxEvent[];
 };
 
 const stateLabels: Record<InboxState, string> = {
@@ -37,14 +41,15 @@ const providerLabels: Record<string, string> = {
   iratepilot: "iRatePilot",
 };
 
-function EventTable({ events, includeStatus }: { events: InboxEvent[]; includeStatus: boolean }) {
+function EventTable({ events, includeStatus, includeLeaseExpiry = false }: { events: InboxEvent[]; includeStatus: boolean; includeLeaseExpiry?: boolean }) {
   return <div className="overflow-x-auto"><table className="w-full text-left text-sm">
     <thead className="bg-slate-50 text-slate-500"><tr>
-      {["Event ID", "Received", "Source", "Property", "Event", ...(includeStatus ? ["Status"] : []), "Attempts", "Result"].map((heading) => <th className="px-5 py-3" key={heading}>{heading}</th>)}
+      {["Event ID", "Received", ...(includeLeaseExpiry ? ["Lease expired"] : []), "Source", "Property", "Event", ...(includeStatus ? ["Status"] : []), "Attempts", "Result"].map((heading) => <th className="px-5 py-3" key={heading}>{heading}</th>)}
     </tr></thead>
     <tbody>{events.map((item) => <tr className="border-t" key={item.id}>
       <td className="px-5 py-4 font-mono text-xs" title={item.id}>{item.id.slice(0, 8)}…</td>
       <td className="px-5 py-4">{new Date(item.receivedAt).toLocaleString()}</td>
+      {includeLeaseExpiry && <td className="px-5 py-4">{item.leaseUntil ? new Date(item.leaseUntil).toLocaleString() : "—"}</td>}
       <td className="px-5 py-4">{providerLabels[item.provider] || "External OTA"}</td>
       <td className="px-5 py-4 font-mono text-xs" title={item.propertyId}>{item.propertyId.slice(0, 8)}…</td>
       <td className="px-5 py-4 capitalize">{item.eventKind}</td>
@@ -81,6 +86,15 @@ export function AdminOtaInbox() {
           <strong className="mt-2 block text-3xl">{data.totals?.[status]?.toLocaleString() || "0"}</strong>
         </article>)}
       </section>
+      {typeof data.exhaustedLeaseCount === "number" && data.exhaustedLeaseCount > 0 && <section className="card mt-8 overflow-hidden border border-amber-300">
+        <div className="border-b p-6"><h2 className="font-semibold">{data.exhaustedLeaseCount.toLocaleString()} reservation events stalled after the final attempt</h2>
+          <p className="mt-1 text-sm text-amber-900">These leases expired at the eight-attempt limit. The worker cannot claim them again, and later changes to the same reservation may be blocked. Compare the PMS receipt and provider acknowledgement before any separately authorized recovery. This page does not resend or change status.</p>
+        </div>
+        <EventTable events={data.exhaustedLeases || []} includeStatus={false} includeLeaseExpiry />
+        {data.exhaustedLeaseCount > (data.exhaustedLeases?.length || 0) && <p role="status" className="border-t p-6 text-sm text-amber-900">
+          Showing the oldest {data.exhaustedLeases?.length || 0} of {data.exhaustedLeaseCount.toLocaleString()} stalled events. Investigate the remaining events in the database.
+        </p>}
+      </section>}
       <section className="card mt-8 overflow-hidden">
         <div className="border-b p-6"><h2 className="font-semibold">External OTA events needing review</h2>
           <p className="mt-1 text-sm text-slate-500">Held events stay visible here even when newer events fill the recent list. This view does not retry or import them.</p>
