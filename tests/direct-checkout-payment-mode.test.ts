@@ -5,6 +5,8 @@ import {
   assertPreviewDryRun,
   assertPreviewMigrationTarget,
   assertPreviewRemoteMigrationState,
+  APALEO_RESERVATION_RECONCILIATION_PENDING,
+  DATA_API_GRANTS_PENDING,
   listMigrationVersions,
   PMS_CATALOG_EXPANSION_PENDING,
   PMS_VENDOR_REFERENCE_PENDING,
@@ -109,6 +111,22 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
       migrationList(versions, applied),
       versions,
     ).pendingVersions).toEqual(PMS_VENDOR_REFERENCE_PENDING);
+  });
+
+  it("approves the Data API grant migration alone or with an earlier approved release", () => {
+    const versions = listMigrationVersions();
+    const pendingSets = [
+      DATA_API_GRANTS_PENDING,
+      [...APALEO_RESERVATION_RECONCILIATION_PENDING, ...DATA_API_GRANTS_PENDING],
+    ];
+
+    for (const pending of pendingSets) {
+      const applied = versions.filter((version) => !pending.includes(version));
+      expect(assertPreviewRemoteMigrationState(
+        migrationList(versions, applied),
+        versions,
+      ).pendingVersions).toEqual(pending);
+    }
   });
 
   it("rejects missing history, unexpected remote versions, and unexpected pending migrations", () => {
