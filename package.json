@@ -12,7 +12,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "migration:replay": "node scripts/replay-migrations.mjs",
+    "migration:replay": "node scripts/replay-migrations.mjs && node scripts/verify-data-api-grants.mjs",
     "check": "npm run lint && npm run typecheck && npm run migration:replay && npm run test && npm run build",
     "commercial:sandbox-preflight": "node scripts/commercial-sandbox-preflight.mjs",
     "preview:migrations": "node scripts/reconcile-preview-migrations.mjs"
