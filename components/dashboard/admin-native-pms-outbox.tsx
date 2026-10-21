@@ -3,6 +3,16 @@
 import { useEffect, useState } from "react";
 
 type State = "pending" | "leased" | "retry" | "delivered" | "review";
+type DeliveryEvent = {
+  eventId: string;
+  connectionId: string;
+  propertyId: string;
+  state: State;
+  attempts: number;
+  dueAt: string;
+  createdAt: string;
+  resultCode: string | null;
+};
 type DeliveryStatus = {
   available: boolean;
   checkedAt?: string;
@@ -23,16 +33,8 @@ type DeliveryStatus = {
     captureEnabled: boolean;
     deliveryEnabled: boolean;
   }>;
-  recent?: Array<{
-    eventId: string;
-    connectionId: string;
-    propertyId: string;
-    state: State;
-    attempts: number;
-    dueAt: string;
-    createdAt: string;
-    resultCode: string | null;
-  }>;
+  recent?: DeliveryEvent[];
+  review?: DeliveryEvent[];
 };
 
 const labels: Record<State, string> = {
@@ -112,6 +114,23 @@ export function AdminNativePmsOutbox() {
           </tr>)}</tbody>
         </table>
         {!data.connections?.length && <p className="p-5 text-sm text-slate-500">No PMS delivery connections are configured.</p>}
+      </div>
+      <div className="card mt-5 overflow-x-auto">
+        <div className="border-b p-5"><h3 className="font-semibold">Events needing review</h3>
+          <p className="mt-1 text-sm text-slate-500">Up to 100 unresolved events, including older events outside recent activity. Compare each event ID with the PMS receipt before deciding on recovery. No action is taken here.</p>
+        </div>
+        <table className="w-full text-left text-sm">
+          <thead className="bg-slate-50 text-slate-500"><tr>{["Created", "Event ID", "Connection", "Attempts", "Result"].map((heading) => <th className="px-5 py-3" key={heading}>{heading}</th>)}</tr></thead>
+          <tbody>{(data.review || []).map((event) => <tr className="border-t" key={event.eventId}>
+            <td className="px-5 py-4">{new Date(event.createdAt).toLocaleString()}</td>
+            <td className="px-5 py-4 font-mono text-xs">{event.eventId}</td>
+            <td className="px-5 py-4 font-mono text-xs">{event.connectionId}</td>
+            <td className="px-5 py-4">{event.attempts}</td>
+            <td className="px-5 py-4 font-mono text-xs">{event.resultCode || "—"}</td>
+          </tr>)}</tbody>
+        </table>
+        {!data.review?.length && <p className="p-5 text-sm text-slate-500">No PMS delivery events currently need review.</p>}
+        {(data.totals?.review ?? 0) > (data.review?.length ?? 0) && <p className="border-t p-5 text-sm text-amber-900">Showing the newest {data.review?.length ?? 0} of {data.totals?.review} review events. Older events require a database audit.</p>}
       </div>
       <div className="card mt-5 overflow-x-auto">
         <div className="border-b p-5"><h3 className="font-semibold">Recent delivery events</h3>
