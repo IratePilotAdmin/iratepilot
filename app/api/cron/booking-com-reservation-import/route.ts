@@ -27,8 +27,16 @@ export async function GET(request: Request) {
   }
   try {
     const result = await runBookingComReservationImport(config);
-    return NextResponse.json({ ok: true, ...result }, { headers: { "Cache-Control": "no-store" } });
-  } catch {
+    const unavailable = result.outcome === "idle" && result.code === "no_valid_connection_credentials";
+    return NextResponse.json({ ok: !unavailable, ...result }, {
+      status: unavailable ? 503 : 200, headers: { "Cache-Control": "no-store" },
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "booking_com_reservation_import_registry_limit_exceeded") {
+      return NextResponse.json({ error: "Booking.com PMS import registry exceeds its safe connection limit." }, {
+        status: 503, headers: { "Cache-Control": "no-store" },
+      });
+    }
     return NextResponse.json({ error: "Booking.com PMS import worker is unavailable." }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
 }
