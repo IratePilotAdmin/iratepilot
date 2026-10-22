@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const registry = vi.hoisted(() => ({
   rows: [] as unknown[],
   requestedLimit: 0,
+  selectedColumns: "",
 }));
 
 vi.mock("server-only", () => ({}));
@@ -11,7 +12,7 @@ vi.mock("@/lib/supabase/admin", () => ({
     from: (table: string) => {
       if (table !== "irp_ota_channel_connections") throw new Error("unexpected table");
       const query = {
-        select: () => query,
+        select: (columns: string) => { registry.selectedColumns = columns; return query; },
         eq: () => query,
         not: () => query,
         order: () => query,
@@ -30,6 +31,7 @@ import { runBookingComReservationPoller } from "@/lib/booking-com-reservation-po
 beforeEach(() => {
   registry.rows = [];
   registry.requestedLimit = 0;
+  registry.selectedColumns = "";
 });
 
 describe("Booking.com reservation polling connection boundary", () => {
@@ -55,6 +57,24 @@ describe("Booking.com reservation polling connection boundary", () => {
 
     expect(registry.requestedLimit).toBe(51);
     expect(result).toMatchObject({ connections: 50, polled: 0, review: 50, acknowledgementsSent: 0 });
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("reads the stored certification decision and skips an uncertified hotel", async () => {
+    registry.rows = [{
+      connection_id: "booking-test-one",
+      property_id: "11111111-1111-4111-8111-111111111111",
+      provider_property_id: "12345",
+      machine_account_id: "22222222-2222-4222-8222-222222222222",
+      certification_complete: false,
+    }];
+    const getToken = vi.fn();
+    const fetcher = vi.fn();
+    const result = await runBookingComReservationPoller({ getToken, fetcher: fetcher as typeof fetch });
+
+    expect(registry.selectedColumns).toContain("certification_complete");
+    expect(result).toMatchObject({ polled: 0, review: 1, acknowledgementsSent: 0 });
+    expect(getToken).not.toHaveBeenCalled();
     expect(fetcher).not.toHaveBeenCalled();
   });
 });

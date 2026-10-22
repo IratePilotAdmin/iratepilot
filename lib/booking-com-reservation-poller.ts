@@ -14,6 +14,7 @@ type PollConnection = {
   property_id: string;
   provider_property_id: string;
   machine_account_id: string;
+  certification_complete: boolean;
 };
 
 type PollStore = {
@@ -34,7 +35,7 @@ function createStore(): PollStore {
   return {
     async listApprovedTestConnections() {
       const { data, error } = await createAdminClient().from("irp_ota_channel_connections")
-        .select("connection_id,property_id,provider_property_id,machine_account_id")
+        .select("connection_id,property_id,provider_property_id,machine_account_id,certification_complete")
         .eq("provider", "booking_com").eq("environment", "test")
         .eq("enabled", true).eq("partner_approved", true).eq("pii_compliance_approved", true)
         .not("machine_account_id", "is", null).order("created_at", { ascending: true }).limit(51);
@@ -56,7 +57,8 @@ function createStore(): PollStore {
 
 function validateConnection(value: PollConnection): boolean {
   return !!value && ID.test(value.connection_id) && UUID.test(value.property_id)
-    && ID.test(value.provider_property_id) && UUID.test(value.machine_account_id);
+    && ID.test(value.provider_property_id) && UUID.test(value.machine_account_id)
+    && value.certification_complete === true;
 }
 
 /**

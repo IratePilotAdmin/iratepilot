@@ -10,6 +10,7 @@ const connection = {
   property_id: propertyId,
   provider_property_id: "12345",
   machine_account_id: accountId,
+  certification_complete: true,
 };
 const reservationXml = `<OTA_HotelResNotifRQ><HotelReservation ResStatus="Book"><HotelReservationID ResID_Value="booking-1" ResID_Type="14"/><RoomStays><RoomStay IndexNumber="1"><BasicPropertyInfo HotelCode="12345"/><RoomType RoomTypeCode="provider-room"/><RatePlan RatePlanCode="provider-rate"/><TimeSpan Start="2026-10-02" End="2026-10-03"/><GuestCount Count="1"/><Total AmountAfterTax="10000" DecimalPlaces="2" CurrencyCode="USD"/></RoomStay></RoomStays><ResGlobalInfo><Customer><PersonName><GivenName>Test</GivenName><Surname>Guest</Surname></PersonName></Customer></ResGlobalInfo></HotelReservation></OTA_HotelResNotifRQ>`;
 
@@ -62,5 +63,17 @@ describe("Booking.com reservation poller", () => {
     });
     expect(result.review).toBe(1);
     expect(deps.fetcher).not.toHaveBeenCalled();
+  });
+
+  it("does not obtain a token or poll when certification is incomplete", async () => {
+    const deps = makeDeps();
+    const result = await runBookingComReservationPoller({
+      ...deps.dependencies,
+      store: { ...deps.dependencies.store, listApprovedTestConnections: async () => [{ ...connection, certification_complete: false }] },
+    });
+    expect(result).toMatchObject({ polled: 0, received: 0, review: 1, acknowledgementsSent: 0 });
+    expect(deps.getToken).not.toHaveBeenCalled();
+    expect(deps.fetcher).not.toHaveBeenCalled();
+    expect(deps.stage).not.toHaveBeenCalled();
   });
 });
