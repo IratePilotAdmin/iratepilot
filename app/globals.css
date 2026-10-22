@@ -113,7 +113,7 @@ h1, h2 { font-family: Georgia, "Times New Roman", serif; font-weight: 400 !impor
 .editorial-logo { @apply inline-flex items-center gap-2 text-2xl font-medium text-black; font-family: Georgia, "Times New Roman", serif; }
 .editorial-wordmark { @apply inline-grid leading-none; grid-template-areas: "primary" "pilot"; }
 .editorial-wordmark-primary { grid-area: primary; letter-spacing: -.04em; }
-.editorial-wordmark-pilot { @apply justify-self-end font-sans text-[.42em] font-semibold lowercase leading-none; grid-area: pilot; margin-top: .12em; letter-spacing: .14em; }
+.editorial-wordmark-pilot { @apply justify-self-center font-sans text-[.42em] font-semibold lowercase leading-none; grid-area: pilot; margin-top: .12em; letter-spacing: .14em; }
 .editorial-nav-link { @apply text-xs font-semibold uppercase tracking-[.12em] text-neutral-700 transition hover:text-black; }
 .editorial-signin { @apply border-b border-black pb-1 text-xs font-semibold uppercase tracking-[.12em] text-black; }
 .btn-primary { @apply rounded-none bg-black px-6 py-3 text-xs font-semibold uppercase tracking-[.12em] text-white hover:bg-neutral-800; }
