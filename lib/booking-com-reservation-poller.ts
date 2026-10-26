@@ -19,7 +19,29 @@ type PollConnection = {
 
 type PollStore = {
   listApprovedTestConnections(): Promise<PollConnection[]>;
+  validateScope(connection: PollConnection): Promise<"ready" | "paused" | "stale" | "unavailable">;
   stage(connection: PollConnection, eventKind: "new" | "modified_or_cancelled", reservation: ReturnType<typeof parseBookingComReservationBatch>[number]): Promise<"received" | "duplicate">;
+};
+
+type PollScope = {
+  connection: (PollConnection & {
+    provider: string;
+    environment: string;
+    enabled: boolean;
+    partner_approved: boolean;
+    pii_compliance_approved: boolean;
+  }) | null;
+  property: { id: string; partner_id: string; active: boolean } | null;
+  partner: { id: string; status: string } | null;
+  account: {
+    id: string;
+    property_id: string;
+    provider: string;
+    environment: string;
+    enabled: boolean;
+    partner_approved: boolean;
+    approved_at: string | null;
+  } | null;
 };
 
 type PollDependencies = {
@@ -31,6 +53,24 @@ type PollDependencies = {
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ID = /^[A-Za-z0-9_-]{1,80}$/;
 
+export function assessBookingComReservationPollScope(expected: PollConnection, scope: PollScope): "ready" | "paused" | "stale" {
+  const { connection, property, partner, account } = scope;
+  if (!connection || connection.connection_id !== expected.connection_id
+    || connection.property_id !== expected.property_id
+    || connection.provider_property_id !== expected.provider_property_id
+    || connection.machine_account_id !== expected.machine_account_id
+    || connection.provider !== "booking_com" || connection.environment !== "test"
+    || !property || property.id !== expected.property_id || !property.partner_id
+    || !partner || partner.id !== property.partner_id
+    || !account || account.id !== expected.machine_account_id
+    || account.property_id !== expected.property_id
+    || account.provider !== "booking_com" || account.environment !== "test") return "stale";
+  if (!connection.enabled || !connection.partner_approved || !connection.pii_compliance_approved
+    || !connection.certification_complete || !property.active || partner.status !== "approved"
+    || !account.enabled || !account.partner_approved || !account.approved_at) return "paused";
+  return "ready";
+}
+
 function createStore(): PollStore {
   return {
     async listApprovedTestConnections() {
@@ -41,6 +81,36 @@ function createStore(): PollStore {
         .not("machine_account_id", "is", null).order("created_at", { ascending: true }).limit(51);
       if (error || !Array.isArray(data)) throw new Error("booking_com_reservation_connection_list_failed");
       return data as PollConnection[];
+    },
+    async validateScope(connection) {
+      try {
+        const admin = createAdminClient();
+        const { data: current, error: connectionError } = await admin.from("irp_ota_channel_connections")
+          .select("connection_id,property_id,provider_property_id,machine_account_id,provider,environment,enabled,partner_approved,pii_compliance_approved,certification_complete")
+          .eq("connection_id", connection.connection_id).maybeSingle();
+        if (connectionError) return "unavailable";
+        if (!current) return "stale";
+        const [propertyResult, accountResult] = await Promise.all([
+          admin.from("properties").select("id,partner_id,active").eq("id", connection.property_id).maybeSingle(),
+          admin.from("irp_ota_machine_accounts")
+            .select("id,property_id,provider,environment,enabled,partner_approved,approved_at")
+            .eq("id", connection.machine_account_id).maybeSingle(),
+        ]);
+        if (propertyResult.error || accountResult.error) return "unavailable";
+        const property = propertyResult.data as PollScope["property"];
+        if (!property) return "stale";
+        const { data: partner, error: partnerError } = await admin.from("partners")
+          .select("id,status").eq("id", property.partner_id).maybeSingle();
+        if (partnerError) return "unavailable";
+        return assessBookingComReservationPollScope(connection, {
+          connection: current as PollScope["connection"],
+          property,
+          partner: partner as PollScope["partner"],
+          account: accountResult.data as PollScope["account"],
+        });
+      } catch {
+        return "unavailable";
+      }
     },
     async stage(connection, eventKind, reservation) {
       const result = await stageBookingComReservation(async (name, args) => await createAdminClient().rpc(name, args), {
@@ -82,11 +152,17 @@ export async function runBookingComReservationPoller(dependencies: PollDependenc
 
   for (const connection of connections) {
     if (!validateConnection(connection)) { review += 1; continue; }
+    // Listing is only a snapshot. Approval or identity can change before a
+    // credential is loaded, so recheck the exact current hotel scope.
+    if (await store.validateScope(connection) !== "ready") { review += 1; continue; }
     let token: string;
     try { token = await getToken(connection.machine_account_id, fetcher); }
     catch { retryable += 2; continue; }
 
     for (const kind of ["new", "modified_or_cancelled"] as const satisfies readonly BookingComReservationKind[]) {
+      // The first provider call can outlive approval for the second queue.
+      // Do not treat the earlier check as an enduring authorization.
+      if (await store.validateScope(connection) !== "ready") { review += 1; break; }
       polled += 1;
       const result = await callBookingComReservationTestApi(buildBookingComReservationPoll(connection.provider_property_id, kind), {
         mode: "test",
