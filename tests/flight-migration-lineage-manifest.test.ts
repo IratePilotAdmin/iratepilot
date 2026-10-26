@@ -356,7 +356,7 @@ describe("flight migration lineage freeze manifest", () => {
       stripeCreateOrchestratorArtifact:
         "lib/flights/consumer-production/stripe-live-payment-intent-create-orchestrator.server.ts",
       stripeCreateOrchestratorArtifactSha256:
-        "c7c1f1cd9f81ae93b3de368253ffb63c9a86661fe11c7811493c866a4be9c36f",
+        "5e1f61f9896c6844395ea76720d72807f7492175f1702bb423a6a1626f90fb7a",
       stripeRequests: 0,
       routeExposed: false,
       stripeCreateOrchestratorImplemented: true,
