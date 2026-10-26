@@ -40,14 +40,16 @@ describe("PMS integration foundation", () => {
       "thinkreservations",
       "siteminder",
       "roomraccoon",
+      "anand-systems",
     ]);
-    expect(new Set(pmsProviders.map((provider) => provider.id)).size).toBe(25);
+    expect(new Set(pmsProviders.map((provider) => provider.id)).size).toBe(26);
   });
 
   it.each([
     ["thinkreservations", "PMS_THINKRESERVATIONS", ["BASE_URL", "CLIENT_ID", "CLIENT_SECRET", "TOKEN_URL", "AUDIENCE"]],
     ["siteminder", "PMS_SITEMINDER", ["USERNAME", "PASSWORD", "PRICING_MODEL"]],
     ["roomraccoon", "PMS_ROOMRACCOON", ["BASE_URL", "API_CREDENTIAL", "VALIDATION_PATH"]],
+    ["anand-systems", "PMS_ANAND_SYSTEMS", ["BASE_URL", "API_CREDENTIAL", "VALIDATION_PATH"]],
   ] as const)("registers guarded partner configuration for %s", (providerId, prefix, suffixes) => {
     const environment = Object.fromEntries(suffixes.map((suffix) => {
       if (suffix.endsWith("URL")) return [`${prefix}_${suffix}`, `https://${providerId}.example.com`];

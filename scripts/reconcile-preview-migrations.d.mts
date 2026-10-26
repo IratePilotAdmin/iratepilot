@@ -7,6 +7,7 @@ export const APALEO_WEBHOOK_RECEIPT_PENDING: string[];
 export const APALEO_RESERVATION_RECONCILIATION_PENDING: string[];
 export const APALEO_WEBHOOK_AND_RECONCILIATION_PENDING: string[];
 export const DATA_API_GRANTS_PENDING: string[];
+export const ANAND_SYSTEMS_PMS_PENDING: string[];
 export const DEFAULT_PREVIEW_ALLOWED_PENDING_SETS: string[][];
 export const PMS_PILOT_PREFLIGHT_PENDING: string[];
 export const PMS_PILOT_WITH_VENDOR_REFERENCE_PENDING: string[];
