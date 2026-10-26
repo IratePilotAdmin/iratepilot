@@ -60,6 +60,7 @@ function setup(fetcher: typeof fetch) {
   const finishes: Array<{ outcome: string; code: string }> = [];
   const store = {
     listConnections: async () => [connection], claim: async () => item,
+    validateScope: vi.fn<() => Promise<"ready" | "paused" | "stale" | "unavailable">>(async () => "ready"),
     finish: async (_item: typeof item, outcome: string, code: string) => { finishes.push({ outcome, code }); return true; },
   };
   return { finishes, store, fetcher };
@@ -70,7 +71,7 @@ describe("Booking.com reservation-to-PMS import", () => {
     const claim = vi.fn(async () => item);
     const fetcher = vi.fn<typeof fetch>();
     const result = await runBookingComReservationImport(config, {
-      store: { listConnections: async () => [], claim, finish: vi.fn(async () => true) }, fetcher,
+      store: { listConnections: async () => [], validateScope: vi.fn(async () => "ready" as const), claim, finish: vi.fn(async () => true) }, fetcher,
     });
     expect(result).toEqual({ outcome: "idle", code: "no_valid_connection_credentials" });
     expect(claim).not.toHaveBeenCalled();
@@ -80,7 +81,7 @@ describe("Booking.com reservation-to-PMS import", () => {
   it("does not lease an event when the connection registry exceeds the supported bound", async () => {
     const claim = vi.fn(async () => item);
     await expect(runBookingComReservationImport(config, {
-      store: { listConnections: async () => Array.from({ length: 51 }, () => connection), claim, finish: vi.fn(async () => true) },
+      store: { listConnections: async () => Array.from({ length: 51 }, () => connection), validateScope: vi.fn(async () => "ready" as const), claim, finish: vi.fn(async () => true) },
     })).rejects.toThrow("booking_com_reservation_import_connection_limit_exceeded");
     expect(claim).not.toHaveBeenCalled();
   });
@@ -104,6 +105,55 @@ describe("Booking.com reservation-to-PMS import", () => {
     } finally {
       booking.decoded = previous;
     }
+  });
+
+  it("holds a claimed event when approval is withdrawn before credential access", async () => {
+    setDecoded("cancelled");
+    const fetcher = vi.fn<typeof fetch>();
+    const getToken = vi.fn(async () => "t".repeat(40));
+    const decryptSecret = vi.fn(() => ({ IRATEPILOT_PMS_ARI_SIGNING_SECRET: "h".repeat(40) }));
+    const deps = setup(fetcher);
+    deps.store.validateScope.mockResolvedValueOnce("paused");
+
+    const result = await runBookingComReservationImport(config, { ...deps, getToken, decryptSecret });
+    expect(result).toEqual({ outcome: "review", code: "import_scope_paused" });
+    expect(deps.finishes).toEqual([{ outcome: "review", code: "import_scope_paused" }]);
+    expect(decryptSecret).not.toHaveBeenCalled();
+    expect(getToken).not.toHaveBeenCalled();
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("does not send to PMS when the connection changes while obtaining a token", async () => {
+    setDecoded("cancelled");
+    const fetcher = vi.fn<typeof fetch>();
+    const deps = setup(fetcher);
+    deps.store.validateScope.mockResolvedValueOnce("ready").mockResolvedValueOnce("stale");
+
+    const result = await runBookingComReservationImport(config, {
+      ...deps, getToken: async () => "t".repeat(40),
+      decryptSecret: () => ({ IRATEPILOT_PMS_ARI_SIGNING_SECRET: "h".repeat(40) }),
+    });
+    expect(result).toEqual({ outcome: "review", code: "import_scope_stale" });
+    expect(deps.finishes).toEqual([{ outcome: "review", code: "import_scope_stale" }]);
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("does not acknowledge the provider when scope lookup fails after a durable PMS receipt", async () => {
+    setDecoded("cancelled");
+    const fetcher = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ status: 200, body: {
+        eventId: item.id, sourceVersion: item.source_version, outcome: "cancellation-staged",
+      } }), { status: 200 }));
+    const deps = setup(fetcher);
+    deps.store.validateScope.mockResolvedValueOnce("ready").mockResolvedValueOnce("ready").mockResolvedValueOnce("unavailable");
+
+    const result = await runBookingComReservationImport(config, {
+      ...deps, getToken: async () => "t".repeat(40),
+      decryptSecret: () => ({ IRATEPILOT_PMS_ARI_SIGNING_SECRET: "h".repeat(40) }),
+    });
+    expect(result).toEqual({ outcome: "retry", code: "import_scope_unavailable" });
+    expect(deps.finishes).toEqual([{ outcome: "retry", code: "import_scope_unavailable" }]);
+    expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
   it("persists a cancellation and only marks it imported after a valid provider acknowledgement", async () => {

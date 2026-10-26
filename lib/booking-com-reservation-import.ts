@@ -8,6 +8,7 @@ import { mapBookingComRoomToPmsFolio } from "@/services/hotel-channels/booking-c
 import { buildBookingComReservationAcknowledgement, callBookingComReservationTestApi } from "@/services/hotel-channels/booking-com/reservations";
 import { getBookingComReservationId } from "@/services/hotel-channels/booking-com/reservation-parser";
 import { bookingComAcknowledgementSucceeded } from "@/services/hotel-channels/booking-com/reservation-parser";
+import { assessBookingComReservationPollScope } from "@/lib/booking-com-reservation-poller";
 
 type ImportedConnection = {
   connectionId: string;
@@ -37,6 +38,7 @@ type InboxItem = {
 
 type Store = {
   listConnections(): Promise<ImportedConnection[]>;
+  validateScope(connection: ImportedConnection): Promise<"ready" | "paused" | "stale" | "unavailable">;
   claim(): Promise<InboxItem | null>;
   finish(item: InboxItem, outcome: "imported" | "retry" | "review", code: string): Promise<boolean>;
 };
@@ -82,7 +84,7 @@ function createStore(): Store {
       const client = admin();
       const [channelResult, sourceResult, secretResult] = await Promise.all([
         client.from("irp_ota_channel_connections")
-          .select("connection_id,property_id,provider_property_id,machine_account_id")
+          .select("connection_id,property_id,provider_property_id,machine_account_id,certification_complete")
           .eq("provider", "booking_com").eq("environment", "test").eq("enabled", true)
           .eq("partner_approved", true).eq("pii_compliance_approved", true)
           .not("machine_account_id", "is", null).limit(MAX_CHANNEL_CONNECTIONS + 1),
@@ -113,6 +115,7 @@ function createStore(): Store {
         const secret = secretMatches[0]!;
         if (!CONNECTION.test(String(raw.connection_id ?? "")) || !UUID.test(String(raw.property_id ?? ""))
           || !CONNECTION.test(String(raw.provider_property_id ?? "")) || !UUID.test(String(raw.machine_account_id ?? ""))
+          || raw.certification_complete !== true
           || !CONNECTION.test(String(source.connection_id ?? "")) || !UUID.test(String(source.tenant_id ?? ""))
           || !UUID.test(String(source.pms_property_id ?? "")) || secret.secret_key_version !== 1
           || typeof secret.secret_ciphertext !== "string" || typeof secret.secret_initialization_vector !== "string"
@@ -128,6 +131,49 @@ function createStore(): Store {
         });
       }
       return result;
+    },
+    async validateScope(connection) {
+      try {
+        const client = admin();
+        const [channelResult, propertyResult, accountResult, sourceResult, signingResult] = await Promise.all([
+          client.from("irp_ota_channel_connections")
+            .select("connection_id,property_id,provider_property_id,machine_account_id,provider,environment,enabled,partner_approved,pii_compliance_approved,certification_complete")
+            .eq("connection_id", connection.connectionId).maybeSingle(),
+          client.from("properties").select("id,partner_id,active").eq("id", connection.propertyId).maybeSingle(),
+          client.from("irp_ota_machine_accounts")
+            .select("id,property_id,provider,environment,enabled,partner_approved,approved_at")
+            .eq("id", connection.machineAccountId).maybeSingle(),
+          client.from("irp_pms_outbox_connections")
+            .select("property_id,connection_id,tenant_id,pms_property_id,enabled,delivery_enabled,environment")
+            .eq("property_id", connection.propertyId).eq("connection_id", connection.pmsConnectionId).maybeSingle(),
+          client.from("irp_pms_native_ari_connections")
+            .select("property_id,connection_id,enabled,secret_ciphertext,secret_initialization_vector,secret_authentication_tag,secret_key_version")
+            .eq("property_id", connection.propertyId).eq("connection_id", connection.pmsConnectionId).maybeSingle(),
+        ]);
+        if (channelResult.error || propertyResult.error || accountResult.error || sourceResult.error || signingResult.error) return "unavailable";
+        const channel = channelResult.data;
+        const property = propertyResult.data;
+        const account = accountResult.data;
+        const source = sourceResult.data;
+        const signing = signingResult.data;
+        if (!channel || !property || !account || !source || !signing) return "stale";
+        const { data: partner, error: partnerError } = await client.from("partners")
+          .select("id,status").eq("id", property.partner_id).maybeSingle();
+        if (partnerError) return "unavailable";
+        const channelScope = assessBookingComReservationPollScope({
+          connection_id: connection.connectionId, property_id: connection.propertyId,
+          provider_property_id: connection.providerPropertyId, machine_account_id: connection.machineAccountId,
+          certification_complete: true,
+        }, { connection: channel, property, partner, account });
+        if (channelScope !== "ready") return channelScope;
+        if (source.tenant_id !== connection.tenantId || source.pms_property_id !== connection.pmsPropertyId
+          || signing.secret_ciphertext !== connection.encryptedSecret.ciphertext
+          || signing.secret_initialization_vector !== connection.encryptedSecret.initializationVector
+          || signing.secret_authentication_tag !== connection.encryptedSecret.authenticationTag
+          || signing.secret_key_version !== connection.encryptedSecret.keyVersion) return "stale";
+        if (!source.enabled || !source.delivery_enabled || source.environment !== "sandbox" || !signing.enabled) return "paused";
+        return "ready";
+      } catch { return "unavailable"; }
     },
     async claim() {
       const { data, error } = await admin().rpc("irp_ota_claim_booking_com_reservation", { p_limit: 1 });
@@ -227,6 +273,20 @@ export async function runBookingComReservationImport(
     const saved = await finish("review", "provider_event_kind_mismatch");
     return { outcome: saved ? "review" as const : "lease_lost" as const, code: "provider_event_kind_mismatch" };
   }
+  const checkScope = async (): Promise<{ outcome: "retry" | "review" | "lease_lost"; code: string } | null> => {
+    let scope: Awaited<ReturnType<Store["validateScope"]>>;
+    try { scope = await store.validateScope(connection); }
+    catch { scope = "unavailable"; }
+    if (scope === "ready") return null;
+    const outcome = scope === "unavailable" ? "retry" : "review";
+    const code = `import_scope_${scope}`;
+    const saved = await finish(outcome, code);
+    return { outcome: saved ? outcome : "lease_lost" as const, code };
+  };
+  // The registry and claim are snapshots; verify current approvals and PMS
+  // pairing before decrypting a signing secret or obtaining a provider token.
+  const beforeCredentials = await checkScope();
+  if (beforeCredentials) return beforeCredentials;
   let pmsSecret: string;
   try {
     pmsSecret = decryptSecret(connection.encryptedSecret, input.credentialEncryptionKey).IRATEPILOT_PMS_ARI_SIGNING_SECRET ?? "";
@@ -309,6 +369,8 @@ export async function runBookingComReservationImport(
     const saved = await finish("retry", "provider_token_unavailable");
     return { outcome: saved ? "retry" as const : "lease_lost" as const, code: "provider_token_unavailable" };
   }
+  const beforePms = await checkScope();
+  if (beforePms) return beforePms;
   let receipt: Record<string, unknown> | null = null;
   try {
     const timestamp = String(Math.floor(now / 1000));
@@ -339,6 +401,11 @@ export async function runBookingComReservationImport(
     const saved = await finish(retryable ? "retry" : "review", retryable ? "pms_transport_or_storage_failure" : "pms_rejected_event");
     return { outcome: !saved ? "lease_lost" as const : retryable ? "retry" as const : "review" as const };
   }
+
+  // A PMS call can outlive approval. Hold the durable event for review if the
+  // hotel scope changes before notifying Booking.com that it was imported.
+  const beforeAcknowledgement = await checkScope();
+  if (beforeAcknowledgement) return beforeAcknowledgement;
 
   const acknowledgement = buildBookingComReservationAcknowledgement({
     kind: decoded.eventKind === "new" ? "new" : "modified_or_cancelled",
