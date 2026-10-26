@@ -23,7 +23,8 @@ export type PmsProviderId =
   | "hotelogix"
   | "thinkreservations"
   | "siteminder"
-  | "roomraccoon";
+  | "roomraccoon"
+  | "anand-systems";
 
 export type PmsCapability =
   | "availability"

@@ -142,7 +142,7 @@ export const pmsConnectionSchema = z.object({
     "agilysys-pms", "planet-protel", "mews", "stayntouch", "cloudbeds",
     "sihot", "rms-cloud", "maestro-pms", "apaleo", "shiji-pms",
     "guestline", "ezee-absolute", "clock-pms-plus", "hotelogix",
-    "thinkreservations", "siteminder", "roomraccoon",
+    "thinkreservations", "siteminder", "roomraccoon", "anand-systems",
   ]),
   externalPropertyCode: z.string().trim().min(1).max(120),
   vendorAccountReference: z.string().trim().max(120)

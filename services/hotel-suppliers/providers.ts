@@ -266,6 +266,18 @@ export const pmsProviders: readonly PmsProviderManifest[] = [
     documentationUrl: "https://partner.roomraccoon.com/connectivity-sign-up",
     notes: "Activate only after RoomRaccoon accepts iRatePilot as a connectivity partner, supplies its API specification and credentials, certifies the integration, and approves a mutual pilot property.",
   },
+  {
+    id: "anand-systems",
+    name: "ASI PMS (Anand Systems)",
+    vendor: "Anand Systems",
+    accessModel: "vendor_partnership",
+    capabilities: fullReservationCapabilities,
+    certificationRequired: true,
+    environmentPrefix: "PMS_ANAND_SYSTEMS",
+    requiredConfiguration: ["BASE_URL", "API_CREDENTIAL", "VALIDATION_PATH"],
+    documentationUrl: "https://anandsystems.com/third-party-integrations",
+    notes: "Activate only after Anand Systems accepts iRatePilot as an integration partner, supplies the supported API contract and credentials, certifies the connection, and approves a mutual pilot property.",
+  },
 ] as const;
 
 export function getPmsProvider(providerId: PmsProviderId) {
