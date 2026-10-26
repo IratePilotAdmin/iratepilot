@@ -46,6 +46,12 @@ export const DATA_API_GRANTS_PENDING = [
   "202610210171",
 ];
 
+// This release extends the guarded PMS provider constraint for Anand Systems.
+// Keep it isolated so Preview cannot silently apply unrelated migrations.
+export const ANAND_SYSTEMS_PMS_PENDING = [
+  "202610260172",
+];
+
 export const APALEO_WEBHOOK_AND_RECONCILIATION_PENDING = [
   ...APALEO_WEBHOOK_RECEIPT_PENDING,
   ...APALEO_RESERVATION_RECONCILIATION_PENDING,
@@ -113,10 +119,20 @@ function withDataApiGrantMigration(pendingSets) {
   return pendingSets.map((pendingSet) => [...pendingSet, ...DATA_API_GRANTS_PENDING]);
 }
 
-export const DEFAULT_PREVIEW_ALLOWED_PENDING_SETS = [
+function withAnandSystemsPmsMigration(pendingSets) {
+  return pendingSets.map((pendingSet) => [...pendingSet, ...ANAND_SYSTEMS_PMS_PENDING]);
+}
+
+const PRE_ANAND_DEFAULT_PENDING_SETS = [
   ...DEFAULT_RELEASE_PENDING_SETS,
   DATA_API_GRANTS_PENDING,
   ...withDataApiGrantMigration(DEFAULT_RELEASE_PENDING_SETS),
+];
+
+export const DEFAULT_PREVIEW_ALLOWED_PENDING_SETS = [
+  ...PRE_ANAND_DEFAULT_PENDING_SETS,
+  ANAND_SYSTEMS_PMS_PENDING,
+  ...withAnandSystemsPmsMigration(PRE_ANAND_DEFAULT_PENDING_SETS),
   [],
 ];
 
@@ -134,6 +150,12 @@ export const PMS_PILOT_ALLOWED_PENDING_SETS = [
   ...PMS_PILOT_PENDING_SETS,
   DATA_API_GRANTS_PENDING,
   ...withDataApiGrantMigration(PMS_PILOT_PENDING_SETS),
+  ANAND_SYSTEMS_PMS_PENDING,
+  ...withAnandSystemsPmsMigration([
+    ...PMS_PILOT_PENDING_SETS,
+    DATA_API_GRANTS_PENDING,
+    ...withDataApiGrantMigration(PMS_PILOT_PENDING_SETS),
+  ]),
   [],
 ];
 // This is the Supabase project embedded in the active Vercel Preview bundle.

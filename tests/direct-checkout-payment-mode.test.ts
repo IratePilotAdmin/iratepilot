@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   APPROVED_PREVIEW_PENDING,
+  ANAND_SYSTEMS_PMS_PENDING,
   assertPreviewDryRun,
   assertPreviewMigrationTarget,
   assertPreviewRemoteMigrationState,
@@ -62,7 +63,7 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
   it("recognizes the repository migration chain through the explicit Data API grant migration before reconciling Preview", () => {
     const versions = listMigrationVersions();
     expect(versions).toEqual(expect.arrayContaining(REQUIRED_PREVIEW_BASELINE));
-    expect(versions.at(-1)).toBe("202610210171");
+    expect(versions.at(-1)).toBe("202610260172");
     expect(assertPreviewMigrationTarget({
       PREVIEW_SUPABASE_DB_URL: previewUrl,
       PREVIEW_SUPABASE_PROJECT_REF: previewRef,
@@ -111,6 +112,16 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
       migrationList(versions, applied),
       versions,
     ).pendingVersions).toEqual(PMS_VENDOR_REFERENCE_PENDING);
+  });
+
+  it("approves the isolated Anand Systems PMS migration for Preview reconciliation", () => {
+    const versions = listMigrationVersions();
+    const applied = versions.filter((version) => !ANAND_SYSTEMS_PMS_PENDING.includes(version));
+
+    expect(assertPreviewRemoteMigrationState(
+      migrationList(versions, applied),
+      versions,
+    ).pendingVersions).toEqual(ANAND_SYSTEMS_PMS_PENDING);
   });
 
   it("approves the Data API grant migration alone or with an earlier approved release", () => {

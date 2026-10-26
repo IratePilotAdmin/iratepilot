@@ -25,7 +25,7 @@ describe("supplier certification phase summary", () => {
       status: "vendor_certification_pending",
       frameworkReady: true,
       evidenceTrackingAvailable: true,
-      providerManifestCount: 25,
+      providerManifestCount: 26,
       priorityLaunchManifestCount: 22,
       priorityManifestCoverageCount: 22,
       verifiedVendorApprovalCount: 0,
