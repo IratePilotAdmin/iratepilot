@@ -206,22 +206,33 @@ export async function runBookingComReservationImport(
   }
 
   let decoded: ReturnType<typeof decryptBookingComReservation>;
-  let pmsSecret: string;
   try {
     decoded = decryptBookingComReservation({
       connectionId: connection.connectionId, propertyId: connection.propertyId,
       reservationIdDigest: item.provider_reservation_id_sha256, payloadDigest: item.payload_sha256,
       ciphertext: item.pii_ciphertext, iv: item.pii_initialization_vector, tag: item.pii_authentication_tag,
     }, input.reservationEncryptionKey);
-    pmsSecret = decryptSecret(connection.encryptedSecret, input.credentialEncryptionKey).IRATEPILOT_PMS_ARI_SIGNING_SECRET ?? "";
   } catch {
     const saved = await finish("review", "credential_or_payload_invalid");
     return { outcome: saved ? "review" as const : "lease_lost" as const, code: "credential_or_payload_invalid" };
   }
 
+  // A connection can be remapped after an inbox event is staged. Never send a
+  // reservation for the old provider hotel to this connection's current PMS.
+  if (decoded.reservation.providerPropertyId !== connection.providerPropertyId) {
+    const saved = await finish("review", "provider_hotel_identity_mismatch");
+    return { outcome: saved ? "review" as const : "lease_lost" as const, code: "provider_hotel_identity_mismatch" };
+  }
   if (item.event_kind !== decoded.eventKind) {
     const saved = await finish("review", "provider_event_kind_mismatch");
     return { outcome: saved ? "review" as const : "lease_lost" as const, code: "provider_event_kind_mismatch" };
+  }
+  let pmsSecret: string;
+  try {
+    pmsSecret = decryptSecret(connection.encryptedSecret, input.credentialEncryptionKey).IRATEPILOT_PMS_ARI_SIGNING_SECRET ?? "";
+  } catch {
+    const saved = await finish("review", "credential_or_payload_invalid");
+    return { outcome: saved ? "review" as const : "lease_lost" as const, code: "credential_or_payload_invalid" };
   }
   const parentReservationId = getBookingComReservationId(decoded.reservation.reservationIds);
   const isCancellation = decoded.eventKind === "cancelled";

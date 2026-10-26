@@ -85,6 +85,27 @@ describe("Booking.com reservation-to-PMS import", () => {
     expect(claim).not.toHaveBeenCalled();
   });
 
+  it("holds a staged reservation when its provider hotel no longer matches the connection", async () => {
+    const previous = booking.decoded;
+    try {
+      setDecoded("cancelled");
+      (booking.decoded as { reservation: { providerPropertyId: string } }).reservation.providerPropertyId = "other-hotel";
+      const fetcher = vi.fn<typeof fetch>();
+      const getToken = vi.fn(async () => "t".repeat(40));
+      const decryptSecret = vi.fn(() => ({ IRATEPILOT_PMS_ARI_SIGNING_SECRET: "h".repeat(40) }));
+      const deps = setup(fetcher);
+
+      const result = await runBookingComReservationImport(config, { ...deps, getToken, decryptSecret });
+      expect(result).toEqual({ outcome: "review", code: "provider_hotel_identity_mismatch" });
+      expect(deps.finishes).toEqual([{ outcome: "review", code: "provider_hotel_identity_mismatch" }]);
+      expect(decryptSecret).not.toHaveBeenCalled();
+      expect(getToken).not.toHaveBeenCalled();
+      expect(fetcher).not.toHaveBeenCalled();
+    } finally {
+      booking.decoded = previous;
+    }
+  });
+
   it("persists a cancellation and only marks it imported after a valid provider acknowledgement", async () => {
     const fetcher = vi.fn<typeof fetch>()
       .mockResolvedValueOnce(new Response(JSON.stringify({ status: 200, body: { eventId: item.id, sourceVersion: item.source_version, outcome: "cancellation-staged" } }), { status: 200 }))
