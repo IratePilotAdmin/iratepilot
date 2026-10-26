@@ -642,7 +642,7 @@ implements FlightConsumerPreviewAsyncDuffelConvergencePort {
       parameters,
     );
     if (error) throw new FlightConsumerPreviewAsyncDuffelConvergenceError();
-    const rows = z.array(z.record(z.unknown())).length(1).safeParse(data);
+    const rows = z.array(z.record(z.string(), z.unknown())).length(1).safeParse(data);
     if (!rows.success) throw new FlightConsumerPreviewAsyncDuffelConvergenceError();
     const observation = await admin.rpc(
       "get_flight_consumer_duffel_recovery_evidence_observation_v1",
