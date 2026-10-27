@@ -263,7 +263,7 @@ export async function runRatehawkCertificationScenario(options: {
       hid: scenario.hotelId,
       currency: "USD",
     },
-  }), { environment: options.environment, fetcher: options.fetcher });
+  }), { environment: options.environment, fetcher: options.fetcher, timeoutMs: 5_000 });
   const rateHash = firstHash(hotelpage, "book_hash");
   const prebook = await request(buildRatehawkSandboxHotelPrebookRequest({
     keyId,
@@ -284,7 +284,7 @@ export async function runRatehawkCertificationScenario(options: {
         partnerOrderId: currentPartnerOrderId,
         bookHash,
         userIp: "203.0.113.10",
-      }), { environment: options.environment, fetcher: options.fetcher });
+      }), { environment: options.environment, fetcher: options.fetcher, timeoutMs: 5_000 });
       if (objectValue(response ?? undefined)?.status === "ok") acceptedPayment = paymentType(response);
       return response;
     },
@@ -306,16 +306,17 @@ export async function runRatehawkCertificationScenario(options: {
     },
     rooms: scenario.rooms,
     paymentType: acceptedPayment,
-  }), { environment: options.environment, fetcher: options.fetcher });
+  }), { environment: options.environment, fetcher: options.fetcher, timeoutMs: 5_000 });
 
   const final = await pollRatehawkBookingUntilFinal({
     partnerOrderId: bookingForm.partnerOrderId,
     isRetryableTransportFailure: retryableTransportFailure,
+    maximumAttempts: 10,
     checkStatus: (currentPartnerOrderId) => request(buildRatehawkSandboxBookingStatusRequest({
       keyId,
       apiKey,
       partnerOrderId: currentPartnerOrderId,
-    }), { environment: options.environment, fetcher: options.fetcher }),
+    }), { environment: options.environment, fetcher: options.fetcher, timeoutMs: 5_000 }),
   });
 
   let cancellation: ReturnType<typeof parseRatehawkCancellationResponse> | null = null;
@@ -326,7 +327,7 @@ export async function runRatehawkCertificationScenario(options: {
         apiKey,
         partnerOrderId: bookingForm.partnerOrderId,
       }),
-      { environment: options.environment, fetcher: options.fetcher },
+      { environment: options.environment, fetcher: options.fetcher, timeoutMs: 5_000 },
     ));
   }
 
