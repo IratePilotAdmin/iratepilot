@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { requireRole } from "@/lib/auth/require-role";
 import {
+  classifyRatehawkCertificationFailure,
   ratehawkCertificationScenarioIds,
   runRatehawkCertificationScenario,
   type RatehawkCertificationScenarioId,
@@ -57,8 +58,13 @@ export async function POST(request: Request) {
     }, { headers: noStoreHeaders });
   } catch (error) {
     console.error("RateHawk sandbox certification scenario failed", error);
+    const failure = classifyRatehawkCertificationFailure(error);
     return NextResponse.json({
       error: "The RateHawk sandbox certification scenario could not be completed.",
+      failure: {
+        scenario: value.scenario,
+        ...failure,
+      },
     }, { status: 502, headers: noStoreHeaders });
   }
 }
