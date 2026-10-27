@@ -17,7 +17,10 @@ function jsonResponse(value: unknown) {
   });
 }
 
-function createFetcher(finalStatus: "ok" | "error") {
+function createFetcher(finalStatus: "ok" | "error", options?: {
+  finalError?: string;
+  priceChanged?: boolean;
+}) {
   let partnerOrderId = "";
   return vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const url = String(input);
@@ -31,7 +34,10 @@ function createFetcher(finalStatus: "ok" | "error") {
     if (url.endsWith("/hotel/prebook/")) {
       return jsonResponse({
         status: "ok",
-        data: { hotels: [{ rates: [{ book_hash: "booking-rate-hash" }] }] },
+        data: {
+          changes: { price_changed: options?.priceChanged ?? false },
+          hotels: [{ rates: [{ book_hash: "booking-rate-hash" }] }],
+        },
       });
     }
     if (url.endsWith("/booking/form/")) {
@@ -51,7 +57,7 @@ function createFetcher(finalStatus: "ok" | "error") {
         ? jsonResponse({ status: "ok", data: { partner_order_id: partnerOrderId } })
         : jsonResponse({
           status: "error",
-          error: "soldout",
+          error: options?.finalError ?? "soldout",
           data: { partner_order_id: partnerOrderId },
         });
     }
@@ -122,5 +128,30 @@ describe("RateHawk certification runner", () => {
     expect(result.partnerOrderId).toMatch(/_unknown_soldout$/);
     expect(fetcher).toHaveBeenCalledTimes(5);
     expect(fetcher.mock.calls.some(([url]) => String(url).endsWith("/order/cancel/"))).toBe(false);
+  });
+
+  it("requires the documented price increase to be present", async () => {
+    await expect(runRatehawkCertificationScenario({
+      environment,
+      scenarioId: "price_change",
+      fetcher: createFetcher("ok", { priceChanged: false }),
+      now: new Date("2026-10-27T12:00:00.000Z"),
+    })).rejects.toMatchObject({ code: "unexpected_outcome" });
+
+    await expect(runRatehawkCertificationScenario({
+      environment,
+      scenarioId: "price_change",
+      fetcher: createFetcher("ok", { priceChanged: true }),
+      now: new Date("2026-10-27T12:00:00.000Z"),
+    })).resolves.toMatchObject({ finalStatus: "confirmed", cancelled: true });
+  });
+
+  it("rejects an asynchronous result that does not match its certification case", async () => {
+    await expect(runRatehawkCertificationScenario({
+      environment,
+      scenarioId: "unknown_book_limit",
+      fetcher: createFetcher("error", { finalError: "soldout" }),
+      now: new Date("2026-10-27T12:00:00.000Z"),
+    })).rejects.toMatchObject({ code: "unexpected_outcome" });
   });
 });

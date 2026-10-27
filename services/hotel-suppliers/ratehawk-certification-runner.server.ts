@@ -61,7 +61,11 @@ export type RatehawkCertificationScenarioResult = {
 };
 
 export class RatehawkCertificationRunnerError extends Error {
-  constructor(readonly code: "credentials_not_ready" | "invalid_response" | "booking_form_failed") {
+  constructor(readonly code:
+    | "credentials_not_ready"
+    | "invalid_response"
+    | "booking_form_failed"
+    | "unexpected_outcome") {
     super(`RateHawk certification run failed (${code}).`);
     this.name = "RatehawkCertificationRunnerError";
   }
@@ -202,6 +206,36 @@ function paymentType(response: InventoryJsonValue) {
   throw new RatehawkCertificationRunnerError("invalid_response");
 }
 
+function prebookPriceChanged(response: InventoryJsonValue) {
+  const root = objectValue(response ?? undefined);
+  const data = objectValue(root?.data);
+  const changes = objectValue(data?.changes);
+  return changes?.price_changed === true;
+}
+
+function assertExpectedOutcome(
+  scenario: Scenario,
+  final: Awaited<ReturnType<typeof pollRatehawkBookingUntilFinal>>,
+  prebook: InventoryJsonValue,
+) {
+  if (scenario.id === "unknown_soldout") {
+    if (final.status !== "failed" || final.error !== "soldout") {
+      throw new RatehawkCertificationRunnerError("unexpected_outcome");
+    }
+    return;
+  }
+  if (scenario.id === "unknown_book_limit") {
+    if (final.status !== "failed" || final.error !== "book_limit") {
+      throw new RatehawkCertificationRunnerError("unexpected_outcome");
+    }
+    return;
+  }
+  if (final.status !== "confirmed"
+    || (scenario.id === "price_change" && !prebookPriceChanged(prebook))) {
+    throw new RatehawkCertificationRunnerError("unexpected_outcome");
+  }
+}
+
 function dateOnly(date: Date) {
   return date.toISOString().slice(0, 10);
 }
@@ -330,6 +364,7 @@ export async function runRatehawkCertificationScenario(options: {
       { environment: options.environment, fetcher: options.fetcher, timeoutMs: 5_000 },
     ));
   }
+  assertExpectedOutcome(scenario, final, prebook);
 
   return {
     scenario: scenario.id,
