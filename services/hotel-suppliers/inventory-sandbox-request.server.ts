@@ -1,4 +1,5 @@
 import "server-only";
+import { isIP } from "node:net";
 
 import {
   buildExpediaRapidAuthorization,
@@ -98,6 +99,24 @@ export function buildRatehawkSandboxHotelSearchRequest(input: {
   };
 }
 
+export function buildRatehawkSandboxHotelpageRequest(input: {
+  keyId: string;
+  apiKey: string;
+  payload: JsonObject;
+}): InventorySandboxRequest {
+  return {
+    supplierId: "ratehawk",
+    url: "https://api-sandbox.ratehawk.com/api/b2b/v3/search/hp/",
+    method: "POST",
+    headers: {
+      Authorization: buildRatehawkAuthorization(input),
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: serializeJsonObject(input.payload),
+  };
+}
+
 export function buildRatehawkSandboxHotelPrebookRequest(input: {
   keyId: string;
   apiKey: string;
@@ -131,6 +150,198 @@ export function buildRatehawkSandboxHotelPrebookRequest(input: {
         : { price_increase_percent: input.priceIncreasePercent }),
     }),
   };
+}
+
+const ratehawkPartnerOrderIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const ratehawkNamePattern = /^[\p{L}\p{M} .'-]+$/u;
+const ratehawkEmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ratehawkPhonePattern = /^\+?[0-9]{7,20}$/;
+const decimalAmountPattern = /^(?:0|[1-9][0-9]{0,9})(?:\.[0-9]{1,2})?$/;
+
+function ratehawkText(value: string, label: string, maximumLength = 256) {
+  const normalized = value.trim();
+  if (!normalized || normalized.length > maximumLength || unsafeTextPattern.test(normalized)) {
+    throw new Error(`RateHawk sandbox ${label} is invalid.`);
+  }
+  return normalized;
+}
+
+function ratehawkPartnerOrderId(value: string) {
+  const normalized = ratehawkText(value, "partner order ID");
+  if (!ratehawkPartnerOrderIdPattern.test(normalized)) {
+    throw new Error("RateHawk sandbox partner order ID must be a UUID.");
+  }
+  return normalized;
+}
+
+function ratehawkRequest(input: {
+  keyId: string;
+  apiKey: string;
+  url: string;
+  payload: JsonObject;
+}): InventorySandboxRequest {
+  return {
+    supplierId: "ratehawk",
+    url: input.url,
+    method: "POST",
+    headers: {
+      Authorization: buildRatehawkAuthorization(input),
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: serializeJsonObject(input.payload),
+  };
+}
+
+export function buildRatehawkSandboxBookingFormRequest(input: {
+  keyId: string;
+  apiKey: string;
+  partnerOrderId: string;
+  bookHash: string;
+  userIp: string;
+  language?: string;
+}): InventorySandboxRequest {
+  const userIp = ratehawkText(input.userIp, "user IP", 45);
+  if (isIP(userIp) === 0) {
+    throw new Error("RateHawk sandbox user IP is invalid.");
+  }
+  return ratehawkRequest({
+    ...input,
+    url: "https://api-sandbox.ratehawk.com/api/b2b/v3/hotel/order/booking/form/",
+    payload: {
+      partner_order_id: ratehawkPartnerOrderId(input.partnerOrderId),
+      book_hash: ratehawkText(input.bookHash, "book hash"),
+      language: ratehawkText(input.language ?? "en", "language", 5),
+      user_ip: userIp,
+    },
+  });
+}
+
+export type RatehawkSandboxGuest = {
+  firstName: string;
+  lastName: string;
+  isChild?: boolean;
+  age?: number;
+};
+
+function ratehawkGuest(guest: RatehawkSandboxGuest) {
+  const firstName = ratehawkText(guest.firstName, "guest first name", 100);
+  const lastName = ratehawkText(guest.lastName, "guest last name", 100);
+  if (!ratehawkNamePattern.test(firstName) || !ratehawkNamePattern.test(lastName)) {
+    throw new Error("RateHawk sandbox guest name is invalid.");
+  }
+  if (guest.isChild) {
+    if (!Number.isSafeInteger(guest.age) || (guest.age ?? -1) < 0 || (guest.age ?? 99) > 17) {
+      throw new Error("RateHawk sandbox child age is invalid.");
+    }
+    return { first_name: firstName, last_name: lastName, is_child: true, age: guest.age };
+  }
+  if (guest.age !== undefined) {
+    throw new Error("RateHawk sandbox adult guest must not include a child age.");
+  }
+  return { first_name: firstName, last_name: lastName };
+}
+
+export function buildRatehawkSandboxBookingFinishRequest(input: {
+  keyId: string;
+  apiKey: string;
+  partnerOrderId: string;
+  user: { email: string; phone: string; comment?: string };
+  supplier: { firstName: string; lastName: string; email: string; phone: string };
+  rooms: readonly { guests: readonly RatehawkSandboxGuest[] }[];
+  paymentType: { type: "deposit" | "hotel"; amount: string; currencyCode: string };
+  amountSellB2b2c?: string;
+  language?: string;
+}): InventorySandboxRequest {
+  const email = ratehawkText(input.user.email, "user email", 254);
+  const supplierEmail = ratehawkText(input.supplier.email, "supplier email", 254);
+  const phone = ratehawkText(input.user.phone, "user phone", 21);
+  const supplierPhone = ratehawkText(input.supplier.phone, "supplier phone", 21);
+  if (!ratehawkEmailPattern.test(email) || !ratehawkEmailPattern.test(supplierEmail)) {
+    throw new Error("RateHawk sandbox email is invalid.");
+  }
+  if (!ratehawkPhonePattern.test(phone) || !ratehawkPhonePattern.test(supplierPhone)) {
+    throw new Error("RateHawk sandbox phone is invalid.");
+  }
+  if (input.rooms.length < 1 || input.rooms.length > 9
+    || input.rooms.some((room) => room.guests.length < 1 || room.guests.length > 8)) {
+    throw new Error("RateHawk sandbox room guests are invalid.");
+  }
+  if (!decimalAmountPattern.test(input.paymentType.amount)
+    || !/^[A-Z]{3}$/.test(input.paymentType.currencyCode)) {
+    throw new Error("RateHawk sandbox payment amount or currency is invalid.");
+  }
+  if (input.amountSellB2b2c !== undefined && !decimalAmountPattern.test(input.amountSellB2b2c)) {
+    throw new Error("RateHawk sandbox sell amount is invalid.");
+  }
+  const supplierFirstName = ratehawkText(input.supplier.firstName, "supplier first name", 100);
+  const supplierLastName = ratehawkText(input.supplier.lastName, "supplier last name", 100);
+  if (!ratehawkNamePattern.test(supplierFirstName) || !ratehawkNamePattern.test(supplierLastName)) {
+    throw new Error("RateHawk sandbox supplier name is invalid.");
+  }
+
+  return ratehawkRequest({
+    ...input,
+    url: "https://api-sandbox.ratehawk.com/api/b2b/v3/hotel/order/booking/finish/",
+    payload: {
+      user: {
+        email,
+        phone,
+        ...(input.user.comment ? { comment: ratehawkText(input.user.comment, "user comment", 500) } : {}),
+      },
+      supplier_data: {
+        first_name_original: supplierFirstName,
+        last_name_original: supplierLastName,
+        email: supplierEmail,
+        phone: supplierPhone,
+      },
+      partner: {
+        partner_order_id: ratehawkPartnerOrderId(input.partnerOrderId),
+        ...(input.amountSellB2b2c === undefined ? {} : { amount_sell_b2b2c: input.amountSellB2b2c }),
+      },
+      language: ratehawkText(input.language ?? "en", "language", 5),
+      rooms: input.rooms.map((room) => ({ guests: room.guests.map(ratehawkGuest) })),
+      payment_type: {
+        type: input.paymentType.type,
+        amount: input.paymentType.amount,
+        currency_code: input.paymentType.currencyCode,
+      },
+    },
+  });
+}
+
+function buildRatehawkPartnerOrderRequest(input: {
+  keyId: string;
+  apiKey: string;
+  partnerOrderId: string;
+}, url: string) {
+  return ratehawkRequest({
+    ...input,
+    url,
+    payload: { partner_order_id: ratehawkPartnerOrderId(input.partnerOrderId) },
+  });
+}
+
+export function buildRatehawkSandboxBookingStatusRequest(input: {
+  keyId: string;
+  apiKey: string;
+  partnerOrderId: string;
+}) {
+  return buildRatehawkPartnerOrderRequest(
+    input,
+    "https://api-sandbox.ratehawk.com/api/b2b/v3/hotel/order/booking/finish/status/",
+  );
+}
+
+export function buildRatehawkSandboxBookingCancelRequest(input: {
+  keyId: string;
+  apiKey: string;
+  partnerOrderId: string;
+}) {
+  return buildRatehawkPartnerOrderRequest(
+    input,
+    "https://api-sandbox.ratehawk.com/api/b2b/v3/hotel/order/cancel/",
+  );
 }
 
 export function buildExpediaRapidSandboxAvailabilityRequest(input: {
