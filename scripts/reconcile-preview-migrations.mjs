@@ -57,6 +57,13 @@ export const RATEHAWK_VALIDATION_EVIDENCE_PENDING = [
   "202610270173",
 ];
 
+// This release extends the guarded RateHawk evidence table with sanitized
+// prebook results. Keep it isolated and composable with every already-approved
+// Preview state so the reconciler remains fail-closed for unrelated migrations.
+export const RATEHAWK_PREBOOK_EVIDENCE_PENDING = [
+  "202610270174",
+];
+
 export const APALEO_WEBHOOK_AND_RECONCILIATION_PENDING = [
   ...APALEO_WEBHOOK_RECEIPT_PENDING,
   ...APALEO_RESERVATION_RECONCILIATION_PENDING,
@@ -140,7 +147,7 @@ const PRE_RATEHAWK_DEFAULT_PENDING_SETS = [
   ...withAnandSystemsPmsMigration(PRE_ANAND_DEFAULT_PENDING_SETS),
 ];
 
-export const DEFAULT_PREVIEW_ALLOWED_PENDING_SETS = [
+const PRE_RATEHAWK_PREBOOK_DEFAULT_PENDING_SETS = [
   ...PRE_RATEHAWK_DEFAULT_PENDING_SETS,
   RATEHAWK_VALIDATION_EVIDENCE_PENDING,
   ...PRE_RATEHAWK_DEFAULT_PENDING_SETS.map((pendingSet) => [
@@ -148,6 +155,14 @@ export const DEFAULT_PREVIEW_ALLOWED_PENDING_SETS = [
     ...RATEHAWK_VALIDATION_EVIDENCE_PENDING,
   ]),
   [],
+];
+
+export const DEFAULT_PREVIEW_ALLOWED_PENDING_SETS = [
+  ...PRE_RATEHAWK_PREBOOK_DEFAULT_PENDING_SETS,
+  ...PRE_RATEHAWK_PREBOOK_DEFAULT_PENDING_SETS.map((pendingSet) => [
+    ...pendingSet,
+    ...RATEHAWK_PREBOOK_EVIDENCE_PENDING,
+  ]),
 ];
 
 const PMS_PILOT_PENDING_SETS = [
@@ -172,7 +187,7 @@ const PRE_RATEHAWK_PMS_PILOT_ALLOWED_PENDING_SETS = [
   ]),
 ];
 
-export const PMS_PILOT_ALLOWED_PENDING_SETS = [
+const PRE_RATEHAWK_PREBOOK_PMS_PILOT_ALLOWED_PENDING_SETS = [
   ...PRE_RATEHAWK_PMS_PILOT_ALLOWED_PENDING_SETS,
   RATEHAWK_VALIDATION_EVIDENCE_PENDING,
   ...PRE_RATEHAWK_PMS_PILOT_ALLOWED_PENDING_SETS.map((pendingSet) => [
@@ -180,6 +195,14 @@ export const PMS_PILOT_ALLOWED_PENDING_SETS = [
     ...RATEHAWK_VALIDATION_EVIDENCE_PENDING,
   ]),
   [],
+];
+
+export const PMS_PILOT_ALLOWED_PENDING_SETS = [
+  ...PRE_RATEHAWK_PREBOOK_PMS_PILOT_ALLOWED_PENDING_SETS,
+  ...PRE_RATEHAWK_PREBOOK_PMS_PILOT_ALLOWED_PENDING_SETS.map((pendingSet) => [
+    ...pendingSet,
+    ...RATEHAWK_PREBOOK_EVIDENCE_PENDING,
+  ]),
 ];
 // This is the Supabase project embedded in the active Vercel Preview bundle.
 // Keep this pinned so a stale rehearsal project cannot receive Preview pushes.

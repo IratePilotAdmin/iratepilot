@@ -124,6 +124,22 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
     ).pendingVersions).toEqual(ANAND_SYSTEMS_PMS_PENDING);
   });
 
+  it("approves the RateHawk prebook evidence migration alone or after search evidence", () => {
+    const versions = listMigrationVersions();
+    const pendingSets = [
+      ["202610270174"],
+      ["202610270173", "202610270174"],
+    ];
+
+    for (const pending of pendingSets) {
+      const applied = versions.filter((version) => !pending.includes(version));
+      expect(assertPreviewRemoteMigrationState(
+        migrationList(versions, applied),
+        versions,
+      ).pendingVersions).toEqual(pending);
+    }
+  });
+
   it("approves the Data API grant migration alone or with an earlier approved release", () => {
     const versions = listMigrationVersions();
     const pendingSets = [
