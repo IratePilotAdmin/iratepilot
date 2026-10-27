@@ -63,8 +63,8 @@ function createFetcher(finalStatus: "ok" | "error", options?: {
     }
     if (url.endsWith("/booking/finish/")) {
       return new Response(JSON.stringify({
-        status: options?.finishStatus === 500 ? "error" : "ok",
-        ...(options?.finishStatus === 500 ? { error: "unknown" } : {}),
+        status: options?.finishStatus && options.finishStatus >= 500 ? "error" : "ok",
+        ...(options?.finishStatus && options.finishStatus >= 500 ? { error: "unknown" } : {}),
       }), {
         status: options?.finishStatus ?? 200,
         headers: { "content-type": "application/json" },
@@ -217,8 +217,8 @@ describe("RateHawk certification runner", () => {
     expect(fetcher.mock.calls.some(([url]) => String(url).endsWith("/order/cancel/"))).toBe(false);
   });
 
-  it("polls documented unknown scenarios after Booking Finish returns HTTP 500", async () => {
-    const fetcher = createFetcher("ok", { finishStatus: 500 });
+  it("polls documented unknown scenarios after Booking Finish returns HTTP 5xx", async () => {
+    const fetcher = createFetcher("ok", { finishStatus: 503 });
 
     await expect(runRatehawkCertificationScenario({
       environment,

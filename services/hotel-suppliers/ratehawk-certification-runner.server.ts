@@ -471,7 +471,8 @@ export async function runRatehawkCertificationScenario(options: {
     const expectedUnknownFinish = scenario.orderSuffix !== undefined
       && error instanceof InventorySupplierResponseError
       && error.code === "supplier_error"
-      && error.status === 500;
+      && error.status >= 500
+      && error.status < 600;
     if (!expectedUnknownFinish) throw error;
   }
 
