@@ -60,7 +60,12 @@ function validateRequest(request: InventorySandboxRequest) {
       ? request.method === "POST"
         && [
           "https://api-sandbox.ratehawk.com/api/b2b/v3/search/serp/hotels/",
+          "https://api-sandbox.ratehawk.com/api/b2b/v3/search/hp/",
           "https://api-sandbox.ratehawk.com/api/b2b/v3/hotel/prebook/",
+          "https://api-sandbox.ratehawk.com/api/b2b/v3/hotel/order/booking/form/",
+          "https://api-sandbox.ratehawk.com/api/b2b/v3/hotel/order/booking/finish/",
+          "https://api-sandbox.ratehawk.com/api/b2b/v3/hotel/order/booking/finish/status/",
+          "https://api-sandbox.ratehawk.com/api/b2b/v3/hotel/order/cancel/",
         ].includes(url.href)
         && request.headers.Authorization?.startsWith("Basic ")
       : request.supplierId === "stuba"

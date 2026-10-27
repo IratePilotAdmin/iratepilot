@@ -8,6 +8,11 @@ import {
 import {
   buildExpediaRapidSandboxAvailabilityRequest,
   buildHotelbedsSandboxAvailabilityRequest,
+  buildRatehawkSandboxBookingCancelRequest,
+  buildRatehawkSandboxBookingFinishRequest,
+  buildRatehawkSandboxBookingFormRequest,
+  buildRatehawkSandboxBookingStatusRequest,
+  buildRatehawkSandboxHotelpageRequest,
   buildRatehawkSandboxHotelPrebookRequest,
   buildRatehawkSandboxHotelSearchRequest,
   buildStubaSandboxHotelSearchRequest,
@@ -20,6 +25,9 @@ const hotelbedsRequest = () => buildHotelbedsSandboxAvailabilityRequest({
   timestampSeconds: 1_700_000_000,
   payload: { stay: { checkIn: "2026-10-22", checkOut: "2026-10-25" } },
 });
+
+const ratehawkPartnerOrderId = "0b370500-5321-4046-92c5-5982f1a64fc6";
+const ratehawkCredentials = { keyId: "partner-id", apiKey: "ratehawk-api-key" };
 
 function enabledEnvironment(supplierId: InventorySandboxRequest["supplierId"]) {
   if (supplierId === "hotelbeds") {
@@ -69,6 +77,42 @@ describe("inventory supplier sandbox transport", () => {
       keyId: "partner-id",
       apiKey: "ratehawk-api-key",
       payload: { hids: [10004873] },
+    }),
+    buildRatehawkSandboxHotelpageRequest({
+      keyId: "partner-id",
+      apiKey: "ratehawk-api-key",
+      payload: {
+        checkin: "2027-02-22",
+        checkout: "2027-02-24",
+        residency: "us",
+        language: "en",
+        guests: [{ adults: 2, children: [] }],
+        hid: 10004834,
+        currency: "USD",
+      },
+    }),
+    buildRatehawkSandboxBookingFormRequest({
+      ...ratehawkCredentials,
+      partnerOrderId: ratehawkPartnerOrderId,
+      bookHash: "p-sandbox-rate",
+      userIp: "203.0.113.10",
+    }),
+    buildRatehawkSandboxBookingFinishRequest({
+      ...ratehawkCredentials,
+      partnerOrderId: ratehawkPartnerOrderId,
+      user: { email: "booking@iratepilot.com", phone: "+16144396660" },
+      supplier: {
+        firstName: "Hiren", lastName: "Patel",
+        email: "booking@iratepilot.com", phone: "+16144396660",
+      },
+      rooms: [{ guests: [{ firstName: "Hiren", lastName: "Patel" }] }],
+      paymentType: { type: "deposit", amount: "9.00", currencyCode: "EUR" },
+    }),
+    buildRatehawkSandboxBookingStatusRequest({
+      ...ratehawkCredentials, partnerOrderId: ratehawkPartnerOrderId,
+    }),
+    buildRatehawkSandboxBookingCancelRequest({
+      ...ratehawkCredentials, partnerOrderId: ratehawkPartnerOrderId,
     }),
     buildExpediaRapidSandboxAvailabilityRequest({
       apiKey: "expedia-api-key",
