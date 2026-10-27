@@ -126,7 +126,12 @@ describe("RateHawk certification runner", () => {
     expect(bookingForm.user_ip).toBe("203.0.113.10");
     const finish = JSON.parse(String(fetcher.mock.calls[3]?.[1]?.body));
     expect(finish.rooms[0].guests).toHaveLength(4);
-    expect(finish.rooms[0].guests[2]).toMatchObject({ is_child: true, age: 0 });
+    expect(finish.rooms[0].guests).toEqual([
+      { first_name: "AdultOne", last_name: "Ratehawk" },
+      { first_name: "AdultTwo", last_name: "Ratehawk" },
+      { first_name: "ChildZero", last_name: "Ratehawk", is_child: true, age: 0 },
+      { first_name: "ChildSeventeen", last_name: "Ratehawk", is_child: true, age: 17 },
+    ]);
   });
 
   it("preserves the documented async suffix and does not cancel a failed booking", async () => {
