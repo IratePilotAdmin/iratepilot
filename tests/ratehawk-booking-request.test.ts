@@ -49,6 +49,20 @@ describe("RateHawk sandbox booking requests", () => {
     });
   });
 
+  it.each([
+    "cert-unknown_success",
+    "cert-unknown_soldout",
+    "cert-unknown_book_limit",
+  ])("accepts the documented certification trigger %s", (certificationPartnerOrderId) => {
+    const request = buildRatehawkSandboxBookingFormRequest({
+      ...credentials,
+      partnerOrderId: certificationPartnerOrderId,
+      bookHash: "p-bookable-rate",
+      userIp: "203.0.113.10",
+    });
+    expect(JSON.parse(request.body ?? "").partner_order_id).toBe(certificationPartnerOrderId);
+  });
+
   it("builds finish, status, and cancellation without card data", () => {
     const finish = buildRatehawkSandboxBookingFinishRequest({
       ...credentials,
@@ -77,7 +91,13 @@ describe("RateHawk sandbox booking requests", () => {
   it("rejects identifiers, people, and amounts that cannot be certified", () => {
     expect(() => buildRatehawkSandboxBookingFormRequest({
       ...credentials, partnerOrderId: "not-a-uuid", bookHash: "hash", userIp: "203.0.113.10",
-    })).toThrow("must be a UUID");
+    })).toThrow("must be a UUID or documented certification trigger");
+    expect(() => buildRatehawkSandboxBookingFormRequest({
+      ...credentials,
+      partnerOrderId: "cert-unknown_success!",
+      bookHash: "hash",
+      userIp: "203.0.113.10",
+    })).toThrow();
     expect(() => buildRatehawkSandboxBookingFinishRequest({
       ...credentials,
       partnerOrderId,

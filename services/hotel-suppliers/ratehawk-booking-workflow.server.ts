@@ -5,6 +5,7 @@ import {
   classifyRatehawkBookingFormResponse,
   classifyRatehawkBookingStatusResponse,
 } from "./ratehawk-booking-response.server";
+import { isRatehawkSandboxPartnerOrderId } from "./ratehawk-partner-order-id.server";
 
 export type RatehawkBookingFormResult =
   | {
@@ -29,8 +30,6 @@ export class RatehawkBookingWorkflowError extends Error {
   }
 }
 
-const partnerOrderIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
 /**
  * Retries only ETG's documented transient booking-form failures, always with a
  * fresh partner order ID, and never more than ten times.
@@ -50,7 +49,7 @@ export async function createRatehawkBookingFormWithRetry(input: {
   let lastError = "unknown";
   for (let attempts = 1; attempts <= maximumAttempts; attempts += 1) {
     const partnerOrderId = input.createPartnerOrderId().trim();
-    if (!partnerOrderIdPattern.test(partnerOrderId) || usedIds.has(partnerOrderId)) {
+    if (!isRatehawkSandboxPartnerOrderId(partnerOrderId) || usedIds.has(partnerOrderId)) {
       throw new RatehawkBookingWorkflowError("invalid_partner_order_id");
     }
     usedIds.add(partnerOrderId);
@@ -101,9 +100,10 @@ export async function pollRatehawkBookingUntilFinal(input: {
   now?: () => number;
   timeoutMs?: number;
   intervalMs?: number;
+  isRetryableTransportFailure?: (error: unknown) => boolean;
 }): Promise<RatehawkBookingFinalStatus> {
   const partnerOrderId = input.partnerOrderId.trim();
-  if (!partnerOrderIdPattern.test(partnerOrderId)) {
+  if (!isRatehawkSandboxPartnerOrderId(partnerOrderId)) {
     throw new RatehawkBookingWorkflowError("invalid_partner_order_id");
   }
 
@@ -124,19 +124,23 @@ export async function pollRatehawkBookingUntilFinal(input: {
 
   while (true) {
     attempts += 1;
-    const result = classifyRatehawkBookingStatusResponse(
-      await input.checkStatus(partnerOrderId),
-    );
-    if (result.status === "confirmed") {
-      return { status: "confirmed", partnerOrderId: result.partnerOrderId, attempts };
-    }
-    if (result.status === "failed") {
-      return {
-        status: "failed",
-        partnerOrderId: result.partnerOrderId,
-        attempts,
-        error: result.error ?? "unknown",
-      };
+    try {
+      const result = classifyRatehawkBookingStatusResponse(
+        await input.checkStatus(partnerOrderId),
+      );
+      if (result.status === "confirmed") {
+        return { status: "confirmed", partnerOrderId: result.partnerOrderId, attempts };
+      }
+      if (result.status === "failed") {
+        return {
+          status: "failed",
+          partnerOrderId: result.partnerOrderId,
+          attempts,
+          error: result.error ?? "unknown",
+        };
+      }
+    } catch (error) {
+      if (!input.isRetryableTransportFailure?.(error)) throw error;
     }
 
     const elapsedMs = Math.max(0, now() - startedAt);

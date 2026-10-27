@@ -48,4 +48,29 @@ describe("RateHawk certification readiness", () => {
       HOTEL_INVENTORY_RATEHAWK_PRODUCTION_API_KEY: "production-api-key",
     }, evidence)).toMatchObject({ nextGate: "live", readyForLiveBooking: true });
   });
+
+  it("does not accept the sandbox credential pair as production credentials", () => {
+    const readiness = evaluateRatehawkCertificationReadiness({
+      ...sandbox,
+      HOTEL_INVENTORY_RATEHAWK_PRODUCTION_KEY_ID: sandbox.HOTEL_INVENTORY_RATEHAWK_KEY_ID,
+      HOTEL_INVENTORY_RATEHAWK_PRODUCTION_API_KEY: sandbox.HOTEL_INVENTORY_RATEHAWK_API_KEY,
+    }, {
+      mappedHotelIds: [10004834, 8819557],
+      contentImplemented: true,
+      searchValidated: true,
+      hotelpageImplemented: true,
+      prebookValidated: true,
+      bookingFormValidated: true,
+      bookingFinishValidated: true,
+      finalStatusValidated: true,
+      cancellationValidated: true,
+      checklistSubmitted: true,
+      certificationApproved: true,
+    });
+
+    expect(readiness).toMatchObject({
+      nextGate: "production_credentials",
+      productionCredentialsReady: false,
+    });
+  });
 });

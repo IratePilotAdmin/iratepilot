@@ -59,6 +59,23 @@ describe("RateHawk booking workflow", () => {
     });
   });
 
+  it("allows ETG's documented unknown-outcome certification order IDs", async () => {
+    const certificationPartnerOrderId = "cert-run-unknown_success";
+    const result = await createRatehawkBookingFormWithRetry({
+      createPartnerOrderId: () => certificationPartnerOrderId,
+      requestBookingForm: vi.fn().mockResolvedValue({
+        status: "ok",
+        data: {
+          order_id: 42,
+          partner_order_id: certificationPartnerOrderId,
+          payment_types: [{ type: "deposit" }],
+        },
+      }),
+    });
+
+    expect(result).toMatchObject({ status: "accepted", partnerOrderId: certificationPartnerOrderId });
+  });
+
   it("polls processing responses until RateHawk explicitly confirms the booking", async () => {
     let currentTime = 0;
     const checkStatus = vi.fn()
@@ -99,6 +116,39 @@ describe("RateHawk booking workflow", () => {
     expect(result).toEqual({ status: "timed_out", partnerOrderId, attempts: 4 });
     expect(currentTime).toBe(12_000);
     expect(checkStatus).toHaveBeenCalledTimes(4);
+  });
+
+  it("continues polling after retryable status transport failures", async () => {
+    let currentTime = 0;
+    const transientFailure = new Error("HTTP 503");
+    const checkStatus = vi.fn()
+      .mockRejectedValueOnce(transientFailure)
+      .mockResolvedValueOnce({
+        status: "ok",
+        error: null,
+        data: { partner_order_id: partnerOrderId },
+      });
+
+    const result = await pollRatehawkBookingUntilFinal({
+      partnerOrderId,
+      checkStatus,
+      isRetryableTransportFailure: (error) => error === transientFailure,
+      timeoutMs: 10_000,
+      intervalMs: 5_000,
+      now: () => currentTime,
+      sleep: async (milliseconds) => { currentTime += milliseconds; },
+    });
+
+    expect(result).toEqual({ status: "confirmed", partnerOrderId, attempts: 2 });
+  });
+
+  it("does not hide non-retryable status transport failures", async () => {
+    const fatalFailure = new Error("HTTP 401");
+    await expect(pollRatehawkBookingUntilFinal({
+      partnerOrderId,
+      checkStatus: vi.fn().mockRejectedValue(fatalFailure),
+      isRetryableTransportFailure: () => false,
+    })).rejects.toBe(fatalFailure);
   });
 
   it("stops immediately on a final booking error", async () => {

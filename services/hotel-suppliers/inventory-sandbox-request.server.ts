@@ -7,6 +7,7 @@ import {
   buildRatehawkAuthorization,
 } from "./inventory-auth.server";
 import type { InventorySupplierId } from "./inventory-readiness";
+import { isRatehawkSandboxPartnerOrderId } from "./ratehawk-partner-order-id.server";
 
 export type InventorySandboxRequest = {
   supplierId: InventorySupplierId;
@@ -152,7 +153,6 @@ export function buildRatehawkSandboxHotelPrebookRequest(input: {
   };
 }
 
-const ratehawkPartnerOrderIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ratehawkNamePattern = /^[\p{L}\p{M} .'-]+$/u;
 const ratehawkEmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ratehawkPhonePattern = /^\+?[0-9]{7,20}$/;
@@ -168,8 +168,10 @@ function ratehawkText(value: string, label: string, maximumLength = 256) {
 
 function ratehawkPartnerOrderId(value: string) {
   const normalized = ratehawkText(value, "partner order ID");
-  if (!ratehawkPartnerOrderIdPattern.test(normalized)) {
-    throw new Error("RateHawk sandbox partner order ID must be a UUID.");
+  if (!isRatehawkSandboxPartnerOrderId(normalized)) {
+    throw new Error(
+      "RateHawk sandbox partner order ID must be a UUID or documented certification trigger.",
+    );
   }
   return normalized;
 }

@@ -51,11 +51,16 @@ export function evaluateRatehawkCertificationReadiness(
     && environment.HOTEL_INVENTORY_RATEHAWK_SANDBOX_ENABLED?.trim().toLowerCase() === "true";
   const mapped = new Set(evidence.mappedHotelIds ?? []);
   const certificationHotelsMapped = ratehawkCertificationHotelIds.every((id) => mapped.has(id));
+  const sandboxKeyId = environment.HOTEL_INVENTORY_RATEHAWK_KEY_ID?.trim() ?? "";
+  const sandboxApiKey = environment.HOTEL_INVENTORY_RATEHAWK_API_KEY?.trim() ?? "";
+  const productionKeyId = environment.HOTEL_INVENTORY_RATEHAWK_PRODUCTION_KEY_ID?.trim() ?? "";
+  const productionApiKey = environment.HOTEL_INVENTORY_RATEHAWK_PRODUCTION_API_KEY?.trim() ?? "";
   const productionCredentialsReady = configured(
     environment,
     "HOTEL_INVENTORY_RATEHAWK_PRODUCTION_KEY_ID",
     3,
-  ) && configured(environment, "HOTEL_INVENTORY_RATEHAWK_PRODUCTION_API_KEY", 8);
+  ) && configured(environment, "HOTEL_INVENTORY_RATEHAWK_PRODUCTION_API_KEY", 8)
+    && (productionKeyId !== sandboxKeyId || productionApiKey !== sandboxApiKey);
 
   const orderedGates: readonly [RatehawkLaunchGate, boolean][] = [
     ["sandbox_credentials", sandboxCredentialsReady],
