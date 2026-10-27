@@ -100,6 +100,7 @@ export async function pollRatehawkBookingUntilFinal(input: {
   now?: () => number;
   timeoutMs?: number;
   intervalMs?: number;
+  maximumAttempts?: number;
   isRetryableTransportFailure?: (error: unknown) => boolean;
 }): Promise<RatehawkBookingFinalStatus> {
   const partnerOrderId = input.partnerOrderId.trim();
@@ -109,9 +110,11 @@ export async function pollRatehawkBookingUntilFinal(input: {
 
   const timeoutMs = input.timeoutMs ?? 180_000;
   const intervalMs = input.intervalMs ?? 5_000;
+  const maximumAttempts = input.maximumAttempts ?? 10;
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1_000 || timeoutMs > 900_000
     || !Number.isSafeInteger(intervalMs) || intervalMs < 250 || intervalMs > 30_000
-    || intervalMs > timeoutMs) {
+    || intervalMs > timeoutMs
+    || !Number.isSafeInteger(maximumAttempts) || maximumAttempts < 1 || maximumAttempts > 10) {
     throw new RatehawkBookingWorkflowError("invalid_polling_options");
   }
 
@@ -144,7 +147,7 @@ export async function pollRatehawkBookingUntilFinal(input: {
     }
 
     const elapsedMs = Math.max(0, now() - startedAt);
-    if (elapsedMs >= timeoutMs) {
+    if (attempts >= maximumAttempts || elapsedMs >= timeoutMs) {
       return { status: "timed_out", partnerOrderId, attempts };
     }
     await sleep(Math.min(intervalMs, timeoutMs - elapsedMs));
