@@ -27,6 +27,7 @@ export async function GET() {
     .from("inventory_supplier_validation_evidence")
     .select("tested_at,checkin,checkout,hotel_count,rate_count,deployment_revision")
     .eq("supplier_id", "ratehawk")
+    .eq("validation_kind", "hotel_search")
     .order("tested_at", { ascending: false })
     .limit(1)
     .maybeSingle();

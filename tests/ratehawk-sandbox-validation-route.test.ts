@@ -33,7 +33,7 @@ describe("RateHawk sandbox validation route", () => {
     mocks.maybeSingle.mockResolvedValue({ data: null, error: null });
     mocks.limit.mockReturnValue({ maybeSingle: mocks.maybeSingle });
     mocks.order.mockReturnValue({ limit: mocks.limit });
-    mocks.eq.mockReturnValue({ order: mocks.order });
+    mocks.eq.mockReturnValue({ eq: mocks.eq, order: mocks.order });
     mocks.select.mockReturnValue({ eq: mocks.eq });
     mocks.from.mockReturnValue({ insert: mocks.insert, select: mocks.select });
     mocks.createAdminClient.mockReturnValue({ from: mocks.from });
@@ -87,5 +87,6 @@ describe("RateHawk sandbox validation route", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ evidenceAvailable: true, latestEvidence });
     expect(mocks.runValidation).not.toHaveBeenCalled();
+    expect(mocks.eq).toHaveBeenCalledWith("validation_kind", "hotel_search");
   });
 });

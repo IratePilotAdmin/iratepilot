@@ -47,6 +47,7 @@ function summarizeResponse(response: InventoryJsonValue) {
   }
 
   let rateCount = 0;
+  let rateHash = "";
   for (const hotel of data.hotels) {
     if (!hotel || Array.isArray(hotel) || typeof hotel !== "object" || !Array.isArray(hotel.rates)) {
       throw new RatehawkSandboxValidationError("invalid_response");
@@ -55,20 +56,23 @@ function summarizeResponse(response: InventoryJsonValue) {
       if (!rate || Array.isArray(rate) || typeof rate !== "object") {
         throw new RatehawkSandboxValidationError("invalid_response");
       }
+      if (!rateHash && typeof rate.book_hash === "string" && rate.book_hash.length > 0 && rate.book_hash.length <= 256) {
+        rateHash = rate.book_hash;
+      }
       rateCount += 1;
     }
   }
   if (data.hotels.length < 1 || rateCount < 1) {
     throw new RatehawkSandboxValidationError("invalid_response");
   }
-  return { hotelCount: data.hotels.length, rateCount };
+  return { hotelCount: data.hotels.length, rateCount, rateHash };
 }
 
-export async function runRatehawkSandboxValidation(options: {
+async function runSearch(options: {
   environment: Record<string, string | undefined>;
   fetcher?: InventorySandboxFetch;
   now?: Date;
-}): Promise<RatehawkSandboxValidationResult> {
+}) {
   const keyId = options.environment.HOTEL_INVENTORY_RATEHAWK_KEY_ID?.trim();
   const apiKey = options.environment.HOTEL_INVENTORY_RATEHAWK_API_KEY?.trim();
   if (!keyId || !apiKey) {
@@ -106,4 +110,31 @@ export async function runRatehawkSandboxValidation(options: {
     checkout,
     ...summary,
   };
+}
+
+export async function runRatehawkSandboxValidation(options: {
+  environment: Record<string, string | undefined>;
+  fetcher?: InventorySandboxFetch;
+  now?: Date;
+}): Promise<RatehawkSandboxValidationResult> {
+  const result = await runSearch(options);
+  return {
+    testedAt: result.testedAt,
+    checkin: result.checkin,
+    checkout: result.checkout,
+    hotelCount: result.hotelCount,
+    rateCount: result.rateCount,
+  };
+}
+
+export async function runRatehawkSandboxSearchForPrebook(options: {
+  environment: Record<string, string | undefined>;
+  fetcher?: InventorySandboxFetch;
+  now?: Date;
+}) {
+  const result = await runSearch(options);
+  if (!result.rateHash) {
+    throw new RatehawkSandboxValidationError("invalid_response");
+  }
+  return result;
 }
