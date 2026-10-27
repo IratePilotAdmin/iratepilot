@@ -140,6 +140,8 @@ describe("inventory supplier readiness", () => {
     expect(adminSettings).toContain("/api/admin/integrations/inventory/ratehawk/validate");
     expect(adminSettings).toContain("Run one read-only RateHawk sandbox search now?");
     expect(adminSettings).toContain("No booking or payment was created.");
+    expect(adminSettings).toContain("Last saved validation:");
+    expect(adminSettings).toContain("Sandbox search passed and evidence saved:");
     expect(adminSettings).toContain("ready for sandbox validation");
     expect(adminSettings).toContain("sandbox transports authorized");
     expect(adminSettings).toContain("Sandbox traffic");

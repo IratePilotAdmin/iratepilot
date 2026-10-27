@@ -116,6 +116,15 @@ type InventorySupplierAdminReadiness = InventorySupplierReadiness & {
   sandboxRuntime: InventorySandboxRuntimeGate;
 };
 
+type InventoryValidationEvidence = {
+  tested_at: string;
+  checkin: string;
+  checkout: string;
+  hotel_count: number;
+  rate_count: number;
+  deployment_revision: string | null;
+};
+
 export function AdminSettings() {
   const [data, setData] = useState<Response | null>(null);
   const [message, setMessage] = useState("Checking platform readiness…");
@@ -125,6 +134,7 @@ export function AdminSettings() {
   const [inventorySuppliers, setInventorySuppliers] = useState<InventorySupplierAdminReadiness[] | null>(null);
   const [inventoryValidationBusy, setInventoryValidationBusy] = useState("");
   const [inventoryValidationMessages, setInventoryValidationMessages] = useState<Record<string, string>>({});
+  const [ratehawkValidationEvidence, setRatehawkValidationEvidence] = useState<InventoryValidationEvidence | null>(null);
   const [priorityPmsReadiness, setPriorityPmsReadiness] = useState<PriorityPmsProductionReadiness[]>([]);
   const [evidenceTrackingAvailable, setEvidenceTrackingAvailable] = useState(false);
   const [evidenceBusy, setEvidenceBusy] = useState("");
@@ -184,9 +194,17 @@ export function AdminSettings() {
       if (!response.ok) throw new Error(body.error || "RateHawk sandbox validation could not be completed.");
       const hotelLabel = body.hotelCount === 1 ? "hotel" : "hotels";
       const rateLabel = body.rateCount === 1 ? "rate" : "rates";
+      setRatehawkValidationEvidence({
+        tested_at: body.testedAt,
+        checkin: body.checkin,
+        checkout: body.checkout,
+        hotel_count: body.hotelCount,
+        rate_count: body.rateCount,
+        deployment_revision: null,
+      });
       setInventoryValidationMessages((current) => ({
         ...current,
-        ratehawk: `Sandbox search passed: ${body.hotelCount} test ${hotelLabel} and ${body.rateCount} ${rateLabel} returned. No booking or payment was created.`,
+        ratehawk: `Sandbox search passed and evidence saved: ${body.hotelCount} test ${hotelLabel} and ${body.rateCount} ${rateLabel} returned. No booking or payment was created.`,
       }));
     } catch (error) {
       setInventoryValidationMessages((current) => ({
@@ -221,6 +239,14 @@ export function AdminSettings() {
         setPmsMessage("");
       })
       .catch((error: Error) => setPmsMessage(error.message));
+
+    fetch("/api/admin/integrations/inventory/ratehawk/validate", { cache: "no-store" })
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error);
+        setRatehawkValidationEvidence(body.latestEvidence ?? null);
+      })
+      .catch(() => setRatehawkValidationEvidence(null));
   }, []);
 
   async function updateLaunchEvidence(
@@ -550,6 +576,9 @@ export function AdminSettings() {
                 {inventoryValidationBusy === "ratehawk" ? "RUNNING SANDBOX TEST…" : "RUN SANDBOX TEST"}
               </button>
               {inventoryValidationMessages.ratehawk && <p className="mt-2 text-xs text-slate-600" role="status">{inventoryValidationMessages.ratehawk}</p>}
+              {ratehawkValidationEvidence && <p className="mt-2 text-xs text-slate-600">
+                Last saved validation: {new Date(ratehawkValidationEvidence.tested_at).toLocaleString()} — {ratehawkValidationEvidence.hotel_count} test hotel(s), {ratehawkValidationEvidence.rate_count} rate(s).
+              </p>}
             </div>}
             <a className="mt-3 inline-block text-xs font-semibold underline" href={supplier.documentationUrl} rel="noreferrer" target="_blank">Official integration documentation</a>
           </article>)}
