@@ -65,7 +65,12 @@ export class RatehawkCertificationRunnerError extends Error {
     | "credentials_not_ready"
     | "invalid_response"
     | "booking_form_failed"
-    | "unexpected_outcome") {
+    | "unexpected_outcome",
+  readonly outcome?: {
+    status: "confirmed" | "failed" | "timed_out";
+    error: string | null;
+    attempts: number;
+  }) {
     super(`RateHawk certification run failed (${code}).`);
     this.name = "RatehawkCertificationRunnerError";
   }
@@ -74,13 +79,29 @@ export class RatehawkCertificationRunnerError extends Error {
 export type RatehawkCertificationFailure = {
   code: string;
   status: number | null;
+  outcomeStatus?: "confirmed" | "failed" | "timed_out";
+  outcomeError?: string | null;
+  attempts?: number;
 };
+
+function safeOutcomeError(value: string | null) {
+  if (value === null) return null;
+  return /^[a-z0-9_]{1,64}$/.test(value) ? value : "unrecognized";
+}
 
 export function classifyRatehawkCertificationFailure(
   error: unknown,
 ): RatehawkCertificationFailure {
   if (error instanceof RatehawkCertificationRunnerError) {
-    return { code: `runner_${error.code}`, status: null };
+    return {
+      code: `runner_${error.code}`,
+      status: null,
+      ...(error.outcome ? {
+        outcomeStatus: error.outcome.status,
+        outcomeError: safeOutcomeError(error.outcome.error),
+        attempts: error.outcome.attempts,
+      } : {}),
+    };
   }
   if (error instanceof InventorySandboxTransportError) {
     return { code: `transport_${error.code}`, status: null };
@@ -245,19 +266,31 @@ function assertExpectedOutcome(
 ) {
   if (scenario.id === "unknown_soldout") {
     if (final.status !== "failed" || final.error !== "soldout") {
-      throw new RatehawkCertificationRunnerError("unexpected_outcome");
+      throw new RatehawkCertificationRunnerError("unexpected_outcome", {
+        status: final.status,
+        error: final.status === "failed" ? final.error : null,
+        attempts: final.attempts,
+      });
     }
     return;
   }
   if (scenario.id === "unknown_book_limit") {
     if (final.status !== "failed" || final.error !== "book_limit") {
-      throw new RatehawkCertificationRunnerError("unexpected_outcome");
+      throw new RatehawkCertificationRunnerError("unexpected_outcome", {
+        status: final.status,
+        error: final.status === "failed" ? final.error : null,
+        attempts: final.attempts,
+      });
     }
     return;
   }
   if (final.status !== "confirmed"
     || (scenario.id === "price_change" && !prebookPriceChanged(prebook))) {
-    throw new RatehawkCertificationRunnerError("unexpected_outcome");
+    throw new RatehawkCertificationRunnerError("unexpected_outcome", {
+      status: final.status,
+      error: final.status === "failed" ? final.error : null,
+      attempts: final.attempts,
+    });
   }
 }
 
