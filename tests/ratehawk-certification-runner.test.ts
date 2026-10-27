@@ -98,7 +98,7 @@ describe("RateHawk certification runner", () => {
     expect(classifyRatehawkCertificationFailure(
       new RatehawkCertificationRunnerError("unexpected_outcome", {
         status: "failed",
-        error: "sensitive details: do not expose",
+        error: "credential_like_token_123",
         attempts: 1,
       }),
     ).outcomeError).toBe("unrecognized");

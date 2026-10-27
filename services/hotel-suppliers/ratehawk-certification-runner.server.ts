@@ -84,9 +84,41 @@ export type RatehawkCertificationFailure = {
   attempts?: number;
 };
 
+const safeOutcomeErrors = new Set([
+  "arrival_date_differs_from_checkin_date",
+  "book_hash_not_found",
+  "book_limit",
+  "booking_form_expired",
+  "card_type_not_supported",
+  "chosen_payment_type_was_not_available_on_booking_form",
+  "credit_card_required",
+  "double_booking_finish",
+  "email",
+  "incorrect_children_data",
+  "incorrect_chosen_payment_type",
+  "incorrect_guests_number",
+  "incorrect_init_uuid_format",
+  "incorrect_pay_uuid_format",
+  "incorrect_rooms_number",
+  "insufficient_b2b_balance",
+  "invalid_upsell_attributes",
+  "invalid_upsell_uid",
+  "no_pricing_data",
+  "not_enough_credit_card_data",
+  "order_not_found",
+  "rate_not_found",
+  "return_path_required",
+  "sandbox_restriction",
+  "soldout",
+  "supplier_data_required",
+  "timeout",
+  "unauthorized_group_booking",
+  "unknown",
+]);
+
 function safeOutcomeError(value: string | null) {
   if (value === null) return null;
-  return /^[a-z0-9_]{1,64}$/.test(value) ? value : "unrecognized";
+  return safeOutcomeErrors.has(value) ? value : "unrecognized";
 }
 
 export function classifyRatehawkCertificationFailure(
