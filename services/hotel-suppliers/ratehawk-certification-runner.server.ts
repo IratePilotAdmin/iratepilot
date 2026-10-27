@@ -448,20 +448,34 @@ export async function runRatehawkCertificationScenario(options: {
     throw new RatehawkCertificationRunnerError("booking_form_failed");
   }
 
-  await request(buildRatehawkSandboxBookingFinishRequest({
-    keyId,
-    apiKey,
-    partnerOrderId: bookingForm.partnerOrderId,
-    user: { email: "certification@iratepilot.com", phone: "+15555550100" },
-    supplier: {
-      firstName: "IRatePilot",
-      lastName: "Certification",
-      email: "certification@iratepilot.com",
-      phone: "+15555550100",
-    },
-    rooms: scenario.rooms,
-    paymentType: acceptedPayment,
-  }), { environment: options.environment, fetcher: options.fetcher, timeoutMs: 5_000 });
+  try {
+    await request(buildRatehawkSandboxBookingFinishRequest({
+      keyId,
+      apiKey,
+      partnerOrderId: bookingForm.partnerOrderId,
+      user: { email: "certification@iratepilot.com", phone: "+15555550100" },
+      supplier: {
+        firstName: "IRatePilot",
+        lastName: "Certification",
+        email: "certification@iratepilot.com",
+        phone: "+15555550100",
+      },
+      rooms: scenario.rooms,
+      paymentType: acceptedPayment,
+    }), { environment: options.environment, fetcher: options.fetcher, timeoutMs: 5_000 });
+  } catch (error) {
+    // ETG's documented unknown_* sandbox cases deliberately return HTTP 500
+    // from Booking Finish before the status endpoint resolves the final result.
+    // Continue only for those explicit certification suffixes; every other
+    // supplier error remains fail-closed.
+    const expectedUnknownFinish = scenario.orderSuffix !== undefined
+      && error instanceof InventorySupplierResponseError
+      && error.code === "supplier_error"
+      && typeof error.status === "number"
+      && error.status >= 500
+      && error.status < 600;
+    if (!expectedUnknownFinish) throw error;
+  }
 
   const elapsedBeforePollingMs = Math.max(0, executionNow() - executionStartedAt);
   const remainingPollingMs = certificationExecutionBudgetMs
