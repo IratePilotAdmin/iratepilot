@@ -199,4 +199,41 @@ describe("RateHawk certification runner", () => {
       now: new Date("2026-10-27T12:00:00.000Z"),
     })).rejects.toMatchObject({ code: "unexpected_outcome" });
   });
+
+  it("limits status polling to the workflow's remaining execution budget", async () => {
+    let currentTime = 0;
+    const baseFetcher = createFetcher("ok");
+    const fetcher = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input);
+      if (!url.endsWith("/booking/finish/status/") && currentTime < 100_000) {
+        currentTime += 25_000;
+      }
+      if (url.endsWith("/booking/finish/status/")) {
+        const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+        return jsonResponse({
+          status: "processing",
+          data: { partner_order_id: body.partner_order_id },
+        });
+      }
+      return baseFetcher(input, init);
+    });
+
+    await expect(runRatehawkCertificationScenario({
+      environment,
+      scenarioId: "children",
+      fetcher,
+      now: new Date("2026-10-27T12:00:00.000Z"),
+      executionNow: () => currentTime,
+      sleep: async (milliseconds) => {
+        currentTime += milliseconds;
+      },
+    })).rejects.toMatchObject({
+      code: "unexpected_outcome",
+      outcome: { status: "timed_out", attempts: 36 },
+    });
+
+    expect(currentTime).toBe(275_000);
+    expect(fetcher.mock.calls.filter(([url]) => String(url).endsWith("/booking/finish/status/")))
+      .toHaveLength(36);
+  });
 });
