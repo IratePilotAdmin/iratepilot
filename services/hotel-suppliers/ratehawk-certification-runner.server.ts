@@ -71,6 +71,31 @@ export class RatehawkCertificationRunnerError extends Error {
   }
 }
 
+export type RatehawkCertificationFailure = {
+  code: string;
+  status: number | null;
+};
+
+export function classifyRatehawkCertificationFailure(
+  error: unknown,
+): RatehawkCertificationFailure {
+  if (error instanceof RatehawkCertificationRunnerError) {
+    return { code: `runner_${error.code}`, status: null };
+  }
+  if (error instanceof InventorySandboxTransportError) {
+    return { code: `transport_${error.code}`, status: null };
+  }
+  if (error instanceof InventorySupplierResponseError) {
+    return {
+      code: `supplier_${error.code}`,
+      status: error.status && error.status >= 100 && error.status <= 599
+        ? error.status
+        : null,
+    };
+  }
+  return { code: "unknown_error", status: null };
+}
+
 const scenarios: Record<RatehawkCertificationScenarioId, Scenario> = {
   children: {
     id: "children",

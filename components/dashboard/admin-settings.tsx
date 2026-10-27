@@ -289,7 +289,15 @@ export function AdminSettings() {
           }),
         });
         const body = await response.json();
-        if (!response.ok) throw new Error(body.error || `${scenario} could not be completed.`);
+        if (!response.ok) {
+          const failure = body.failure && typeof body.failure === "object"
+            ? body.failure as { scenario?: unknown; code?: unknown; status?: unknown }
+            : null;
+          const failedScenario = typeof failure?.scenario === "string" ? failure.scenario : scenario;
+          const failureCode = typeof failure?.code === "string" ? failure.code : "unknown_error";
+          const failureStatus = typeof failure?.status === "number" ? `, HTTP ${failure.status}` : "";
+          throw new Error(`${body.error || `${scenario} could not be completed.`} Scenario: ${failedScenario}. Diagnostic: ${failureCode}${failureStatus}.`);
+        }
         completed.push(body.result);
         setRatehawkCertificationResults([...completed]);
       }

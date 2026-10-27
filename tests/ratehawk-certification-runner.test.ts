@@ -2,7 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { runRatehawkCertificationScenario } from "../services/hotel-suppliers/ratehawk-certification-runner.server";
+import {
+  classifyRatehawkCertificationFailure,
+  RatehawkCertificationRunnerError,
+  runRatehawkCertificationScenario,
+} from "../services/hotel-suppliers/ratehawk-certification-runner.server";
+import { InventorySupplierResponseError } from "../services/hotel-suppliers/inventory-response.server";
+import { InventorySandboxTransportError } from "../services/hotel-suppliers/inventory-sandbox-transport.server";
 
 const environment = {
   HOTEL_INVENTORY_RATEHAWK_SANDBOX_ENABLED: "true",
@@ -72,6 +78,20 @@ function createFetcher(finalStatus: "ok" | "error", options?: {
 }
 
 describe("RateHawk certification runner", () => {
+  it("returns only allowlisted, non-secret diagnostic fields", () => {
+    expect(classifyRatehawkCertificationFailure(
+      new RatehawkCertificationRunnerError("unexpected_outcome"),
+    )).toEqual({ code: "runner_unexpected_outcome", status: null });
+    expect(classifyRatehawkCertificationFailure(
+      new InventorySandboxTransportError("ratehawk", "timeout"),
+    )).toEqual({ code: "transport_timeout", status: null });
+    expect(classifyRatehawkCertificationFailure(
+      new InventorySupplierResponseError("ratehawk", "supplier_error", 429),
+    )).toEqual({ code: "supplier_supplier_error", status: 429 });
+    expect(classifyRatehawkCertificationFailure(new Error("secret details")))
+      .toEqual({ code: "unknown_error", status: null });
+  });
+
   it("runs the child scenario and cancels a confirmed sandbox reservation", async () => {
     const fetcher = createFetcher("ok");
 
