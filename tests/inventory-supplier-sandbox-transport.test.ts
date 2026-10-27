@@ -8,6 +8,7 @@ import {
 import {
   buildExpediaRapidSandboxAvailabilityRequest,
   buildHotelbedsSandboxAvailabilityRequest,
+  buildRatehawkSandboxHotelPrebookRequest,
   buildRatehawkSandboxHotelSearchRequest,
   buildStubaSandboxHotelSearchRequest,
   type InventorySandboxRequest,
@@ -116,6 +117,32 @@ describe("inventory supplier sandbox transport", () => {
       fetcher,
     })).rejects.toMatchObject({ code: "invalid_request" });
     expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("allows the documented RateHawk prebook timeout only for the sandbox prebook endpoint", async () => {
+    const request = buildRatehawkSandboxHotelPrebookRequest({
+      keyId: "partner-id",
+      apiKey: "ratehawk-api-key",
+      rateHash: "h-sandbox-rate",
+      priceIncreasePercent: 10,
+    });
+    const fetcher = vi.fn(async () => new Response('{"status":"ok"}', {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    }));
+
+    await expect(executeInventorySandboxRequest(request, {
+      environment: enabledEnvironment("ratehawk"),
+      timeoutMs: 60_000,
+      fetcher,
+    })).resolves.toEqual({ status: "ok" });
+    expect(fetcher).toHaveBeenCalledOnce();
+
+    await expect(executeInventorySandboxRequest(request, {
+      environment: enabledEnvironment("ratehawk"),
+      timeoutMs: 29_999,
+      fetcher,
+    })).rejects.toMatchObject({ code: "invalid_timeout" });
   });
 
   it("rejects a forged Stuba endpoint before calling fetch", async () => {
