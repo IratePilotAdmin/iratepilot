@@ -2,7 +2,7 @@ import "server-only";
 
 import type { InventorySandboxFetch } from "./inventory-sandbox-transport.server";
 import { runRatehawkSandboxPrebookValidation } from "./ratehawk-prebook-validation.server";
-import { runRatehawkSandboxSearchForPrebook } from "./ratehawk-sandbox-validation.server";
+import { runRatehawkSandboxHotelpageForPrebook } from "./ratehawk-sandbox-validation.server";
 
 export type RatehawkSandboxPrebookEvidence = {
   testedAt: string;
@@ -18,18 +18,18 @@ export async function runRatehawkSandboxPrebookEvidence(options: {
   fetcher?: InventorySandboxFetch;
   now?: Date;
 }): Promise<RatehawkSandboxPrebookEvidence> {
-  const search = await runRatehawkSandboxSearchForPrebook(options);
+  const hotelpage = await runRatehawkSandboxHotelpageForPrebook(options);
   const prebook = await runRatehawkSandboxPrebookValidation({
     environment: options.environment,
-    rateHash: search.rateHash,
+    rateHash: hotelpage.rateHash,
     fetcher: options.fetcher,
     now: options.now,
   });
 
   return {
     testedAt: prebook.testedAt,
-    checkin: search.checkin,
-    checkout: search.checkout,
+    checkin: hotelpage.checkin,
+    checkout: hotelpage.checkout,
     hotelCount: prebook.hotelCount,
     rateCount: prebook.rateCount,
     priceChanged: prebook.priceChanged,

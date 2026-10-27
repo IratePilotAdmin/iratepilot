@@ -1,6 +1,9 @@
 import "server-only";
 
-import { buildRatehawkSandboxHotelSearchRequest } from "./inventory-sandbox-request.server";
+import {
+  buildRatehawkSandboxHotelpageRequest,
+  buildRatehawkSandboxHotelSearchRequest,
+} from "./inventory-sandbox-request.server";
 import {
   executeInventorySandboxRequest,
   type InventorySandboxFetch,
@@ -127,14 +130,49 @@ export async function runRatehawkSandboxValidation(options: {
   };
 }
 
-export async function runRatehawkSandboxSearchForPrebook(options: {
+export async function runRatehawkSandboxHotelpageForPrebook(options: {
   environment: Record<string, string | undefined>;
   fetcher?: InventorySandboxFetch;
   now?: Date;
 }) {
-  const result = await runSearch(options);
-  if (!result.rateHash) {
+  const keyId = options.environment.HOTEL_INVENTORY_RATEHAWK_KEY_ID?.trim();
+  const apiKey = options.environment.HOTEL_INVENTORY_RATEHAWK_API_KEY?.trim();
+  if (!keyId || !apiKey) {
+    throw new RatehawkSandboxValidationError("credentials_not_ready");
+  }
+
+  const testedAt = options.now ? new Date(options.now) : new Date();
+  if (Number.isNaN(testedAt.getTime())) {
     throw new RatehawkSandboxValidationError("invalid_response");
   }
-  return result;
+  const checkin = formatUtcDate(addUtcDays(testedAt, 30));
+  const checkout = formatUtcDate(addUtcDays(testedAt, 32));
+  const request = buildRatehawkSandboxHotelpageRequest({
+    keyId,
+    apiKey,
+    payload: {
+      checkin,
+      checkout,
+      residency: "us",
+      language: "en",
+      guests: [{ adults: 2, children: [] }],
+      hid: sandboxHotelId,
+      currency: "USD",
+    },
+  });
+  const response = await executeInventorySandboxRequest(request, {
+    environment: options.environment,
+    fetcher: options.fetcher,
+  });
+  const summary = summarizeResponse(response);
+  if (!summary.rateHash) {
+    throw new RatehawkSandboxValidationError("invalid_response");
+  }
+
+  return {
+    testedAt: testedAt.toISOString(),
+    checkin,
+    checkout,
+    ...summary,
+  };
 }

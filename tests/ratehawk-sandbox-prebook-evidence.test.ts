@@ -6,11 +6,11 @@ describe("RateHawk sandbox prebook evidence", () => {
     vi.doMock("server-only", () => ({}));
   });
 
-  it("uses a search hash internally and returns only sanitized prebook evidence", async () => {
+  it("uses a fresh Hotelpage hash internally and returns only sanitized prebook evidence", async () => {
     const fetcher = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({
         status: "ok",
-        data: { hotels: [{ id: "test-hotel", rates: [{ book_hash: "search-rate-secret" }] }] },
+        data: { hotels: [{ id: "test-hotel", rates: [{ book_hash: "hotelpage-rate-secret" }] }] },
       }), { headers: { "content-type": "application/json" } }))
       .mockResolvedValueOnce(new Response(JSON.stringify({
         status: "ok",
@@ -41,15 +41,27 @@ describe("RateHawk sandbox prebook evidence", () => {
       rateCount: 1,
       priceChanged: false,
     });
-    expect(JSON.parse(String(fetcher.mock.calls[1][1]?.body))).toEqual({
-      hash: "search-rate-secret",
+    expect(fetcher.mock.calls[0][0]).toBe(
+      "https://api-sandbox.ratehawk.com/api/b2b/v3/search/hp/",
+    );
+    expect(JSON.parse(String(fetcher.mock.calls[0][1]?.body))).toEqual({
+      checkin: "2026-11-26",
+      checkout: "2026-11-28",
+      residency: "us",
+      language: "en",
+      guests: [{ adults: 2, children: [] }],
+      hid: 10004834,
+      currency: "USD",
     });
-    expect(JSON.stringify(result)).not.toContain("search-rate-secret");
+    expect(JSON.parse(String(fetcher.mock.calls[1][1]?.body))).toEqual({
+      hash: "hotelpage-rate-secret",
+    });
+    expect(JSON.stringify(result)).not.toContain("hotelpage-rate-secret");
     expect(JSON.stringify(result)).not.toContain("prebook-rate-secret");
     expect(JSON.stringify(result)).not.toContain("sandbox-api-key-value");
   });
 
-  it("stops before prebook when the search response has no usable hash", async () => {
+  it("stops before prebook when the Hotelpage response has no usable hash", async () => {
     const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       status: "ok",
       data: { hotels: [{ id: "test-hotel", rates: [{ id: "rate-without-hash" }] }] },
