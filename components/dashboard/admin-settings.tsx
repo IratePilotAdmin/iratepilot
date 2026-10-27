@@ -291,12 +291,25 @@ export function AdminSettings() {
         const body = await response.json();
         if (!response.ok) {
           const failure = body.failure && typeof body.failure === "object"
-            ? body.failure as { scenario?: unknown; code?: unknown; status?: unknown }
+            ? body.failure as {
+              scenario?: unknown;
+              code?: unknown;
+              status?: unknown;
+              outcomeStatus?: unknown;
+              outcomeError?: unknown;
+              attempts?: unknown;
+            }
             : null;
           const failedScenario = typeof failure?.scenario === "string" ? failure.scenario : scenario;
           const failureCode = typeof failure?.code === "string" ? failure.code : "unknown_error";
           const failureStatus = typeof failure?.status === "number" ? `, HTTP ${failure.status}` : "";
-          throw new Error(`${body.error || `${scenario} could not be completed.`} Scenario: ${failedScenario}. Diagnostic: ${failureCode}${failureStatus}.`);
+          const outcomeStatus = typeof failure?.outcomeStatus === "string" ? failure.outcomeStatus : null;
+          const outcomeError = typeof failure?.outcomeError === "string" ? failure.outcomeError : null;
+          const attempts = typeof failure?.attempts === "number" ? failure.attempts : null;
+          const outcome = outcomeStatus
+            ? ` Outcome: ${outcomeStatus}${outcomeError ? ` (${outcomeError})` : ""}${attempts ? ` after ${attempts} status checks` : ""}.`
+            : "";
+          throw new Error(`${body.error || `${scenario} could not be completed.`} Scenario: ${failedScenario}. Diagnostic: ${failureCode}${failureStatus}.${outcome}`);
         }
         completed.push(body.result);
         setRatehawkCertificationResults([...completed]);

@@ -83,6 +83,26 @@ describe("RateHawk certification runner", () => {
       new RatehawkCertificationRunnerError("unexpected_outcome"),
     )).toEqual({ code: "runner_unexpected_outcome", status: null });
     expect(classifyRatehawkCertificationFailure(
+      new RatehawkCertificationRunnerError("unexpected_outcome", {
+        status: "failed",
+        error: "incorrect_children_data",
+        attempts: 2,
+      }),
+    )).toEqual({
+      code: "runner_unexpected_outcome",
+      status: null,
+      outcomeStatus: "failed",
+      outcomeError: "incorrect_children_data",
+      attempts: 2,
+    });
+    expect(classifyRatehawkCertificationFailure(
+      new RatehawkCertificationRunnerError("unexpected_outcome", {
+        status: "failed",
+        error: "credential_like_token_123",
+        attempts: 1,
+      }),
+    ).outcomeError).toBe("unrecognized");
+    expect(classifyRatehawkCertificationFailure(
       new InventorySandboxTransportError("ratehawk", "timeout"),
     )).toEqual({ code: "transport_timeout", status: null });
     expect(classifyRatehawkCertificationFailure(

@@ -65,7 +65,12 @@ export class RatehawkCertificationRunnerError extends Error {
     | "credentials_not_ready"
     | "invalid_response"
     | "booking_form_failed"
-    | "unexpected_outcome") {
+    | "unexpected_outcome",
+  readonly outcome?: {
+    status: "confirmed" | "failed" | "timed_out";
+    error: string | null;
+    attempts: number;
+  }) {
     super(`RateHawk certification run failed (${code}).`);
     this.name = "RatehawkCertificationRunnerError";
   }
@@ -74,13 +79,61 @@ export class RatehawkCertificationRunnerError extends Error {
 export type RatehawkCertificationFailure = {
   code: string;
   status: number | null;
+  outcomeStatus?: "confirmed" | "failed" | "timed_out";
+  outcomeError?: string | null;
+  attempts?: number;
 };
+
+const safeOutcomeErrors = new Set([
+  "arrival_date_differs_from_checkin_date",
+  "book_hash_not_found",
+  "book_limit",
+  "booking_form_expired",
+  "card_type_not_supported",
+  "chosen_payment_type_was_not_available_on_booking_form",
+  "credit_card_required",
+  "double_booking_finish",
+  "email",
+  "incorrect_children_data",
+  "incorrect_chosen_payment_type",
+  "incorrect_guests_number",
+  "incorrect_init_uuid_format",
+  "incorrect_pay_uuid_format",
+  "incorrect_rooms_number",
+  "insufficient_b2b_balance",
+  "invalid_upsell_attributes",
+  "invalid_upsell_uid",
+  "no_pricing_data",
+  "not_enough_credit_card_data",
+  "order_not_found",
+  "rate_not_found",
+  "return_path_required",
+  "sandbox_restriction",
+  "soldout",
+  "supplier_data_required",
+  "timeout",
+  "unauthorized_group_booking",
+  "unknown",
+]);
+
+function safeOutcomeError(value: string | null) {
+  if (value === null) return null;
+  return safeOutcomeErrors.has(value) ? value : "unrecognized";
+}
 
 export function classifyRatehawkCertificationFailure(
   error: unknown,
 ): RatehawkCertificationFailure {
   if (error instanceof RatehawkCertificationRunnerError) {
-    return { code: `runner_${error.code}`, status: null };
+    return {
+      code: `runner_${error.code}`,
+      status: null,
+      ...(error.outcome ? {
+        outcomeStatus: error.outcome.status,
+        outcomeError: safeOutcomeError(error.outcome.error),
+        attempts: error.outcome.attempts,
+      } : {}),
+    };
   }
   if (error instanceof InventorySandboxTransportError) {
     return { code: `transport_${error.code}`, status: null };
@@ -245,19 +298,31 @@ function assertExpectedOutcome(
 ) {
   if (scenario.id === "unknown_soldout") {
     if (final.status !== "failed" || final.error !== "soldout") {
-      throw new RatehawkCertificationRunnerError("unexpected_outcome");
+      throw new RatehawkCertificationRunnerError("unexpected_outcome", {
+        status: final.status,
+        error: final.status === "failed" ? final.error : null,
+        attempts: final.attempts,
+      });
     }
     return;
   }
   if (scenario.id === "unknown_book_limit") {
     if (final.status !== "failed" || final.error !== "book_limit") {
-      throw new RatehawkCertificationRunnerError("unexpected_outcome");
+      throw new RatehawkCertificationRunnerError("unexpected_outcome", {
+        status: final.status,
+        error: final.status === "failed" ? final.error : null,
+        attempts: final.attempts,
+      });
     }
     return;
   }
   if (final.status !== "confirmed"
     || (scenario.id === "price_change" && !prebookPriceChanged(prebook))) {
-    throw new RatehawkCertificationRunnerError("unexpected_outcome");
+    throw new RatehawkCertificationRunnerError("unexpected_outcome", {
+      status: final.status,
+      error: final.status === "failed" ? final.error : null,
+      attempts: final.attempts,
+    });
   }
 }
 
