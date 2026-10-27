@@ -63,6 +63,7 @@ export type RatehawkCertificationScenarioResult = {
 export class RatehawkCertificationRunnerError extends Error {
   constructor(readonly code:
     | "credentials_not_ready"
+    | "execution_budget_exhausted"
     | "invalid_response"
     | "booking_form_failed"
     | "unexpected_outcome",
@@ -358,12 +359,24 @@ async function request(
   return executeInventorySandboxRequest(requestValue, options);
 }
 
+// The route has a 300-second ceiling. Keep ten seconds outside this workflow,
+// then reserve another fifteen seconds for the status request made at the
+// polling deadline, sandbox cancellation, and response serialization.
+const certificationExecutionBudgetMs = 290_000;
+const certificationPostPollingReserveMs = 15_000;
+const certificationStatusPollingTimeoutMs = 180_000;
+const minimumStatusPollingTimeoutMs = 1_000;
+
 export async function runRatehawkCertificationScenario(options: {
   environment: Record<string, string | undefined>;
   scenarioId: RatehawkCertificationScenarioId;
   fetcher?: InventorySandboxFetch;
   now?: Date;
+  executionNow?: () => number;
+  sleep?: (milliseconds: number) => Promise<void>;
 }): Promise<RatehawkCertificationScenarioResult> {
+  const executionNow = options.executionNow ?? Date.now;
+  const executionStartedAt = executionNow();
   const keyId = options.environment.HOTEL_INVENTORY_RATEHAWK_KEY_ID?.trim();
   const apiKey = options.environment.HOTEL_INVENTORY_RATEHAWK_API_KEY?.trim();
   if (!keyId || !apiKey) throw new RatehawkCertificationRunnerError("credentials_not_ready");
@@ -432,6 +445,14 @@ export async function runRatehawkCertificationScenario(options: {
     paymentType: acceptedPayment,
   }), { environment: options.environment, fetcher: options.fetcher, timeoutMs: 5_000 });
 
+  const elapsedBeforePollingMs = Math.max(0, executionNow() - executionStartedAt);
+  const remainingPollingMs = certificationExecutionBudgetMs
+    - certificationPostPollingReserveMs
+    - elapsedBeforePollingMs;
+  if (remainingPollingMs < minimumStatusPollingTimeoutMs) {
+    throw new RatehawkCertificationRunnerError("execution_budget_exhausted");
+  }
+
   const final = await pollRatehawkBookingUntilFinal({
     partnerOrderId: bookingForm.partnerOrderId,
     isRetryableTransportFailure: retryableTransportFailure,
@@ -440,6 +461,9 @@ export async function runRatehawkCertificationScenario(options: {
       apiKey,
       partnerOrderId: currentPartnerOrderId,
     }), { environment: options.environment, fetcher: options.fetcher, timeoutMs: 5_000 }),
+    timeoutMs: Math.min(certificationStatusPollingTimeoutMs, remainingPollingMs),
+    now: executionNow,
+    sleep: options.sleep,
   });
 
   let cancellation: ReturnType<typeof parseRatehawkCancellationResponse> | null = null;
