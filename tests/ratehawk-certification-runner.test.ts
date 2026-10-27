@@ -28,6 +28,7 @@ function createFetcher(finalStatus: "ok" | "error", options?: {
   finalError?: string;
   priceChanged?: boolean;
   cancellationErrors?: string[];
+  finishStatus?: number;
 }) {
   let partnerOrderId = "";
   const cancellationErrors = [...(options?.cancellationErrors ?? [])];
@@ -60,7 +61,15 @@ function createFetcher(finalStatus: "ok" | "error", options?: {
         },
       });
     }
-    if (url.endsWith("/booking/finish/")) return jsonResponse({ status: "ok" });
+    if (url.endsWith("/booking/finish/")) {
+      return new Response(JSON.stringify({
+        status: options?.finishStatus === 500 ? "error" : "ok",
+        ...(options?.finishStatus === 500 ? { error: "unknown" } : {}),
+      }), {
+        status: options?.finishStatus ?? 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
     if (url.endsWith("/booking/finish/status/")) {
       return finalStatus === "ok"
         ? jsonResponse({ status: "ok", data: { partner_order_id: partnerOrderId } })
@@ -206,6 +215,26 @@ describe("RateHawk certification runner", () => {
     expect(result.partnerOrderId).toMatch(/_unknown_soldout$/);
     expect(fetcher).toHaveBeenCalledTimes(5);
     expect(fetcher.mock.calls.some(([url]) => String(url).endsWith("/order/cancel/"))).toBe(false);
+  });
+
+  it("polls documented unknown scenarios after Booking Finish returns HTTP 500", async () => {
+    const fetcher = createFetcher("ok", { finishStatus: 500 });
+
+    await expect(runRatehawkCertificationScenario({
+      environment,
+      scenarioId: "unknown_success",
+      fetcher,
+      now: new Date("2026-10-27T12:00:00.000Z"),
+    })).resolves.toMatchObject({
+      scenario: "unknown_success",
+      finalStatus: "confirmed",
+      cancelled: true,
+    });
+
+    expect(fetcher.mock.calls.some(([url]) => String(url).endsWith("/booking/finish/status/")))
+      .toBe(true);
+    expect(fetcher.mock.calls.some(([url]) => String(url).endsWith("/order/cancel/")))
+      .toBe(true);
   });
 
   it("requires the documented price increase to be present", async () => {
