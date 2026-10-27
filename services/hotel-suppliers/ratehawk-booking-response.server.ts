@@ -5,7 +5,10 @@ import type { InventoryJsonValue } from "./inventory-response.server";
 export type RatehawkBookingStatus = "confirmed" | "processing" | "failed";
 
 export class RatehawkBookingResponseError extends Error {
-  constructor(readonly code: "invalid_response" | "booking_failed") {
+  constructor(
+    readonly code: "invalid_response" | "booking_failed",
+    readonly supplierError: string | null = null,
+  ) {
     super(`RateHawk booking response failed (${code}).`);
     this.name = "RatehawkBookingResponseError";
   }
@@ -89,7 +92,10 @@ export function parseRatehawkCancellationResponse(response: InventoryJsonValue) 
   if (value.status !== "ok" || !data || !amountPayable
     || typeof amountPayable.amount !== "string"
     || typeof amountPayable.currency_code !== "string") {
-    throw new RatehawkBookingResponseError(value.status === "error" ? "booking_failed" : "invalid_response");
+    throw new RatehawkBookingResponseError(
+      value.status === "error" ? "booking_failed" : "invalid_response",
+      value.status === "error" && typeof value.error === "string" ? value.error : null,
+    );
   }
   return {
     cancelled: true as const,
