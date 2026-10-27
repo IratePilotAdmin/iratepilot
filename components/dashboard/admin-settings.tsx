@@ -123,6 +123,7 @@ type InventoryValidationEvidence = {
   hotel_count: number;
   rate_count: number;
   deployment_revision: string | null;
+  price_changed?: boolean | null;
 };
 
 export function AdminSettings() {
@@ -135,6 +136,7 @@ export function AdminSettings() {
   const [inventoryValidationBusy, setInventoryValidationBusy] = useState("");
   const [inventoryValidationMessages, setInventoryValidationMessages] = useState<Record<string, string>>({});
   const [ratehawkValidationEvidence, setRatehawkValidationEvidence] = useState<InventoryValidationEvidence | null>(null);
+  const [ratehawkPrebookEvidence, setRatehawkPrebookEvidence] = useState<InventoryValidationEvidence | null>(null);
   const [priorityPmsReadiness, setPriorityPmsReadiness] = useState<PriorityPmsProductionReadiness[]>([]);
   const [evidenceTrackingAvailable, setEvidenceTrackingAvailable] = useState(false);
   const [evidenceBusy, setEvidenceBusy] = useState("");
@@ -216,6 +218,39 @@ export function AdminSettings() {
     }
   }
 
+  async function validateRatehawkPrebook() {
+    if (!window.confirm("Run one controlled RateHawk sandbox search and prebook now? This validates current availability and price, but cannot create a booking or payment.")) return;
+    setInventoryValidationBusy("ratehawk-prebook");
+    setInventoryValidationMessages((current) => ({ ...current, ratehawkPrebook: "" }));
+    try {
+      const response = await fetch("/api/admin/integrations/inventory/ratehawk/prebook", {
+        method: "POST",
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "RateHawk sandbox prebook validation could not be completed.");
+      setRatehawkPrebookEvidence({
+        tested_at: body.testedAt,
+        checkin: body.checkin,
+        checkout: body.checkout,
+        hotel_count: body.hotelCount,
+        rate_count: body.rateCount,
+        price_changed: body.priceChanged,
+        deployment_revision: null,
+      });
+      setInventoryValidationMessages((current) => ({
+        ...current,
+        ratehawkPrebook: `Sandbox prebook passed and evidence saved. Price changed: ${body.priceChanged ? "yes" : "no"}. No booking or payment was created.`,
+      }));
+    } catch (error) {
+      setInventoryValidationMessages((current) => ({
+        ...current,
+        ratehawkPrebook: error instanceof Error ? error.message : "RateHawk sandbox prebook validation could not be completed.",
+      }));
+    } finally {
+      setInventoryValidationBusy("");
+    }
+  }
+
   useEffect(() => {
     fetch("/api/admin/settings", { cache: "no-store" })
       .then(async (response) => {
@@ -247,6 +282,14 @@ export function AdminSettings() {
         setRatehawkValidationEvidence(body.latestEvidence ?? null);
       })
       .catch(() => setRatehawkValidationEvidence(null));
+
+    fetch("/api/admin/integrations/inventory/ratehawk/prebook", { cache: "no-store" })
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error);
+        setRatehawkPrebookEvidence(body.latestEvidence ?? null);
+      })
+      .catch(() => setRatehawkPrebookEvidence(null));
   }, []);
 
   async function updateLaunchEvidence(
@@ -543,7 +586,7 @@ export function AdminSettings() {
         <div className="border-b p-6">
           <span className="text-xs uppercase tracking-wider text-slate-500">Aggregator inventory</span>
           <h2 className="mt-2 text-xl font-semibold">Hotel inventory supplier readiness</h2>
-          <p className="mt-2 text-sm text-slate-600">This panel tracks credential prerequisites. The RateHawk test sends one read-only search to its sandbox; it cannot create a booking, payment, partnership approval, or live traffic.</p>
+          <p className="mt-2 text-sm text-slate-600">This panel tracks credential prerequisites. RateHawk tests can send a sandbox search and a controlled prebook availability check; neither can create a booking, payment, partnership approval, or live traffic.</p>
           {inventorySuppliers ? <div className="mt-4 flex flex-wrap gap-5 text-sm">
             <span><strong>{inventorySuppliers.length}</strong> suppliers tracked</span>
             <span><strong>{inventorySuppliers.filter((supplier) => supplier.status === "ready_for_sandbox_validation").length}</strong> ready for sandbox validation</span>
@@ -567,17 +610,31 @@ export function AdminSettings() {
               <span className="mt-1 block break-words text-slate-500">Flag: {supplier.sandboxRuntime.enablementKey}</span>
             </div>
             {supplier.id === "ratehawk" && <div className="mt-3">
-              <button
-                className="btn-secondary text-xs"
-                disabled={supplier.sandboxRuntime.status !== "authorized" || inventoryValidationBusy === "ratehawk"}
-                onClick={validateRatehawkSandbox}
-                type="button"
-              >
-                {inventoryValidationBusy === "ratehawk" ? "RUNNING SANDBOX TEST…" : "RUN SANDBOX TEST"}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  className="btn-secondary text-xs"
+                  disabled={supplier.sandboxRuntime.status !== "authorized" || Boolean(inventoryValidationBusy)}
+                  onClick={validateRatehawkSandbox}
+                  type="button"
+                >
+                  {inventoryValidationBusy === "ratehawk" ? "RUNNING SEARCH…" : "RUN SANDBOX SEARCH"}
+                </button>
+                <button
+                  className="btn-secondary text-xs"
+                  disabled={supplier.sandboxRuntime.status !== "authorized" || Boolean(inventoryValidationBusy)}
+                  onClick={validateRatehawkPrebook}
+                  type="button"
+                >
+                  {inventoryValidationBusy === "ratehawk-prebook" ? "RUNNING PREBOOK…" : "RUN PREBOOK TEST"}
+                </button>
+              </div>
               {inventoryValidationMessages.ratehawk && <p className="mt-2 text-xs text-slate-600" role="status">{inventoryValidationMessages.ratehawk}</p>}
+              {inventoryValidationMessages.ratehawkPrebook && <p className="mt-2 text-xs text-slate-600" role="status">{inventoryValidationMessages.ratehawkPrebook}</p>}
               {ratehawkValidationEvidence && <p className="mt-2 text-xs text-slate-600">
-                Last saved validation: {new Date(ratehawkValidationEvidence.tested_at).toLocaleString()} — {ratehawkValidationEvidence.hotel_count} test hotel(s), {ratehawkValidationEvidence.rate_count} rate(s).
+                Last saved search: {new Date(ratehawkValidationEvidence.tested_at).toLocaleString()} — {ratehawkValidationEvidence.hotel_count} test hotel(s), {ratehawkValidationEvidence.rate_count} rate(s).
+              </p>}
+              {ratehawkPrebookEvidence && <p className="mt-2 text-xs text-slate-600">
+                Last saved prebook: {new Date(ratehawkPrebookEvidence.tested_at).toLocaleString()} — {ratehawkPrebookEvidence.hotel_count} test hotel(s), {ratehawkPrebookEvidence.rate_count} rate(s), price changed: {ratehawkPrebookEvidence.price_changed ? "yes" : "no"}.
               </p>}
             </div>}
             <a className="mt-3 inline-block text-xs font-semibold underline" href={supplier.documentationUrl} rel="noreferrer" target="_blank">Official integration documentation</a>

@@ -136,11 +136,15 @@ describe("inventory supplier readiness", () => {
     expect(route).toContain('requireRole(["admin"])');
     expect(route).toContain('"Cache-Control": "no-store"');
     expect(adminSettings).toContain("Hotel inventory supplier readiness");
-    expect(adminSettings).toContain("RUN SANDBOX TEST");
+    expect(adminSettings).toContain("RUN SANDBOX SEARCH");
+    expect(adminSettings).toContain("RUN PREBOOK TEST");
     expect(adminSettings).toContain("/api/admin/integrations/inventory/ratehawk/validate");
+    expect(adminSettings).toContain("/api/admin/integrations/inventory/ratehawk/prebook");
     expect(adminSettings).toContain("Run one read-only RateHawk sandbox search now?");
+    expect(adminSettings).toContain("Run one controlled RateHawk sandbox search and prebook now?");
     expect(adminSettings).toContain("No booking or payment was created.");
-    expect(adminSettings).toContain("Last saved validation:");
+    expect(adminSettings).toContain("Last saved search:");
+    expect(adminSettings).toContain("Last saved prebook:");
     expect(adminSettings).toContain("Sandbox search passed and evidence saved:");
     expect(adminSettings).toContain("ready for sandbox validation");
     expect(adminSettings).toContain("sandbox transports authorized");
