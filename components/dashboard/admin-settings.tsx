@@ -126,6 +126,26 @@ type InventoryValidationEvidence = {
   price_changed?: boolean | null;
 };
 
+type RatehawkCertificationResult = {
+  scenario: string;
+  partnerOrderId: string;
+  finalStatus: "confirmed" | "failed" | "timed_out";
+  finalError: string | null;
+  bookingFormAttempts: number;
+  statusAttempts: number;
+  cancelled: boolean;
+};
+
+const ratehawkCertificationScenarios = [
+  "children",
+  "citizenship",
+  "multiroom",
+  "price_change",
+  "unknown_success",
+  "unknown_soldout",
+  "unknown_book_limit",
+] as const;
+
 export function AdminSettings() {
   const [data, setData] = useState<Response | null>(null);
   const [message, setMessage] = useState("Checking platform readiness…");
@@ -137,6 +157,7 @@ export function AdminSettings() {
   const [inventoryValidationMessages, setInventoryValidationMessages] = useState<Record<string, string>>({});
   const [ratehawkValidationEvidence, setRatehawkValidationEvidence] = useState<InventoryValidationEvidence | null>(null);
   const [ratehawkPrebookEvidence, setRatehawkPrebookEvidence] = useState<InventoryValidationEvidence | null>(null);
+  const [ratehawkCertificationResults, setRatehawkCertificationResults] = useState<RatehawkCertificationResult[]>([]);
   const [priorityPmsReadiness, setPriorityPmsReadiness] = useState<PriorityPmsProductionReadiness[]>([]);
   const [evidenceTrackingAvailable, setEvidenceTrackingAvailable] = useState(false);
   const [evidenceBusy, setEvidenceBusy] = useState("");
@@ -245,6 +266,41 @@ export function AdminSettings() {
       setInventoryValidationMessages((current) => ({
         ...current,
         ratehawkPrebook: error instanceof Error ? error.message : "RateHawk sandbox prebook validation could not be completed.",
+      }));
+    } finally {
+      setInventoryValidationBusy("");
+    }
+  }
+
+  async function runRatehawkCertification() {
+    if (!window.confirm("Run all required RateHawk sandbox certification booking scenarios now? This creates and cancels test reservations in RateHawk's sandbox. It does not use production inventory or charge a customer.")) return;
+    setInventoryValidationBusy("ratehawk-certification");
+    setRatehawkCertificationResults([]);
+    setInventoryValidationMessages((current) => ({ ...current, ratehawkCertification: "" }));
+    const completed: RatehawkCertificationResult[] = [];
+    try {
+      for (const scenario of ratehawkCertificationScenarios) {
+        const response = await fetch("/api/admin/integrations/inventory/ratehawk/certification", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            scenario,
+            confirmation: "RUN RATEHAWK SANDBOX CERTIFICATION",
+          }),
+        });
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || `${scenario} could not be completed.`);
+        completed.push(body.result);
+        setRatehawkCertificationResults([...completed]);
+      }
+      setInventoryValidationMessages((current) => ({
+        ...current,
+        ratehawkCertification: "All RateHawk sandbox certification scenarios completed. Review the order IDs below before sending the checklist.",
+      }));
+    } catch (error) {
+      setInventoryValidationMessages((current) => ({
+        ...current,
+        ratehawkCertification: error instanceof Error ? error.message : "RateHawk sandbox certification could not be completed.",
       }));
     } finally {
       setInventoryValidationBusy("");
@@ -627,9 +683,25 @@ export function AdminSettings() {
                 >
                   {inventoryValidationBusy === "ratehawk-prebook" ? "RUNNING PREBOOK…" : "RUN PREBOOK TEST"}
                 </button>
+                <button
+                  className="btn-secondary text-xs"
+                  disabled={supplier.sandboxRuntime.status !== "authorized" || Boolean(inventoryValidationBusy)}
+                  onClick={runRatehawkCertification}
+                  type="button"
+                >
+                  {inventoryValidationBusy === "ratehawk-certification" ? "RUNNING CERTIFICATION…" : "RUN CERTIFICATION TESTS"}
+                </button>
               </div>
               {inventoryValidationMessages.ratehawk && <p className="mt-2 text-xs text-slate-600" role="status">{inventoryValidationMessages.ratehawk}</p>}
               {inventoryValidationMessages.ratehawkPrebook && <p className="mt-2 text-xs text-slate-600" role="status">{inventoryValidationMessages.ratehawkPrebook}</p>}
+              {inventoryValidationMessages.ratehawkCertification && <p className="mt-2 text-xs text-slate-600" role="status">{inventoryValidationMessages.ratehawkCertification}</p>}
+              {ratehawkCertificationResults.length > 0 && <ul className="mt-2 space-y-1 text-xs text-slate-600">
+                {ratehawkCertificationResults.map((result) => <li key={result.scenario}>
+                  <strong>{result.scenario.replaceAll("_", " ")}:</strong> {result.finalStatus}
+                  {result.finalError ? ` (${result.finalError})` : ""} — {result.partnerOrderId}
+                  {result.cancelled ? " — cancelled" : ""}
+                </li>)}
+              </ul>}
               {ratehawkValidationEvidence && <p className="mt-2 text-xs text-slate-600">
                 Last saved search: {new Date(ratehawkValidationEvidence.tested_at).toLocaleString()} — {ratehawkValidationEvidence.hotel_count} test hotel(s), {ratehawkValidationEvidence.rate_count} rate(s).
               </p>}
