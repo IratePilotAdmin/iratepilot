@@ -123,6 +123,8 @@ export function AdminSettings() {
   const [emailTestMessage, setEmailTestMessage] = useState("");
   const [pmsProviders, setPmsProviders] = useState<PmsProviderReadiness[]>([]);
   const [inventorySuppliers, setInventorySuppliers] = useState<InventorySupplierAdminReadiness[] | null>(null);
+  const [inventoryValidationBusy, setInventoryValidationBusy] = useState("");
+  const [inventoryValidationMessages, setInventoryValidationMessages] = useState<Record<string, string>>({});
   const [priorityPmsReadiness, setPriorityPmsReadiness] = useState<PriorityPmsProductionReadiness[]>([]);
   const [evidenceTrackingAvailable, setEvidenceTrackingAvailable] = useState(false);
   const [evidenceBusy, setEvidenceBusy] = useState("");
@@ -167,6 +169,32 @@ export function AdminSettings() {
       setEmailTestMessage(error instanceof Error ? error.message : "The test email could not be sent.");
     } finally {
       setEmailTestBusy(false);
+    }
+  }
+
+  async function validateRatehawkSandbox() {
+    if (!window.confirm("Run one read-only RateHawk sandbox search now? This sends the sandbox credentials to RateHawk but cannot create a booking or payment.")) return;
+    setInventoryValidationBusy("ratehawk");
+    setInventoryValidationMessages((current) => ({ ...current, ratehawk: "" }));
+    try {
+      const response = await fetch("/api/admin/integrations/inventory/ratehawk/validate", {
+        method: "POST",
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "RateHawk sandbox validation could not be completed.");
+      const hotelLabel = body.hotelCount === 1 ? "hotel" : "hotels";
+      const rateLabel = body.rateCount === 1 ? "rate" : "rates";
+      setInventoryValidationMessages((current) => ({
+        ...current,
+        ratehawk: `Sandbox search passed: ${body.hotelCount} test ${hotelLabel} and ${body.rateCount} ${rateLabel} returned. No booking or payment was created.`,
+      }));
+    } catch (error) {
+      setInventoryValidationMessages((current) => ({
+        ...current,
+        ratehawk: error instanceof Error ? error.message : "RateHawk sandbox validation could not be completed.",
+      }));
+    } finally {
+      setInventoryValidationBusy("");
     }
   }
 
@@ -489,7 +517,7 @@ export function AdminSettings() {
         <div className="border-b p-6">
           <span className="text-xs uppercase tracking-wider text-slate-500">Aggregator inventory</span>
           <h2 className="mt-2 text-xl font-semibold">Hotel inventory supplier readiness</h2>
-          <p className="mt-2 text-sm text-slate-600">This read-only audit tracks credential prerequisites for supplier applications. It cannot approve a partnership, contact a vendor, validate a sandbox, or enable traffic.</p>
+          <p className="mt-2 text-sm text-slate-600">This panel tracks credential prerequisites. The RateHawk test sends one read-only search to its sandbox; it cannot create a booking, payment, partnership approval, or live traffic.</p>
           {inventorySuppliers ? <div className="mt-4 flex flex-wrap gap-5 text-sm">
             <span><strong>{inventorySuppliers.length}</strong> suppliers tracked</span>
             <span><strong>{inventorySuppliers.filter((supplier) => supplier.status === "ready_for_sandbox_validation").length}</strong> ready for sandbox validation</span>
@@ -512,6 +540,17 @@ export function AdminSettings() {
               </strong>
               <span className="mt-1 block break-words text-slate-500">Flag: {supplier.sandboxRuntime.enablementKey}</span>
             </div>
+            {supplier.id === "ratehawk" && <div className="mt-3">
+              <button
+                className="btn-secondary text-xs"
+                disabled={supplier.sandboxRuntime.status !== "authorized" || inventoryValidationBusy === "ratehawk"}
+                onClick={validateRatehawkSandbox}
+                type="button"
+              >
+                {inventoryValidationBusy === "ratehawk" ? "RUNNING SANDBOX TEST…" : "RUN SANDBOX TEST"}
+              </button>
+              {inventoryValidationMessages.ratehawk && <p className="mt-2 text-xs text-slate-600" role="status">{inventoryValidationMessages.ratehawk}</p>}
+            </div>}
             <a className="mt-3 inline-block text-xs font-semibold underline" href={supplier.documentationUrl} rel="noreferrer" target="_blank">Official integration documentation</a>
           </article>)}
         </div>
