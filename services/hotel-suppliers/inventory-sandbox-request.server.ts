@@ -98,6 +98,41 @@ export function buildRatehawkSandboxHotelSearchRequest(input: {
   };
 }
 
+export function buildRatehawkSandboxHotelPrebookRequest(input: {
+  keyId: string;
+  apiKey: string;
+  rateHash: string;
+  priceIncreasePercent?: number;
+}): InventorySandboxRequest {
+  const rateHash = input.rateHash.trim();
+  if (!rateHash || rateHash.length > 256 || unsafeTextPattern.test(rateHash)) {
+    throw new Error("RateHawk sandbox rate hash is invalid.");
+  }
+  if (input.priceIncreasePercent !== undefined
+    && (!Number.isSafeInteger(input.priceIncreasePercent)
+      || input.priceIncreasePercent < 0
+      || input.priceIncreasePercent > 100)) {
+    throw new Error("RateHawk sandbox price increase percentage is invalid.");
+  }
+
+  return {
+    supplierId: "ratehawk",
+    url: "https://api-sandbox.ratehawk.com/api/b2b/v3/hotel/prebook/",
+    method: "POST",
+    headers: {
+      Authorization: buildRatehawkAuthorization(input),
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: serializeJsonObject({
+      hash: rateHash,
+      ...(input.priceIncreasePercent === undefined
+        ? {}
+        : { price_increase_percent: input.priceIncreasePercent }),
+    }),
+  };
+}
+
 export function buildExpediaRapidSandboxAvailabilityRequest(input: {
   apiKey: string;
   sharedSecret: string;

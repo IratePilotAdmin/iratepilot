@@ -58,7 +58,10 @@ function validateRequest(request: InventorySandboxRequest) {
       && Boolean(request.headers["Api-key"] && request.headers["X-Signature"])
     : request.supplierId === "ratehawk"
       ? request.method === "POST"
-        && url.href === "https://api-sandbox.ratehawk.com/api/b2b/v3/search/serp/hotels/"
+        && [
+          "https://api-sandbox.ratehawk.com/api/b2b/v3/search/serp/hotels/",
+          "https://api-sandbox.ratehawk.com/api/b2b/v3/hotel/prebook/",
+        ].includes(url.href)
         && request.headers.Authorization?.startsWith("Basic ")
       : request.supplierId === "stuba"
         ? request.method === "POST"
@@ -125,7 +128,13 @@ export async function executeInventorySandboxRequest(
   }
   validateRequest(request);
   const timeoutMs = options.timeoutMs ?? 10_000;
-  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 30_000) {
+  const isRatehawkPrebook = request.supplierId === "ratehawk"
+    && request.url === "https://api-sandbox.ratehawk.com/api/b2b/v3/hotel/prebook/";
+  const minimumTimeoutMs = isRatehawkPrebook ? 30_000 : 100;
+  const maximumTimeoutMs = isRatehawkPrebook ? 60_000 : 30_000;
+  if (!Number.isSafeInteger(timeoutMs)
+    || timeoutMs < minimumTimeoutMs
+    || timeoutMs > maximumTimeoutMs) {
     throw new InventorySandboxTransportError(request.supplierId, "invalid_timeout");
   }
 

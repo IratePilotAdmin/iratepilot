@@ -4,6 +4,7 @@ vi.mock("server-only", () => ({}));
 import {
   buildExpediaRapidSandboxAvailabilityRequest,
   buildHotelbedsSandboxAvailabilityRequest,
+  buildRatehawkSandboxHotelPrebookRequest,
   buildRatehawkSandboxHotelSearchRequest,
   buildStubaSandboxHotelSearchRequest,
 } from "../services/hotel-suppliers/inventory-sandbox-request.server";
@@ -48,6 +49,27 @@ describe("inventory supplier sandbox request builders", () => {
         "Content-Type": "application/json",
       },
       body: '{"hids":[10004873],"checkin":"2026-10-22","checkout":"2026-10-25"}',
+    });
+  });
+
+  it("builds a RateHawk sandbox hotel prebook request", () => {
+    const request = buildRatehawkSandboxHotelPrebookRequest({
+      keyId: "partner-id",
+      apiKey: "ratehawk-api-key",
+      rateHash: " h-sandbox-rate ",
+      priceIncreasePercent: 10,
+    });
+
+    expect(request).toEqual({
+      supplierId: "ratehawk",
+      url: "https://api-sandbox.ratehawk.com/api/b2b/v3/hotel/prebook/",
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${Buffer.from("partner-id:ratehawk-api-key").toString("base64")}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: '{"hash":"h-sandbox-rate","price_increase_percent":10}',
     });
   });
 
@@ -126,5 +148,18 @@ describe("inventory supplier sandbox request builders", () => {
       authApiKey: "bad\nInjected: yes",
       payload: { hotelIds: [55492] },
     })).toThrow("API key is invalid");
+
+    expect(() => buildRatehawkSandboxHotelPrebookRequest({
+      keyId: "partner-id",
+      apiKey: "ratehawk-api-key",
+      rateHash: "bad\nrate",
+    })).toThrow("rate hash is invalid");
+
+    expect(() => buildRatehawkSandboxHotelPrebookRequest({
+      keyId: "partner-id",
+      apiKey: "ratehawk-api-key",
+      rateHash: "h-sandbox-rate",
+      priceIncreasePercent: 101,
+    })).toThrow("price increase percentage is invalid");
   });
 });
