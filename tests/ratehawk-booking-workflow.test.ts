@@ -122,16 +122,16 @@ describe("RateHawk booking workflow", () => {
     await expect(pollRatehawkBookingUntilFinal({
       partnerOrderId: "not-a-uuid",
       checkStatus: vi.fn(),
-    })).rejects.toEqual(expect.objectContaining<RatehawkBookingWorkflowError>({
+    })).rejects.toMatchObject({
       code: "invalid_partner_order_id",
-    }));
+    } satisfies Partial<RatehawkBookingWorkflowError>);
 
     await expect(pollRatehawkBookingUntilFinal({
       partnerOrderId,
       checkStatus: vi.fn(),
       timeoutMs: 901_000,
-    })).rejects.toEqual(expect.objectContaining<RatehawkBookingWorkflowError>({
+    })).rejects.toMatchObject({
       code: "invalid_polling_options",
-    }));
+    } satisfies Partial<RatehawkBookingWorkflowError>);
   });
 });
