@@ -118,7 +118,7 @@ describe("RateHawk booking workflow", () => {
     expect(checkStatus).toHaveBeenCalledTimes(4);
   });
 
-  it("never exceeds RateHawk's ten-call booking-status limit", async () => {
+  it("polls every five seconds through RateHawk's full booking timeout", async () => {
     let currentTime = 0;
     const checkStatus = vi.fn().mockResolvedValue({
       status: "processing",
@@ -135,9 +135,29 @@ describe("RateHawk booking workflow", () => {
       sleep: async (milliseconds) => { currentTime += milliseconds; },
     });
 
-    expect(result).toEqual({ status: "timed_out", partnerOrderId, attempts: 10 });
-    expect(checkStatus).toHaveBeenCalledTimes(10);
-    expect(currentTime).toBe(45_000);
+    expect(result).toEqual({ status: "timed_out", partnerOrderId, attempts: 37 });
+    expect(checkStatus).toHaveBeenCalledTimes(37);
+    expect(currentTime).toBe(180_000);
+  });
+
+  it("accepts a confirmation returned by the final deadline check", async () => {
+    let currentTime = 0;
+    const checkStatus = vi.fn(async () => currentTime === 180_000
+      ? { status: "ok", error: null, data: { partner_order_id: partnerOrderId } }
+      : { status: "processing", error: null, data: { partner_order_id: partnerOrderId } });
+
+    const result = await pollRatehawkBookingUntilFinal({
+      partnerOrderId,
+      checkStatus,
+      timeoutMs: 180_000,
+      intervalMs: 5_000,
+      now: () => currentTime,
+      sleep: async (milliseconds) => { currentTime += milliseconds; },
+    });
+
+    expect(result).toEqual({ status: "confirmed", partnerOrderId, attempts: 37 });
+    expect(checkStatus).toHaveBeenCalledTimes(37);
+    expect(currentTime).toBe(180_000);
   });
 
   it("continues polling after retryable status transport failures", async () => {

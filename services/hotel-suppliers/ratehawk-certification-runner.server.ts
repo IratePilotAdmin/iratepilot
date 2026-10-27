@@ -435,7 +435,6 @@ export async function runRatehawkCertificationScenario(options: {
   const final = await pollRatehawkBookingUntilFinal({
     partnerOrderId: bookingForm.partnerOrderId,
     isRetryableTransportFailure: retryableTransportFailure,
-    maximumAttempts: 10,
     checkStatus: (currentPartnerOrderId) => request(buildRatehawkSandboxBookingStatusRequest({
       keyId,
       apiKey,
