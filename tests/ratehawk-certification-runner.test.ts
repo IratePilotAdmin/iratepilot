@@ -9,6 +9,7 @@ import {
 } from "../services/hotel-suppliers/ratehawk-certification-runner.server";
 import { InventorySupplierResponseError } from "../services/hotel-suppliers/inventory-response.server";
 import { InventorySandboxTransportError } from "../services/hotel-suppliers/inventory-sandbox-transport.server";
+import { RatehawkBookingResponseError } from "../services/hotel-suppliers/ratehawk-booking-response.server";
 
 const environment = {
   HOTEL_INVENTORY_RATEHAWK_SANDBOX_ENABLED: "true",
@@ -26,8 +27,10 @@ function jsonResponse(value: unknown) {
 function createFetcher(finalStatus: "ok" | "error", options?: {
   finalError?: string;
   priceChanged?: boolean;
+  cancellationErrors?: string[];
 }) {
   let partnerOrderId = "";
+  const cancellationErrors = [...(options?.cancellationErrors ?? [])];
   return vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const url = String(input);
     const body = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
@@ -68,6 +71,10 @@ function createFetcher(finalStatus: "ok" | "error", options?: {
         });
     }
     if (url.endsWith("/order/cancel/")) {
+      const cancellationError = cancellationErrors.shift();
+      if (cancellationError) {
+        return jsonResponse({ status: "error", error: cancellationError });
+      }
       return jsonResponse({
         status: "ok",
         data: { amount_payable: { amount: "0.00", currency_code: "USD" } },
@@ -108,8 +115,34 @@ describe("RateHawk certification runner", () => {
     expect(classifyRatehawkCertificationFailure(
       new InventorySupplierResponseError("ratehawk", "supplier_error", 429),
     )).toEqual({ code: "supplier_supplier_error", status: 429 });
+    expect(classifyRatehawkCertificationFailure(
+      new RatehawkBookingResponseError("booking_failed", "order_not_found"),
+    )).toEqual({
+      code: "booking_booking_failed",
+      status: null,
+      outcomeError: "order_not_found",
+    });
     expect(classifyRatehawkCertificationFailure(new Error("secret details")))
       .toEqual({ code: "unknown_error", status: null });
+  });
+
+  it("retries documented transient cancellation synchronization errors", async () => {
+    const sleep = vi.fn(async () => {});
+    const fetcher = createFetcher("ok", {
+      cancellationErrors: ["order_not_found", "lock"],
+    });
+
+    await expect(runRatehawkCertificationScenario({
+      environment,
+      scenarioId: "children",
+      fetcher,
+      now: new Date("2026-10-27T12:00:00.000Z"),
+      sleep,
+    })).resolves.toMatchObject({ finalStatus: "confirmed", cancelled: true });
+
+    expect(sleep).toHaveBeenCalledTimes(2);
+    expect(fetcher.mock.calls.filter(([url]) => String(url).endsWith("/order/cancel/")))
+      .toHaveLength(3);
   });
 
   it("runs the child scenario and cancels a confirmed sandbox reservation", async () => {
@@ -229,11 +262,11 @@ describe("RateHawk certification runner", () => {
       },
     })).rejects.toMatchObject({
       code: "unexpected_outcome",
-      outcome: { status: "timed_out", attempts: 36 },
+      outcome: { status: "timed_out", attempts: 34 },
     });
 
-    expect(currentTime).toBe(275_000);
+    expect(currentTime).toBe(265_000);
     expect(fetcher.mock.calls.filter(([url]) => String(url).endsWith("/booking/finish/status/")))
-      .toHaveLength(36);
+      .toHaveLength(34);
   });
 });

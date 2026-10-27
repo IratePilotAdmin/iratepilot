@@ -40,4 +40,14 @@ describe("RateHawk booking response safety", () => {
     expect(() => parseRatehawkBookingFormResponse({ status: "ok", data: {} })).toThrow("invalid_response");
     expect(() => parseRatehawkCancellationResponse({ status: "ok", data: {} })).toThrow("invalid_response");
   });
+
+  it("preserves the allowlistable supplier error for cancellation diagnostics", () => {
+    expect(() => parseRatehawkCancellationResponse({
+      status: "error",
+      error: "order_not_found",
+    })).toThrow(expect.objectContaining({
+      code: "booking_failed",
+      supplierError: "order_not_found",
+    }));
+  });
 });

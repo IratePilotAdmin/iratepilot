@@ -24,7 +24,10 @@ import {
   createRatehawkBookingFormWithRetry,
   pollRatehawkBookingUntilFinal,
 } from "./ratehawk-booking-workflow.server";
-import { parseRatehawkCancellationResponse } from "./ratehawk-booking-response.server";
+import {
+  parseRatehawkCancellationResponse,
+  RatehawkBookingResponseError,
+} from "./ratehawk-booking-response.server";
 
 export const ratehawkCertificationScenarioIds = [
   "children",
@@ -104,8 +107,10 @@ const safeOutcomeErrors = new Set([
   "insufficient_b2b_balance",
   "invalid_upsell_attributes",
   "invalid_upsell_uid",
+  "lock",
   "no_pricing_data",
   "not_enough_credit_card_data",
+  "order_not_cancellable",
   "order_not_found",
   "rate_not_found",
   "return_path_required",
@@ -145,6 +150,13 @@ export function classifyRatehawkCertificationFailure(
       status: error.status && error.status >= 100 && error.status <= 599
         ? error.status
         : null,
+    };
+  }
+  if (error instanceof RatehawkBookingResponseError) {
+    return {
+      code: `booking_${error.code}`,
+      status: null,
+      ...(error.supplierError ? { outcomeError: safeOutcomeError(error.supplierError) } : {}),
     };
   }
   return { code: "unknown_error", status: null };
@@ -360,12 +372,15 @@ async function request(
 }
 
 // The route has a 300-second ceiling. Keep ten seconds outside this workflow,
-// then reserve another fifteen seconds for the status request made at the
+// then reserve another twenty-five seconds for the status request made at the
 // polling deadline, sandbox cancellation, and response serialization.
 const certificationExecutionBudgetMs = 290_000;
-const certificationPostPollingReserveMs = 15_000;
+const certificationPostPollingReserveMs = 25_000;
 const certificationStatusPollingTimeoutMs = 180_000;
 const minimumStatusPollingTimeoutMs = 1_000;
+const cancellationRetryIntervalMs = 3_000;
+const cancellationMaximumAttempts = 3;
+const retryableCancellationErrors = new Set(["lock", "order_not_found", "unknown"]);
 
 export async function runRatehawkCertificationScenario(options: {
   environment: Record<string, string | undefined>;
@@ -377,6 +392,9 @@ export async function runRatehawkCertificationScenario(options: {
 }): Promise<RatehawkCertificationScenarioResult> {
   const executionNow = options.executionNow ?? Date.now;
   const executionStartedAt = executionNow();
+  const sleep = options.sleep ?? ((milliseconds: number) => new Promise<void>((resolve) => {
+    setTimeout(resolve, milliseconds);
+  }));
   const keyId = options.environment.HOTEL_INVENTORY_RATEHAWK_KEY_ID?.trim();
   const apiKey = options.environment.HOTEL_INVENTORY_RATEHAWK_API_KEY?.trim();
   if (!keyId || !apiKey) throw new RatehawkCertificationRunnerError("credentials_not_ready");
@@ -463,19 +481,35 @@ export async function runRatehawkCertificationScenario(options: {
     }), { environment: options.environment, fetcher: options.fetcher, timeoutMs: 5_000 }),
     timeoutMs: Math.min(certificationStatusPollingTimeoutMs, remainingPollingMs),
     now: executionNow,
-    sleep: options.sleep,
+    sleep,
   });
 
   let cancellation: ReturnType<typeof parseRatehawkCancellationResponse> | null = null;
   if (final.status === "confirmed") {
-    cancellation = parseRatehawkCancellationResponse(await request(
-      buildRatehawkSandboxBookingCancelRequest({
-        keyId,
-        apiKey,
-        partnerOrderId: bookingForm.partnerOrderId,
-      }),
-      { environment: options.environment, fetcher: options.fetcher, timeoutMs: 5_000 },
-    ));
+    for (let attempt = 1; attempt <= cancellationMaximumAttempts; attempt += 1) {
+      try {
+        cancellation = parseRatehawkCancellationResponse(await request(
+          buildRatehawkSandboxBookingCancelRequest({
+            keyId,
+            apiKey,
+            partnerOrderId: bookingForm.partnerOrderId,
+          }),
+          { environment: options.environment, fetcher: options.fetcher, timeoutMs: 5_000 },
+        ));
+        break;
+      } catch (error) {
+        const retryable = error instanceof RatehawkBookingResponseError
+          && error.supplierError !== null
+          && retryableCancellationErrors.has(error.supplierError);
+        const remainingMs = certificationExecutionBudgetMs
+          - Math.max(0, executionNow() - executionStartedAt);
+        if (!retryable || attempt === cancellationMaximumAttempts
+          || remainingMs <= cancellationRetryIntervalMs) {
+          throw error;
+        }
+        await sleep(cancellationRetryIntervalMs);
+      }
+    }
   }
   assertExpectedOutcome(scenario, final, prebook);
 
