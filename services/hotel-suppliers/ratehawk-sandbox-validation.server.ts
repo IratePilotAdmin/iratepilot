@@ -53,6 +53,9 @@ function summarizeResponse(response: InventoryJsonValue) {
     }
     rateCount += hotel.rates.length;
   }
+  if (data.hotels.length < 1 || rateCount < 1) {
+    throw new RatehawkSandboxValidationError("invalid_response");
+  }
   return { hotelCount: data.hotels.length, rateCount };
 }
 

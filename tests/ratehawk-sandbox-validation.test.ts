@@ -59,4 +59,22 @@ describe("RateHawk sandbox validation", () => {
         code: "credentials_not_ready",
       }));
   });
+
+  it("does not pass when the supplier returns no usable rates", async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      status: "ok",
+      data: { hotels: [{ id: "test-hotel", rates: [] }] },
+    }), { headers: { "content-type": "application/json" } }));
+    const { runRatehawkSandboxValidation } = await import("../services/hotel-suppliers/ratehawk-sandbox-validation.server");
+
+    await expect(runRatehawkSandboxValidation({
+      environment: {
+        HOTEL_INVENTORY_RATEHAWK_KEY_ID: "test-key-id",
+        HOTEL_INVENTORY_RATEHAWK_API_KEY: "sandbox-api-key-value",
+        HOTEL_INVENTORY_RATEHAWK_SANDBOX_ENABLED: "true",
+      },
+      fetcher,
+      now: new Date("2026-10-27T12:00:00.000Z"),
+    })).rejects.toEqual(expect.objectContaining({ code: "invalid_response" }));
+  });
 });
