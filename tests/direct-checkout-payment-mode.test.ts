@@ -15,6 +15,7 @@ import {
   PMS_PILOT_WITH_VENDOR_REFERENCE_PENDING,
   PMS_PILOT_PREVIEW_PROJECT_REF,
   PRODUCTION_PROJECT_REF,
+  RATEHAWK_CERTIFICATION_OPERATIONS_RECEIPTS_PENDING,
   reconcilePreviewMigrations,
   REQUIRED_PREVIEW_BASELINE,
 } from "../scripts/reconcile-preview-migrations.mjs";
@@ -60,10 +61,10 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
     expect(migration).toContain("to service_role");
   });
 
-  it("recognizes the repository migration chain through the explicit Data API grant migration before reconciling Preview", () => {
+  it("recognizes the repository migration chain through the RateHawk certification receipts migration before reconciling Preview", () => {
     const versions = listMigrationVersions();
     expect(versions).toEqual(expect.arrayContaining(REQUIRED_PREVIEW_BASELINE));
-    expect(versions.at(-1)).toBe("202610270174");
+    expect(versions.at(-1)).toBe("202610290175");
     expect(assertPreviewMigrationTarget({
       PREVIEW_SUPABASE_DB_URL: previewUrl,
       PREVIEW_SUPABASE_PROJECT_REF: previewRef,
@@ -129,6 +130,27 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
     const pendingSets = [
       ["202610270174"],
       ["202610270173", "202610270174"],
+    ];
+
+    for (const pending of pendingSets) {
+      const applied = versions.filter((version) => !pending.includes(version));
+      expect(assertPreviewRemoteMigrationState(
+        migrationList(versions, applied),
+        versions,
+      ).pendingVersions).toEqual(pending);
+    }
+  });
+
+  it("approves the RateHawk certification receipt migration alone or after prior evidence", () => {
+    const versions = listMigrationVersions();
+    const pendingSets = [
+      RATEHAWK_CERTIFICATION_OPERATIONS_RECEIPTS_PENDING,
+      ["202610270174", ...RATEHAWK_CERTIFICATION_OPERATIONS_RECEIPTS_PENDING],
+      [
+        "202610270173",
+        "202610270174",
+        ...RATEHAWK_CERTIFICATION_OPERATIONS_RECEIPTS_PENDING,
+      ],
     ];
 
     for (const pending of pendingSets) {
