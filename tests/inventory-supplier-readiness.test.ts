@@ -146,6 +146,10 @@ describe("inventory supplier readiness", () => {
     expect(adminSettings).toContain("Last saved search:");
     expect(adminSettings).toContain("Last saved prebook:");
     expect(adminSettings).toContain("Sandbox search passed and evidence saved:");
+    expect(adminSettings).toContain("RateHawk certification checklist");
+    expect(adminSettings).toContain("Cancellation verified");
+    expect(adminSettings).toContain("Review the outcome and cancellation evidence below.");
+    expect(adminSettings).not.toContain("before sending the checklist");
     expect(adminSettings).toContain("ready for sandbox validation");
     expect(adminSettings).toContain("sandbox transports authorized");
     expect(adminSettings).toContain("Sandbox traffic");

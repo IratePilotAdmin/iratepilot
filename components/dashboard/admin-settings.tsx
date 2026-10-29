@@ -134,16 +134,18 @@ type RatehawkCertificationResult = {
   bookingFormAttempts: number;
   statusAttempts: number;
   cancelled: boolean;
+  cancellationAmount: string | null;
+  cancellationCurrency: string | null;
 };
 
 const ratehawkCertificationScenarios = [
-  "children",
-  "citizenship",
-  "multiroom",
-  "price_change",
-  "unknown_success",
-  "unknown_soldout",
-  "unknown_book_limit",
+  { id: "children", label: "Children", expectedOutcome: "Confirmed, then cancelled" },
+  { id: "citizenship", label: "Guest citizenship", expectedOutcome: "Confirmed, then cancelled" },
+  { id: "multiroom", label: "Multiple rooms", expectedOutcome: "Confirmed, then cancelled" },
+  { id: "price_change", label: "Price change", expectedOutcome: "Confirmed, then cancelled" },
+  { id: "unknown_success", label: "Unknown success", expectedOutcome: "Confirmed, then cancelled" },
+  { id: "unknown_soldout", label: "Unknown sold out", expectedOutcome: "Failed as sold out" },
+  { id: "unknown_book_limit", label: "Unknown booking limit", expectedOutcome: "Failed at booking limit" },
 ] as const;
 
 export function AdminSettings() {
@@ -284,7 +286,7 @@ export function AdminSettings() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            scenario,
+            scenario: scenario.id,
             confirmation: "RUN RATEHAWK SANDBOX CERTIFICATION",
           }),
         });
@@ -300,7 +302,7 @@ export function AdminSettings() {
               attempts?: unknown;
             }
             : null;
-          const failedScenario = typeof failure?.scenario === "string" ? failure.scenario : scenario;
+          const failedScenario = typeof failure?.scenario === "string" ? failure.scenario : scenario.id;
           const failureCode = typeof failure?.code === "string" ? failure.code : "unknown_error";
           const failureStatus = typeof failure?.status === "number" ? `, HTTP ${failure.status}` : "";
           const outcomeStatus = typeof failure?.outcomeStatus === "string" ? failure.outcomeStatus : null;
@@ -309,14 +311,14 @@ export function AdminSettings() {
           const outcome = outcomeStatus
             ? ` Outcome: ${outcomeStatus}${outcomeError ? ` (${outcomeError})` : ""}${attempts ? ` after ${attempts} status checks` : ""}.`
             : "";
-          throw new Error(`${body.error || `${scenario} could not be completed.`} Scenario: ${failedScenario}. Diagnostic: ${failureCode}${failureStatus}.${outcome}`);
+          throw new Error(`${body.error || `${scenario.label} could not be completed.`} Scenario: ${failedScenario}. Diagnostic: ${failureCode}${failureStatus}.${outcome}`);
         }
         completed.push(body.result);
         setRatehawkCertificationResults([...completed]);
       }
       setInventoryValidationMessages((current) => ({
         ...current,
-        ratehawkCertification: "All RateHawk sandbox certification scenarios completed. Review the order IDs below before sending the checklist.",
+        ratehawkCertification: "All RateHawk sandbox certification scenarios completed. Review the outcome and cancellation evidence below.",
       }));
     } catch (error) {
       setInventoryValidationMessages((current) => ({
@@ -716,13 +718,39 @@ export function AdminSettings() {
               {inventoryValidationMessages.ratehawk && <p className="mt-2 text-xs text-slate-600" role="status">{inventoryValidationMessages.ratehawk}</p>}
               {inventoryValidationMessages.ratehawkPrebook && <p className="mt-2 text-xs text-slate-600" role="status">{inventoryValidationMessages.ratehawkPrebook}</p>}
               {inventoryValidationMessages.ratehawkCertification && <p className="mt-2 text-xs text-slate-600" role="status">{inventoryValidationMessages.ratehawkCertification}</p>}
-              {ratehawkCertificationResults.length > 0 && <ul className="mt-2 space-y-1 text-xs text-slate-600">
-                {ratehawkCertificationResults.map((result) => <li key={result.scenario}>
-                  <strong>{result.scenario.replaceAll("_", " ")}:</strong> {result.finalStatus}
-                  {result.finalError ? ` (${result.finalError})` : ""} — {result.partnerOrderId}
-                  {result.cancelled ? " — cancelled" : ""}
-                </li>)}
-              </ul>}
+              <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3" aria-live="polite">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <strong className="text-xs text-slate-800">RateHawk certification checklist</strong>
+                  <span className="text-xs text-slate-500">
+                    {ratehawkCertificationResults.length} of {ratehawkCertificationScenarios.length} scenarios completed
+                  </span>
+                </div>
+                <ul className="mt-3 space-y-2 text-xs">
+                  {ratehawkCertificationScenarios.map((scenario) => {
+                    const result = ratehawkCertificationResults.find((item) => item.scenario === scenario.id);
+                    const cancellationLabel = result?.finalStatus === "confirmed"
+                      ? result.cancelled ? "Cancellation verified" : "Cancellation not verified"
+                      : result ? "Cancellation not required" : "Pending";
+                    return <li className="rounded-md bg-slate-50 p-2" key={scenario.id}>
+                      <div className="flex flex-wrap justify-between gap-2">
+                        <strong className="text-slate-800">{scenario.label}</strong>
+                        <span className={result ? "font-semibold text-emerald-700" : "text-slate-500"}>
+                          {result ? result.finalStatus.replaceAll("_", " ") : "Pending"}
+                        </span>
+                      </div>
+                      <span className="mt-1 block text-slate-500">Expected: {scenario.expectedOutcome}</span>
+                      {result && <span className="mt-1 block text-slate-600">
+                        {result.finalError ? `Supplier result: ${result.finalError}. ` : ""}
+                        {cancellationLabel}.
+                        {result.cancelled && result.cancellationAmount && result.cancellationCurrency
+                          ? ` Payable after cancellation: ${result.cancellationAmount} ${result.cancellationCurrency}.`
+                          : ""}
+                        {` Order: ${result.partnerOrderId}.`}
+                      </span>}
+                    </li>;
+                  })}
+                </ul>
+              </div>
               {ratehawkValidationEvidence && <p className="mt-2 text-xs text-slate-600">
                 Last saved search: {new Date(ratehawkValidationEvidence.tested_at).toLocaleString()} — {ratehawkValidationEvidence.hotel_count} test hotel(s), {ratehawkValidationEvidence.rate_count} rate(s).
               </p>}
