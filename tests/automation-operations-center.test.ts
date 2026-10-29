@@ -50,6 +50,11 @@ describe("Automation Operations Center Phase 1", () => {
     expect(route).not.toContain('.select("id", { count: "exact", head: true })');
     expect(route).toContain('"Cache-Control": "private, no-store"');
     expect(route).toContain("buildVerifiedSupplierConnectionCounts");
+    expect(route).toContain('count("latest_pms_connection_test_events", "result", ["failed"])');
+    expect(route).not.toContain('count("pms_connection_test_events", "result", ["failed"])');
+    expect(route).toContain('admin.from("ratehawk_certification_receipts")');
+    expect(route).toContain('label: "RateHawk certification"');
+    expect(route).toContain('state: "completed" as const');
     expect(route).not.toContain('count("priority_pms_launch_evidence", "live_enabled", [true])');
     expect(route).not.toContain('count("synxis_crs_launch_evidence", "live_enabled", [true])');
     expect(route).not.toContain("export async function POST");
