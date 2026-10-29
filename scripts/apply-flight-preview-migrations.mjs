@@ -53,6 +53,7 @@ export const PINNED_NON_FLIGHT_MIGRATIONS = Object.freeze([
   ["202610260172", "202610260172_add_anand_systems_pms.sql"],
   ["202610270173", "202610270173_ratehawk_sandbox_validation_evidence.sql"],
   ["202610270174", "202610270174_ratehawk_sandbox_prebook_evidence.sql"],
+  ["202610290175", "202610290175_ratehawk_certification_operations_receipts.sql"],
 ].map(([version, filename]) => Object.freeze({ version, filename })));
 
 export const RETIRED_FLIGHT_MIGRATION_VERSIONS = Object.freeze([

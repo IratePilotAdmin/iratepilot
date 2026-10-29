@@ -197,6 +197,14 @@ type SandboxExecutionEventRow = {
   summary: string;
   created_at: string;
 };
+type RatehawkCertificationReceiptRow = {
+  id: string;
+  scenario: string;
+  final_status: "confirmed" | "failed" | "timed_out";
+  final_error: string | null;
+  cancelled: boolean;
+  tested_at: string;
+};
 
 function buildIncidentWorkflow(results: QueryResult[]): AutomationWorkflowSnapshot {
   if (results.some((result) => result.error)) return unavailableAutomationWorkflow();
@@ -529,7 +537,7 @@ export async function GET() {
         count("stripe_financial_events", "processing_status", ["failed"]),
         count("booking_financials", "stripe_transfer_status", ["pending"]),
         count("booking_financials", "stripe_transfer_status", ["failed"]),
-        count("pms_connection_test_events", "result", ["failed"]),
+        count("latest_pms_connection_test_events", "result", ["failed"]),
         count("synxis_request_journal", "status", ["started"]),
         count("synxis_request_journal", "status", ["failed"]),
         admin.from("priority_pms_launch_evidence").select("provider_id,vendor_approved,property_mapped,sandbox_validated,webhook_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact,verification_notes"),
@@ -538,6 +546,9 @@ export async function GET() {
         admin.from("stripe_financial_events").select("id,event_type,processing_status,updated_at").order("updated_at", { ascending: false }).limit(4),
         admin.from("pms_connection_test_events").select("id,validation_mode,result,detail_code,created_at").order("created_at", { ascending: false }).limit(3),
         admin.from("synxis_request_journal").select("id,operation,traffic_mode,status,started_at,completed_at").order("started_at", { ascending: false }).limit(3),
+        admin.from("ratehawk_certification_receipts")
+          .select("id,scenario,final_status,final_error,cancelled,tested_at")
+          .order("tested_at", { ascending: false }).limit(7),
       ]),
       Promise.all([
         admin.from("automation_incidents")
@@ -602,6 +613,7 @@ export async function GET() {
     const stripeRows = (results[19].data || []) as Array<{ id: string; event_type: string; processing_status: string; updated_at: string }>;
     const pmsRows = (results[20].data || []) as Array<{ id: string; validation_mode: string; result: string; detail_code: string; created_at: string }>;
     const synxisRows = (results[21].data || []) as Array<{ id: string; operation: string; traffic_mode: string; status: string; started_at: string; completed_at: string | null }>;
+    const ratehawkRows = (results[22].data || []) as RatehawkCertificationReceiptRow[];
     const priorityPmsRows = (results[16].data || []) as Array<{
       provider_id: PriorityPmsProviderId;
       vendor_approved: boolean;
@@ -691,6 +703,16 @@ export async function GET() {
         detail: `${row.operation.replaceAll("_", " ")} · ${row.traffic_mode} · ${row.status}`,
         state: ledgerState(row.status),
         createdAt: row.completed_at || row.started_at,
+      })),
+      ...ratehawkRows.map((row) => ({
+        id: `ratehawk-certification:${row.id}`,
+        lane: "suppliers" as const,
+        label: "RateHawk certification",
+        detail: row.final_status === "failed"
+          ? `${row.scenario.replaceAll("_", " ")} · expected ${row.final_error}`
+          : `${row.scenario.replaceAll("_", " ")} · confirmed${row.cancelled ? " · cancelled" : ""}`,
+        state: "completed" as const,
+        createdAt: row.tested_at,
       })),
     ];
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireRole } from "@/lib/auth/require-role";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   classifyRatehawkCertificationFailure,
   ratehawkCertificationScenarioIds,
@@ -13,6 +14,11 @@ export const maxDuration = 300;
 
 const noStoreHeaders = { "Cache-Control": "no-store" };
 const confirmationPhrase = "RUN RATEHAWK SANDBOX CERTIFICATION";
+
+function deploymentRevision() {
+  const revision = process.env.VERCEL_GIT_COMMIT_SHA?.trim();
+  return revision && /^[a-f0-9]{7,64}$/i.test(revision) ? revision : null;
+}
 
 function isScenarioId(value: unknown): value is RatehawkCertificationScenarioId {
   return typeof value === "string"
@@ -52,9 +58,37 @@ export async function POST(request: Request) {
       environment: process.env,
       scenarioId: value.scenario,
     });
+    const testedAt = new Date().toISOString();
+    const { error } = await createAdminClient()
+      .from("ratehawk_certification_receipts")
+      .insert({
+        scenario: result.scenario,
+        result: "passed",
+        partner_order_id: result.partnerOrderId,
+        final_status: result.finalStatus,
+        final_error: result.finalError,
+        booking_form_attempts: result.bookingFormAttempts,
+        status_attempts: result.statusAttempts,
+        cancelled: result.cancelled,
+        cancellation_amount: result.cancellationAmount,
+        cancellation_currency: result.cancellationCurrency,
+        tested_by: auth.user.id,
+        tested_at: testedAt,
+        deployment_revision: deploymentRevision(),
+      });
+    if (error) {
+      return NextResponse.json({
+        result,
+        certificationPassed: true,
+        evidenceRecorded: false,
+        error: "The RateHawk sandbox certification scenario passed, but its evidence could not be saved.",
+      }, { status: 503, headers: noStoreHeaders });
+    }
     return NextResponse.json({
       result,
-      message: "RateHawk sandbox certification scenario completed. No production traffic or customer payment was used.",
+      certificationPassed: true,
+      evidenceRecorded: true,
+      message: "RateHawk sandbox certification scenario completed and its evidence was saved. No production traffic or customer payment was used.",
     }, { headers: noStoreHeaders });
   } catch (error) {
     console.error("RateHawk sandbox certification scenario failed", error);
