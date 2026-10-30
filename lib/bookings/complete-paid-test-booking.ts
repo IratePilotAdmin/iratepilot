@@ -24,9 +24,15 @@ export function refundUnfinalizedBookingPayment(paymentIntentId: string) {
 
 export const refundUnfinalizedTestBooking = refundUnfinalizedBookingPayment;
 
+export function parseBookingChildAges(value: string | undefined) {
+  if (!value) return [];
+  return value.split(",").map((age) => Number(age.trim()));
+}
+
 export function isCompletableBookingIntent(intent: Stripe.PaymentIntent, expectedUserId?: string) {
   const metadata = intent.metadata;
   const guests = Number(metadata.guests);
+  const childAges = parseBookingChildAges(metadata.childAges);
   return intent.status === "succeeded"
     && metadata.mode === "booking_test"
     && (!expectedUserId || metadata.userId === expectedUserId)
@@ -34,6 +40,8 @@ export function isCompletableBookingIntent(intent: Stripe.PaymentIntent, expecte
     && Boolean(metadata.checkIn && metadata.checkOut && metadata.confirmationCode)
     && Number.isInteger(guests)
     && guests > 0
+    && childAges.length < guests
+    && childAges.every((age) => Number.isInteger(age) && age >= 0 && age <= 17)
     && intent.amount_received > 0;
 }
 
@@ -41,6 +49,7 @@ export async function completePaidTestBooking(intent: Stripe.PaymentIntent) {
   if (!isCompletableBookingIntent(intent)) throw new Error("The Stripe test booking metadata is incomplete.");
 
   const metadata = intent.metadata;
+  const childAges = parseBookingChildAges(metadata.childAges);
   const admin = createAdminClient();
   const { data, error } = await admin.rpc("complete_paid_test_booking", {
     p_payment_intent_id: intent.id,
@@ -50,6 +59,7 @@ export async function completePaidTestBooking(intent: Stripe.PaymentIntent) {
     p_check_in: metadata.checkIn,
     p_check_out: metadata.checkOut,
     p_guests: Number(metadata.guests),
+    p_child_ages: childAges,
     p_confirmation_code: metadata.confirmationCode,
     p_amount_total_cents: intent.amount_received
   });

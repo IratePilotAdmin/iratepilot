@@ -81,6 +81,7 @@ export const EXPEDIA_RAPID_VALIDATION_EVIDENCE_PENDING = [
 // Rapid occupancy can be reproduced exactly. Keep it isolated and composable.
 export const BOOKING_CHILD_AGES_PENDING = [
   "202610300177",
+  "202610300178",
 ];
 
 export const APALEO_WEBHOOK_AND_RECONCILIATION_PENDING = [
