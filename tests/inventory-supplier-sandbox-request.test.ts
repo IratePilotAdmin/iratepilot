@@ -95,6 +95,11 @@ describe("inventory supplier sandbox request builders", () => {
     expect(request.headers.Authorization).toMatch(
       /^EAN APIKey=expedia-api-key,Signature=[a-f0-9]{128},timestamp=1700000000$/,
     );
+    expect(request.headers).toMatchObject({
+      Accept: "application/json",
+      "Accept-Encoding": "gzip",
+      "User-Agent": "iRatePilot/1.0",
+    });
   });
 
   it("builds a Stuba JSON sandbox hotel search request", () => {

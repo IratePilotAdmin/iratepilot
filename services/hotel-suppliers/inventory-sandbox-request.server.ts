@@ -359,6 +359,8 @@ export function buildExpediaRapidSandboxAvailabilityRequest(input: {
     headers: {
       Authorization: buildExpediaRapidAuthorization(input),
       Accept: "application/json",
+      "Accept-Encoding": "gzip",
+      "User-Agent": "iRatePilot/1.0",
     },
   };
 }

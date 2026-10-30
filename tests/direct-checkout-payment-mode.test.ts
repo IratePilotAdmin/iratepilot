@@ -8,6 +8,7 @@ import {
   assertPreviewRemoteMigrationState,
   APALEO_RESERVATION_RECONCILIATION_PENDING,
   DATA_API_GRANTS_PENDING,
+  EXPEDIA_RAPID_VALIDATION_EVIDENCE_PENDING,
   listMigrationVersions,
   PMS_CATALOG_EXPANSION_PENDING,
   PMS_VENDOR_REFERENCE_PENDING,
@@ -61,10 +62,10 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
     expect(migration).toContain("to service_role");
   });
 
-  it("recognizes the repository migration chain through the RateHawk certification receipts migration before reconciling Preview", () => {
+  it("recognizes the repository migration chain through the Expedia Rapid evidence migration before reconciling Preview", () => {
     const versions = listMigrationVersions();
     expect(versions).toEqual(expect.arrayContaining(REQUIRED_PREVIEW_BASELINE));
-    expect(versions.at(-1)).toBe("202610290175");
+    expect(versions.at(-1)).toBe("202610300176");
     expect(assertPreviewMigrationTarget({
       PREVIEW_SUPABASE_DB_URL: previewUrl,
       PREVIEW_SUPABASE_PROJECT_REF: previewRef,
@@ -150,6 +151,31 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
         "202610270173",
         "202610270174",
         ...RATEHAWK_CERTIFICATION_OPERATIONS_RECEIPTS_PENDING,
+      ],
+    ];
+
+    for (const pending of pendingSets) {
+      const applied = versions.filter((version) => !pending.includes(version));
+      expect(assertPreviewRemoteMigrationState(
+        migrationList(versions, applied),
+        versions,
+      ).pendingVersions).toEqual(pending);
+    }
+  });
+
+  it("approves the Expedia Rapid validation evidence migration alone or after prior RateHawk evidence", () => {
+    const versions = listMigrationVersions();
+    const pendingSets = [
+      EXPEDIA_RAPID_VALIDATION_EVIDENCE_PENDING,
+      [
+        ...RATEHAWK_CERTIFICATION_OPERATIONS_RECEIPTS_PENDING,
+        ...EXPEDIA_RAPID_VALIDATION_EVIDENCE_PENDING,
+      ],
+      [
+        "202610270173",
+        "202610270174",
+        ...RATEHAWK_CERTIFICATION_OPERATIONS_RECEIPTS_PENDING,
+        ...EXPEDIA_RAPID_VALIDATION_EVIDENCE_PENDING,
       ],
     ];
 

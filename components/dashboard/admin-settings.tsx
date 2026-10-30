@@ -158,6 +158,7 @@ export function AdminSettings() {
   const [inventoryValidationBusy, setInventoryValidationBusy] = useState("");
   const [inventoryValidationMessages, setInventoryValidationMessages] = useState<Record<string, string>>({});
   const [ratehawkValidationEvidence, setRatehawkValidationEvidence] = useState<InventoryValidationEvidence | null>(null);
+  const [expediaRapidValidationEvidence, setExpediaRapidValidationEvidence] = useState<InventoryValidationEvidence | null>(null);
   const [ratehawkPrebookEvidence, setRatehawkPrebookEvidence] = useState<InventoryValidationEvidence | null>(null);
   const [ratehawkCertificationResults, setRatehawkCertificationResults] = useState<RatehawkCertificationResult[]>([]);
   const [priorityPmsReadiness, setPriorityPmsReadiness] = useState<PriorityPmsProductionReadiness[]>([]);
@@ -235,6 +236,40 @@ export function AdminSettings() {
       setInventoryValidationMessages((current) => ({
         ...current,
         ratehawk: error instanceof Error ? error.message : "RateHawk sandbox validation could not be completed.",
+      }));
+    } finally {
+      setInventoryValidationBusy("");
+    }
+  }
+
+  async function validateExpediaRapidSandbox() {
+    if (!window.confirm("Run one read-only Expedia Rapid sandbox availability search now? This sends the sandbox credentials to Expedia but cannot create a booking or payment.")) return;
+    setInventoryValidationBusy("expedia-rapid");
+    setInventoryValidationMessages((current) => ({ ...current, expediaRapid: "" }));
+    try {
+      const response = await fetch("/api/admin/integrations/inventory/expedia-rapid/validate", {
+        method: "POST",
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Expedia Rapid sandbox validation could not be completed.");
+      const hotelLabel = body.hotelCount === 1 ? "hotel" : "hotels";
+      const rateLabel = body.rateCount === 1 ? "rate" : "rates";
+      setExpediaRapidValidationEvidence({
+        tested_at: body.testedAt,
+        checkin: body.checkin,
+        checkout: body.checkout,
+        hotel_count: body.hotelCount,
+        rate_count: body.rateCount,
+        deployment_revision: null,
+      });
+      setInventoryValidationMessages((current) => ({
+        ...current,
+        expediaRapid: `Sandbox search passed and evidence saved: ${body.hotelCount} test ${hotelLabel} and ${body.rateCount} ${rateLabel} returned. No booking or payment was created.`,
+      }));
+    } catch (error) {
+      setInventoryValidationMessages((current) => ({
+        ...current,
+        expediaRapid: error instanceof Error ? error.message : "Expedia Rapid sandbox validation could not be completed.",
       }));
     } finally {
       setInventoryValidationBusy("");
@@ -361,6 +396,14 @@ export function AdminSettings() {
         setRatehawkValidationEvidence(body.latestEvidence ?? null);
       })
       .catch(() => setRatehawkValidationEvidence(null));
+
+    fetch("/api/admin/integrations/inventory/expedia-rapid/validate", { cache: "no-store" })
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error);
+        setExpediaRapidValidationEvidence(body.latestEvidence ?? null);
+      })
+      .catch(() => setExpediaRapidValidationEvidence(null));
 
     fetch("/api/admin/integrations/inventory/ratehawk/prebook", { cache: "no-store" })
       .then(async (response) => {
@@ -673,7 +716,7 @@ export function AdminSettings() {
         <div className="border-b p-6">
           <span className="text-xs uppercase tracking-wider text-slate-500">Aggregator inventory</span>
           <h2 className="mt-2 text-xl font-semibold">Hotel inventory supplier readiness</h2>
-          <p className="mt-2 text-sm text-slate-600">This panel tracks credential prerequisites. RateHawk tests can send a sandbox search and a controlled prebook availability check; neither can create a booking, payment, partnership approval, or live traffic.</p>
+          <p className="mt-2 text-sm text-slate-600">This panel tracks credential prerequisites. RateHawk and Expedia Rapid tests can send read-only sandbox availability searches; neither can create a booking, payment, partnership approval, or live traffic.</p>
           {inventorySuppliers ? <div className="mt-4 flex flex-wrap gap-5 text-sm">
             <span><strong>{inventorySuppliers.length}</strong> suppliers tracked</span>
             <span><strong>{inventorySuppliers.filter((supplier) => supplier.status === "ready_for_sandbox_validation").length}</strong> ready for sandbox validation</span>
@@ -764,6 +807,20 @@ export function AdminSettings() {
               </p>}
               {ratehawkPrebookEvidence && <p className="mt-2 text-xs text-slate-600">
                 Last saved prebook: {new Date(ratehawkPrebookEvidence.tested_at).toLocaleString()} — {ratehawkPrebookEvidence.hotel_count} test hotel(s), {ratehawkPrebookEvidence.rate_count} rate(s), price changed: {ratehawkPrebookEvidence.price_changed ? "yes" : "no"}.
+              </p>}
+            </div>}
+            {supplier.id === "expedia-rapid" && <div className="mt-3">
+              <button
+                className="btn-secondary text-xs"
+                disabled={supplier.sandboxRuntime.status !== "authorized" || Boolean(inventoryValidationBusy)}
+                onClick={validateExpediaRapidSandbox}
+                type="button"
+              >
+                {inventoryValidationBusy === "expedia-rapid" ? "RUNNING SEARCH…" : "RUN SANDBOX SEARCH"}
+              </button>
+              {inventoryValidationMessages.expediaRapid && <p className="mt-2 text-xs text-slate-600" role="status">{inventoryValidationMessages.expediaRapid}</p>}
+              {expediaRapidValidationEvidence && <p className="mt-2 text-xs text-slate-600">
+                Last saved search: {new Date(expediaRapidValidationEvidence.tested_at).toLocaleString()} — {expediaRapidValidationEvidence.hotel_count} test hotel(s), {expediaRapidValidationEvidence.rate_count} rate(s).
               </p>}
             </div>}
             <a className="mt-3 inline-block text-xs font-semibold underline" href={supplier.documentationUrl} rel="noreferrer" target="_blank">Official integration documentation</a>
