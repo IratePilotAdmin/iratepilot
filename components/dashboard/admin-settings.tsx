@@ -16,6 +16,11 @@ import type {
 } from "@/services/hotel-suppliers/priority-readiness";
 import { SynxisCrsReadiness } from "@/components/dashboard/synxis-crs-readiness";
 import { PaymentReadiness } from "@/components/dashboard/payment-readiness";
+import {
+  expediaB2cChecklistUrl,
+  expediaB2cLaunchRequirements,
+  expediaB2cRequirementCount,
+} from "@/lib/expedia-rapid/b2c-launch-requirements";
 
 type Response = {
   items: ReadinessItem[];
@@ -822,6 +827,26 @@ export function AdminSettings() {
               {expediaRapidValidationEvidence && <p className="mt-2 text-xs text-slate-600">
                 Last saved search: {new Date(expediaRapidValidationEvidence.tested_at).toLocaleString()} — {expediaRapidValidationEvidence.hotel_count} test hotel(s), {expediaRapidValidationEvidence.rate_count} rate(s).
               </p>}
+              <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <strong className="text-xs text-slate-800">Expedia Rapid B2C site-review checklist</strong>
+                  <span className="text-xs text-slate-500">{expediaB2cRequirementCount} requirements</span>
+                </div>
+                <p className="mt-2 text-xs leading-5 text-slate-600">Use this catalog to collect a screenshot or technical receipt for every requirement before requesting Expedia site review. Listing an item here does not mark it complete.</p>
+                <div className="mt-3 space-y-2">
+                  {expediaB2cLaunchRequirements.map((section) => <details className="rounded-md bg-slate-50 p-2 text-xs" key={section.id}>
+                    <summary className="cursor-pointer font-semibold text-slate-800">{section.label} · {section.requirements.length}</summary>
+                    <ul className="mt-2 space-y-2">
+                      {section.requirements.map((requirement) => <li className="grid grid-cols-[auto_1fr_auto] gap-2 text-slate-600" key={requirement.code}>
+                        <strong className="text-slate-800">{requirement.code}</strong>
+                        <span>{requirement.label}</span>
+                        <span className="font-medium text-amber-700">Evidence required</span>
+                      </li>)}
+                    </ul>
+                  </details>)}
+                </div>
+                <a className="mt-3 inline-block text-xs font-semibold underline" href={expediaB2cChecklistUrl} rel="noreferrer" target="_blank">Download the official B2C checklist</a>
+              </div>
             </div>}
             <a className="mt-3 inline-block text-xs font-semibold underline" href={supplier.documentationUrl} rel="noreferrer" target="_blank">Official integration documentation</a>
           </article>)}
