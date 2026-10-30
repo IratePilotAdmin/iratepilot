@@ -9,6 +9,7 @@ import {
   assertPreviewRemoteMigrationState,
   APALEO_RESERVATION_RECONCILIATION_PENDING,
   DATA_API_GRANTS_PENDING,
+  EXPEDIA_B2C_SITE_REVIEW_EVIDENCE_PENDING,
   EXPEDIA_RAPID_VALIDATION_EVIDENCE_PENDING,
   listMigrationVersions,
   PMS_CATALOG_EXPANSION_PENDING,
@@ -66,7 +67,7 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
   it("recognizes the repository migration chain through booking child ages before reconciling Preview", () => {
     const versions = listMigrationVersions();
     expect(versions).toEqual(expect.arrayContaining(REQUIRED_PREVIEW_BASELINE));
-    expect(versions.at(-1)).toBe("202610300178");
+    expect(versions.at(-1)).toBe("202610300179");
     expect(assertPreviewMigrationTarget({
       PREVIEW_SUPABASE_DB_URL: previewUrl,
       PREVIEW_SUPABASE_PROJECT_REF: previewRef,
@@ -188,6 +189,22 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
         ...RATEHAWK_CERTIFICATION_OPERATIONS_RECEIPTS_PENDING,
         ...EXPEDIA_RAPID_VALIDATION_EVIDENCE_PENDING,
       ],
+    ];
+
+    for (const pending of pendingSets) {
+      const applied = versions.filter((version) => !pending.includes(version));
+      expect(assertPreviewRemoteMigrationState(
+        migrationList(versions, applied),
+        versions,
+      ).pendingVersions).toEqual(pending);
+    }
+  });
+
+  it("approves the Expedia B2C evidence ledger alone or with the child-age release", () => {
+    const versions = listMigrationVersions();
+    const pendingSets = [
+      EXPEDIA_B2C_SITE_REVIEW_EVIDENCE_PENDING,
+      [...BOOKING_CHILD_AGES_PENDING, ...EXPEDIA_B2C_SITE_REVIEW_EVIDENCE_PENDING],
     ];
 
     for (const pending of pendingSets) {

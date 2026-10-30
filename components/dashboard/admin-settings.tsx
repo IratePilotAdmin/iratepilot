@@ -131,6 +131,16 @@ type InventoryValidationEvidence = {
   price_changed?: boolean | null;
 };
 
+type ExpediaSiteReviewReceipt = {
+  id: string;
+  requirement_code: string;
+  decision: "verified" | "not_applicable" | "pending";
+  evidence_reference: string | null;
+  verification_notes: string | null;
+  reviewed_at: string;
+  deployment_revision: string | null;
+};
+
 type RatehawkCertificationResult = {
   scenario: string;
   partnerOrderId: string;
@@ -164,6 +174,9 @@ export function AdminSettings() {
   const [inventoryValidationMessages, setInventoryValidationMessages] = useState<Record<string, string>>({});
   const [ratehawkValidationEvidence, setRatehawkValidationEvidence] = useState<InventoryValidationEvidence | null>(null);
   const [expediaRapidValidationEvidence, setExpediaRapidValidationEvidence] = useState<InventoryValidationEvidence | null>(null);
+  const [expediaSiteReviewReceipts, setExpediaSiteReviewReceipts] = useState<Record<string, ExpediaSiteReviewReceipt>>({});
+  const [expediaSiteReviewBusy, setExpediaSiteReviewBusy] = useState("");
+  const [expediaSiteReviewMessage, setExpediaSiteReviewMessage] = useState("");
   const [ratehawkPrebookEvidence, setRatehawkPrebookEvidence] = useState<InventoryValidationEvidence | null>(null);
   const [ratehawkCertificationResults, setRatehawkCertificationResults] = useState<RatehawkCertificationResult[]>([]);
   const [priorityPmsReadiness, setPriorityPmsReadiness] = useState<PriorityPmsProductionReadiness[]>([]);
@@ -278,6 +291,40 @@ export function AdminSettings() {
       }));
     } finally {
       setInventoryValidationBusy("");
+    }
+  }
+
+  async function saveExpediaSiteReviewEvidence(event: FormEvent<HTMLFormElement>, requirementCode: string) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const decision = String(form.get("decision") || "pending") as ExpediaSiteReviewReceipt["decision"];
+    const evidenceReference = String(form.get("evidenceReference") || "").trim();
+    const verificationNotes = String(form.get("verificationNotes") || "").trim();
+    const decisionLabel = decision.replaceAll("_", " ");
+    if (!window.confirm(`Record ${requirementCode} as ${decisionLabel} in the Expedia site-review evidence ledger? This appends an audit receipt and does not contact Expedia.`)) return;
+
+    setExpediaSiteReviewBusy(requirementCode);
+    setExpediaSiteReviewMessage("");
+    try {
+      const response = await fetch("/api/admin/integrations/inventory/expedia-rapid/site-review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requirementCode,
+          decision,
+          evidenceReference,
+          verificationNotes,
+          confirmation: "RECORD EXPEDIA SITE REVIEW EVIDENCE",
+        }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Expedia site-review evidence could not be recorded.");
+      setExpediaSiteReviewReceipts((current) => ({ ...current, [requirementCode]: body.receipt }));
+      setExpediaSiteReviewMessage(`${requirementCode} evidence receipt recorded.`);
+    } catch (error) {
+      setExpediaSiteReviewMessage(error instanceof Error ? error.message : "Expedia site-review evidence could not be recorded.");
+    } finally {
+      setExpediaSiteReviewBusy("");
     }
   }
 
@@ -409,6 +456,16 @@ export function AdminSettings() {
         setExpediaRapidValidationEvidence(body.latestEvidence ?? null);
       })
       .catch(() => setExpediaRapidValidationEvidence(null));
+
+    fetch("/api/admin/integrations/inventory/expedia-rapid/site-review", { cache: "no-store" })
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error);
+        setExpediaSiteReviewReceipts(Object.fromEntries(
+          (body.receipts ?? []).map((receipt: ExpediaSiteReviewReceipt) => [receipt.requirement_code, receipt]),
+        ));
+      })
+      .catch(() => setExpediaSiteReviewReceipts({}));
 
     fetch("/api/admin/integrations/inventory/ratehawk/prebook", { cache: "no-store" })
       .then(async (response) => {
@@ -830,18 +887,45 @@ export function AdminSettings() {
               <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <strong className="text-xs text-slate-800">Expedia Rapid B2C site-review checklist</strong>
-                  <span className="text-xs text-slate-500">{expediaB2cRequirementCount} requirements</span>
+                  <span className="text-xs text-slate-500">
+                    {Object.values(expediaSiteReviewReceipts).filter((receipt) => receipt.decision === "verified").length} verified · {expediaB2cRequirementCount} requirements
+                  </span>
                 </div>
-                <p className="mt-2 text-xs leading-5 text-slate-600">Use this catalog to collect a screenshot or technical receipt for every requirement before requesting Expedia site review. Listing an item here does not mark it complete.</p>
+                <p className="mt-2 text-xs leading-5 text-slate-600">Record only independently reviewed screenshots or technical receipts. Every change appends an audit receipt; it does not contact Expedia or enable traffic.</p>
+                {expediaSiteReviewMessage && <p className="mt-2 text-xs text-slate-600" role="status">{expediaSiteReviewMessage}</p>}
                 <div className="mt-3 space-y-2">
                   {expediaB2cLaunchRequirements.map((section) => <details className="rounded-md bg-slate-50 p-2 text-xs" key={section.id}>
                     <summary className="cursor-pointer font-semibold text-slate-800">{section.label} · {section.requirements.length}</summary>
                     <ul className="mt-2 space-y-2">
-                      {section.requirements.map((requirement) => <li className="grid grid-cols-[auto_1fr_auto] gap-2 text-slate-600" key={requirement.code}>
-                        <strong className="text-slate-800">{requirement.code}</strong>
-                        <span>{requirement.label}</span>
-                        <span className="font-medium text-amber-700">{requirement.evidenceLabel ?? "Evidence required"}</span>
-                      </li>)}
+                      {section.requirements.map((requirement) => {
+                        const receipt = expediaSiteReviewReceipts[requirement.code];
+                        return <li className="rounded-md border border-slate-200 bg-white p-2 text-slate-600" key={requirement.code}>
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <span><strong className="mr-2 text-slate-800">{requirement.code}</strong>{requirement.label}</span>
+                            <span className={receipt?.decision === "verified" ? "font-semibold text-emerald-700" : receipt?.decision === "not_applicable" ? "font-semibold text-blue-700" : "font-medium text-amber-700"}>
+                              {receipt ? receipt.decision.replaceAll("_", " ") : requirement.evidenceLabel ?? "Evidence required"}
+                            </span>
+                          </div>
+                          {receipt && <p className="mt-1 text-[11px] text-slate-500">
+                            Reviewed {new Date(receipt.reviewed_at).toLocaleString()}{receipt.evidence_reference ? ` · ${receipt.evidence_reference}` : ""}
+                          </p>}
+                          <form className="mt-2 grid gap-2 md:grid-cols-[10rem_1fr_1fr_auto]" key={`${requirement.code}-${receipt?.id ?? "new"}`} onSubmit={(event) => saveExpediaSiteReviewEvidence(event, requirement.code)}>
+                            <label className="sr-only" htmlFor={`${requirement.code}-decision`}>Decision for {requirement.code}</label>
+                            <select className="rounded border border-slate-300 bg-white px-2 py-1" defaultValue={receipt?.decision ?? "pending"} id={`${requirement.code}-decision`} name="decision">
+                              <option value="pending">Pending</option>
+                              <option value="verified">Verified</option>
+                              <option value="not_applicable">Not applicable</option>
+                            </select>
+                            <label className="sr-only" htmlFor={`${requirement.code}-reference`}>Evidence reference for {requirement.code}</label>
+                            <input className="rounded border border-slate-300 px-2 py-1" defaultValue={receipt?.evidence_reference ?? ""} id={`${requirement.code}-reference`} name="evidenceReference" placeholder="Screenshot, test, or receipt reference" />
+                            <label className="sr-only" htmlFor={`${requirement.code}-notes`}>Review notes for {requirement.code}</label>
+                            <input className="rounded border border-slate-300 px-2 py-1" defaultValue={receipt?.verification_notes ?? ""} id={`${requirement.code}-notes`} name="verificationNotes" placeholder="Reviewer notes" />
+                            <button className="btn-secondary px-3 py-1 text-[11px]" disabled={Boolean(expediaSiteReviewBusy)} type="submit">
+                              {expediaSiteReviewBusy === requirement.code ? "RECORDING…" : "RECORD"}
+                            </button>
+                          </form>
+                        </li>;
+                      })}
                     </ul>
                   </details>)}
                 </div>
