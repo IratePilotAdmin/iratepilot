@@ -94,6 +94,27 @@ describe("Expedia B2C site-review evidence route", () => {
     expect(mocks.insert).not.toHaveBeenCalled();
   });
 
+  it("rejects optional evidence fields that are too short for the database constraints", async () => {
+    const shortNotes = await POST(request({
+      requirementCode: "SP1",
+      decision: "verified",
+      evidenceReference: "tests/example.test.ts",
+      verificationNotes: "no",
+      confirmation: "RECORD EXPEDIA SITE REVIEW EVIDENCE",
+    }));
+    expect(shortNotes.status).toBe(400);
+
+    const shortReference = await POST(request({
+      requirementCode: "SP1",
+      decision: "pending",
+      evidenceReference: "x",
+      verificationNotes: "Waiting for review.",
+      confirmation: "RECORD EXPEDIA SITE REVIEW EVIDENCE",
+    }));
+    expect(shortReference.status).toBe(400);
+    expect(mocks.insert).not.toHaveBeenCalled();
+  });
+
   it("returns only the latest receipt for each requirement", async () => {
     const older = { ...receipt, id: "receipt-0", decision: "pending", reviewed_at: "2026-10-29T18:20:00.000Z" };
     const other = { ...receipt, id: "receipt-2", requirement_code: "BP7" };

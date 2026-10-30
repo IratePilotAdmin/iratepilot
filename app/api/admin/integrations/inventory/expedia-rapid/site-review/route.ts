@@ -15,8 +15,14 @@ const requirementCodes = new Set(
 const receiptSchema = z.object({
   requirementCode: z.string().refine((code) => requirementCodes.has(code), "Unknown requirement code."),
   decision: z.enum(["verified", "not_applicable", "pending"]),
-  evidenceReference: z.string().trim().max(500).optional().default(""),
-  verificationNotes: z.string().trim().max(1000).optional().default(""),
+  evidenceReference: z.string().trim().max(500).refine(
+    (value) => value.length === 0 || value.length >= 3,
+    "Evidence references must be at least 3 characters when provided.",
+  ).optional().default(""),
+  verificationNotes: z.string().trim().max(1000).refine(
+    (value) => value.length === 0 || value.length >= 3,
+    "Verification notes must be at least 3 characters when provided.",
+  ).optional().default(""),
   confirmation: z.literal("RECORD EXPEDIA SITE REVIEW EVIDENCE"),
 }).superRefine((value, context) => {
   if (value.decision === "verified" && value.evidenceReference.length < 3) {
