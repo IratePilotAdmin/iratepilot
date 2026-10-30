@@ -15,6 +15,9 @@ describe("booking safeguards", () => {
     expect(bookingSchema.safeParse(valid).success).toBe(true);
     expect(bookingSchema.safeParse({ ...valid, roomId: "invalid" }).success).toBe(false);
     expect(checkoutSchema.safeParse(valid).success).toBe(true);
+    expect(bookingSchema.safeParse({ ...valid, guests: 4, childAges: [4, 7] }).success).toBe(true);
+    expect(bookingSchema.safeParse({ ...valid, guests: 2, childAges: [4, 7] }).success).toBe(false);
+    expect(bookingSchema.safeParse({ ...valid, guests: 2, childAges: [18] }).success).toBe(false);
   });
 
   it("awards double Basic points and triple Business points", () => {

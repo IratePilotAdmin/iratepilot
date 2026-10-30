@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import {
   getBookingFinalizationRefundKey,
   isCompletableBookingIntent,
+  parseBookingChildAges,
   PaidBookingFinalizationError,
 } from "../lib/bookings/complete-paid-test-booking";
 
@@ -19,6 +20,7 @@ function paymentIntent(overrides: Partial<Stripe.PaymentIntent> = {}) {
       checkIn: "2026-08-10",
       checkOut: "2026-08-12",
       guests: "2",
+      childAges: "",
       confirmationCode: "IRP-TEST"
     },
     ...overrides
@@ -36,6 +38,20 @@ describe("paid test booking completion", () => {
     expect(isCompletableBookingIntent(paymentIntent({ amount_received: 0 }))).toBe(false);
     expect(isCompletableBookingIntent(paymentIntent(), "another-user")).toBe(false);
     expect(isCompletableBookingIntent(paymentIntent({ metadata: { mode: "booking_test" } }))).toBe(false);
+  });
+
+  it("validates and parses child ages from Stripe metadata", () => {
+    expect(parseBookingChildAges("4, 7")).toEqual([4, 7]);
+    expect(parseBookingChildAges(undefined)).toEqual([]);
+    expect(isCompletableBookingIntent(paymentIntent({
+      metadata: { ...paymentIntent().metadata, guests: "4", childAges: "4,7" },
+    }))).toBe(true);
+    expect(isCompletableBookingIntent(paymentIntent({
+      metadata: { ...paymentIntent().metadata, guests: "2", childAges: "4,7" },
+    }))).toBe(false);
+    expect(isCompletableBookingIntent(paymentIntent({
+      metadata: { ...paymentIntent().metadata, childAges: "18" },
+    }))).toBe(false);
   });
 
   it("uses a stable refund key for a paid intent that cannot become a booking", () => {

@@ -10,6 +10,7 @@ export type StayCriteria = {
   checkIn: string;
   checkOut: string;
   guests: number;
+  childAges: number[];
 };
 
 export type MarketplaceStayCriteria = MarketplaceDestinationCriteria & StayCriteria;
@@ -21,6 +22,7 @@ export type SearchFormValues = {
   checkIn: string;
   checkOut: string;
   guests: string;
+  childAges: string;
 };
 
 export type SearchParamsRecord = Record<string, string | string[] | undefined>;
@@ -63,6 +65,7 @@ export function parseHotelStay(
     checkIn: singleValue(query.checkIn),
     checkOut: singleValue(query.checkOut),
     guests: singleValue(query.guests),
+    childAges: singleValue(query.childAges),
   };
   if (!Object.values(values).some(Boolean)) return { criteria: null, error: null };
   return validateStay(staySchema.safeParse(values), today);
@@ -77,6 +80,7 @@ export function parseMarketplaceSearch(
     checkIn: singleValue(query.checkIn),
     checkOut: singleValue(query.checkOut),
     guests: singleValue(query.guests),
+    childAges: singleValue(query.childAges),
   };
   const attempted = Object.values(values).some(Boolean);
   if (!attempted) return { criteria: null, error: null, values };
@@ -164,6 +168,7 @@ export function getHotelSearchHref(slug: string, criteria: MarketplaceSearchCrit
     checkIn: criteria.checkIn,
     checkOut: criteria.checkOut,
     guests: String(criteria.guests),
+    childAges: criteria.childAges.join(","),
   });
   return `/hotels/${slug}?${params.toString()}`;
 }

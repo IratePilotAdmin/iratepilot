@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { calculateBookingQuote } from "@/lib/booking-quote";
 
 type Room = { id: string; name: string; baseRate: number; maxGuests: number; staySubtotal?: number | null };
-type Selection = { roomId?: string; checkIn?: string; checkOut?: string; guests?: string };
+type Selection = { roomId?: string; checkIn?: string; checkOut?: string; guests?: string; childAges?: string };
 type AvailabilityState = "demo" | "unverified" | "verified";
 
 export function BookingRequestForm({
@@ -44,9 +44,10 @@ export function BookingRequestForm({
     const checkIn = String(form.get("checkIn") || "");
     const checkOut = String(form.get("checkOut") || "");
     const guests = String(form.get("guests") || "");
+    const childAges = String(form.get("childAges") || "");
 
     if (availabilityState === "unverified") {
-      const stayQuery = new URLSearchParams({ checkIn, checkOut, guests });
+      const stayQuery = new URLSearchParams({ checkIn, checkOut, guests, childAges });
       router.push(`/hotels/${encodeURIComponent(hotelSlug)}?${stayQuery.toString()}#booking-request`);
       return;
     }
@@ -58,7 +59,8 @@ export function BookingRequestForm({
       roomId: String(form.get("roomId") || ""),
       checkIn,
       checkOut,
-      guests
+      guests,
+      childAges,
     };
     const query = new URLSearchParams(selection);
 
@@ -102,7 +104,8 @@ export function BookingRequestForm({
     return <form id="booking-request" onSubmit={submit} className="card grid gap-4 p-6">
       <div><h3 className="text-xl font-semibold">Check live availability</h3><p className="mt-1 text-sm text-slate-500">Choose your stay first. We will refresh the room list with options available for every selected night.</p></div>
       <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Check-in<input name="checkIn" type="date" className="input mt-2" defaultValue={initialSelection.checkIn || ""} required /></label><label className="text-sm font-medium">Check-out<input name="checkOut" type="date" className="input mt-2" defaultValue={initialSelection.checkOut || ""} required /></label></div>
-      <label className="text-sm font-medium">Guests<input name="guests" type="number" min="1" max="20" className="input mt-2" defaultValue={initialSelection.guests || "1"} required /></label>
+      <label className="text-sm font-medium">Total travelers<input name="guests" type="number" min="1" max="20" className="input mt-2" defaultValue={initialSelection.guests || "1"} required /></label>
+      <label className="text-sm font-medium">Child ages<input name="childAges" className="input mt-2" defaultValue={initialSelection.childAges || ""} placeholder="Example: 4,7" pattern="(?:1[0-7]|[0-9])(?:,(?:1[0-7]|[0-9]))*" /><span className="mt-1 block text-xs font-normal text-slate-500">Enter every child’s age, separated by commas. Leave blank for adults only.</span></label>
       <button className="btn-primary">Show available rooms</button>
     </form>;
   }
@@ -115,10 +118,11 @@ export function BookingRequestForm({
     <div><h3 className="text-xl font-semibold">Book this stay</h3><p className="mt-1 text-sm text-slate-500">{testCheckoutEnabled ? "Availability and the final nightly total are verified securely before test payment." : "Availability and the final nightly total are verified before your request is sent to the property. No payment is collected."}</p></div>
     <label className="text-sm font-medium">Room type<select name="roomId" className="input mt-2" value={selectedRoomId} onChange={(event) => setSelectedRoomId(event.target.value)} required><option value="">Select a room</option>{rooms.map((room) => <option key={room.id} value={room.id}>{room.name} · ${room.baseRate.toFixed(2)} average nightly · {room.maxGuests} guests</option>)}</select></label>
     {quote ? <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 text-sm"><div className="flex justify-between"><span>Room subtotal</span><strong>${quote.baseSubtotal.toFixed(2)}</strong></div>{quote.memberDiscount > 0 ? <div className="mt-2 flex justify-between font-semibold text-emerald-700"><span>{membershipTier === "basic" ? "Basic" : "Business"} member discount ({memberDiscountRate * 100}%)</span><strong>−${quote.memberDiscount.toFixed(2)}</strong></div> : null}<div className="mt-2 flex justify-between"><span>Traveler service fee (0% for everyone)</span><strong>${quote.serviceFee.toFixed(2)}</strong></div><div className="mt-3 flex justify-between border-t border-violet-200 pt-3 text-base"><strong>Request total</strong><strong>${quote.total.toFixed(2)}</strong></div><p className="mt-2 text-xs text-slate-500">Availability, rates, active membership, and total are recalculated when you submit.</p></div> : <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">Select a room to see the exact stay subtotal, member savings, and traveler total.</p>}
-    <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-700"><strong className="block text-slate-950">Verified stay</strong><span>{initialSelection.checkIn} to {initialSelection.checkOut} · {initialSelection.guests} {initialSelection.guests === "1" ? "guest" : "guests"}</span><Link href={`/hotels/${encodeURIComponent(hotelSlug)}#booking-request`} className="mt-2 block font-semibold text-violet-700">Change dates or guests</Link></div>
+    <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-700"><strong className="block text-slate-950">Verified stay</strong><span>{initialSelection.checkIn} to {initialSelection.checkOut} · {initialSelection.guests} {initialSelection.guests === "1" ? "guest" : "guests"}{initialSelection.childAges ? ` · children ages ${initialSelection.childAges.replaceAll(",", ", ")}` : ""}</span><Link href={`/hotels/${encodeURIComponent(hotelSlug)}#booking-request`} className="mt-2 block font-semibold text-violet-700">Change dates or guests</Link></div>
     <input name="checkIn" type="hidden" value={initialSelection.checkIn || ""} />
     <input name="checkOut" type="hidden" value={initialSelection.checkOut || ""} />
     <input name="guests" type="hidden" value={initialSelection.guests || ""} />
+    <input name="childAges" type="hidden" value={initialSelection.childAges || ""} />
     {message && <p role="alert" className="text-sm text-red-700">{message}</p>}
     <button disabled={busy} className="btn-primary">{busy ? (testCheckoutEnabled ? "Opening checkout…" : "Sending request…") : (testCheckoutEnabled ? "Continue to secure test checkout" : "Request this stay")}</button>
   </form>;

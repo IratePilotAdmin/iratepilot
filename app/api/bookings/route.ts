@@ -116,6 +116,7 @@ export async function POST(request: Request) {
       check_in: parsed.data.checkIn,
       check_out: parsed.data.checkOut,
       guests: parsed.data.guests,
+      child_ages: parsed.data.childAges,
       subtotal,
       taxes: 0,
       fees: serviceFee,
