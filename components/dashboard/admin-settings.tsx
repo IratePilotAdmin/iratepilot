@@ -369,6 +369,14 @@ export function AdminSettings() {
         setRatehawkPrebookEvidence(body.latestEvidence ?? null);
       })
       .catch(() => setRatehawkPrebookEvidence(null));
+
+    fetch("/api/admin/integrations/inventory/ratehawk/certification", { cache: "no-store" })
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error);
+        setRatehawkCertificationResults(body.results ?? []);
+      })
+      .catch(() => setRatehawkCertificationResults([]));
   }, []);
 
   async function updateLaunchEvidence(
