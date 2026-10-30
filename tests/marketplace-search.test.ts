@@ -13,6 +13,7 @@ const criteria = {
   checkIn: "2026-08-10",
   checkOut: "2026-08-12",
   guests: 2,
+  childAges: [],
 };
 
 describe("marketplace search", () => {
@@ -27,7 +28,11 @@ describe("marketplace search", () => {
     expect(parseMarketplaceSearch({ destination: "Charleston" }, new Date("2026-08-02T12:00:00Z")).criteria)
       .toEqual({ destination: "Charleston" });
     expect(parseHotelStay({ checkIn: "2026-08-10", checkOut: "2026-08-12", guests: "2" }, new Date("2026-08-02T12:00:00Z")).criteria)
-      .toEqual({ checkIn: "2026-08-10", checkOut: "2026-08-12", guests: 2 });
+      .toEqual({ checkIn: "2026-08-10", checkOut: "2026-08-12", guests: 2, childAges: [] });
+    expect(parseHotelStay({ checkIn: "2026-08-10", checkOut: "2026-08-12", guests: "4", childAges: "4,7" }, new Date("2026-08-02T12:00:00Z")).criteria)
+      .toEqual({ checkIn: "2026-08-10", checkOut: "2026-08-12", guests: 4, childAges: [4, 7] });
+    expect(parseHotelStay({ checkIn: "2026-08-10", checkOut: "2026-08-12", guests: "2", childAges: "4,7" }, new Date("2026-08-02T12:00:00Z")).error)
+      .toBe("Enter valid stay dates and a guest count.");
   });
 
   it("requires every night and sufficient room capacity", () => {
@@ -62,6 +67,8 @@ describe("marketplace search", () => {
     expect(matchesMarketplaceDestination({ name: "Azure Grand", city: "Miami Beach", country: "United States" }, "miami"))
       .toBe(true);
     expect(getHotelSearchHref("azure-grand", criteria))
-      .toBe("/hotels/azure-grand?checkIn=2026-08-10&checkOut=2026-08-12&guests=2");
+      .toBe("/hotels/azure-grand?checkIn=2026-08-10&checkOut=2026-08-12&guests=2&childAges=");
+    expect(getHotelSearchHref("azure-grand", { ...criteria, guests: 4, childAges: [4, 7] }))
+      .toBe("/hotels/azure-grand?checkIn=2026-08-10&checkOut=2026-08-12&guests=4&childAges=4%2C7");
   });
 });

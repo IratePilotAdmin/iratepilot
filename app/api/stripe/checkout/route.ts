@@ -69,6 +69,7 @@ export async function POST(request: Request) {
       checkOut: parsed.data.checkOut,
       nights: String(nights),
       guests: String(parsed.data.guests),
+      childAges: parsed.data.childAges.join(","),
       confirmationCode,
       membershipTier,
     }
@@ -82,6 +83,7 @@ export async function POST(request: Request) {
       checkOut: parsed.data.checkOut,
       nights,
       guests: parsed.data.guests,
+      childAges: parsed.data.childAges,
       membershipTier,
       memberDiscountRate,
       baseSubtotal,

@@ -2,23 +2,43 @@ import { z } from "zod";
 import { inventoryLimits } from "./inventory-limits";
 import { isSafePropertyImageUrl } from "./property-image";
 
+const childAgesSchema = z.preprocess(
+  (value) => {
+    if (value == null || value === "") return [];
+    if (typeof value === "string") return value.split(",").filter(Boolean);
+    return value;
+  },
+  z.array(z.coerce.number().int().min(0).max(17)).max(8),
+);
+
+const travelerSchema = z.object({
+  guests: z.coerce.number().int().min(1).max(20),
+  childAges: childAgesSchema,
+}).superRefine((value, context) => {
+  if (value.childAges.length >= value.guests) {
+    context.addIssue({
+      code: "custom",
+      path: ["childAges"],
+      message: "At least one adult traveler is required.",
+    });
+  }
+});
+
 export const staySchema = z.object({
   checkIn: z.string().date(),
   checkOut: z.string().date(),
-  guests: z.coerce.number().int().min(1).max(20)
-});
+}).and(travelerSchema);
 
-export const searchSchema = staySchema.extend({
+export const searchSchema = z.object({
   destination: z.string().trim().min(2).max(160)
-});
+}).and(staySchema);
 
 export const bookingSchema = z.object({
   hotelSlug: z.string().min(1),
   roomId: z.string().uuid(),
   checkIn: z.string().date(),
   checkOut: z.string().date(),
-  guests: z.coerce.number().int().min(1).max(20)
-});
+}).and(travelerSchema);
 
 export const partnerApplicationSchema = z.object({
   propertyName: z.string().trim().min(2).max(160),
@@ -85,8 +105,7 @@ export const checkoutSchema = z.object({
   roomId: z.string().uuid(),
   checkIn: z.string().date(),
   checkOut: z.string().date(),
-  guests: z.coerce.number().int().min(1).max(20)
-});
+}).and(travelerSchema);
 
 export const contactSchema = z.object({
   name: z.string().trim().min(2).max(100),

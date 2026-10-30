@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   APPROVED_PREVIEW_PENDING,
   ANAND_SYSTEMS_PMS_PENDING,
+  BOOKING_CHILD_AGES_PENDING,
   assertPreviewDryRun,
   assertPreviewMigrationTarget,
   assertPreviewRemoteMigrationState,
@@ -62,14 +63,24 @@ describe("direct-checkout payment mode and Preview migration reconciliation", ()
     expect(migration).toContain("to service_role");
   });
 
-  it("recognizes the repository migration chain through the Expedia Rapid evidence migration before reconciling Preview", () => {
+  it("recognizes the repository migration chain through booking child ages before reconciling Preview", () => {
     const versions = listMigrationVersions();
     expect(versions).toEqual(expect.arrayContaining(REQUIRED_PREVIEW_BASELINE));
-    expect(versions.at(-1)).toBe("202610300176");
+    expect(versions.at(-1)).toBe("202610300177");
     expect(assertPreviewMigrationTarget({
       PREVIEW_SUPABASE_DB_URL: previewUrl,
       PREVIEW_SUPABASE_PROJECT_REF: previewRef,
     }, versions)).toMatchObject({ projectRef: previewRef, migrationVersions: versions });
+  });
+
+  it("approves the isolated booking child-age migration for Preview reconciliation", () => {
+    const versions = listMigrationVersions();
+    const applied = versions.filter((version) => !BOOKING_CHILD_AGES_PENDING.includes(version));
+
+    expect(assertPreviewRemoteMigrationState(
+      migrationList(versions, applied),
+      versions,
+    ).pendingVersions).toEqual(BOOKING_CHILD_AGES_PENDING);
   });
 
   it("fails closed for production and mismatched database targets", () => {

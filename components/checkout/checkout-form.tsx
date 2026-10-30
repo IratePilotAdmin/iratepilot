@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 
-type Selection = { hotelSlug: string; roomId: string; checkIn: string; checkOut: string; guests: string };
+type Selection = { hotelSlug: string; roomId: string; checkIn: string; checkOut: string; guests: string; childAges: string };
 type Breakdown = {
   propertyName: string;
   roomName: string;
@@ -14,6 +14,7 @@ type Breakdown = {
   checkOut: string;
   nights: number;
   guests: number;
+  childAges: number[];
   membershipTier: "none" | "basic" | "business";
   memberDiscountRate: number;
   baseSubtotal: number;
@@ -80,7 +81,7 @@ function PaymentForm({ breakdown }: { breakdown: Breakdown }) {
         <h2 className="font-semibold">Test booking summary</h2>
         <p className="mt-3 font-semibold">{breakdown.propertyName}</p>
         <p className="text-sm text-slate-500">{breakdown.roomName} · {breakdown.checkIn} to {breakdown.checkOut}</p>
-        <p className="text-sm text-slate-500">{breakdown.guests} guests</p>
+        <p className="text-sm text-slate-500">{breakdown.guests} guests{breakdown.childAges.length ? ` · children ages ${breakdown.childAges.join(", ")}` : ""}</p>
         <div className="mt-4 flex justify-between"><span>{breakdown.nights} nights</span><span>${breakdown.baseSubtotal.toFixed(2)}</span></div>
         {breakdown.memberDiscount > 0 ? <div className="mt-2 flex justify-between font-semibold text-emerald-700"><span>{breakdown.membershipTier === "basic" ? "Basic" : "Business"} member discount ({breakdown.memberDiscountRate * 100}%)</span><span>−${breakdown.memberDiscount.toFixed(2)}</span></div> : null}
         <div className="mt-2 flex justify-between"><span>Traveler service fee (0% for everyone)</span><span>${breakdown.serviceFee.toFixed(2)}</span></div>

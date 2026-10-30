@@ -77,6 +77,12 @@ export const EXPEDIA_RAPID_VALIDATION_EVIDENCE_PENDING = [
   "202610300176",
 ];
 
+// This release stores non-secret child ages with booking requests so Expedia
+// Rapid occupancy can be reproduced exactly. Keep it isolated and composable.
+export const BOOKING_CHILD_AGES_PENDING = [
+  "202610300177",
+];
+
 export const APALEO_WEBHOOK_AND_RECONCILIATION_PENDING = [
   ...APALEO_WEBHOOK_RECEIPT_PENDING,
   ...APALEO_RESERVATION_RECONCILIATION_PENDING,
@@ -186,11 +192,19 @@ const PRE_EXPEDIA_RAPID_DEFAULT_PENDING_SETS = [
   ]),
 ];
 
-export const DEFAULT_PREVIEW_ALLOWED_PENDING_SETS = [
+const PRE_BOOKING_CHILD_AGES_DEFAULT_PENDING_SETS = [
   ...PRE_EXPEDIA_RAPID_DEFAULT_PENDING_SETS,
   ...PRE_EXPEDIA_RAPID_DEFAULT_PENDING_SETS.map((pendingSet) => [
     ...pendingSet,
     ...EXPEDIA_RAPID_VALIDATION_EVIDENCE_PENDING,
+  ]),
+];
+
+export const DEFAULT_PREVIEW_ALLOWED_PENDING_SETS = [
+  ...PRE_BOOKING_CHILD_AGES_DEFAULT_PENDING_SETS,
+  ...PRE_BOOKING_CHILD_AGES_DEFAULT_PENDING_SETS.map((pendingSet) => [
+    ...pendingSet,
+    ...BOOKING_CHILD_AGES_PENDING,
   ]),
 ];
 
@@ -242,11 +256,19 @@ const PRE_EXPEDIA_RAPID_PMS_PILOT_ALLOWED_PENDING_SETS = [
   ]),
 ];
 
-export const PMS_PILOT_ALLOWED_PENDING_SETS = [
+const PRE_BOOKING_CHILD_AGES_PMS_PILOT_ALLOWED_PENDING_SETS = [
   ...PRE_EXPEDIA_RAPID_PMS_PILOT_ALLOWED_PENDING_SETS,
   ...PRE_EXPEDIA_RAPID_PMS_PILOT_ALLOWED_PENDING_SETS.map((pendingSet) => [
     ...pendingSet,
     ...EXPEDIA_RAPID_VALIDATION_EVIDENCE_PENDING,
+  ]),
+];
+
+export const PMS_PILOT_ALLOWED_PENDING_SETS = [
+  ...PRE_BOOKING_CHILD_AGES_PMS_PILOT_ALLOWED_PENDING_SETS,
+  ...PRE_BOOKING_CHILD_AGES_PMS_PILOT_ALLOWED_PENDING_SETS.map((pendingSet) => [
+    ...pendingSet,
+    ...BOOKING_CHILD_AGES_PENDING,
   ]),
 ];
 // This is the Supabase project embedded in the active Vercel Preview bundle.
