@@ -38,14 +38,19 @@ export async function GET() {
     });
   }
 
-  const { data, error } = await createAdminClient()
-    .from("ratehawk_certification_receipts")
-    .select("scenario, partner_order_id, final_status, final_error, booking_form_attempts, status_attempts, cancelled, cancellation_amount, cancellation_currency, tested_at")
-    .eq("result", "passed")
-    .order("tested_at", { ascending: false })
-    .limit(100);
+  const admin = createAdminClient();
+  const receiptQueries = await Promise.all(ratehawkCertificationScenarioIds.map(async (scenario) => {
+    const { data, error } = await admin
+      .from("ratehawk_certification_receipts")
+      .select("scenario, partner_order_id, final_status, final_error, booking_form_attempts, status_attempts, cancelled, cancellation_amount, cancellation_currency, tested_at")
+      .eq("result", "passed")
+      .eq("scenario", scenario)
+      .order("tested_at", { ascending: false })
+      .limit(1);
+    return { data, error };
+  }));
 
-  if (error) {
+  if (receiptQueries.some(({ error }) => error)) {
     return NextResponse.json({ error: "RateHawk certification evidence could not be loaded." }, {
       status: 503,
       headers: noStoreHeaders,
@@ -64,8 +69,9 @@ export async function GET() {
     cancellationCurrency: string | null;
   }>();
 
-  for (const row of data ?? []) {
-    if (!isScenarioId(row.scenario) || latestByScenario.has(row.scenario) || !isFinalStatus(row.final_status)) continue;
+  for (const { data } of receiptQueries) {
+    const row = data?.[0];
+    if (!row || !isScenarioId(row.scenario) || !isFinalStatus(row.final_status)) continue;
     latestByScenario.set(row.scenario, {
       scenario: row.scenario,
       partnerOrderId: row.partner_order_id,

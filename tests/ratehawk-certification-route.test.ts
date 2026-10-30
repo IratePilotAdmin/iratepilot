@@ -13,6 +13,8 @@ const mocks = vi.hoisted(() => ({
   eq: vi.fn(),
   order: vi.fn(),
   limit: vi.fn(),
+  latestRows: {} as Record<string, unknown>,
+  currentScenario: "",
 }));
 
 vi.mock("@/lib/auth/require-role", () => ({ requireRole: mocks.requireRole }));
@@ -60,51 +62,44 @@ describe("RateHawk certification route", () => {
     mocks.requireRole.mockResolvedValue({ user: { id: "admin-1" }, profile: { role: "admin" } });
     mocks.runScenario.mockResolvedValue(result);
     mocks.insert.mockResolvedValue({ error: null });
-    mocks.limit.mockResolvedValue({ data: [], error: null });
+    mocks.latestRows = {};
+    mocks.currentScenario = "";
+    mocks.limit.mockImplementation(() => Promise.resolve({
+      data: mocks.latestRows[mocks.currentScenario] ? [mocks.latestRows[mocks.currentScenario]] : [],
+      error: null,
+    }));
     mocks.order.mockReturnValue({ limit: mocks.limit });
-    mocks.eq.mockReturnValue({ order: mocks.order });
+    mocks.eq.mockImplementation((field: string, value: string) => {
+      if (field === "scenario") mocks.currentScenario = value;
+      return { eq: mocks.eq, order: mocks.order };
+    });
     mocks.select.mockReturnValue({ eq: mocks.eq });
     mocks.from.mockReturnValue({ insert: mocks.insert, select: mocks.select });
     mocks.createAdminClient.mockReturnValue({ from: mocks.from });
   });
 
   it("loads the latest saved result for each certification scenario", async () => {
-    mocks.limit.mockResolvedValueOnce({
-      data: [
-        {
-          scenario: "unknown_soldout",
-          partner_order_id: "latest-order_unknown_soldout",
-          final_status: "failed",
-          final_error: "soldout",
-          booking_form_attempts: 1,
-          status_attempts: 2,
-          cancelled: false,
-          cancellation_amount: null,
-          cancellation_currency: null,
-          tested_at: "2026-10-29T22:00:00.000Z",
-        },
-        {
-          scenario: "unknown_soldout",
-          partner_order_id: "older-order_unknown_soldout",
-          final_status: "failed",
-          final_error: "soldout",
-          booking_form_attempts: 1,
-          status_attempts: 2,
-          cancelled: false,
-          cancellation_amount: null,
-          cancellation_currency: null,
-          tested_at: "2026-10-29T21:00:00.000Z",
-        },
-      ],
-      error: null,
-    });
+    mocks.latestRows.unknown_soldout = {
+      scenario: "unknown_soldout",
+      partner_order_id: "latest-order_unknown_soldout",
+      final_status: "failed",
+      final_error: "soldout",
+      booking_form_attempts: 1,
+      status_attempts: 2,
+      cancelled: false,
+      cancellation_amount: null,
+      cancellation_currency: null,
+      tested_at: "2026-10-29T22:00:00.000Z",
+    };
 
     const response = await GET();
 
     expect(response.status).toBe(200);
     expect(mocks.from).toHaveBeenCalledWith("ratehawk_certification_receipts");
     expect(mocks.eq).toHaveBeenCalledWith("result", "passed");
+    expect(mocks.eq).toHaveBeenCalledWith("scenario", "unknown_soldout");
     expect(mocks.order).toHaveBeenCalledWith("tested_at", { ascending: false });
+    expect(mocks.limit).toHaveBeenCalledWith(1);
     expect(await response.json()).toEqual({
       results: [{
         scenario: "unknown_soldout",
