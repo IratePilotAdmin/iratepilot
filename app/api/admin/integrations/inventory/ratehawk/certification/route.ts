@@ -25,6 +25,73 @@ function isScenarioId(value: unknown): value is RatehawkCertificationScenarioId 
     && ratehawkCertificationScenarioIds.includes(value as RatehawkCertificationScenarioId);
 }
 
+function isFinalStatus(value: unknown): value is "confirmed" | "failed" | "timed_out" {
+  return value === "confirmed" || value === "failed" || value === "timed_out";
+}
+
+export async function GET() {
+  const auth = await requireRole(["admin"]);
+  if ("error" in auth) {
+    return NextResponse.json({ error: auth.error }, {
+      status: auth.status,
+      headers: noStoreHeaders,
+    });
+  }
+
+  const admin = createAdminClient();
+  const receiptQueries = await Promise.all(ratehawkCertificationScenarioIds.map(async (scenario) => {
+    const { data, error } = await admin
+      .from("ratehawk_certification_receipts")
+      .select("scenario, partner_order_id, final_status, final_error, booking_form_attempts, status_attempts, cancelled, cancellation_amount, cancellation_currency, tested_at")
+      .eq("result", "passed")
+      .eq("scenario", scenario)
+      .order("tested_at", { ascending: false })
+      .limit(1);
+    return { data, error };
+  }));
+
+  if (receiptQueries.some(({ error }) => error)) {
+    return NextResponse.json({ error: "RateHawk certification evidence could not be loaded." }, {
+      status: 503,
+      headers: noStoreHeaders,
+    });
+  }
+
+  const latestByScenario = new Map<RatehawkCertificationScenarioId, {
+    scenario: RatehawkCertificationScenarioId;
+    partnerOrderId: string;
+    finalStatus: "confirmed" | "failed" | "timed_out";
+    finalError: string | null;
+    bookingFormAttempts: number;
+    statusAttempts: number;
+    cancelled: boolean;
+    cancellationAmount: string | null;
+    cancellationCurrency: string | null;
+  }>();
+
+  for (const { data } of receiptQueries) {
+    const row = data?.[0];
+    if (!row || !isScenarioId(row.scenario) || !isFinalStatus(row.final_status)) continue;
+    latestByScenario.set(row.scenario, {
+      scenario: row.scenario,
+      partnerOrderId: row.partner_order_id,
+      finalStatus: row.final_status,
+      finalError: row.final_error,
+      bookingFormAttempts: row.booking_form_attempts,
+      statusAttempts: row.status_attempts,
+      cancelled: row.cancelled,
+      cancellationAmount: row.cancellation_amount,
+      cancellationCurrency: row.cancellation_currency,
+    });
+  }
+
+  return NextResponse.json({
+    results: ratehawkCertificationScenarioIds
+      .map((scenario) => latestByScenario.get(scenario))
+      .filter((result) => result !== undefined),
+  }, { headers: noStoreHeaders });
+}
+
 export async function POST(request: Request) {
   const auth = await requireRole(["admin"]);
   if ("error" in auth) {
