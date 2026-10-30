@@ -4,6 +4,7 @@ export type ExpediaB2cRequirementSection = {
   requirements: Array<{
     code: string;
     label: string;
+    evidenceLabel?: string;
   }>;
 };
 
@@ -83,7 +84,11 @@ export const expediaB2cLaunchRequirements: ExpediaB2cRequirementSection[] = [
       { code: "TR5", label: "Send accurate traveler information" },
       { code: "TR5a", label: "Send the traveler name" },
       { code: "TR5b", label: "Send the traveler phone number" },
-      { code: "TR6", label: "Support and validate multi-room bookings" },
+      {
+        code: "TR6",
+        label: "If multi-room bookings are supported, provide test booking and cancellation logs",
+        evidenceLabel: "Evidence if supported",
+      },
       { code: "TR7", label: "Implement Rapid error-handling recommendations" },
     ],
   },

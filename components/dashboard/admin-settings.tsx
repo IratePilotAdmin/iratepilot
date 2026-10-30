@@ -840,7 +840,7 @@ export function AdminSettings() {
                       {section.requirements.map((requirement) => <li className="grid grid-cols-[auto_1fr_auto] gap-2 text-slate-600" key={requirement.code}>
                         <strong className="text-slate-800">{requirement.code}</strong>
                         <span>{requirement.label}</span>
-                        <span className="font-medium text-amber-700">Evidence required</span>
+                        <span className="font-medium text-amber-700">{requirement.evidenceLabel ?? "Evidence required"}</span>
                       </li>)}
                     </ul>
                   </details>)}

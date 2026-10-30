@@ -25,4 +25,12 @@ describe("Expedia Rapid B2C launch requirements", () => {
       "technical",
     ]);
   });
+
+  it("keeps multi-room evidence conditional", () => {
+    const multiRoom = expediaB2cLaunchRequirements
+      .flatMap((section) => section.requirements)
+      .find((requirement) => requirement.code === "TR6");
+
+    expect(multiRoom?.evidenceLabel).toBe("Evidence if supported");
+  });
 });
