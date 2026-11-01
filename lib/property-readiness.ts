@@ -1,4 +1,5 @@
 import { isSafePropertyImageUrl } from "./property-image";
+import { hasCompleteRoomBookingDisclosures } from "./bookings/room-disclosures";
 
 export type PropertyReadinessInput = {
   image_url?: string | null;
@@ -54,12 +55,8 @@ export function getPropertyReadiness(
     Boolean(room.direct_rate_plan_code?.trim()) &&
     Boolean(room.direct_rate_plan_name?.trim()) &&
     room.direct_currency_code === "USD" &&
-    (room.direct_cancellation_policy?.trim().length ?? 0) >= 10 &&
+    hasCompleteRoomBookingDisclosures(room) &&
     Boolean(room.direct_cancellation_policy_version?.trim()) &&
-    Boolean(room.direct_bed_type?.trim()) &&
-    typeof room.direct_refundable === "boolean" &&
-    Boolean(room.direct_checkin_begin_time?.trim()) &&
-    (room.direct_checkin_instructions?.trim().length ?? 0) >= 10 &&
     Boolean(room.direct_special_checkin_instructions?.trim());
   const hasFutureInventory = (room: NonNullable<PropertyReadinessInput["rooms"]>[number]) =>
     (room.inventory ?? []).some(

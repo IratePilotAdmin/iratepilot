@@ -51,4 +51,16 @@ describe("lodging booking disclosures", () => {
     expect(migration).toContain("revoke all on function public.complete_paid_test_booking");
     expect(migration).toContain("to service_role");
   });
+
+  it("blocks rooms with incomplete disclosures at every booking entry point", () => {
+    expect(read("app/api/bookings/route.ts")).toContain(
+      "hasCompleteRoomBookingDisclosures(roomResult.data)",
+    );
+    expect(read("app/api/stripe/checkout/route.ts")).toContain(
+      "hasCompleteRoomBookingDisclosures(room)",
+    );
+    expect(read("lib/marketplace-search.ts")).toContain(
+      "!hasCompleteRoomBookingDisclosures(room)",
+    );
+  });
 });

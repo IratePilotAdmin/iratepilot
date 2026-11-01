@@ -74,7 +74,7 @@ export async function reconcileStripeBookingRefund(input: {
 
   const { data: booking, error: bookingError } = await input.admin
     .from("bookings")
-    .select("id,status,total,customer_id,confirmation_code,stripe_payment_mode")
+    .select("id,status,total,due_at_property,customer_id,confirmation_code,stripe_payment_mode")
     .eq("stripe_payment_intent_id", paymentIntentId)
     .maybeSingle();
   if (bookingError) throw bookingError;
@@ -144,9 +144,9 @@ export async function reconcileStripeBookingRefund(input: {
     };
   }
 
-  const expectedAmount = Math.round(Number(booking.total) * 100);
+  const expectedAmount = Math.round((Number(booking.total) - Number(booking.due_at_property || 0)) * 100);
   if (!Number.isSafeInteger(expectedAmount) || input.refund.amount !== expectedAmount) {
-    throw new Error("Stripe refund amount does not match the booking total.");
+    throw new Error("Stripe refund amount does not match the amount collected for the booking.");
   }
 
   const lifecycleStatus = getStripeRefundLifecycleStatus(input.refund);

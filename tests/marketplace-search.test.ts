@@ -40,6 +40,12 @@ describe("marketplace search", () => {
       active: true,
       base_rate: 300,
       max_guests: 2,
+      direct_bed_type: "1 king bed",
+      direct_refundable: true,
+      direct_cancellation_policy: "Cancel at least 24 hours before arrival.",
+      direct_checkin_begin_time: "3:00 PM",
+      direct_checkin_instructions: "Check in at the front desk with photo identification.",
+      direct_special_checkin_instructions: "Contact the property for arrivals after 11:00 PM.",
       inventory: [
         { stay_date: "2026-08-10", available_units: 1, rate: 300 },
         { stay_date: "2026-08-11", available_units: 1, rate: 400 },
@@ -52,6 +58,7 @@ describe("marketplace search", () => {
       staySubtotal: 700,
     }]);
     expect(getAvailableRoomRates([{ ...availableRoom, max_guests: 1 }], criteria)).toEqual([]);
+    expect(getAvailableRoomRates([{ ...availableRoom, direct_refundable: null }], criteria)).toEqual([]);
     expect(getAvailableRoomRates([{ ...availableRoom, inventory: availableRoom.inventory.slice(0, 1) }], criteria)).toEqual([]);
     expect(getAvailableRoomRates([{ ...availableRoom, inventory: [
       { ...availableRoom.inventory[0], available_units: 501 },

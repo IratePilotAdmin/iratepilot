@@ -11,6 +11,7 @@ import { queueBookingNotification } from "@/lib/email/booking-notifications";
 import { getApprovedBookingPaymentMode } from "@/lib/stripe/booking-payment-mode";
 import { isHotelMarketplaceLaunchAuthorized } from "@/lib/hotels/marketplace-launch-authorization";
 import { hasCurrentBookableHotelProperty } from "@/lib/hotels/bookable-hotel-property";
+import { hasCompleteRoomBookingDisclosures } from "@/lib/bookings/room-disclosures";
 
 export async function GET(request: Request) {
   try {
@@ -64,6 +65,9 @@ export async function POST(request: Request) {
       .eq("id", parsed.data.roomId).eq("active", true).eq("properties.slug", parsed.data.hotelSlug)
       .eq("properties.active", true).eq("properties.partners.status", "approved").single();
     if (roomResult.error || !roomResult.data) return NextResponse.json({ error: "The selected approved room was not found." }, { status: 404 });
+    if (!hasCompleteRoomBookingDisclosures(roomResult.data)) {
+      return NextResponse.json({ error: "This room is missing required booking disclosures." }, { status: 409 });
+    }
     const property = roomResult.data.properties as unknown as { id: string; name: string };
     if (requestMode === "commercial_request" && !await hasCurrentBookableHotelProperty(admin, property.id)) {
       return NextResponse.json({

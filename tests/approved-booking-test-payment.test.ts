@@ -7,6 +7,7 @@ const completionRoute = read("app/api/bookings/[id]/complete-payment/route.ts");
 const finalizer = read("lib/bookings/complete-approved-booking-test-payment.ts");
 const webhook = read("app/api/stripe/webhook/route.ts");
 const migration = read("supabase/migrations/202608060028_live_booking_payment_modes.sql");
+const disclosureMigration = read("supabase/migrations/202611010180_lodging_booking_disclosures.sql");
 const paymentFinalizerMigration = migration.slice(0, migration.indexOf("create or replace function public.finalize_booking_refund"));
 const trips = read("components/bookings/customer-trips.tsx");
 const historyRoute = read("app/api/account/payments/route.ts");
@@ -60,6 +61,12 @@ describe("approved reservation test payments", () => {
     expect(migration).toContain("grant execute on function public.complete_approved_booking_payment");
     expect(migration).toContain("to service_role");
     expect(migration).toContain("from public, anon, authenticated");
+    expect(intentRoute).toContain("Number(booking.total) - Number(booking.due_at_property || 0)");
+    expect(intentRoute).toContain("amount: amountDueNowCents");
+    expect(disclosureMigration).toContain(
+      "public.booking_collected_amount(v_booking.total, v_booking.due_at_property)",
+    );
+    expect(disclosureMigration).toContain("Payment amount does not match the amount due now");
   });
 
   it("exposes a payment action and keeps payment history owner-scoped for every signed-in role", () => {

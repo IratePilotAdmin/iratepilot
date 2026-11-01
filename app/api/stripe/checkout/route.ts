@@ -9,6 +9,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { checkoutSchema } from "@/lib/validation";
 import { calculateVerifiedStayPricing } from "@/lib/bookings/stay-pricing";
 import { getActiveMembershipTier } from "@/lib/memberships/eligibility";
+import { hasCompleteRoomBookingDisclosures } from "@/lib/bookings/room-disclosures";
 
 export async function POST(request: Request) {
   if (process.env.ENABLE_TEST_CHECKOUT !== "true") return NextResponse.json({ error: "Test checkout is disabled." }, { status: 503 });
@@ -36,6 +37,9 @@ export async function POST(request: Request) {
     .eq("properties.slug", parsed.data.hotelSlug).eq("properties.active", true)
     .eq("properties.partners.status", "approved").single();
   if (roomError || !room) return NextResponse.json({ error: "The selected approved room was not found." }, { status: 404 });
+  if (!hasCompleteRoomBookingDisclosures(room)) {
+    return NextResponse.json({ error: "This room is missing required booking disclosures." }, { status: 409 });
+  }
   if (parsed.data.guests > Number(room.max_guests)) return NextResponse.json({ error: "Guest count exceeds this room’s capacity." }, { status: 400 });
 
   const { data: inventory, error: inventoryError } = await supabase.from("inventory")

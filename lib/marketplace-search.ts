@@ -1,6 +1,7 @@
 import { addDays, differenceInCalendarDays, format, parseISO, startOfDay } from "date-fns";
 import { inventoryLimits } from "./inventory-limits";
 import { searchSchema, staySchema } from "./validation";
+import { hasCompleteRoomBookingDisclosures } from "./bookings/room-disclosures";
 
 export type MarketplaceDestinationCriteria = {
   destination: string;
@@ -144,6 +145,7 @@ export function getAvailableRooms<T extends SearchableRoom>(
     const maxGuests = Number(room.max_guests);
     if (
       !room.active
+      || !hasCompleteRoomBookingDisclosures(room)
       || !Number.isFinite(maxGuests)
       || maxGuests < inventoryLimits.minGuests
       || maxGuests > inventoryLimits.maxGuests
