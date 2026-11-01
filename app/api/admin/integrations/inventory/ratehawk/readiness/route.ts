@@ -7,6 +7,7 @@ import {
   ratehawkCertificationHotelIds,
 } from "@/services/hotel-suppliers/ratehawk-certification-readiness";
 import { ratehawkCertificationScenarioIds } from "@/services/hotel-suppliers/ratehawk-certification-runner.server";
+import { ratehawkProductionConfigurationFingerprint } from "@/services/hotel-suppliers/ratehawk-production-smoke.server";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,7 @@ export async function GET() {
       .eq("result", "passed")
       .order("tested_at", { ascending: false }),
     admin.from("inventory_supplier_validation_evidence")
-      .select("validation_kind,environment")
+      .select("validation_kind,environment,configuration_fingerprint")
       .eq("supplier_id", "ratehawk")
       .eq("result", "passed")
       .order("tested_at", { ascending: false }),
@@ -49,8 +50,10 @@ export async function GET() {
   const sandboxValidationKinds = new Set((validationResult.data ?? [])
     .filter((item) => item.environment === "sandbox")
     .map((item) => item.validation_kind));
-  const productionSmokeValidated = (validationResult.data ?? []).some(
-    (item) => item.environment === "production" && item.validation_kind === "production_smoke",
+  const activeProductionFingerprint = ratehawkProductionConfigurationFingerprint(process.env);
+  const productionSmokeValidated = Boolean(activeProductionFingerprint) && (validationResult.data ?? []).some(
+    (item) => item.environment === "production" && item.validation_kind === "production_smoke"
+      && item.configuration_fingerprint === activeProductionFingerprint,
   );
   const certificationScenariosComplete = ratehawkCertificationScenarioIds.every(
     (scenario) => scenarios.has(scenario),

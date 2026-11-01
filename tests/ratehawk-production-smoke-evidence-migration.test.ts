@@ -11,6 +11,7 @@ describe("RateHawk production smoke evidence migration", () => {
     expect(migration).toContain("environment in ('sandbox', 'production')");
     expect(migration).toContain("validation_kind in ('hotel_search', 'hotel_prebook', 'production_smoke')");
     expect(migration).toContain("environment = 'production' and validation_kind = 'production_smoke'");
+    expect(migration).toContain("configuration_fingerprint ~ '^[0-9a-f]{64}$'");
     expect(migration).not.toMatch(/grant .*authenticated|grant .*anon/i);
   });
 });

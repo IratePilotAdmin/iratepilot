@@ -25,6 +25,7 @@ const smokeResult = {
   checkout: "2026-12-03",
   hotelCount: 1,
   rateCount: 3,
+  configurationFingerprint: "a".repeat(64),
 };
 
 function query() {
@@ -81,12 +82,14 @@ describe("RateHawk production smoke route", () => {
       hotel_count: 1,
       rate_count: 3,
       price_changed: null,
+      configuration_fingerprint: "a".repeat(64),
       tested_by: "admin-1",
       tested_at: "2026-11-01T12:00:00.000Z",
       deployment_revision: "1234567890abcdef",
     });
     const body = await response.json();
     expect(body.evidenceRecorded).toBe(true);
+    expect(body).not.toHaveProperty("configurationFingerprint");
     expect(JSON.stringify(body)).not.toMatch(/api.?key|credential|raw.?response/i);
   });
 

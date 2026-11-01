@@ -54,13 +54,22 @@ export async function POST(request: Request) {
       hotel_count: result.hotelCount,
       rate_count: result.rateCount,
       price_changed: null,
+      configuration_fingerprint: result.configurationFingerprint,
       tested_by: auth.user.id,
       tested_at: result.testedAt,
       deployment_revision: process.env.VERCEL_GIT_COMMIT_SHA?.trim() || null,
     };
     const insert = await createAdminClient().from("inventory_supplier_validation_evidence").insert(evidence);
-    if (insert.error) return NextResponse.json({ ...result, validationPassed: true, evidenceRecorded: false, error: "RateHawk production search passed, but its evidence could not be saved." }, { status: 503, headers: noStoreHeaders });
-    return NextResponse.json({ ...result, validationPassed: true, evidenceRecorded: true, message: "RateHawk production availability search passed and its evidence was saved. No booking or payment was created." }, { headers: noStoreHeaders });
+    const safeResult = {
+      testedAt: result.testedAt,
+      checkin: result.checkin,
+      checkout: result.checkout,
+      hotelCount: result.hotelCount,
+      rateCount: result.rateCount,
+      validationPassed: true,
+    };
+    if (insert.error) return NextResponse.json({ ...safeResult, evidenceRecorded: false, error: "RateHawk production search passed, but its evidence could not be saved." }, { status: 503, headers: noStoreHeaders });
+    return NextResponse.json({ ...safeResult, evidenceRecorded: true, message: "RateHawk production availability search passed and its evidence was saved. No booking or payment was created." }, { headers: noStoreHeaders });
   } catch (error) {
     const configurationError = error instanceof RatehawkProductionSmokeError
       ? error.code === "configuration_not_ready"

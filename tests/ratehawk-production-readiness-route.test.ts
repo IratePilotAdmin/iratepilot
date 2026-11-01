@@ -6,7 +6,11 @@ const mocks = vi.hoisted(() => ({
   requireRole: vi.fn(),
   createAdminClient: vi.fn(),
   receiptRows: [] as Array<{ scenario: string }>,
-  validationRows: [] as Array<{ validation_kind: string; environment: string }>,
+  validationRows: [] as Array<{
+    validation_kind: string;
+    environment: string;
+    configuration_fingerprint: string | null;
+  }>,
   receiptError: null as unknown,
   validationError: null as unknown,
 }));
@@ -15,6 +19,7 @@ vi.mock("@/lib/auth/require-role", () => ({ requireRole: mocks.requireRole }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: mocks.createAdminClient }));
 
 import { GET } from "../app/api/admin/integrations/inventory/ratehawk/readiness/route";
+import { ratehawkProductionConfigurationFingerprint } from "../services/hotel-suppliers/ratehawk-production-smoke.server";
 
 const scenarios = [
   "children", "citizenship", "multiroom", "price_change", "unknown_success",
@@ -41,6 +46,7 @@ describe("RateHawk production readiness route", () => {
       "HOTEL_INVENTORY_RATEHAWK_CERTIFICATION_APPROVED",
       "HOTEL_INVENTORY_RATEHAWK_PRODUCTION_KEY_ID",
       "HOTEL_INVENTORY_RATEHAWK_PRODUCTION_API_KEY",
+      "HOTEL_INVENTORY_RATEHAWK_PRODUCTION_SMOKE_HOTEL_ID",
       "HOTEL_INVENTORY_RATEHAWK_LIVE_ENABLED",
     ]) delete process.env[key];
     process.env.HOTEL_INVENTORY_RATEHAWK_KEY_ID = "sandbox-key-id";
@@ -61,8 +67,8 @@ describe("RateHawk production readiness route", () => {
   it("derives completed technical gates but keeps vendor approval blocked", async () => {
     mocks.receiptRows = scenarios.map((scenario) => ({ scenario }));
     mocks.validationRows = [
-      { validation_kind: "hotel_search", environment: "sandbox" },
-      { validation_kind: "hotel_prebook", environment: "sandbox" },
+      { validation_kind: "hotel_search", environment: "sandbox", configuration_fingerprint: null },
+      { validation_kind: "hotel_prebook", environment: "sandbox", configuration_fingerprint: null },
     ];
     process.env.HOTEL_INVENTORY_RATEHAWK_CHECKLIST_SUBMITTED = "true";
 
@@ -87,8 +93,8 @@ describe("RateHawk production readiness route", () => {
   it("never accepts sandbox credentials as production credentials", async () => {
     mocks.receiptRows = scenarios.map((scenario) => ({ scenario }));
     mocks.validationRows = [
-      { validation_kind: "hotel_search", environment: "sandbox" },
-      { validation_kind: "hotel_prebook", environment: "sandbox" },
+      { validation_kind: "hotel_search", environment: "sandbox", configuration_fingerprint: null },
+      { validation_kind: "hotel_prebook", environment: "sandbox", configuration_fingerprint: null },
     ];
     process.env.HOTEL_INVENTORY_RATEHAWK_CHECKLIST_SUBMITTED = "true";
     process.env.HOTEL_INVENTORY_RATEHAWK_CERTIFICATION_APPROVED = "true";
@@ -106,15 +112,17 @@ describe("RateHawk production readiness route", () => {
 
   it("advances only when a saved production smoke receipt exists", async () => {
     mocks.receiptRows = scenarios.map((scenario) => ({ scenario }));
-    mocks.validationRows = [
-      { validation_kind: "hotel_search", environment: "sandbox" },
-      { validation_kind: "hotel_prebook", environment: "sandbox" },
-      { validation_kind: "production_smoke", environment: "production" },
-    ];
     process.env.HOTEL_INVENTORY_RATEHAWK_CHECKLIST_SUBMITTED = "true";
     process.env.HOTEL_INVENTORY_RATEHAWK_CERTIFICATION_APPROVED = "true";
     process.env.HOTEL_INVENTORY_RATEHAWK_PRODUCTION_KEY_ID = "production-key-id";
     process.env.HOTEL_INVENTORY_RATEHAWK_PRODUCTION_API_KEY = "production-api-key";
+    process.env.HOTEL_INVENTORY_RATEHAWK_PRODUCTION_SMOKE_HOTEL_ID = "123456";
+    const fingerprint = ratehawkProductionConfigurationFingerprint(process.env);
+    mocks.validationRows = [
+      { validation_kind: "hotel_search", environment: "sandbox", configuration_fingerprint: null },
+      { validation_kind: "hotel_prebook", environment: "sandbox", configuration_fingerprint: null },
+      { validation_kind: "production_smoke", environment: "production", configuration_fingerprint: fingerprint },
+    ];
 
     const body = await (await GET()).json();
 
@@ -124,6 +132,9 @@ describe("RateHawk production readiness route", () => {
       productionCredentialsReady: true,
       readyForLiveBooking: false,
     });
+
+    process.env.HOTEL_INVENTORY_RATEHAWK_PRODUCTION_SMOKE_HOTEL_ID = "654321";
+    expect((await (await GET()).json()).readiness.nextGate).toBe("production_smoke");
   });
 
   it("authorizes the administrator and fails closed when evidence cannot load", async () => {

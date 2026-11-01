@@ -1,5 +1,7 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
+
 import { buildRatehawkProductionHotelSearchRequest } from "./inventory-sandbox-request.server";
 import type { InventoryJsonValue } from "./inventory-response.server";
 import type { InventorySandboxFetch } from "./inventory-sandbox-transport.server";
@@ -11,6 +13,7 @@ export type RatehawkProductionSmokeResult = {
   checkout: string;
   hotelCount: number;
   rateCount: number;
+  configurationFingerprint: string;
 };
 
 export class RatehawkProductionSmokeError extends Error {
@@ -28,6 +31,23 @@ function addDays(date: Date, days: number) {
   const result = new Date(date);
   result.setUTCDate(result.getUTCDate() + days);
   return result;
+}
+
+export function ratehawkProductionConfigurationFingerprint(
+  environment: Record<string, string | undefined>,
+) {
+  const keyId = environment.HOTEL_INVENTORY_RATEHAWK_PRODUCTION_KEY_ID?.trim();
+  const apiKey = environment.HOTEL_INVENTORY_RATEHAWK_PRODUCTION_API_KEY?.trim();
+  const hotelId = Number(environment.HOTEL_INVENTORY_RATEHAWK_PRODUCTION_SMOKE_HOTEL_ID);
+  if (!keyId || !apiKey || !Number.isSafeInteger(hotelId) || hotelId <= 0) return null;
+  return createHash("sha256")
+    .update("iratepilot:ratehawk:production-smoke:v1\0", "utf8")
+    .update(keyId, "utf8")
+    .update("\0", "utf8")
+    .update(apiKey, "utf8")
+    .update("\0", "utf8")
+    .update(String(hotelId), "utf8")
+    .digest("hex");
 }
 
 function summarize(response: InventoryJsonValue) {
@@ -58,7 +78,8 @@ export async function runRatehawkProductionSmoke(options: {
   const keyId = options.environment.HOTEL_INVENTORY_RATEHAWK_PRODUCTION_KEY_ID?.trim();
   const apiKey = options.environment.HOTEL_INVENTORY_RATEHAWK_PRODUCTION_API_KEY?.trim();
   const hotelId = Number(options.environment.HOTEL_INVENTORY_RATEHAWK_PRODUCTION_SMOKE_HOTEL_ID);
-  if (!keyId || !apiKey || !Number.isSafeInteger(hotelId) || hotelId <= 0) {
+  const configurationFingerprint = ratehawkProductionConfigurationFingerprint(options.environment);
+  if (!keyId || !apiKey || !Number.isSafeInteger(hotelId) || hotelId <= 0 || !configurationFingerprint) {
     throw new RatehawkProductionSmokeError("configuration_not_ready");
   }
   const testedAt = options.now ? new Date(options.now) : new Date();
@@ -81,5 +102,11 @@ export async function runRatehawkProductionSmoke(options: {
     }),
     { environment: options.environment, fetcher: options.fetcher },
   );
-  return { testedAt: testedAt.toISOString(), checkin, checkout, ...summarize(response) };
+  return {
+    testedAt: testedAt.toISOString(),
+    checkin,
+    checkout,
+    configurationFingerprint,
+    ...summarize(response),
+  };
 }

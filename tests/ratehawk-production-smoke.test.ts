@@ -66,13 +66,14 @@ describe("RateHawk production smoke", () => {
       fetcher,
     });
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       testedAt: "2026-11-01T12:00:00.000Z",
       checkin: "2026-12-01",
       checkout: "2026-12-03",
       hotelCount: 1,
       rateCount: 1,
     });
+    expect(result.configurationFingerprint).toMatch(/^[0-9a-f]{64}$/);
     expect(JSON.stringify(result)).not.toContain("do-not-return");
   });
 });

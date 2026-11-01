@@ -1,6 +1,7 @@
 begin;
 
 alter table public.inventory_supplier_validation_evidence
+  add column configuration_fingerprint text,
   drop constraint inventory_supplier_validation_evidence_environment_check,
   drop constraint inventory_supplier_validation_evidence_validation_kind_check,
   drop constraint inventory_supplier_validation_evidence_price_changed_check;
@@ -19,6 +20,11 @@ alter table public.inventory_supplier_validation_evidence
     check (
       (validation_kind in ('hotel_search', 'production_smoke') and price_changed is null)
       or (validation_kind = 'hotel_prebook' and price_changed is not null)
+    ),
+  add constraint inventory_supplier_validation_evidence_configuration_fingerprint_check
+    check (
+      (validation_kind = 'production_smoke' and configuration_fingerprint ~ '^[0-9a-f]{64}$')
+      or (validation_kind <> 'production_smoke' and configuration_fingerprint is null)
     );
 
 comment on table public.inventory_supplier_validation_evidence is
