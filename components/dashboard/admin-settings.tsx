@@ -153,6 +153,15 @@ type RatehawkCertificationResult = {
   cancellationCurrency: string | null;
 };
 
+type RatehawkProductionReadiness = {
+  nextGate: string;
+  readyForLiveBooking: boolean;
+  sandboxCredentialsReady: boolean;
+  certificationHotelsMapped: boolean;
+  productionCredentialsReady: boolean;
+  gates: Record<string, boolean>;
+};
+
 const ratehawkCertificationScenarios = [
   { id: "children", label: "Children", expectedOutcome: "Confirmed, then cancelled" },
   { id: "citizenship", label: "Guest citizenship", expectedOutcome: "Confirmed, then cancelled" },
@@ -179,6 +188,7 @@ export function AdminSettings() {
   const [expediaSiteReviewMessage, setExpediaSiteReviewMessage] = useState("");
   const [ratehawkPrebookEvidence, setRatehawkPrebookEvidence] = useState<InventoryValidationEvidence | null>(null);
   const [ratehawkCertificationResults, setRatehawkCertificationResults] = useState<RatehawkCertificationResult[]>([]);
+  const [ratehawkProductionReadiness, setRatehawkProductionReadiness] = useState<RatehawkProductionReadiness | null>(null);
   const [priorityPmsReadiness, setPriorityPmsReadiness] = useState<PriorityPmsProductionReadiness[]>([]);
   const [evidenceTrackingAvailable, setEvidenceTrackingAvailable] = useState(false);
   const [evidenceBusy, setEvidenceBusy] = useState("");
@@ -482,6 +492,14 @@ export function AdminSettings() {
         setRatehawkCertificationResults(body.results ?? []);
       })
       .catch(() => setRatehawkCertificationResults([]));
+
+    fetch("/api/admin/integrations/inventory/ratehawk/readiness", { cache: "no-store" })
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error);
+        setRatehawkProductionReadiness(body.readiness ?? null);
+      })
+      .catch(() => setRatehawkProductionReadiness(null));
   }, []);
 
   async function updateLaunchEvidence(
@@ -863,6 +881,24 @@ export function AdminSettings() {
                     </li>;
                   })}
                 </ul>
+              </div>
+              <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3" aria-live="polite">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <strong className="text-xs text-slate-800">RateHawk production launch gate</strong>
+                  <span className={ratehawkProductionReadiness?.readyForLiveBooking ? "text-xs font-semibold text-emerald-700" : "text-xs font-semibold text-amber-700"}>
+                    {ratehawkProductionReadiness
+                      ? ratehawkProductionReadiness.readyForLiveBooking
+                        ? "Ready for live booking"
+                        : `Next: ${ratehawkProductionReadiness.nextGate.replaceAll("_", " ")}`
+                      : "Readiness unavailable"}
+                  </span>
+                </div>
+                <p className="mt-2 text-xs leading-5 text-slate-600">Technical receipts are derived from saved sandbox evidence. Checklist submission, certification approval, production credentials, production smoke testing, and live activation remain independent fail-closed gates.</p>
+                {ratehawkProductionReadiness && <ul className="mt-3 grid gap-1 text-xs sm:grid-cols-2">
+                  {Object.entries(ratehawkProductionReadiness.gates).map(([gate, passed]) => <li className={passed ? "text-emerald-700" : "text-amber-700"} key={gate}>
+                    {passed ? "✓" : "○"} {gate.replaceAll("_", " ")}
+                  </li>)}
+                </ul>}
               </div>
               {ratehawkValidationEvidence && <p className="mt-2 text-xs text-slate-600">
                 Last saved search: {new Date(ratehawkValidationEvidence.tested_at).toLocaleString()} — {ratehawkValidationEvidence.hotel_count} test hotel(s), {ratehawkValidationEvidence.rate_count} rate(s).
