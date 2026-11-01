@@ -259,7 +259,6 @@ function parseJsonObject(value: string): ExpediaRapidJsonObject | null {
 
 function readErrorType(body: ExpediaRapidJsonObject | null) {
   if (!body) return undefined;
-  if (typeof body.type === "string") return body.type;
   if (Array.isArray(body.errors)) {
     const first = body.errors[0];
     if (first && typeof first === "object" && !Array.isArray(first)
@@ -267,6 +266,7 @@ function readErrorType(body: ExpediaRapidJsonObject | null) {
       return (first as ExpediaRapidJsonObject).type as string;
     }
   }
+  if (typeof body.type === "string") return body.type;
   return undefined;
 }
 
@@ -279,7 +279,7 @@ function readRetrieveLink(body: ExpediaRapidJsonObject, bookingRequestUrl: strin
   if (typeof href !== "string" || !href.trim()) return null;
   try {
     const bookingUrl = new URL(bookingRequestUrl);
-    const retrieveUrl = new URL(href.trim());
+    const retrieveUrl = new URL(href.trim(), bookingUrl);
     return retrieveUrl.protocol === "https:"
       && retrieveUrl.hostname === bookingUrl.hostname
       && /^\/v3\/itineraries\/[^/]+$/.test(retrieveUrl.pathname)

@@ -123,7 +123,7 @@ describe("Expedia Rapid booking contract", () => {
     const request = buildExpediaRapidBookingRequest(validInput);
     const fetcher = vi.fn(async () => new Response(JSON.stringify({
       itinerary_id: "supplier-itinerary-123",
-      links: { retrieve: { href: "https://test.ean.com/v3/itineraries/supplier-itinerary-123" } },
+      links: { retrieve: { href: "/v3/itineraries/supplier-itinerary-123" } },
     }), { status: 201, headers: { "transaction-id": "supplier-transaction-456" } }));
 
     const result = await executeExpediaRapidBookingRequest(request, { fetcher });
@@ -203,5 +203,20 @@ describe("Expedia Rapid booking contract", () => {
       transactionIdPresent: false,
     });
     expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("prefers an actionable nested error over Expedia's generic wrapper", async () => {
+    const request = buildExpediaRapidBookingRequest(validInput);
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({
+      type: "invalid_input",
+      errors: [{ type: "duplicate_itinerary", message: "affiliate reference already exists" }],
+    }), { status: 400 }));
+
+    await expect(executeExpediaRapidBookingRequest(request, { fetcher })).resolves.toEqual({
+      outcome: "action_required",
+      status: 400,
+      recovery: "reconcile_by_affiliate_reference",
+      transactionIdPresent: false,
+    });
   });
 });
