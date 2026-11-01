@@ -12,6 +12,12 @@ export type PropertyReadinessInput = {
     direct_currency_code?: string | null;
     direct_cancellation_policy?: string | null;
     direct_cancellation_policy_version?: string | null;
+    direct_bed_type?: string | null;
+    direct_refundable?: boolean | null;
+    direct_checkin_begin_time?: string | null;
+    direct_checkin_end_time?: string | null;
+    direct_checkin_instructions?: string | null;
+    direct_special_checkin_instructions?: string | null;
     inventory?: Array<{
       stay_date?: string | null;
       available_units?: number | null;
@@ -49,7 +55,12 @@ export function getPropertyReadiness(
     Boolean(room.direct_rate_plan_name?.trim()) &&
     room.direct_currency_code === "USD" &&
     (room.direct_cancellation_policy?.trim().length ?? 0) >= 10 &&
-    Boolean(room.direct_cancellation_policy_version?.trim());
+    Boolean(room.direct_cancellation_policy_version?.trim()) &&
+    Boolean(room.direct_bed_type?.trim()) &&
+    typeof room.direct_refundable === "boolean" &&
+    Boolean(room.direct_checkin_begin_time?.trim()) &&
+    (room.direct_checkin_instructions?.trim().length ?? 0) >= 10 &&
+    Boolean(room.direct_special_checkin_instructions?.trim());
   const hasFutureInventory = (room: NonNullable<PropertyReadinessInput["rooms"]>[number]) =>
     (room.inventory ?? []).some(
       (inventory) =>
@@ -78,7 +89,7 @@ export function getPropertyReadiness(
     primaryPhoto: "primary photo",
     amenities: "amenities",
     activeRoom: "active room type",
-    roomTerms: "room rate-plan and cancellation terms",
+    roomTerms: "room bed type, refundability, check-in, rate-plan, and cancellation terms",
     futureInventory: "future sellable inventory with taxes and mandatory fees"
   };
   const missing = (Object.keys(requirements) as Array<keyof typeof requirements>)

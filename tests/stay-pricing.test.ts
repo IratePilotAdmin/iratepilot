@@ -13,7 +13,10 @@ describe("authoritative stay pricing", () => {
       baseSubtotal: 700,
       memberDiscount: 0,
       subtotal: 700,
+      taxes: 0,
+      mandatoryFees: 0,
       serviceFee: 0,
+      amountDueNow: 700,
       total: 700,
     });
     expect(calculateVerifiedStayPricing(available, 2, 0, 0.10)).toEqual({
@@ -21,8 +24,28 @@ describe("authoritative stay pricing", () => {
       baseSubtotal: 700,
       memberDiscount: 70,
       subtotal: 630,
+      taxes: 0,
+      mandatoryFees: 0,
       serviceFee: 0,
+      amountDueNow: 630,
       total: 630,
+    });
+  });
+
+  it("separates the amount collected now from mandatory property charges", () => {
+    expect(calculateVerifiedStayPricing([
+      { ...available[0], direct_tax_amount: 30, direct_mandatory_fee_amount: 25 },
+      { ...available[1], direct_tax_amount: 40, direct_mandatory_fee_amount: 25 },
+    ], 2, 0)).toEqual({
+      ok: true,
+      baseSubtotal: 700,
+      memberDiscount: 0,
+      subtotal: 700,
+      taxes: 70,
+      mandatoryFees: 50,
+      serviceFee: 0,
+      amountDueNow: 770,
+      total: 820,
     });
   });
 

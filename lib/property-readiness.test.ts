@@ -10,6 +10,12 @@ const roomTerms = {
   direct_currency_code: "USD",
   direct_cancellation_policy: "Cancel at least 24 hours before arrival.",
   direct_cancellation_policy_version: "2026-08-01",
+  direct_bed_type: "1 king bed",
+  direct_refundable: true,
+  direct_checkin_begin_time: "3:00 PM",
+  direct_checkin_end_time: "11:00 PM",
+  direct_checkin_instructions: "Check in at the front desk with photo identification.",
+  direct_special_checkin_instructions: "Contact the property for arrivals after 11:00 PM.",
 };
 const inventoryTerms = { rate: 200, direct_tax_amount: 20, direct_mandatory_fee_amount: 0 };
 
@@ -24,7 +30,7 @@ describe("property publication readiness", () => {
         roomTerms: false,
         futureInventory: false
       },
-      missing: ["primary photo", "amenities", "active room type", "room rate-plan and cancellation terms", "future sellable inventory with taxes and mandatory fees"]
+      missing: ["primary photo", "amenities", "active room type", "room bed type, refundability, check-in, rate-plan, and cancellation terms", "future sellable inventory with taxes and mandatory fees"]
     });
   });
 

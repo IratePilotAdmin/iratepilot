@@ -227,6 +227,15 @@ const roomFieldsSchema = z.object({
   ratePlanName: z.string().trim().min(1).max(160),
   cancellationPolicy: z.string().trim().min(10).max(2000),
   cancellationPolicyVersion: z.string().trim().min(1).max(80),
+  bedType: z.string().trim().min(2).max(160),
+  refundable: z.preprocess(
+    (value) => (value === "true" ? true : value === "false" ? false : value),
+    z.boolean(),
+  ),
+  checkinBeginTime: z.string().trim().min(1).max(40),
+  checkinEndTime: z.string().trim().max(40),
+  checkinInstructions: z.string().trim().min(10).max(4000),
+  specialCheckinInstructions: z.string().trim().min(2).max(4000),
 });
 
 export const roomSchema = roomFieldsSchema.extend({

@@ -47,7 +47,7 @@ export async function getMarketplaceHotels(
     // The service role would bypass the property-specific agreement expiry gate.
     const supabase = await createClient();
     const { data, error } = await supabase.from("properties")
-      .select("slug,name,city,country,star_rating,description,image_url,amenities,guest_rating,review_count,partners!inner(status),rooms(id,active,base_rate,max_guests,inventory(stay_date,available_units,rate))")
+      .select("slug,name,city,country,star_rating,description,image_url,amenities,guest_rating,review_count,partners!inner(status),rooms(id,active,base_rate,max_guests,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount))")
       .eq("active", true)
       .eq("pms_only", false)
       .eq("partners.status", "approved")
@@ -96,7 +96,7 @@ export async function getMarketplaceHotel(slug: string, stay: StayCriteria | nul
     try {
       const supabase = await createClient();
       const { data } = await supabase.from("properties")
-        .select("partners!inner(status),rooms(id,name,active,base_rate,max_guests,inventory(stay_date,available_units,rate))")
+        .select("partners!inner(status),rooms(id,name,active,base_rate,max_guests,direct_rate_plan_name,direct_cancellation_policy,direct_bed_type,direct_refundable,direct_checkin_begin_time,direct_checkin_end_time,direct_checkin_instructions,direct_special_checkin_instructions,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount))")
         .eq("slug", slug).eq("active", true).eq("pms_only", false).eq("partners.status", "approved").eq("rooms.active", true).single();
       const roomRows = (data?.rooms || []) as Array<SearchableRoom & { id: string; name: string }>;
       const availableRooms = stay
@@ -115,6 +115,9 @@ export async function getMarketplaceHotel(slug: string, stay: StayCriteria | nul
           ...room,
           averageNightlyRate: Number(room.base_rate),
           staySubtotal: null,
+          stayTaxTotal: null,
+          stayMandatoryFeeTotal: null,
+          stayTotal: null,
         }));
       const rooms = availableRooms.map((room) => ({
         id: room.id,
@@ -123,6 +126,17 @@ export async function getMarketplaceHotel(slug: string, stay: StayCriteria | nul
         maxGuests: room.max_guests,
         availabilityVerified: Boolean(stay),
         staySubtotal: room.staySubtotal,
+        stayTaxTotal: room.stayTaxTotal,
+        stayMandatoryFeeTotal: room.stayMandatoryFeeTotal,
+        stayTotal: room.stayTotal,
+        ratePlanName: room.direct_rate_plan_name,
+        cancellationPolicy: room.direct_cancellation_policy,
+        bedType: room.direct_bed_type,
+        refundable: room.direct_refundable,
+        checkinBeginTime: room.direct_checkin_begin_time,
+        checkinEndTime: room.direct_checkin_end_time,
+        checkinInstructions: room.direct_checkin_instructions,
+        specialCheckinInstructions: room.direct_special_checkin_instructions,
       }));
       return { hotel: marketplace.hotels.find((item) => item.slug === slug), source: marketplace.source, rooms };
     } catch {}

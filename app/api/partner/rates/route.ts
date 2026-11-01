@@ -52,7 +52,7 @@ export async function GET(request: Request) {
     } : null;
     if (!ids.length) return NextResponse.json({ properties: [], rooms: [], hotelAccess: accessPayload });
     const roomsResult = await auth.supabase.from("rooms")
-      .select("id,property_id,name,max_guests,base_rate,active,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount)")
+      .select("id,property_id,name,max_guests,base_rate,active,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version,direct_bed_type,direct_refundable,direct_checkin_begin_time,direct_checkin_end_time,direct_checkin_instructions,direct_special_checkin_instructions,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount)")
       .in("property_id", ids).order("name");
     if (roomsResult.error) throw roomsResult.error;
     return NextResponse.json({
@@ -95,6 +95,12 @@ export async function POST(request: Request) {
         direct_currency_code: "USD",
         direct_cancellation_policy: parsed.data.cancellationPolicy,
         direct_cancellation_policy_version: parsed.data.cancellationPolicyVersion,
+        direct_bed_type: parsed.data.bedType,
+        direct_refundable: parsed.data.refundable,
+        direct_checkin_begin_time: parsed.data.checkinBeginTime,
+        direct_checkin_end_time: parsed.data.checkinEndTime || null,
+        direct_checkin_instructions: parsed.data.checkinInstructions,
+        direct_special_checkin_instructions: parsed.data.specialCheckinInstructions,
       }).select("id,name").single();
       if (result.error) throw result.error;
       return NextResponse.json({ data: result.data, message: "Room type created." }, { status: 201 });
@@ -122,8 +128,14 @@ export async function POST(request: Request) {
         direct_currency_code: "USD",
         direct_cancellation_policy: parsed.data.cancellationPolicy,
         direct_cancellation_policy_version: parsed.data.cancellationPolicyVersion,
+        direct_bed_type: parsed.data.bedType,
+        direct_refundable: parsed.data.refundable,
+        direct_checkin_begin_time: parsed.data.checkinBeginTime,
+        direct_checkin_end_time: parsed.data.checkinEndTime || null,
+        direct_checkin_instructions: parsed.data.checkinInstructions,
+        direct_special_checkin_instructions: parsed.data.specialCheckinInstructions,
       }).eq("id", parsed.data.roomId)
-        .select("id,name,max_guests,base_rate,active,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version")
+        .select("id,name,max_guests,base_rate,active,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version,direct_bed_type,direct_refundable,direct_checkin_begin_time,direct_checkin_end_time,direct_checkin_instructions,direct_special_checkin_instructions")
         .single();
       if (result.error) throw result.error;
       return NextResponse.json({

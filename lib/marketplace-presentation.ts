@@ -5,6 +5,16 @@ export type MarketplaceRoom = {
   maxGuests: number;
   availabilityVerified?: boolean;
   staySubtotal?: number | null;
+  stayTaxTotal?: number | null;
+  stayMandatoryFeeTotal?: number | null;
+  stayTotal?: number | null;
+  bedType?: string | null;
+  refundable?: boolean | null;
+  checkinBeginTime?: string | null;
+  checkinEndTime?: string | null;
+  checkinInstructions?: string | null;
+  specialCheckinInstructions?: string | null;
+  cancellationPolicy?: string | null;
 };
 
 export type PresentedRoom = {
@@ -27,6 +37,9 @@ export function getPresentedRooms(
       price: room.baseRate,
       notes: [
         `Up to ${room.maxGuests} ${room.maxGuests === 1 ? "guest" : "guests"}`,
+        room.bedType ? `Bed type: ${room.bedType}` : "Bed type pending",
+        room.refundable === false ? "Non-refundable" : "Refundable; review cancellation terms",
+        room.checkinBeginTime ? `Check-in from ${room.checkinBeginTime}${room.checkinEndTime ? ` to ${room.checkinEndTime}` : ""}` : "Check-in details pending",
         room.availabilityVerified
           ? "Available for every selected night"
           : "Select dates to verify availability"

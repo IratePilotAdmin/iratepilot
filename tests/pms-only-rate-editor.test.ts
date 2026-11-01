@@ -16,6 +16,9 @@ describe("PMS-only partner rate editor", () => {
       ratePlanCode: "BAR", ratePlanName: "Best Available Rate",
       cancellationPolicy: "Free cancellation until 24 hours before arrival.",
       cancellationPolicyVersion: "v1",
+      bedType: "1 king bed", refundable: true, checkinBeginTime: "3:00 PM",
+      checkinEndTime: "11:00 PM", checkinInstructions: "Check in at the front desk with photo identification.",
+      specialCheckinInstructions: "Contact the property for arrivals after 11:00 PM.",
     },
     {
       action: "set_inventory", roomId, startDate: "2026-10-01", endDate: "2026-10-01",

@@ -60,7 +60,7 @@ export async function POST(request: Request) {
 
     const admin = createAdminClient();
     const roomResult = await admin.from("rooms")
-      .select("id,name,property_id,max_guests,properties!inner(id,name,slug,active,partners!inner(status))")
+      .select("id,name,property_id,max_guests,direct_bed_type,direct_refundable,direct_cancellation_policy,direct_checkin_begin_time,direct_checkin_end_time,direct_checkin_instructions,direct_special_checkin_instructions,properties!inner(id,name,slug,active,partners!inner(status))")
       .eq("id", parsed.data.roomId).eq("active", true).eq("properties.slug", parsed.data.hotelSlug)
       .eq("properties.active", true).eq("properties.partners.status", "approved").single();
     if (roomResult.error || !roomResult.data) return NextResponse.json({ error: "The selected approved room was not found." }, { status: 404 });
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const inventoryResult = await supabase.from("inventory").select("stay_date,available_units,rate")
+    const inventoryResult = await supabase.from("inventory").select("stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount")
       .eq("room_id", parsed.data.roomId).gte("stay_date", parsed.data.checkIn).lt("stay_date", parsed.data.checkOut).order("stay_date");
     if (inventoryResult.error) throw inventoryResult.error;
     const inventory = inventoryResult.data || [];
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "This room is not available for every selected night." }, { status: 409 });
     }
     if (!pricing.ok) return NextResponse.json({ error: "Pricing could not be verified for this stay." }, { status: 503 });
-    const { subtotal, serviceFee, total } = pricing;
+    const { subtotal, taxes, mandatoryFees, serviceFee, total } = pricing;
     const confirmationCode = `IRP-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
 
     const { data, error } = await admin.from("bookings").insert({
@@ -118,9 +118,17 @@ export async function POST(request: Request) {
       guests: parsed.data.guests,
       child_ages: parsed.data.childAges,
       subtotal,
-      taxes: 0,
-      fees: serviceFee,
+      taxes,
+      fees: Math.round((serviceFee + mandatoryFees) * 100) / 100,
       total,
+      bed_type: roomResult.data.direct_bed_type,
+      refundable: roomResult.data.direct_refundable,
+      cancellation_policy: roomResult.data.direct_cancellation_policy,
+      checkin_begin_time: roomResult.data.direct_checkin_begin_time,
+      checkin_end_time: roomResult.data.direct_checkin_end_time,
+      checkin_instructions: roomResult.data.direct_checkin_instructions,
+      special_checkin_instructions: roomResult.data.direct_special_checkin_instructions,
+      due_at_property: mandatoryFees,
       status: "pending"
     }).select("id,confirmation_code,status,subtotal,fees,total").single();
     if (error?.code === "23505") {
