@@ -443,6 +443,33 @@ export function AdminSettings() {
     }
   }
 
+  async function runRatehawkProductionSmoke() {
+    if (!window.confirm("Run one read-only RateHawk production availability search now? This uses approved production credentials and real inventory, but cannot create a booking or payment.")) return;
+    setInventoryValidationBusy("ratehawk-production-smoke");
+    setInventoryValidationMessages((current) => ({ ...current, ratehawkProductionSmoke: "" }));
+    try {
+      const response = await fetch("/api/admin/integrations/inventory/ratehawk/production-smoke", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmation: "RUN RATEHAWK PRODUCTION SMOKE" }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "RateHawk production smoke could not be completed.");
+      setInventoryValidationMessages((current) => ({
+        ...current,
+        ratehawkProductionSmoke: `Production availability passed and evidence was saved: ${body.hotelCount} hotel(s), ${body.rateCount} rate(s). No booking or payment was created.`,
+      }));
+      await refreshRatehawkProductionReadiness();
+    } catch (error) {
+      setInventoryValidationMessages((current) => ({
+        ...current,
+        ratehawkProductionSmoke: error instanceof Error ? error.message : "RateHawk production smoke could not be completed.",
+      }));
+    } finally {
+      setInventoryValidationBusy("");
+    }
+  }
+
   useEffect(() => {
     fetch("/api/admin/settings", { cache: "no-store" })
       .then(async (response) => {
@@ -861,10 +888,19 @@ export function AdminSettings() {
                 >
                   {inventoryValidationBusy === "ratehawk-certification" ? "RUNNING CERTIFICATION…" : "RUN CERTIFICATION TESTS"}
                 </button>
+                <button
+                  className="border border-slate-900 px-4 py-2 text-xs font-semibold tracking-[0.12em] text-slate-900 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={inventoryValidationBusy !== "" || ratehawkProductionReadiness?.nextGate !== "production_smoke"}
+                  onClick={runRatehawkProductionSmoke}
+                  type="button"
+                >
+                  {inventoryValidationBusy === "ratehawk-production-smoke" ? "RUNNING PRODUCTION SMOKE…" : "RUN PRODUCTION SMOKE"}
+                </button>
               </div>
               {inventoryValidationMessages.ratehawk && <p className="mt-2 text-xs text-slate-600" role="status">{inventoryValidationMessages.ratehawk}</p>}
               {inventoryValidationMessages.ratehawkPrebook && <p className="mt-2 text-xs text-slate-600" role="status">{inventoryValidationMessages.ratehawkPrebook}</p>}
               {inventoryValidationMessages.ratehawkCertification && <p className="mt-2 text-xs text-slate-600" role="status">{inventoryValidationMessages.ratehawkCertification}</p>}
+              {inventoryValidationMessages.ratehawkProductionSmoke && <p className="mt-2 text-xs text-slate-600" role="status">{inventoryValidationMessages.ratehawkProductionSmoke}</p>}
               <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3" aria-live="polite">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <strong className="text-xs text-slate-800">RateHawk certification checklist</strong>

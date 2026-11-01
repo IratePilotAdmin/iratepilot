@@ -100,6 +100,24 @@ export function buildRatehawkSandboxHotelSearchRequest(input: {
   };
 }
 
+export function buildRatehawkProductionHotelSearchRequest(input: {
+  keyId: string;
+  apiKey: string;
+  payload: JsonObject;
+}): InventorySandboxRequest {
+  return {
+    supplierId: "ratehawk",
+    url: "https://api.ratehawk.com/api/b2b/v3/search/serp/hotels/",
+    method: "POST",
+    headers: {
+      Authorization: buildRatehawkAuthorization(input),
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: serializeJsonObject(input.payload),
+  };
+}
+
 export function buildRatehawkSandboxHotelpageRequest(input: {
   keyId: string;
   apiKey: string;

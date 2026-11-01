@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   requireRole: vi.fn(),
   createAdminClient: vi.fn(),
   receiptRows: [] as Array<{ scenario: string }>,
-  validationRows: [] as Array<{ validation_kind: string }>,
+  validationRows: [] as Array<{ validation_kind: string; environment: string }>,
   receiptError: null as unknown,
   validationError: null as unknown,
 }));
@@ -41,7 +41,6 @@ describe("RateHawk production readiness route", () => {
       "HOTEL_INVENTORY_RATEHAWK_CERTIFICATION_APPROVED",
       "HOTEL_INVENTORY_RATEHAWK_PRODUCTION_KEY_ID",
       "HOTEL_INVENTORY_RATEHAWK_PRODUCTION_API_KEY",
-      "HOTEL_INVENTORY_RATEHAWK_PRODUCTION_SMOKE_VALIDATED",
       "HOTEL_INVENTORY_RATEHAWK_LIVE_ENABLED",
     ]) delete process.env[key];
     process.env.HOTEL_INVENTORY_RATEHAWK_KEY_ID = "sandbox-key-id";
@@ -62,8 +61,8 @@ describe("RateHawk production readiness route", () => {
   it("derives completed technical gates but keeps vendor approval blocked", async () => {
     mocks.receiptRows = scenarios.map((scenario) => ({ scenario }));
     mocks.validationRows = [
-      { validation_kind: "hotel_search" },
-      { validation_kind: "hotel_prebook" },
+      { validation_kind: "hotel_search", environment: "sandbox" },
+      { validation_kind: "hotel_prebook", environment: "sandbox" },
     ];
     process.env.HOTEL_INVENTORY_RATEHAWK_CHECKLIST_SUBMITTED = "true";
 
@@ -88,8 +87,8 @@ describe("RateHawk production readiness route", () => {
   it("never accepts sandbox credentials as production credentials", async () => {
     mocks.receiptRows = scenarios.map((scenario) => ({ scenario }));
     mocks.validationRows = [
-      { validation_kind: "hotel_search" },
-      { validation_kind: "hotel_prebook" },
+      { validation_kind: "hotel_search", environment: "sandbox" },
+      { validation_kind: "hotel_prebook", environment: "sandbox" },
     ];
     process.env.HOTEL_INVENTORY_RATEHAWK_CHECKLIST_SUBMITTED = "true";
     process.env.HOTEL_INVENTORY_RATEHAWK_CERTIFICATION_APPROVED = "true";
@@ -101,6 +100,28 @@ describe("RateHawk production readiness route", () => {
     expect(body.readiness).toMatchObject({
       nextGate: "production_credentials",
       productionCredentialsReady: false,
+      readyForLiveBooking: false,
+    });
+  });
+
+  it("advances only when a saved production smoke receipt exists", async () => {
+    mocks.receiptRows = scenarios.map((scenario) => ({ scenario }));
+    mocks.validationRows = [
+      { validation_kind: "hotel_search", environment: "sandbox" },
+      { validation_kind: "hotel_prebook", environment: "sandbox" },
+      { validation_kind: "production_smoke", environment: "production" },
+    ];
+    process.env.HOTEL_INVENTORY_RATEHAWK_CHECKLIST_SUBMITTED = "true";
+    process.env.HOTEL_INVENTORY_RATEHAWK_CERTIFICATION_APPROVED = "true";
+    process.env.HOTEL_INVENTORY_RATEHAWK_PRODUCTION_KEY_ID = "production-key-id";
+    process.env.HOTEL_INVENTORY_RATEHAWK_PRODUCTION_API_KEY = "production-api-key";
+
+    const body = await (await GET()).json();
+
+    expect(body.evidence.productionSmokeValidated).toBe(true);
+    expect(body.readiness).toMatchObject({
+      nextGate: "live_activation",
+      productionCredentialsReady: true,
       readyForLiveBooking: false,
     });
   });

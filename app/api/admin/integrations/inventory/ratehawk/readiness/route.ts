@@ -32,7 +32,7 @@ export async function GET() {
       .eq("result", "passed")
       .order("tested_at", { ascending: false }),
     admin.from("inventory_supplier_validation_evidence")
-      .select("validation_kind")
+      .select("validation_kind,environment")
       .eq("supplier_id", "ratehawk")
       .eq("result", "passed")
       .order("tested_at", { ascending: false }),
@@ -46,23 +46,28 @@ export async function GET() {
   }
 
   const scenarios = new Set((receiptResult.data ?? []).map((item) => item.scenario));
-  const validationKinds = new Set((validationResult.data ?? []).map((item) => item.validation_kind));
+  const sandboxValidationKinds = new Set((validationResult.data ?? [])
+    .filter((item) => item.environment === "sandbox")
+    .map((item) => item.validation_kind));
+  const productionSmokeValidated = (validationResult.data ?? []).some(
+    (item) => item.environment === "production" && item.validation_kind === "production_smoke",
+  );
   const certificationScenariosComplete = ratehawkCertificationScenarioIds.every(
     (scenario) => scenarios.has(scenario),
   );
   const readiness = evaluateRatehawkCertificationReadiness(process.env, {
     mappedHotelIds: certificationScenariosComplete ? ratehawkCertificationHotelIds : [],
     contentImplemented: certificationScenariosComplete,
-    searchValidated: validationKinds.has("hotel_search"),
+    searchValidated: sandboxValidationKinds.has("hotel_search"),
     hotelpageImplemented: certificationScenariosComplete,
-    prebookValidated: validationKinds.has("hotel_prebook"),
+    prebookValidated: sandboxValidationKinds.has("hotel_prebook"),
     bookingFormValidated: certificationScenariosComplete,
     bookingFinishValidated: certificationScenariosComplete,
     finalStatusValidated: certificationScenariosComplete,
     cancellationValidated: certificationScenariosComplete,
     checklistSubmitted: enabled(process.env.HOTEL_INVENTORY_RATEHAWK_CHECKLIST_SUBMITTED),
     certificationApproved: enabled(process.env.HOTEL_INVENTORY_RATEHAWK_CERTIFICATION_APPROVED),
-    productionSmokeValidated: enabled(process.env.HOTEL_INVENTORY_RATEHAWK_PRODUCTION_SMOKE_VALIDATED),
+    productionSmokeValidated,
     liveEnabled: enabled(process.env.HOTEL_INVENTORY_RATEHAWK_LIVE_ENABLED),
   });
 
@@ -72,8 +77,9 @@ export async function GET() {
       certificationScenariosComplete,
       completedScenarioCount: ratehawkCertificationScenarioIds.filter((scenario) => scenarios.has(scenario)).length,
       requiredScenarioCount: ratehawkCertificationScenarioIds.length,
-      searchValidated: validationKinds.has("hotel_search"),
-      prebookValidated: validationKinds.has("hotel_prebook"),
+      searchValidated: sandboxValidationKinds.has("hotel_search"),
+      prebookValidated: sandboxValidationKinds.has("hotel_prebook"),
+      productionSmokeValidated,
     },
   }, { headers: noStoreHeaders });
 }
