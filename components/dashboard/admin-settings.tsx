@@ -236,6 +236,19 @@ export function AdminSettings() {
     }
   }
 
+  async function refreshRatehawkProductionReadiness() {
+    try {
+      const response = await fetch("/api/admin/integrations/inventory/ratehawk/readiness", {
+        cache: "no-store",
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error);
+      setRatehawkProductionReadiness(body.readiness ?? null);
+    } catch {
+      setRatehawkProductionReadiness(null);
+    }
+  }
+
   async function validateRatehawkSandbox() {
     if (!window.confirm("Run one read-only RateHawk sandbox search now? This sends the sandbox credentials to RateHawk but cannot create a booking or payment.")) return;
     setInventoryValidationBusy("ratehawk");
@@ -260,6 +273,7 @@ export function AdminSettings() {
         ...current,
         ratehawk: `Sandbox search passed and evidence saved: ${body.hotelCount} test ${hotelLabel} and ${body.rateCount} ${rateLabel} returned. No booking or payment was created.`,
       }));
+      await refreshRatehawkProductionReadiness();
     } catch (error) {
       setInventoryValidationMessages((current) => ({
         ...current,
@@ -361,6 +375,7 @@ export function AdminSettings() {
         ...current,
         ratehawkPrebook: `Sandbox prebook passed and evidence saved. Price changed: ${body.priceChanged ? "yes" : "no"}. No booking or payment was created.`,
       }));
+      await refreshRatehawkProductionReadiness();
     } catch (error) {
       setInventoryValidationMessages((current) => ({
         ...current,
@@ -417,6 +432,7 @@ export function AdminSettings() {
         ...current,
         ratehawkCertification: "All RateHawk sandbox certification scenarios completed. Review the outcome and cancellation evidence below.",
       }));
+      await refreshRatehawkProductionReadiness();
     } catch (error) {
       setInventoryValidationMessages((current) => ({
         ...current,
