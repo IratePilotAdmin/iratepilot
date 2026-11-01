@@ -3,8 +3,11 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 import {
   buildExpediaRapidBookingRequest,
+  buildExpediaRapidRetrieveRequest,
   buildExpediaRapidOccupancy,
   classifyExpediaRapidBookingFailure,
+  executeExpediaRapidBookingRequest,
+  sanitizeExpediaRapidBookingEvidence,
 } from "../services/hotel-suppliers/expedia-rapid-booking.server";
 
 const validInput = {
@@ -93,5 +96,127 @@ describe("Expedia Rapid booking contract", () => {
     expect(classifyExpediaRapidBookingFailure(400, "price_mismatch")).toBe("refresh_price_check");
     expect(classifyExpediaRapidBookingFailure(403, "rooms_unavailable")).toBe("re_shop");
     expect(classifyExpediaRapidBookingFailure(401, "request_unauthenticated")).toBe("do_not_retry");
+  });
+
+  it("builds Expedia's documented affiliate-reference retrieval request", () => {
+    const request = buildExpediaRapidRetrieveRequest({
+      environment: "sandbox",
+      apiKey: validInput.apiKey,
+      sharedSecret: validInput.sharedSecret,
+      timestampSeconds: validInput.timestampSeconds,
+      customerIp: validInput.customerIp,
+      customerSessionId: validInput.customerSessionId,
+      userAgent: validInput.userAgent,
+      affiliateReferenceId: validInput.affiliateReferenceId,
+      email: validInput.email,
+    });
+    const url = new URL(request.url);
+
+    expect(url.origin).toBe("https://test.ean.com");
+    expect(url.pathname).toBe("/v3/itineraries");
+    expect(url.searchParams.get("affiliate_reference_id")).toBe("IRPABC123");
+    expect(url.searchParams.get("email")).toBe("traveler@example.com");
+    expect(request.method).toBe("GET");
+  });
+
+  it("accepts a complete confirmation without exposing it in sanitized evidence", async () => {
+    const request = buildExpediaRapidBookingRequest(validInput);
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({
+      itinerary_id: "supplier-itinerary-123",
+      links: { retrieve: { href: "/v3/itineraries/supplier-itinerary-123" } },
+    }), { status: 201, headers: { "transaction-id": "supplier-transaction-456" } }));
+
+    const result = await executeExpediaRapidBookingRequest(request, { fetcher });
+    const evidence = sanitizeExpediaRapidBookingEvidence(request, result);
+
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(result).toMatchObject({ outcome: "confirmed", status: 201 });
+    expect(evidence).toMatchObject({
+      outcome: "confirmed",
+      itineraryIdPresent: true,
+      retrieveLinkPresent: true,
+      transactionIdPresent: true,
+      requestCoverage: {
+        affiliateReferenceId: true,
+        travelerEmail: true,
+        travelerPhone: true,
+        roomGuestNames: true,
+        paymentCard: true,
+        billingContact: true,
+        billingAddress: true,
+      },
+    });
+    expect(JSON.stringify(evidence)).not.toContain("supplier-itinerary-123");
+    expect(JSON.stringify(evidence)).not.toContain(validInput.email);
+    expect(JSON.stringify(evidence)).not.toContain(validInput.payments[0].number);
+  });
+
+  it("fails closed and requires reconciliation for ambiguous outcomes", async () => {
+    const request = buildExpediaRapidBookingRequest(validInput);
+    const malformedSuccess = vi.fn(async () => new Response("<html>gateway response</html>", {
+      status: 200,
+      headers: { "transaction-id": "transaction-789" },
+    }));
+    const networkFailure = vi.fn(async () => { throw new Error("socket closed"); });
+
+    await expect(executeExpediaRapidBookingRequest(request, { fetcher: malformedSuccess })).resolves.toEqual({
+      outcome: "action_required",
+      status: 200,
+      recovery: "reconcile_by_affiliate_reference",
+      transactionIdPresent: true,
+    });
+    await expect(executeExpediaRapidBookingRequest(request, { fetcher: networkFailure })).resolves.toEqual({
+      outcome: "action_required",
+      status: null,
+      recovery: "reconcile_by_affiliate_reference",
+      transactionIdPresent: false,
+    });
+    expect(malformedSuccess).toHaveBeenCalledTimes(1);
+    expect(networkFailure).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects an untrusted retrieve link in an otherwise successful response", async () => {
+    const request = buildExpediaRapidBookingRequest(validInput);
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({
+      itinerary_id: "supplier-itinerary-123",
+      links: { retrieve: { href: "https://attacker.example/v3/itineraries/supplier-itinerary-123" } },
+    }), { status: 201 }));
+
+    await expect(executeExpediaRapidBookingRequest(request, { fetcher })).resolves.toEqual({
+      outcome: "action_required",
+      status: 201,
+      recovery: "reconcile_by_affiliate_reference",
+      transactionIdPresent: false,
+    });
+  });
+
+  it("maps structured supplier failures without retrying the booking", async () => {
+    const request = buildExpediaRapidBookingRequest(validInput);
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({
+      errors: [{ type: "price_mismatch", message: "price changed" }],
+    }), { status: 400 }));
+
+    await expect(executeExpediaRapidBookingRequest(request, { fetcher })).resolves.toEqual({
+      outcome: "action_required",
+      status: 400,
+      recovery: "refresh_price_check",
+      transactionIdPresent: false,
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("prefers an actionable nested error over Expedia's generic wrapper", async () => {
+    const request = buildExpediaRapidBookingRequest(validInput);
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({
+      type: "invalid_input",
+      errors: [{ type: "duplicate_itinerary", message: "affiliate reference already exists" }],
+    }), { status: 400 }));
+
+    await expect(executeExpediaRapidBookingRequest(request, { fetcher })).resolves.toEqual({
+      outcome: "action_required",
+      status: 400,
+      recovery: "reconcile_by_affiliate_reference",
+      transactionIdPresent: false,
+    });
   });
 });
