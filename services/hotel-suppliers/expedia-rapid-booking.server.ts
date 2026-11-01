@@ -47,6 +47,17 @@ export type ExpediaRapidBookingRequest = {
   body: string;
 };
 
+export type ExpediaRapidRetrieveRequest = {
+  url: string;
+  method: "GET";
+  headers: Readonly<Record<string, string>>;
+};
+
+export type ExpediaRapidBookingFetch = (
+  input: string,
+  init: RequestInit,
+) => Promise<Pick<Response, "status" | "headers" | "text">>;
+
 const controlCharacters = /[\u0000-\u001f\u007f]/;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const countryCodePattern = /^[A-Z]{2}$/;
@@ -168,6 +179,40 @@ export function buildExpediaRapidBookingRequest(input: {
   };
 }
 
+export function buildExpediaRapidRetrieveRequest(input: {
+  environment: "sandbox" | "production";
+  apiKey: string;
+  sharedSecret: string;
+  timestampSeconds: number;
+  customerIp: string;
+  customerSessionId: string;
+  userAgent: string;
+  affiliateReferenceId: string;
+  email: string;
+}): ExpediaRapidRetrieveRequest {
+  const affiliateReferenceId = requireText(input.affiliateReferenceId, "affiliate reference ID", 28);
+  const email = requireText(input.email, "traveler email", 254).toLowerCase();
+  if (!emailPattern.test(email)) throw new Error("Expedia Rapid traveler email is invalid.");
+
+  const host = input.environment === "sandbox" ? "test.ean.com" : "api.ean.com";
+  const url = new URL(`https://${host}/v3/itineraries`);
+  url.searchParams.set("affiliate_reference_id", affiliateReferenceId);
+  url.searchParams.set("email", email);
+
+  return {
+    url: url.toString(),
+    method: "GET",
+    headers: {
+      Authorization: buildExpediaRapidAuthorization(input),
+      Accept: "application/json",
+      "Accept-Encoding": "gzip",
+      "Customer-Ip": requireText(input.customerIp, "customer IP", 64),
+      "Customer-Session-Id": requireText(input.customerSessionId, "customer session ID", 128),
+      "User-Agent": requireText(input.userAgent, "user agent", 512),
+    },
+  };
+}
+
 export type ExpediaRapidBookingRecovery =
   | "do_not_retry"
   | "reconcile_by_affiliate_reference"
@@ -182,4 +227,186 @@ export function classifyExpediaRapidBookingFailure(status: number, errorType?: s
   if (normalized === "price_mismatch") return "refresh_price_check";
   if (normalized === "rooms_unavailable") return "re_shop";
   return "do_not_retry";
+}
+
+export type ExpediaRapidBookingExecutionResult =
+  | {
+      outcome: "confirmed";
+      status: number;
+      itineraryId: string;
+      retrieveLink: string;
+      transactionIdPresent: boolean;
+    }
+  | {
+      outcome: "action_required";
+      status: number | null;
+      recovery: ExpediaRapidBookingRecovery;
+      transactionIdPresent: boolean;
+    };
+
+type ExpediaRapidJsonObject = Record<string, unknown>;
+
+function parseJsonObject(value: string): ExpediaRapidJsonObject | null {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? parsed as ExpediaRapidJsonObject
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function readErrorType(body: ExpediaRapidJsonObject | null) {
+  if (!body) return undefined;
+  if (typeof body.type === "string") return body.type;
+  if (Array.isArray(body.errors)) {
+    const first = body.errors[0];
+    if (first && typeof first === "object" && !Array.isArray(first)
+      && typeof (first as ExpediaRapidJsonObject).type === "string") {
+      return (first as ExpediaRapidJsonObject).type as string;
+    }
+  }
+  return undefined;
+}
+
+function readRetrieveLink(body: ExpediaRapidJsonObject, bookingRequestUrl: string) {
+  const links = body.links;
+  if (!links || typeof links !== "object" || Array.isArray(links)) return null;
+  const retrieve = (links as ExpediaRapidJsonObject).retrieve;
+  if (!retrieve || typeof retrieve !== "object" || Array.isArray(retrieve)) return null;
+  const href = (retrieve as ExpediaRapidJsonObject).href;
+  if (typeof href !== "string" || !href.trim()) return null;
+  try {
+    const bookingUrl = new URL(bookingRequestUrl);
+    const retrieveUrl = new URL(href.trim());
+    return retrieveUrl.protocol === "https:"
+      && retrieveUrl.hostname === bookingUrl.hostname
+      && /^\/v3\/itineraries\/[^/]+$/.test(retrieveUrl.pathname)
+      ? retrieveUrl.toString()
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Sends a Create Booking request exactly once. Ambiguous outcomes are never
+ * retried here: Expedia requires reconciliation with Retrieve Booking using
+ * the original affiliate reference and traveler email first.
+ */
+export async function executeExpediaRapidBookingRequest(
+  request: ExpediaRapidBookingRequest,
+  options: { fetcher?: ExpediaRapidBookingFetch; signal?: AbortSignal } = {},
+): Promise<ExpediaRapidBookingExecutionResult> {
+  const fetcher = options.fetcher ?? fetch;
+  try {
+    const response = await fetcher(request.url, {
+      method: request.method,
+      headers: request.headers,
+      body: request.body,
+      cache: "no-store",
+      redirect: "error",
+      signal: options.signal,
+    });
+    const transactionIdPresent = Boolean(response.headers.get("transaction-id")?.trim());
+    const parsed = parseJsonObject(await response.text());
+
+    if (response.status >= 200 && response.status < 300) {
+      const itineraryId = parsed && (typeof parsed.itinerary_id === "string" || typeof parsed.itinerary_id === "number")
+        ? String(parsed.itinerary_id).trim()
+        : "";
+      const retrieveLink = parsed ? readRetrieveLink(parsed, request.url) : null;
+      if (itineraryId && retrieveLink) {
+        return {
+          outcome: "confirmed",
+          status: response.status,
+          itineraryId,
+          retrieveLink,
+          transactionIdPresent,
+        };
+      }
+      return {
+        outcome: "action_required",
+        status: response.status,
+        recovery: "reconcile_by_affiliate_reference",
+        transactionIdPresent,
+      };
+    }
+
+    return {
+      outcome: "action_required",
+      status: response.status,
+      recovery: classifyExpediaRapidBookingFailure(response.status, readErrorType(parsed)),
+      transactionIdPresent,
+    };
+  } catch {
+    return {
+      outcome: "action_required",
+      status: null,
+      recovery: "reconcile_by_affiliate_reference",
+      transactionIdPresent: false,
+    };
+  }
+}
+
+export type ExpediaRapidBookingEvidence = {
+  version: "expedia-rapid-booking-evidence-v1";
+  outcome: ExpediaRapidBookingExecutionResult["outcome"];
+  status: number | null;
+  recovery: ExpediaRapidBookingRecovery | null;
+  transactionIdPresent: boolean;
+  itineraryIdPresent: boolean;
+  retrieveLinkPresent: boolean;
+  requestCoverage: {
+    affiliateReferenceId: boolean;
+    travelerEmail: boolean;
+    travelerPhone: boolean;
+    roomGuestNames: boolean;
+    paymentCard: boolean;
+    billingContact: boolean;
+    billingAddress: boolean;
+  };
+};
+
+/** Produces allowlisted evidence without traveler, payment, credential, or supplier identifiers. */
+export function sanitizeExpediaRapidBookingEvidence(
+  request: ExpediaRapidBookingRequest,
+  result: ExpediaRapidBookingExecutionResult,
+): ExpediaRapidBookingEvidence {
+  const body = parseJsonObject(request.body);
+  const phone = body?.phone;
+  const rooms = body?.rooms;
+  const payments = body?.payments;
+  const firstPayment = Array.isArray(payments) && payments[0] && typeof payments[0] === "object"
+    ? payments[0] as ExpediaRapidJsonObject
+    : null;
+  const billingContact = firstPayment?.billing_contact;
+  const billingAddress = billingContact && typeof billingContact === "object" && !Array.isArray(billingContact)
+    ? (billingContact as ExpediaRapidJsonObject).address
+    : null;
+
+  return {
+    version: "expedia-rapid-booking-evidence-v1",
+    outcome: result.outcome,
+    status: result.status,
+    recovery: result.outcome === "action_required" ? result.recovery : null,
+    transactionIdPresent: result.transactionIdPresent,
+    itineraryIdPresent: result.outcome === "confirmed" && Boolean(result.itineraryId),
+    retrieveLinkPresent: result.outcome === "confirmed" && Boolean(result.retrieveLink),
+    requestCoverage: {
+      affiliateReferenceId: typeof body?.affiliate_reference_id === "string",
+      travelerEmail: typeof body?.email === "string",
+      travelerPhone: Boolean(phone && typeof phone === "object" && !Array.isArray(phone)),
+      roomGuestNames: Array.isArray(rooms) && rooms.length > 0 && rooms.every((room) => {
+        if (!room || typeof room !== "object" || Array.isArray(room)) return false;
+        const value = room as ExpediaRapidJsonObject;
+        return typeof value.given_name === "string" && typeof value.family_name === "string";
+      }),
+      paymentCard: Boolean(firstPayment && typeof firstPayment.number === "string"
+        && typeof firstPayment.security_code === "string"),
+      billingContact: Boolean(billingContact && typeof billingContact === "object" && !Array.isArray(billingContact)),
+      billingAddress: Boolean(billingAddress && typeof billingAddress === "object" && !Array.isArray(billingAddress)),
+    },
+  };
 }
