@@ -1,6 +1,7 @@
 import { addDays, differenceInCalendarDays, format, parseISO, startOfDay } from "date-fns";
 import { inventoryLimits } from "./inventory-limits";
 import { searchSchema, staySchema } from "./validation";
+import { hasCompleteRoomBookingDisclosures } from "./bookings/room-disclosures";
 
 export type MarketplaceDestinationCriteria = {
   destination: string;
@@ -31,10 +32,20 @@ export type SearchableRoom = {
   active: boolean;
   base_rate: number;
   max_guests: number;
+  direct_rate_plan_name?: string | null;
+  direct_cancellation_policy?: string | null;
+  direct_bed_type?: string | null;
+  direct_refundable?: boolean | null;
+  direct_checkin_begin_time?: string | null;
+  direct_checkin_end_time?: string | null;
+  direct_checkin_instructions?: string | null;
+  direct_special_checkin_instructions?: string | null;
   inventory: Array<{
     stay_date: string;
     available_units: number;
     rate: number;
+    direct_tax_amount?: number | null;
+    direct_mandatory_fee_amount?: number | null;
   }> | null;
 };
 
@@ -124,7 +135,7 @@ export function getAvailableRoomRates(
 export function getAvailableRooms<T extends SearchableRoom>(
   rooms: T[] | null,
   criteria: StayCriteria,
-): Array<T & { averageNightlyRate: number; staySubtotal: number }> {
+): Array<T & { averageNightlyRate: number; staySubtotal: number; stayTaxTotal: number; stayMandatoryFeeTotal: number; stayTotal: number }> {
   const nights = differenceInCalendarDays(parseISO(criteria.checkOut), parseISO(criteria.checkIn));
   const requiredDates = Array.from({ length: nights }, (_, index) =>
     format(addDays(parseISO(criteria.checkIn), index), "yyyy-MM-dd"),
@@ -134,6 +145,7 @@ export function getAvailableRooms<T extends SearchableRoom>(
     const maxGuests = Number(room.max_guests);
     if (
       !room.active
+      || !hasCompleteRoomBookingDisclosures(room)
       || !Number.isFinite(maxGuests)
       || maxGuests < inventoryLimits.minGuests
       || maxGuests > inventoryLimits.maxGuests
@@ -154,10 +166,15 @@ export function getAvailableRooms<T extends SearchableRoom>(
     })) return [];
 
     const staySubtotal = Math.round(stayInventory.reduce((sum, day) => sum + Number(day!.rate), 0) * 100) / 100;
+    const stayTaxTotal = Math.round(stayInventory.reduce((sum, day) => sum + Number(day!.direct_tax_amount ?? 0), 0) * 100) / 100;
+    const stayMandatoryFeeTotal = Math.round(stayInventory.reduce((sum, day) => sum + Number(day!.direct_mandatory_fee_amount ?? 0), 0) * 100) / 100;
     return [{
       ...room,
       averageNightlyRate: Math.round((staySubtotal / nights) * 100) / 100,
       staySubtotal,
+      stayTaxTotal,
+      stayMandatoryFeeTotal,
+      stayTotal: Math.round((staySubtotal + stayTaxTotal + stayMandatoryFeeTotal) * 100) / 100,
     }];
   });
 }

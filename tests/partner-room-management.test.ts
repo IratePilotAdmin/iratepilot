@@ -16,6 +16,12 @@ describe("partner room management", () => {
       ratePlanName: "Best Available Rate",
       cancellationPolicy: "Cancel by 6 PM one day before arrival.",
       cancellationPolicyVersion: "2026-09-20",
+      bedType: "1 king bed",
+      refundable: "false",
+      checkinBeginTime: "3:00 PM",
+      checkinEndTime: "11:00 PM",
+      checkinInstructions: "Check in at the front desk with photo identification.",
+      specialCheckinInstructions: "Contact the property for arrivals after 11:00 PM.",
       active: "false",
     })).toEqual({
       roomId: "d498ed39-d34f-498f-84d3-9fe523f8ce65",
@@ -26,6 +32,12 @@ describe("partner room management", () => {
       ratePlanName: "Best Available Rate",
       cancellationPolicy: "Cancel by 6 PM one day before arrival.",
       cancellationPolicyVersion: "2026-09-20",
+      bedType: "1 king bed",
+      refundable: false,
+      checkinBeginTime: "3:00 PM",
+      checkinEndTime: "11:00 PM",
+      checkinInstructions: "Check in at the front desk with photo identification.",
+      specialCheckinInstructions: "Contact the property for arrivals after 11:00 PM.",
       active: false,
     });
   });

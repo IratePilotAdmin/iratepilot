@@ -8,7 +8,7 @@ export async function GET() {
     const auth = await requireRole(["admin"]);
     if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
     const { data, error } = await auth.supabase.from("properties")
-      .select("id,name,slug,type,star_rating,city,country,active,image_url,amenities,created_at,partners(business_name,status),rooms(active,base_rate,max_guests,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount))")
+      .select("id,name,slug,type,star_rating,city,country,active,image_url,amenities,created_at,partners(business_name,status),rooms(active,base_rate,max_guests,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version,direct_bed_type,direct_refundable,direct_checkin_begin_time,direct_checkin_end_time,direct_checkin_instructions,direct_special_checkin_instructions,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount))")
       .eq("pms_only", false)
       .order("created_at", { ascending: false });
     if (error) throw error;

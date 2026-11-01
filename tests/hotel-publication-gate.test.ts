@@ -25,6 +25,12 @@ const readyRoom = {
   direct_currency_code: "USD",
   direct_cancellation_policy: "Cancel at least 24 hours before arrival.",
   direct_cancellation_policy_version: "2026-09-20",
+  direct_bed_type: "1 king bed",
+  direct_refundable: true,
+  direct_checkin_begin_time: "3:00 PM",
+  direct_checkin_end_time: "11:00 PM",
+  direct_checkin_instructions: "Check in at the front desk with photo identification.",
+  direct_special_checkin_instructions: "Contact the property for arrivals after 11:00 PM.",
   inventory: [{
     stay_date: "2099-01-01",
     available_units: 2,

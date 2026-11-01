@@ -64,7 +64,7 @@ export async function GET(request: Request) {
     if (!partner) return NextResponse.json({ error: "A partner account is required to view onboarding." }, { status: 403 });
 
     const { data: properties, error: propertyError } = await reader.from("properties")
-      .select("id,name,active,image_url,amenities,rooms(active,base_rate,max_guests,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount))")
+      .select("id,name,active,image_url,amenities,rooms(active,base_rate,max_guests,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version,direct_bed_type,direct_refundable,direct_checkin_begin_time,direct_checkin_end_time,direct_checkin_instructions,direct_special_checkin_instructions,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount))")
       .eq("partner_id", partner.id)
       .eq("pms_only", false)
       .order("created_at", { ascending: true });

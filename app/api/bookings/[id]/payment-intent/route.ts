@@ -35,7 +35,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     );
   }
   const { data: booking, error } = await admin.from("bookings")
-    .select("id,customer_id,property_id,confirmation_code,status,total,stripe_payment_intent_id,properties(name),rooms(name)")
+    .select("id,customer_id,property_id,confirmation_code,status,total,due_at_property,stripe_payment_intent_id,properties(name),rooms(name)")
     .eq("id", id)
     .eq("customer_id", user.id)
     .maybeSingle();
@@ -47,15 +47,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "The hotel is no longer authorized to accept live payment." }, { status: 409 });
   }
 
-  const totalCents = Math.round(Number(booking.total) * 100);
-  if (!Number.isSafeInteger(totalCents) || totalCents < 50) {
+  const amountDueNow = Number(booking.total) - Number(booking.due_at_property || 0);
+  const amountDueNowCents = Math.round(amountDueNow * 100);
+  if (!Number.isSafeInteger(amountDueNowCents) || amountDueNowCents < 50) {
     return NextResponse.json({ error: "The reservation total is invalid." }, { status: 409 });
   }
 
   const property = booking.properties as unknown as { name?: string } | null;
   const room = booking.rooms as unknown as { name?: string } | null;
   const intent = await getStripe().paymentIntents.create({
-    amount: totalCents,
+    amount: amountDueNowCents,
     currency: "usd",
     payment_method_types: ["card"],
     metadata: {
@@ -76,6 +77,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       propertyName: property?.name || "Property",
       roomName: room?.name || "Room",
       total: Number(booking.total),
+      dueAtProperty: Number(booking.due_at_property || 0),
+      amountDueNow,
     },
   }, { headers: { "Cache-Control": "no-store" } });
 }

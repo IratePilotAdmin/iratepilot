@@ -5,11 +5,13 @@ type InventoryDay = {
   stay_date: string;
   available_units: number;
   rate: number;
+  direct_tax_amount?: number | null;
+  direct_mandatory_fee_amount?: number | null;
 };
 
 export type StayPricingResult =
   | { ok: false; reason: "availability" | "pricing" }
-  | { ok: true; baseSubtotal: number; memberDiscount: number; subtotal: number; serviceFee: number; total: number };
+  | { ok: true; baseSubtotal: number; memberDiscount: number; subtotal: number; taxes: number; mandatoryFees: number; serviceFee: number; amountDueNow: number; total: number };
 
 export function calculateVerifiedStayPricing(
   inventory: InventoryDay[],
@@ -42,5 +44,17 @@ export function calculateVerifiedStayPricing(
     serviceFeeRate,
     memberDiscountRate,
   );
-  return { ok: true, ...quote };
+  const taxes = Math.round(inventory.reduce((sum, day) => sum + Number(day.direct_tax_amount ?? 0), 0) * 100) / 100;
+  const mandatoryFees = Math.round(inventory.reduce((sum, day) => sum + Number(day.direct_mandatory_fee_amount ?? 0), 0) * 100) / 100;
+  if (![taxes, mandatoryFees].every((amount) => Number.isFinite(amount) && amount >= 0)) {
+    return { ok: false, reason: "pricing" };
+  }
+  return {
+    ok: true,
+    ...quote,
+    taxes,
+    mandatoryFees,
+    amountDueNow: Math.round((quote.total + taxes) * 100) / 100,
+    total: Math.round((quote.total + taxes + mandatoryFees) * 100) / 100,
+  };
 }

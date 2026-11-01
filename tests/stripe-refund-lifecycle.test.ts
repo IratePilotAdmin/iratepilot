@@ -13,6 +13,7 @@ const webhook = readFileSync(new URL("../app/api/stripe/webhook/route.ts", impor
 const decisionRoute = readFileSync(new URL("../app/api/admin/cancellations/[id]/route.ts", import.meta.url), "utf8");
 const reconciliation = readFileSync(new URL("../lib/bookings/stripe-refund-reconciliation.ts", import.meta.url), "utf8");
 const migration = readFileSync(new URL("../supabase/migrations/202608140052_stripe_refund_lifecycle.sql", import.meta.url), "utf8");
+const disclosureMigration = readFileSync(new URL("../supabase/migrations/202611010180_lodging_booking_disclosures.sql", import.meta.url), "utf8");
 
 function refund(overrides: Partial<Stripe.Refund> = {}) {
   return {
@@ -73,6 +74,15 @@ describe("Stripe refund lifecycle reconciliation", () => {
     expect(reconciliation).toContain('lifecycleStatus === "succeeded"');
     expect(reconciliation).toContain('outcome: "awaiting_confirmation"');
     expect(reconciliation).toContain('outcome: "failed"');
+  });
+
+  it("reconciles and finalizes only the amount actually collected", () => {
+    expect(reconciliation).toContain("Number(booking.total) - Number(booking.due_at_property || 0)");
+    expect(reconciliation).toContain("amount collected for the booking");
+    expect(disclosureMigration).toContain(
+      "public.booking_collected_amount(v_booking.total, v_booking.due_at_property)",
+    );
+    expect(disclosureMigration).toContain("Refund amount does not match amount collected");
   });
 
   it("keeps pending refunds unfinalized and failed refunds retryable", () => {

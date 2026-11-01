@@ -19,6 +19,12 @@ type Room = {
   direct_currency_code: string | null;
   direct_cancellation_policy: string | null;
   direct_cancellation_policy_version: string | null;
+  direct_bed_type: string | null;
+  direct_refundable: boolean | null;
+  direct_checkin_begin_time: string | null;
+  direct_checkin_end_time: string | null;
+  direct_checkin_instructions: string | null;
+  direct_special_checkin_instructions: string | null;
   inventory?: Inventory[];
 };
 
@@ -132,6 +138,11 @@ export function RatesInventoryManager() {
         <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Rate plan code<input name="ratePlanCode" className="input mt-2" placeholder="BAR" maxLength={80} required /></label><label className="text-sm font-medium">Rate plan name<input name="ratePlanName" className="input mt-2" placeholder="Best Available Rate" maxLength={160} required /></label></div>
         <label className="text-sm font-medium">Cancellation policy<textarea name="cancellationPolicy" className="input mt-2 min-h-24" minLength={10} maxLength={2000} placeholder="State the exact cancellation deadline and charges." required /></label>
         <label className="text-sm font-medium">Policy version<input name="cancellationPolicyVersion" className="input mt-2" placeholder="2026-09-20" maxLength={80} required /></label>
+        <label className="text-sm font-medium">Bed type<input name="bedType" className="input mt-2" placeholder="1 king bed" maxLength={160} required /></label>
+        <label className="text-sm font-medium">Refundability<select name="refundable" className="input mt-2" defaultValue="true" required><option value="true">Refundable under stated terms</option><option value="false">Non-refundable</option></select></label>
+        <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Check-in begins<input name="checkinBeginTime" className="input mt-2" placeholder="4:00 PM" maxLength={40} required /></label><label className="text-sm font-medium">Check-in ends<input name="checkinEndTime" className="input mt-2" placeholder="11:00 PM" maxLength={40} /></label></div>
+        <label className="text-sm font-medium">Check-in instructions<textarea name="checkinInstructions" className="input mt-2 min-h-24" minLength={10} maxLength={4000} required /></label>
+        <label className="text-sm font-medium">Special check-in instructions<textarea name="specialCheckinInstructions" className="input mt-2 min-h-24" minLength={2} maxLength={4000} required /></label>
         <button disabled={busy || partnerSelectionRequired || !properties.length} className="btn-primary">Create room type</button>
       </form>
       <form onSubmit={(event) => send(event, "update_room")} className="card grid gap-4 p-6">
@@ -142,6 +153,11 @@ export function RatesInventoryManager() {
         <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Rate plan code<input key={`${selectedRoomId}-plan-code`} name="ratePlanCode" defaultValue={selectedRoom?.direct_rate_plan_code || ""} className="input mt-2" maxLength={80} required disabled={!selectedRoom} /></label><label className="text-sm font-medium">Rate plan name<input key={`${selectedRoomId}-plan-name`} name="ratePlanName" defaultValue={selectedRoom?.direct_rate_plan_name || ""} className="input mt-2" maxLength={160} required disabled={!selectedRoom} /></label></div>
         <label className="text-sm font-medium">Cancellation policy<textarea key={`${selectedRoomId}-policy`} name="cancellationPolicy" defaultValue={selectedRoom?.direct_cancellation_policy || ""} className="input mt-2 min-h-24" minLength={10} maxLength={2000} required disabled={!selectedRoom} /></label>
         <label className="text-sm font-medium">Policy version<input key={`${selectedRoomId}-policy-version`} name="cancellationPolicyVersion" defaultValue={selectedRoom?.direct_cancellation_policy_version || ""} className="input mt-2" maxLength={80} required disabled={!selectedRoom} /></label>
+        <label className="text-sm font-medium">Bed type<input key={`${selectedRoomId}-bed-type`} name="bedType" defaultValue={selectedRoom?.direct_bed_type || ""} className="input mt-2" maxLength={160} required disabled={!selectedRoom} /></label>
+        <label className="text-sm font-medium">Refundability<select key={`${selectedRoomId}-refundable`} name="refundable" defaultValue={selectedRoom?.direct_refundable === false ? "false" : "true"} className="input mt-2" required disabled={!selectedRoom}><option value="true">Refundable under stated terms</option><option value="false">Non-refundable</option></select></label>
+        <div className="grid grid-cols-2 gap-3"><label className="text-sm font-medium">Check-in begins<input key={`${selectedRoomId}-checkin-begin`} name="checkinBeginTime" defaultValue={selectedRoom?.direct_checkin_begin_time || ""} className="input mt-2" maxLength={40} required disabled={!selectedRoom} /></label><label className="text-sm font-medium">Check-in ends<input key={`${selectedRoomId}-checkin-end`} name="checkinEndTime" defaultValue={selectedRoom?.direct_checkin_end_time || ""} className="input mt-2" maxLength={40} disabled={!selectedRoom} /></label></div>
+        <label className="text-sm font-medium">Check-in instructions<textarea key={`${selectedRoomId}-checkin-instructions`} name="checkinInstructions" defaultValue={selectedRoom?.direct_checkin_instructions || ""} className="input mt-2 min-h-24" minLength={10} maxLength={4000} required disabled={!selectedRoom} /></label>
+        <label className="text-sm font-medium">Special check-in instructions<textarea key={`${selectedRoomId}-special-checkin`} name="specialCheckinInstructions" defaultValue={selectedRoom?.direct_special_checkin_instructions || ""} className="input mt-2 min-h-24" minLength={2} maxLength={4000} required disabled={!selectedRoom} /></label>
         <label className="text-sm font-medium">Booking status<select key={`${selectedRoomId}-active`} name="active" defaultValue={selectedRoom?.active === false ? "false" : "true"} className="input mt-2" disabled={!selectedRoom}><option value="true">Active for new bookings</option><option value="false">Retired from new bookings</option></select></label>
         <button disabled={busy || partnerSelectionRequired || !selectedRoom} className="btn-primary">Save room type</button>
       </form>

@@ -32,6 +32,11 @@ export async function queueBookingNotification(input: {
     }
     if (!recipientEmail) throw new Error("Customer email is unavailable");
 
+    const { data: booking, error: bookingError } = await admin.from("bookings")
+      .select("confirmation_code,supplier_itinerary_id,check_in,check_out,guests,child_ages,subtotal,taxes,fees,total,due_at_property,bed_type,refundable,cancellation_policy,checkin_begin_time,checkin_end_time,checkin_instructions,special_checkin_instructions,stripe_payment_intent_id,properties(name),rooms(name)")
+      .eq("id", input.bookingId).maybeSingle();
+    if (bookingError) throw bookingError;
+
     const dedupeKey = `booking:${input.bookingId}:${input.event}`;
     const { data: existing, error: lookupError } = await admin
       .from("email_outbox")
@@ -55,9 +60,33 @@ export async function queueBookingNotification(input: {
       templateName: `booking_${input.event}`,
       templateData: {
         dedupe_key: dedupeKey,
-        confirmation_code: input.confirmationCode,
         message: content.message,
         action_url: "https://www.iratepilot.com/account/trips",
+        confirmation_code: booking?.confirmation_code ?? input.confirmationCode,
+        supplier_itinerary_id: booking?.supplier_itinerary_id,
+        property_name: (booking?.properties as unknown as { name?: string } | null)?.name,
+        room_name: (booking?.rooms as unknown as { name?: string } | null)?.name,
+        check_in: booking?.check_in,
+        check_out: booking?.check_out,
+        guests: booking?.guests,
+        child_ages: booking?.child_ages,
+        subtotal: booking?.subtotal,
+        taxes: booking?.taxes,
+        fees: booking?.fees,
+        due_at_property: booking?.due_at_property,
+        total: booking?.total,
+        bed_type: booking?.bed_type,
+        refundable: booking?.refundable,
+        cancellation_policy: booking?.cancellation_policy,
+        checkin_begin_time: booking?.checkin_begin_time,
+        checkin_end_time: booking?.checkin_end_time,
+        checkin_instructions: booking?.checkin_instructions,
+        special_checkin_instructions: booking?.special_checkin_instructions,
+        payment_timing: booking?.stripe_payment_intent_id
+          ? `$${Math.max(0, Number(booking.total || 0) - Number(booking.due_at_property || 0)).toFixed(2)} was collected securely when the booking was confirmed; $${Number(booking.due_at_property || 0).toFixed(2)} is due at the property.`
+          : "No payment was collected with this booking request.",
+        support_email: process.env.EMAIL_REPLY_TO || "support@iratepilot.com",
+        support_url: "https://www.iratepilot.com/account/support",
       },
     });
     await wakeTransactionalEmailWorker();

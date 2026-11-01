@@ -9,6 +9,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { checkoutSchema } from "@/lib/validation";
 import { calculateVerifiedStayPricing } from "@/lib/bookings/stay-pricing";
 import { getActiveMembershipTier } from "@/lib/memberships/eligibility";
+import { hasCompleteRoomBookingDisclosures } from "@/lib/bookings/room-disclosures";
 
 export async function POST(request: Request) {
   if (process.env.ENABLE_TEST_CHECKOUT !== "true") return NextResponse.json({ error: "Test checkout is disabled." }, { status: 503 });
@@ -31,15 +32,18 @@ export async function POST(request: Request) {
 
   const admin = createAdminClient();
   const { data: room, error: roomError } = await admin.from("rooms")
-    .select("id,name,property_id,max_guests,properties!inner(id,name,slug,active,partners!inner(status))")
+    .select("id,name,property_id,max_guests,direct_bed_type,direct_refundable,direct_cancellation_policy,direct_checkin_begin_time,direct_checkin_end_time,direct_checkin_instructions,direct_special_checkin_instructions,properties!inner(id,name,slug,active,partners!inner(status))")
     .eq("id", parsed.data.roomId).eq("active", true)
     .eq("properties.slug", parsed.data.hotelSlug).eq("properties.active", true)
     .eq("properties.partners.status", "approved").single();
   if (roomError || !room) return NextResponse.json({ error: "The selected approved room was not found." }, { status: 404 });
+  if (!hasCompleteRoomBookingDisclosures(room)) {
+    return NextResponse.json({ error: "This room is missing required booking disclosures." }, { status: 409 });
+  }
   if (parsed.data.guests > Number(room.max_guests)) return NextResponse.json({ error: "Guest count exceeds this room’s capacity." }, { status: 400 });
 
   const { data: inventory, error: inventoryError } = await supabase.from("inventory")
-    .select("stay_date,available_units,rate").eq("room_id", room.id)
+    .select("stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount").eq("room_id", room.id)
     .gte("stay_date", parsed.data.checkIn).lt("stay_date", parsed.data.checkOut).order("stay_date");
   if (inventoryError) return NextResponse.json({ error: "Inventory could not be verified." }, { status: 503 });
   const { data: profile } = await supabase.from("profiles").select("membership_tier,membership_status").eq("id", user.id).single();
@@ -50,12 +54,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "This room is not available for every selected night." }, { status: 409 });
   }
   if (!pricing.ok) return NextResponse.json({ error: "Pricing could not be verified for this stay." }, { status: 503 });
-  const { baseSubtotal, memberDiscount, subtotal, serviceFee, total } = pricing;
+  const { baseSubtotal, memberDiscount, subtotal, taxes, mandatoryFees, serviceFee, amountDueNow, total } = pricing;
   const property = room.properties as unknown as { id: string; name: string };
   const confirmationToken = idempotency.attemptId.replaceAll("-", "").slice(0, 16).toUpperCase();
   const confirmationCode = `IRP-${confirmationToken.slice(0, 8)}-${confirmationToken.slice(8)}`;
   const intent = await getStripe().paymentIntents.create({
-    amount: Math.round(total * 100),
+    amount: Math.round(amountDueNow * 100),
     currency: "usd",
     payment_method_types: ["card"],
     metadata: {
@@ -72,6 +76,15 @@ export async function POST(request: Request) {
       childAges: parsed.data.childAges.join(","),
       confirmationCode,
       membershipTier,
+      bedType: room.direct_bed_type || "",
+      refundable: String(room.direct_refundable ?? ""),
+      cancellationPolicy: room.direct_cancellation_policy || "",
+      checkinBeginTime: room.direct_checkin_begin_time || "",
+      checkinEndTime: room.direct_checkin_end_time || "",
+      checkinInstructions: room.direct_checkin_instructions || "",
+      specialCheckinInstructions: room.direct_special_checkin_instructions || "",
+      taxes: String(taxes),
+      dueAtProperty: String(mandatoryFees),
     }
   }, { idempotencyKey: idempotency.idempotencyKey });
   return NextResponse.json({
@@ -89,7 +102,17 @@ export async function POST(request: Request) {
       baseSubtotal,
       memberDiscount,
       subtotal,
+      taxes,
+      dueAtProperty: mandatoryFees,
+      amountDueNow,
       serviceFee,
+      bedType: room.direct_bed_type,
+      refundable: room.direct_refundable,
+      cancellationPolicy: room.direct_cancellation_policy,
+      checkinBeginTime: room.direct_checkin_begin_time,
+      checkinEndTime: room.direct_checkin_end_time,
+      checkinInstructions: room.direct_checkin_instructions,
+      specialCheckinInstructions: room.direct_special_checkin_instructions,
       total
     }
   });

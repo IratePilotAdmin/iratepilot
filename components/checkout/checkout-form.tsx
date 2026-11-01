@@ -20,7 +20,17 @@ type Breakdown = {
   baseSubtotal: number;
   memberDiscount: number;
   subtotal: number;
+  taxes: number;
+  dueAtProperty: number;
+  amountDueNow: number;
   serviceFee: number;
+  bedType: string | null;
+  refundable: boolean | null;
+  cancellationPolicy: string | null;
+  checkinBeginTime: string | null;
+  checkinEndTime: string | null;
+  checkinInstructions: string | null;
+  specialCheckinInstructions: string | null;
   total: number;
 };
 
@@ -82,10 +92,19 @@ function PaymentForm({ breakdown }: { breakdown: Breakdown }) {
         <p className="mt-3 font-semibold">{breakdown.propertyName}</p>
         <p className="text-sm text-slate-500">{breakdown.roomName} · {breakdown.checkIn} to {breakdown.checkOut}</p>
         <p className="text-sm text-slate-500">{breakdown.guests} guests{breakdown.childAges.length ? ` · children ages ${breakdown.childAges.join(", ")}` : ""}</p>
+        <p className="mt-3 text-sm"><strong>Bed type:</strong> {breakdown.bedType}</p>
+        <p className={breakdown.refundable === false ? "mt-2 text-sm font-semibold text-red-700" : "mt-2 text-sm"}>{breakdown.refundable === false ? "Non-refundable" : "Refundable under the cancellation terms"}</p>
+        <p className="mt-2 text-sm"><strong>Cancellation:</strong> {breakdown.cancellationPolicy}</p>
+        <p className="mt-2 text-sm"><strong>Check-in:</strong> {breakdown.checkinBeginTime}{breakdown.checkinEndTime ? `–${breakdown.checkinEndTime}` : ""}</p>
+        <p className="mt-2 text-sm">{breakdown.checkinInstructions}</p><p className="mt-1 text-sm">{breakdown.specialCheckinInstructions}</p>
         <div className="mt-4 flex justify-between"><span>{breakdown.nights} nights</span><span>${breakdown.baseSubtotal.toFixed(2)}</span></div>
         {breakdown.memberDiscount > 0 ? <div className="mt-2 flex justify-between font-semibold text-emerald-700"><span>{breakdown.membershipTier === "basic" ? "Basic" : "Business"} member discount ({breakdown.memberDiscountRate * 100}%)</span><span>−${breakdown.memberDiscount.toFixed(2)}</span></div> : null}
         <div className="mt-2 flex justify-between"><span>Traveler service fee (0% for everyone)</span><span>${breakdown.serviceFee.toFixed(2)}</span></div>
-        <div className="mt-4 flex justify-between border-t pt-4 text-lg font-bold"><span>Total</span><span>${breakdown.total.toFixed(2)}</span></div>
+        <div className="mt-2 flex justify-between"><span>Taxes</span><span>${breakdown.taxes.toFixed(2)}</span></div>
+        <div className="mt-2 flex justify-between"><span>Due at property</span><span>${breakdown.dueAtProperty.toFixed(2)}</span></div>
+        <div className="mt-4 flex justify-between border-t pt-4 font-semibold"><span>Due now</span><span>${breakdown.amountDueNow.toFixed(2)}</span></div>
+        <div className="mt-2 flex justify-between text-lg font-bold"><span>Total price</span><span>${breakdown.total.toFixed(2)}</span></div>
+        <p className="mt-3 text-xs text-slate-500">The due-now amount is collected when you submit this secure checkout. Charges labeled due at property are collected by the property, not now.</p>
       </aside>
     </div>
   );

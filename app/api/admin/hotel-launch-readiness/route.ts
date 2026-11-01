@@ -100,7 +100,7 @@ export async function GET() {
       }
     };
     const [properties, applications, applicationApprovalEvidence, commercialControls, supplierEvidence, synxisEvidence, emailBacklog, emailDeadLetters, deliveryFailures, payoutExceptions, paymentApprovals, paymentRevocations, releaseAuthorizations, releaseRevocations, releaseAuthorizationValid] = await Promise.all([
-      admin.from("properties").select("id,image_url,amenities,rooms(active,base_rate,max_guests,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount))"),
+      admin.from("properties").select("id,image_url,amenities,rooms(active,base_rate,max_guests,direct_rate_plan_code,direct_rate_plan_name,direct_currency_code,direct_cancellation_policy,direct_cancellation_policy_version,direct_bed_type,direct_refundable,direct_checkin_begin_time,direct_checkin_end_time,direct_checkin_instructions,direct_special_checkin_instructions,inventory(stay_date,available_units,rate,direct_tax_amount,direct_mandatory_fee_amount))"),
       fetchAllHotelApplications(),
       auth.supabase.from("partner_application_review_evidence")
         .select("application_id,decision,legal_business_verified,representative_authority_verified,content_rights_verified,commercial_terms_acknowledgement_verified,inactive_draft_scope_confirmed"),

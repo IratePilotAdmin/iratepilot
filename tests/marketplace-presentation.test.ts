@@ -14,7 +14,7 @@ describe("marketplace presentation", () => {
       id: "room-1",
       name: "Ocean View King",
       price: 425,
-      notes: ["Up to 3 guests", "Available for every selected night"],
+      notes: ["Up to 3 guests", "Bed type pending", "Refundable; review cancellation terms", "Check-in details pending", "Available for every selected night"],
       bookable: true
     }]);
   });

@@ -10,6 +10,7 @@ import {
   resendSourceTagName,
 } from "@/lib/email/webhook-reliability";
 import { logOperationalEvent, reportOperationalError } from "@/lib/monitoring/operational";
+import { renderBookingEmailDetails } from "@/lib/email/booking-email-template";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -99,6 +100,9 @@ async function processTransactionalEmail(request: Request) {
       const recipientName = job.recipient_name || templateData.recipient_name || "Traveler";
       const message = templateData.message || "You have a new update from iRatePilot.";
       const actionUrl = templateData.action_url || "https://www.iratepilot.com/account/trips";
+      const bookingDetails = String(job.template_name || "").startsWith("booking_")
+        ? renderBookingEmailDetails(templateData)
+        : "";
       const { data: email, error: resendError } = await resend.emails.send({
         from,
         to: [job.recipient_email],
@@ -113,6 +117,7 @@ async function processTransactionalEmail(request: Request) {
             <h1 style="font-family:Georgia,serif">iRatePilot</h1>
             <p>Hello ${escapeHtml(recipientName)},</p>
             <p>${escapeHtml(message)}</p>
+            ${bookingDetails}
             <p style="margin-top:28px"><a href="${escapeHtml(actionUrl)}" style="background:#000;color:#fff;padding:12px 20px;text-decoration:none">View details</a></p>
             <p style="margin-top:32px;color:#667085;font-size:13px">iRatePilot Group, LLC</p>
             <p style="margin-top:8px;color:#667085;font-size:12px">${escapeHtml(FLORIDA_SELLER_OF_TRAVEL_DISCLOSURE)}</p>

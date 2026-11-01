@@ -58,6 +58,7 @@ export const PINNED_NON_FLIGHT_MIGRATIONS = Object.freeze([
   ["202610300177", "202610300177_booking_child_ages.sql"],
   ["202610300178", "202610300178_paid_test_booking_child_ages.sql"],
   ["202610300179", "202610300179_expedia_b2c_evidence_ledger.sql"],
+  ["202611010180", "202611010180_lodging_booking_disclosures.sql"],
 ].map(([version, filename]) => Object.freeze({ version, filename })));
 
 export const RETIRED_FLIGHT_MIGRATION_VERSIONS = Object.freeze([
