@@ -159,6 +159,9 @@ export async function POST(request: Request) {
     }
 
     if (["email.bounced", "email.complained", "email.suppressed"].includes(eventType)) {
+      if (!("to" in event.data) || !Array.isArray(event.data.to)) {
+        throw new Error("Suppression event is missing recipient addresses.");
+      }
       const reason = eventType === "email.bounced" ? "bounce"
         : eventType === "email.complained" ? "complaint" : "suppressed";
       for (const recipient of event.data.to) {
