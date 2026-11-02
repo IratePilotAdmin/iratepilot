@@ -18,7 +18,16 @@ describe("approved reservation test payments", () => {
     expect(intentRoute).toContain('.eq("customer_id", user.id)');
     expect(intentRoute).toContain('booking.status !== "confirmed"');
     expect(intentRoute).toContain('booking.stripe_payment_intent_id');
-    expect(intentRoute).toContain('idempotencyKey: `approved-booking-${paymentMode}-payment-${booking.id}`');
+    expect(intentRoute).toContain("stripe.paymentIntents.search");
+    expect(intentRoute).toContain("reusablePaymentIntentStatuses.has(latestIntent.status)");
+    expect(intentRoute).toContain('expand: ["latest_charge"]');
+    expect(intentRoute).toContain("stripe.refunds.list({ charge: latestCharge.id, limit: 100 })");
+    expect(intentRoute).toContain('refund.status === "succeeded"');
+    expect(intentRoute).toContain("successfulRefundAmount >= completedIntent.amount");
+    expect(intentRoute).toContain("A previous payment succeeded and reservation finalization is still pending. No new payment was created.");
+    expect(intentRoute).toContain("A previous payment is still processing. No new payment was created.");
+    expect(intentRoute).toContain('`approved-booking-${paymentMode}-payment-${booking.id}-after-${safeRetrySource.id}`');
+    expect(intentRoute).toContain('`approved-booking-${paymentMode}-payment-${booking.id}`');
     expect(intentRoute).toContain("getApprovedBookingMetadataMode(paymentMode)");
   });
 

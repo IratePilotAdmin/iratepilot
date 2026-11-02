@@ -9,6 +9,11 @@ import { isHotelMarketplaceLaunchAuthorized } from "@/lib/hotels/marketplace-lau
 import { hasCurrentBookableHotelProperty } from "@/lib/hotels/bookable-hotel-property";
 
 const bookingIdSchema = z.string().uuid();
+const reusablePaymentIntentStatuses = new Set(["requires_payment_method", "requires_confirmation", "requires_action"]);
+
+function newestPaymentIntent(intents: Awaited<ReturnType<ReturnType<typeof getStripe>["paymentIntents"]["search"]>>["data"]) {
+  return [...intents].sort((left, right) => right.created - left.created)[0] ?? null;
+}
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const paymentMode = getApprovedBookingPaymentMode();
@@ -55,18 +60,71 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const property = booking.properties as unknown as { name?: string } | null;
   const room = booking.rooms as unknown as { name?: string } | null;
-  const intent = await getStripe().paymentIntents.create({
+  const stripe = getStripe();
+  const metadataMode = getApprovedBookingMetadataMode(paymentMode);
+  const matchingIntents = await stripe.paymentIntents.search({
+    query: `metadata['bookingId']:'${booking.id}'`,
+    limit: 100,
+  });
+  const latestIntent = newestPaymentIntent(matchingIntents.data.filter((candidate) => (
+    candidate.metadata.mode === metadataMode
+    && candidate.currency === "usd"
+    && candidate.amount === amountDueNowCents
+  )));
+  const reusableIntent = latestIntent
+    && latestIntent.client_secret
+    && reusablePaymentIntentStatuses.has(latestIntent.status)
+    ? latestIntent
+    : null;
+
+  let safeRetrySource = latestIntent?.status === "canceled" ? latestIntent : null;
+  if (latestIntent?.status === "succeeded") {
+    const completedIntent = await stripe.paymentIntents.retrieve(latestIntent.id, {
+      expand: ["latest_charge"],
+    });
+    const latestCharge = typeof completedIntent.latest_charge === "object"
+      ? completedIntent.latest_charge
+      : null;
+    const successfulRefundAmount = latestCharge
+      ? (await stripe.refunds.list({ charge: latestCharge.id, limit: 100 })).data
+        .filter((refund) => refund.status === "succeeded")
+        .reduce((total, refund) => total + refund.amount, 0)
+      : 0;
+    if (
+      latestCharge?.refunded
+      && latestCharge.amount_refunded >= completedIntent.amount
+      && successfulRefundAmount >= completedIntent.amount
+    ) {
+      safeRetrySource = completedIntent;
+    } else {
+      return NextResponse.json(
+        { error: "A previous payment succeeded and reservation finalization is still pending. No new payment was created." },
+        { status: 409 },
+      );
+    }
+  } else if (latestIntent && !reusableIntent && !safeRetrySource) {
+    return NextResponse.json(
+      { error: "A previous payment is still processing. No new payment was created." },
+      { status: 409 },
+    );
+  }
+
+  const intent = reusableIntent ?? await stripe.paymentIntents.create({
     amount: amountDueNowCents,
     currency: "usd",
     payment_method_types: ["card"],
     metadata: {
-      mode: getApprovedBookingMetadataMode(paymentMode),
+      mode: metadataMode,
       bookingId: booking.id,
       userId: user.id,
       confirmationCode: booking.confirmation_code,
     },
     description: `${paymentMode === "test" ? "Test payment" : "Payment"} for ${booking.confirmation_code}`,
-  }, { idempotencyKey: `approved-booking-${paymentMode}-payment-${booking.id}` });
+  }, {
+    idempotencyKey: safeRetrySource
+      ? `approved-booking-${paymentMode}-payment-${booking.id}-after-${safeRetrySource.id}`
+      : `approved-booking-${paymentMode}-payment-${booking.id}`,
+  });
 
   if (!intent.client_secret) return NextResponse.json({ error: "Stripe did not return a checkout secret." }, { status: 503 });
   return NextResponse.json({
