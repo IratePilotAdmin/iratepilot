@@ -1,3 +1,5 @@
+import { createHmac } from "node:crypto";
+
 export type ExpediaRapidProductionEvidence = {
   sandboxSearchValidated?: boolean;
   bookingPayloadContractValidated?: boolean;
@@ -31,10 +33,10 @@ function configured(environment: Environment, key: string, minimumLength: number
 export function expediaRapidProductionConfigurationFingerprint(environment: Environment) {
   if (!configured(environment, "HOTEL_INVENTORY_EXPEDIA_RAPID_PRODUCTION_API_KEY", 3)
     || !configured(environment, "HOTEL_INVENTORY_EXPEDIA_RAPID_PRODUCTION_SHARED_SECRET", 8)) return null;
-  return createHash("sha256").update(JSON.stringify({
-    apiKey: environment.HOTEL_INVENTORY_EXPEDIA_RAPID_PRODUCTION_API_KEY!.trim(),
-    sharedSecret: environment.HOTEL_INVENTORY_EXPEDIA_RAPID_PRODUCTION_SHARED_SECRET!.trim(),
-  })).digest("hex");
+  return createHmac(
+    "sha256",
+    environment.HOTEL_INVENTORY_EXPEDIA_RAPID_PRODUCTION_SHARED_SECRET!.trim(),
+  ).update(environment.HOTEL_INVENTORY_EXPEDIA_RAPID_PRODUCTION_API_KEY!.trim()).digest("hex");
 }
 
 export function evaluateExpediaRapidProductionReadiness(
@@ -76,5 +78,4 @@ export function evaluateExpediaRapidProductionReadiness(
     gates: Object.fromEntries(orderedGates),
   };
 }
-import { createHash } from "node:crypto";
 
