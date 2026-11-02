@@ -74,11 +74,33 @@ export async function POST() {
         error: "Expedia Rapid sandbox search passed, but its evidence could not be saved.",
       }, { status: 503, headers: noStoreHeaders });
     }
+
+    const { error: siteReviewError } = await createAdminClient()
+      .from("expedia_b2c_site_review_receipts")
+      .insert({
+        requirement_code: "SP1",
+        decision: "verified",
+        evidence_reference: `Expedia Rapid sandbox family-occupancy search ${result.testedAt.slice(0, 10)}`,
+        verification_notes: `A successful read-only Expedia Rapid sandbox availability response was returned for ${result.adultCount} adults and ${result.childAgeCount} synthetic child ages. The request encoded and transmitted every supplied child age. No booking or payment was created.`,
+        reviewed_by: auth.user.id,
+        reviewed_at: result.testedAt,
+        deployment_revision: deploymentRevision(),
+      });
+    if (siteReviewError) {
+      return NextResponse.json({
+        ...result,
+        validationPassed: true,
+        evidenceRecorded: true,
+        siteReviewEvidenceRecorded: false,
+        error: "Expedia Rapid sandbox family search passed, but its SP1 evidence could not be saved.",
+      }, { status: 503, headers: noStoreHeaders });
+    }
     return NextResponse.json({
       ...result,
       validationPassed: true,
       evidenceRecorded: true,
-      message: "Expedia Rapid sandbox search passed and its evidence was saved. No booking or payment was created.",
+      siteReviewEvidenceRecorded: true,
+      message: "Expedia Rapid sandbox family search passed, and its search and SP1 evidence were saved. No booking or payment was created.",
     }, { headers: noStoreHeaders });
   } catch (error) {
     const configurationError = (error instanceof ExpediaRapidSandboxValidationError

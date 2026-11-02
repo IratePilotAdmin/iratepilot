@@ -28,7 +28,7 @@ import { GET, POST } from "../app/api/admin/integrations/inventory/expedia-rapid
 
 const validationResult = {
   testedAt: "2026-10-30T12:00:00.000Z", checkin: "2026-11-29", checkout: "2026-12-01",
-  hotelCount: 1, rateCount: 2,
+  hotelCount: 1, rateCount: 2, adultCount: 2, childAgeCount: 2,
 };
 
 describe("Expedia Rapid sandbox validation route", () => {
@@ -59,15 +59,38 @@ describe("Expedia Rapid sandbox validation route", () => {
     process.env.VERCEL_GIT_COMMIT_SHA = "43ac267b1c3f74e2f90b3231a89106c81e523ec0";
     const response = await POST();
     expect(response.status).toBe(200);
-    expect(mocks.insert).toHaveBeenCalledWith({
+    expect(mocks.insert).toHaveBeenNthCalledWith(1, {
       supplier_id: "expedia-rapid", environment: "sandbox", validation_kind: "hotel_search", result: "passed",
       checkin: "2026-11-29", checkout: "2026-12-01", hotel_count: 1, rate_count: 2,
       tested_by: "admin-1", tested_at: "2026-10-30T12:00:00.000Z",
       deployment_revision: "43ac267b1c3f74e2f90b3231a89106c81e523ec0",
     });
+    expect(mocks.insert).toHaveBeenNthCalledWith(2, {
+      requirement_code: "SP1",
+      decision: "verified",
+      evidence_reference: "Expedia Rapid sandbox family-occupancy search 2026-10-30",
+      verification_notes: "A successful read-only Expedia Rapid sandbox availability response was returned for 2 adults and 2 synthetic child ages. The request encoded and transmitted every supplied child age. No booking or payment was created.",
+      reviewed_by: "admin-1",
+      reviewed_at: "2026-10-30T12:00:00.000Z",
+      deployment_revision: "43ac267b1c3f74e2f90b3231a89106c81e523ec0",
+    });
     expect(await response.json()).toEqual({
       ...validationResult, validationPassed: true, evidenceRecorded: true,
-      message: "Expedia Rapid sandbox search passed and its evidence was saved. No booking or payment was created.",
+      siteReviewEvidenceRecorded: true,
+      message: "Expedia Rapid sandbox family search passed, and its search and SP1 evidence were saved. No booking or payment was created.",
+    });
+  });
+
+  it("reports a separate failure when the SP1 receipt cannot be saved", async () => {
+    mocks.insert.mockResolvedValueOnce({ error: null }).mockResolvedValueOnce({ error: { message: "unavailable" } });
+    const response = await POST();
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({
+      ...validationResult,
+      validationPassed: true,
+      evidenceRecorded: true,
+      siteReviewEvidenceRecorded: false,
+      error: "Expedia Rapid sandbox family search passed, but its SP1 evidence could not be saved.",
     });
   });
 

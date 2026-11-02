@@ -34,6 +34,8 @@ describe("Expedia Rapid sandbox validation", () => {
       checkout: "2026-12-01",
       hotelCount: 1,
       rateCount: 2,
+      adultCount: 2,
+      childAgeCount: 2,
     });
     const [urlValue, init] = fetcher.mock.calls[0] as [string, RequestInit];
     const url = new URL(urlValue);
@@ -46,7 +48,7 @@ describe("Expedia Rapid sandbox validation", () => {
       currency: "USD",
       country_code: "US",
       language: "en-US",
-      occupancy: "2",
+      occupancy: "2-4-9",
       rate_plan_count: "1",
       sales_channel: "website",
       sales_environment: "hotel_only",

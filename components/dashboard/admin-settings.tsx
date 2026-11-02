@@ -285,7 +285,7 @@ export function AdminSettings() {
   }
 
   async function validateExpediaRapidSandbox() {
-    if (!window.confirm("Run one read-only Expedia Rapid sandbox availability search now? This sends the sandbox credentials to Expedia but cannot create a booking or payment.")) return;
+    if (!window.confirm("Run one read-only Expedia Rapid sandbox family-occupancy search now? This sends two adults and two synthetic child ages to Expedia but cannot create a booking or payment.")) return;
     setInventoryValidationBusy("expedia-rapid");
     setInventoryValidationMessages((current) => ({ ...current, expediaRapid: "" }));
     try {
@@ -306,8 +306,15 @@ export function AdminSettings() {
       });
       setInventoryValidationMessages((current) => ({
         ...current,
-        expediaRapid: `Sandbox search passed and evidence saved: ${body.hotelCount} test ${hotelLabel} and ${body.rateCount} ${rateLabel} returned. No booking or payment was created.`,
+        expediaRapid: `Sandbox family search passed and evidence saved: ${body.adultCount} adults and ${body.childAgeCount} synthetic child ages returned ${body.hotelCount} test ${hotelLabel} and ${body.rateCount} ${rateLabel}. SP1 was verified. No booking or payment was created.`,
       }));
+      const siteReviewResponse = await fetch("/api/admin/integrations/inventory/expedia-rapid/site-review", { cache: "no-store" });
+      const siteReviewBody = await siteReviewResponse.json();
+      if (siteReviewResponse.ok) {
+        setExpediaSiteReviewReceipts(Object.fromEntries(
+          (siteReviewBody.receipts ?? []).map((receipt: ExpediaSiteReviewReceipt) => [receipt.requirement_code, receipt]),
+        ));
+      }
     } catch (error) {
       setInventoryValidationMessages((current) => ({
         ...current,
