@@ -52,6 +52,7 @@ describe("Expedia Rapid production readiness", () => {
       ...sandbox,
       HOTEL_INVENTORY_EXPEDIA_RAPID_PRODUCTION_API_KEY: "production-key",
       HOTEL_INVENTORY_EXPEDIA_RAPID_PRODUCTION_SHARED_SECRET: "production-secret",
+      HOTEL_INVENTORY_EXPEDIA_RAPID_PRODUCTION_CREDENTIAL_VERSION: "v1",
     };
     expect(evaluateExpediaRapidProductionReadiness(environment, {
       ...completeEvidence,

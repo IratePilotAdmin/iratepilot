@@ -5,7 +5,7 @@ import { buildPaymentReadiness, type PaymentLaunchAuthorization } from "@/lib/ad
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   evaluateExpediaRapidProductionReadiness,
-  expediaRapidProductionConfigurationFingerprint,
+  expediaRapidProductionCredentialVersion,
 } from "@/services/hotel-suppliers/expedia-rapid-production-readiness";
 
 export const dynamic = "force-dynamic";
@@ -81,11 +81,11 @@ export async function GET() {
     return decision === "verified" || decision === "not_applicable";
   });
   const validationEvidence = validationResult.data ?? [];
-  const productionFingerprint = expediaRapidProductionConfigurationFingerprint(process.env);
-  const productionSmokeValidated = Boolean(productionFingerprint) && validationEvidence.some((item) =>
+  const productionCredentialVersion = expediaRapidProductionCredentialVersion(process.env);
+  const productionSmokeValidated = Boolean(productionCredentialVersion) && validationEvidence.some((item) =>
     item.environment === "production"
       && item.validation_kind === "production_smoke"
-      && item.configuration_fingerprint === productionFingerprint);
+      && item.configuration_fingerprint === productionCredentialVersion);
   const paymentReadiness = buildPaymentReadiness(process.env, currentAuthorization);
   const readiness = evaluateExpediaRapidProductionReadiness(process.env, {
     sandboxSearchValidated: validationEvidence.some((item) =>

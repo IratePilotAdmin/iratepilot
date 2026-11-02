@@ -1,5 +1,3 @@
-import { createHmac } from "node:crypto";
-
 export type ExpediaRapidProductionEvidence = {
   sandboxSearchValidated?: boolean;
   bookingPayloadContractValidated?: boolean;
@@ -30,13 +28,11 @@ function configured(environment: Environment, key: string, minimumLength: number
     && !/^(?:changeme|example|placeholder|test|todo|unknown)$/i.test(value);
 }
 
-export function expediaRapidProductionConfigurationFingerprint(environment: Environment) {
+export function expediaRapidProductionCredentialVersion(environment: Environment) {
   if (!configured(environment, "HOTEL_INVENTORY_EXPEDIA_RAPID_PRODUCTION_API_KEY", 3)
-    || !configured(environment, "HOTEL_INVENTORY_EXPEDIA_RAPID_PRODUCTION_SHARED_SECRET", 8)) return null;
-  return createHmac(
-    "sha256",
-    environment.HOTEL_INVENTORY_EXPEDIA_RAPID_PRODUCTION_SHARED_SECRET!.trim(),
-  ).update(environment.HOTEL_INVENTORY_EXPEDIA_RAPID_PRODUCTION_API_KEY!.trim()).digest("hex");
+    || !configured(environment, "HOTEL_INVENTORY_EXPEDIA_RAPID_PRODUCTION_SHARED_SECRET", 8)
+    || !configured(environment, "HOTEL_INVENTORY_EXPEDIA_RAPID_PRODUCTION_CREDENTIAL_VERSION", 1)) return null;
+  return environment.HOTEL_INVENTORY_EXPEDIA_RAPID_PRODUCTION_CREDENTIAL_VERSION!.trim();
 }
 
 export function evaluateExpediaRapidProductionReadiness(
@@ -55,6 +51,7 @@ export function evaluateExpediaRapidProductionReadiness(
     "HOTEL_INVENTORY_EXPEDIA_RAPID_PRODUCTION_API_KEY",
     3,
   ) && configured(environment, "HOTEL_INVENTORY_EXPEDIA_RAPID_PRODUCTION_SHARED_SECRET", 8)
+    && configured(environment, "HOTEL_INVENTORY_EXPEDIA_RAPID_PRODUCTION_CREDENTIAL_VERSION", 1)
     && (productionApiKey !== sandboxApiKey || productionSecret !== sandboxSecret);
 
   const orderedGates: readonly [ExpediaRapidLaunchGate, boolean][] = [
