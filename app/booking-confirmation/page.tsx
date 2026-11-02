@@ -10,6 +10,13 @@ import { getApprovedBookingPaymentMode, type BookingPaymentMode } from "@/lib/st
 export const dynamic = "force-dynamic";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+const bookingConfirmationSelect = "id,confirmation_code,status,check_in,check_out,guests,child_ages,subtotal,taxes,fees,due_at_property,total,supplier_itinerary_id,bed_type,refundable,cancellation_policy,checkin_begin_time,checkin_end_time,checkin_instructions,special_checkin_instructions,stripe_payment_intent_id,stripe_payment_mode,properties(name,city,country),rooms(name)";
+const bookingConfirmationFallbackSelect = "id,confirmation_code,status,check_in,check_out,guests,subtotal,taxes,fees,due_at_property,total,supplier_itinerary_id,bed_type,refundable,cancellation_policy,checkin_begin_time,checkin_end_time,checkin_instructions,special_checkin_instructions,stripe_payment_intent_id,stripe_payment_mode,properties(name,city,country),rooms(name)";
+
+function isMissingChildAgesColumn(error: { code?: string; message?: string } | null) {
+  return error?.code === "42703" && error.message?.includes("child_ages");
+}
+
 type BookingRow = {
   id: string;
   confirmation_code: string;
@@ -17,7 +24,7 @@ type BookingRow = {
   check_in: string;
   check_out: string;
   guests: number;
-  child_ages: number[];
+  child_ages?: number[];
   subtotal: number;
   taxes: number;
   fees: number;
@@ -51,11 +58,24 @@ export default async function ConfirmationPage({ searchParams }: { searchParams:
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=${encodeURIComponent(returnPath)}`);
 
-  const { data, error } = await supabase.from("bookings")
-    .select("id,confirmation_code,status,check_in,check_out,guests,child_ages,subtotal,taxes,fees,due_at_property,total,supplier_itinerary_id,bed_type,refundable,cancellation_policy,checkin_begin_time,checkin_end_time,checkin_instructions,special_checkin_instructions,stripe_payment_intent_id,stripe_payment_mode,properties(name,city,country),rooms(name)")
+  const primaryResult = await supabase.from("bookings")
+    .select(bookingConfirmationSelect)
     .eq("customer_id", user.id)
     .eq("confirmation_code", code)
     .maybeSingle();
+  let data: unknown = primaryResult.data;
+  let error = primaryResult.error;
+
+  if (isMissingChildAgesColumn(error)) {
+    const fallbackResult = await supabase.from("bookings")
+      .select(bookingConfirmationFallbackSelect)
+      .eq("customer_id", user.id)
+      .eq("confirmation_code", code)
+      .maybeSingle();
+    data = fallbackResult.data;
+    error = fallbackResult.error;
+  }
+
   if (error) throw error;
   if (!data) notFound();
 

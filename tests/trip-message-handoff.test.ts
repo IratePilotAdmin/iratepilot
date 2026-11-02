@@ -14,7 +14,8 @@ describe("trip to property-message handoff", () => {
   });
 
   it("links the customer-scoped confirmation record to the same conversation", () => {
-    expect(confirmation).toContain('.select("id,confirmation_code');
+    expect(confirmation).toContain('supabase.from("bookings")');
+    expect(confirmation).toContain(".select(bookingConfirmationSelect)");
     expect(confirmation).toContain('.eq("customer_id", user.id)');
     expect(confirmation).toContain('href={`/account/support?booking=${encodeURIComponent(booking.id)}`}');
   });
