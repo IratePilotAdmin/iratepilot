@@ -32,7 +32,7 @@ export async function GET() {
       .select("requirement_code,decision,reviewed_at,id")
       .order("reviewed_at", { ascending: false })
       .order("id", { ascending: false }),
-    admin.from("hotel_payment_launch_authorizations")
+    auth.supabase.from("hotel_payment_launch_authorizations")
       .select("id,approval_reference,stripe_account_reference,approved_at,expires_at")
       .order("approved_at", { ascending: false })
       .limit(20),
@@ -47,7 +47,7 @@ export async function GET() {
 
   const authorizationIds = (approvals.data ?? []).map((item) => item.id);
   const revocations = authorizationIds.length > 0
-    ? await admin.from("hotel_payment_launch_authorization_revocations")
+    ? await auth.supabase.from("hotel_payment_launch_authorization_revocations")
       .select("authorization_id,revoked_at")
       .in("authorization_id", authorizationIds)
     : { data: [], error: null };
