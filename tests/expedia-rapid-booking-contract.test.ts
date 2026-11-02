@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 import {
+  buildExpediaRapidAffiliateReferenceId,
   buildExpediaRapidBookingRequest,
   buildExpediaRapidRetrieveRequest,
   buildExpediaRapidOccupancy,
@@ -19,7 +20,7 @@ const validInput = {
   customerIp: "203.0.113.10",
   customerSessionId: "session-123",
   userAgent: "iRatePilot/1.0",
-  affiliateReferenceId: "IRPABC123",
+  internalBookingId: "booking-123",
   email: "Traveler@Example.com",
   phone: { country_code: "1", area_code: "614", number: "5550100" },
   rooms: [{ given_name: "Hiren", family_name: "Patel", smoking: false }],
@@ -44,6 +45,31 @@ const validInput = {
 };
 
 describe("Expedia Rapid booking contract", () => {
+  it("derives a stable, environment-bound affiliate reference for every booking", () => {
+    const first = buildExpediaRapidAffiliateReferenceId({
+      environment: "sandbox",
+      internalBookingId: "booking-123",
+    });
+    const repeated = buildExpediaRapidAffiliateReferenceId({
+      environment: "sandbox",
+      internalBookingId: "booking-123",
+    });
+    const otherBooking = buildExpediaRapidAffiliateReferenceId({
+      environment: "sandbox",
+      internalBookingId: "booking-456",
+    });
+    const production = buildExpediaRapidAffiliateReferenceId({
+      environment: "production",
+      internalBookingId: "booking-123",
+    });
+
+    expect(first).toMatch(/^IRP[A-F0-9]{25}$/);
+    expect(first).toHaveLength(28);
+    expect(repeated).toBe(first);
+    expect(otherBooking).not.toBe(first);
+    expect(production).not.toBe(first);
+  });
+
   it("encodes adults and every child age for Shopping occupancy", () => {
     expect(buildExpediaRapidOccupancy(2, [])).toBe("2");
     expect(buildExpediaRapidOccupancy(2, [4])).toBe("2-4");
@@ -59,7 +85,7 @@ describe("Expedia Rapid booking contract", () => {
     expect(request.headers.Authorization).toMatch(/^EAN APIKey=api-key,Signature=[a-f0-9]{128},timestamp=1700000000$/);
     expect(request.headers["Customer-Ip"]).toBe(validInput.customerIp);
     expect(body).toMatchObject({
-      affiliate_reference_id: "IRPABC123",
+      affiliate_reference_id: buildExpediaRapidAffiliateReferenceId(validInput),
       email: "traveler@example.com",
       phone: validInput.phone,
       rooms: [{ given_name: "Hiren", family_name: "Patel", smoking: false }],
@@ -80,8 +106,8 @@ describe("Expedia Rapid booking contract", () => {
     })).toThrow("not an approved Price Check link");
     expect(() => buildExpediaRapidBookingRequest({
       ...validInput,
-      affiliateReferenceId: "x".repeat(29),
-    })).toThrow("affiliate reference ID is invalid");
+      internalBookingId: "",
+    })).toThrow("internal booking ID is invalid");
     expect(() => buildExpediaRapidBookingRequest({
       ...validInput,
       payments: [{ ...validInput.payments[0], billing_contact: {
@@ -109,14 +135,15 @@ describe("Expedia Rapid booking contract", () => {
       customerIp: validInput.customerIp,
       customerSessionId: validInput.customerSessionId,
       userAgent: validInput.userAgent,
-      affiliateReferenceId: validInput.affiliateReferenceId,
+      internalBookingId: validInput.internalBookingId,
       email: validInput.email,
     });
     const url = new URL(request.url);
 
     expect(url.origin).toBe("https://test.ean.com");
     expect(url.pathname).toBe("/v3/itineraries");
-    expect(url.searchParams.get("affiliate_reference_id")).toBe("IRPABC123");
+    expect(url.searchParams.get("affiliate_reference_id"))
+      .toBe(buildExpediaRapidAffiliateReferenceId(validInput));
     expect(url.searchParams.get("email")).toBe("traveler@example.com");
     expect(request.method).toBe("GET");
   });

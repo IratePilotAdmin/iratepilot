@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
 import { buildExpediaRapidAuthorization } from "./inventory-auth.server";
 
 type ExpediaPhone = {
@@ -112,6 +113,24 @@ export function buildExpediaRapidOccupancy(adults: number, childAges: number[]) 
     : String(adults);
 }
 
+/**
+ * Derives Expedia's public affiliate reference from the immutable internal
+ * booking ID. The same booking keeps one reference for safe reconciliation,
+ * while different bookings and environments receive different references.
+ */
+export function buildExpediaRapidAffiliateReferenceId(input: {
+  environment: "sandbox" | "production";
+  internalBookingId: string;
+}) {
+  const internalBookingId = requireText(input.internalBookingId, "internal booking ID", 128);
+  const digest = createHash("sha256")
+    .update(`iratepilot:expedia-rapid:${input.environment}:${internalBookingId}`, "utf8")
+    .digest("hex")
+    .toUpperCase();
+
+  return `IRP${digest.slice(0, 25)}`;
+}
+
 export function buildExpediaRapidBookingRequest(input: {
   environment: "sandbox" | "production";
   bookingLink: string;
@@ -121,13 +140,13 @@ export function buildExpediaRapidBookingRequest(input: {
   customerIp: string;
   customerSessionId: string;
   userAgent: string;
-  affiliateReferenceId: string;
+  internalBookingId: string;
   email: string;
   phone: ExpediaPhone;
   rooms: ExpediaTravelerRoom[];
   payments: ExpediaPayment[];
 }): ExpediaRapidBookingRequest {
-  const affiliateReferenceId = requireText(input.affiliateReferenceId, "affiliate reference ID", 28);
+  const affiliateReferenceId = buildExpediaRapidAffiliateReferenceId(input);
   const email = requireText(input.email, "traveler email", 254).toLowerCase();
   if (!emailPattern.test(email)) throw new Error("Expedia Rapid traveler email is invalid.");
   if (input.rooms.length < 1 || input.payments.length < 1) {
@@ -189,10 +208,10 @@ export function buildExpediaRapidRetrieveRequest(input: {
   customerIp: string;
   customerSessionId: string;
   userAgent: string;
-  affiliateReferenceId: string;
+  internalBookingId: string;
   email: string;
 }): ExpediaRapidRetrieveRequest {
-  const affiliateReferenceId = requireText(input.affiliateReferenceId, "affiliate reference ID", 28);
+  const affiliateReferenceId = buildExpediaRapidAffiliateReferenceId(input);
   const email = requireText(input.email, "traveler email", 254).toLowerCase();
   if (!emailPattern.test(email)) throw new Error("Expedia Rapid traveler email is invalid.");
 
