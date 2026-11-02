@@ -85,7 +85,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const latestCharge = typeof completedIntent.latest_charge === "object"
       ? completedIntent.latest_charge
       : null;
-    if (latestCharge?.refunded && latestCharge.amount_refunded >= completedIntent.amount) {
+    const successfulRefundAmount = latestCharge
+      ? (await stripe.refunds.list({ charge: latestCharge.id, limit: 100 })).data
+        .filter((refund) => refund.status === "succeeded")
+        .reduce((total, refund) => total + refund.amount, 0)
+      : 0;
+    if (
+      latestCharge?.refunded
+      && latestCharge.amount_refunded >= completedIntent.amount
+      && successfulRefundAmount >= completedIntent.amount
+    ) {
       safeRetrySource = completedIntent;
     } else {
       return NextResponse.json(

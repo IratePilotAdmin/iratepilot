@@ -21,7 +21,9 @@ describe("approved reservation test payments", () => {
     expect(intentRoute).toContain("stripe.paymentIntents.search");
     expect(intentRoute).toContain("reusablePaymentIntentStatuses.has(latestIntent.status)");
     expect(intentRoute).toContain('expand: ["latest_charge"]');
-    expect(intentRoute).toContain("latestCharge?.refunded && latestCharge.amount_refunded >= completedIntent.amount");
+    expect(intentRoute).toContain("stripe.refunds.list({ charge: latestCharge.id, limit: 100 })");
+    expect(intentRoute).toContain('refund.status === "succeeded"');
+    expect(intentRoute).toContain("successfulRefundAmount >= completedIntent.amount");
     expect(intentRoute).toContain("A previous payment succeeded and reservation finalization is still pending. No new payment was created.");
     expect(intentRoute).toContain("A previous payment is still processing. No new payment was created.");
     expect(intentRoute).toContain('`approved-booking-${paymentMode}-payment-${booking.id}-after-${safeRetrySource.id}`');
