@@ -113,6 +113,8 @@ export async function POST(request: Request) {
       checkinEndTime: room.direct_checkin_end_time,
       checkinInstructions: room.direct_checkin_instructions,
       specialCheckinInstructions: room.direct_special_checkin_instructions,
+      merchantOfRecord: "iratepilot",
+      processingCountryCode: null,
       total
     }
   });

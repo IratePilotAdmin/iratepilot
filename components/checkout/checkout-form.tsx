@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
+import { PaymentProcessingDisclosure } from "@/components/checkout/payment-processing-disclosure";
+import type { LodgingMerchantOfRecord } from "@/lib/expedia-rapid/payment-processing-disclosure";
 
 type Selection = { hotelSlug: string; roomId: string; checkIn: string; checkOut: string; guests: string; childAges: string };
 type Breakdown = {
@@ -31,6 +33,8 @@ type Breakdown = {
   checkinEndTime: string | null;
   checkinInstructions: string | null;
   specialCheckinInstructions: string | null;
+  merchantOfRecord: LodgingMerchantOfRecord;
+  processingCountryCode: string | null;
   total: number;
 };
 
@@ -105,6 +109,10 @@ function PaymentForm({ breakdown }: { breakdown: Breakdown }) {
         <div className="mt-4 flex justify-between border-t pt-4 font-semibold"><span>Due now</span><span>${breakdown.amountDueNow.toFixed(2)}</span></div>
         <div className="mt-2 flex justify-between text-lg font-bold"><span>Total price</span><span>${breakdown.total.toFixed(2)}</span></div>
         <p className="mt-3 text-xs text-slate-500">The due-now amount is collected when you submit this secure checkout. Charges labeled due at property are collected by the property, not now.</p>
+        <PaymentProcessingDisclosure
+          merchantOfRecord={breakdown.merchantOfRecord}
+          processingCountryCode={breakdown.processingCountryCode}
+        />
       </aside>
     </div>
   );
