@@ -22,17 +22,29 @@ function ApprovedPaymentForm({ bookingId, breakdown, paymentMode }: { bookingId:
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [walletsAvailable, setWalletsAvailable] = useState(false);
+  const [paymentElementReady, setPaymentElementReady] = useState(false);
+  const [paymentElementFailed, setPaymentElementFailed] = useState(false);
 
   async function completePayment() {
-    if (!stripe || !elements) return;
+    if (!stripe || !elements || !paymentElementReady || paymentElementFailed) {
+      setMessage("Secure payment is still loading. No payment was submitted.");
+      return;
+    }
     setBusy(true);
     setMessage("");
 
-    const result = await stripe.confirmPayment({
-      elements,
-      confirmParams: { return_url: `${window.location.origin}/account/trips` },
-      redirect: "if_required",
-    });
+    let result;
+    try {
+      result = await stripe.confirmPayment({
+        elements,
+        confirmParams: { return_url: `${window.location.origin}/account/trips` },
+        redirect: "if_required",
+      });
+    } catch {
+      setMessage("Secure payment could not start. Reload the page and try again. No payment was submitted.");
+      setBusy(false);
+      return;
+    }
     if (result.error) {
       setMessage(result.error.message || "Payment could not be completed.");
       setBusy(false);
@@ -112,6 +124,7 @@ function ApprovedPaymentForm({ bookingId, breakdown, paymentMode }: { bookingId:
           onAvailablePaymentMethodsChange={({ paymentMethods }) => {
             setWalletsAvailable(Boolean(paymentMethods?.applePay?.available || paymentMethods?.googlePay?.available));
           }}
+          onLoadError={() => setWalletsAvailable(false)}
         />
         <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wider text-slate-500" aria-hidden="true">
           <span className="h-px flex-1 bg-slate-200" />
@@ -119,9 +132,20 @@ function ApprovedPaymentForm({ bookingId, breakdown, paymentMode }: { bookingId:
           <span className="h-px flex-1 bg-slate-200" />
         </div>
       </div>
-      <PaymentElement />
+      <PaymentElement
+        onReady={() => {
+          setPaymentElementReady(true);
+          setPaymentElementFailed(false);
+          setMessage("");
+        }}
+        onLoadError={() => {
+          setPaymentElementReady(false);
+          setPaymentElementFailed(true);
+          setMessage("Secure payment form could not load. Reload this page or try an up-to-date browser. No payment was submitted.");
+        }}
+      />
       {message && <p role="status" className="text-sm text-slate-700">{message}</p>}
-      <button disabled={!stripe || busy} className="btn-primary disabled:cursor-not-allowed disabled:opacity-50">{busy ? "Processing…" : `Pay $${breakdown.total.toFixed(2)}${paymentMode === "test" ? " in test mode" : ""}`}</button>
+      <button disabled={!stripe || !elements || !paymentElementReady || paymentElementFailed || busy} className="btn-primary disabled:cursor-not-allowed disabled:opacity-50">{busy ? "Processing…" : `Pay $${breakdown.total.toFixed(2)}${paymentMode === "test" ? " in test mode" : ""}`}</button>
     </form>
     <aside className="card h-fit p-6"><h2 className="font-semibold">Approved reservation</h2><p className="mt-3 font-semibold">{breakdown.propertyName}</p><p className="text-sm text-slate-500">{breakdown.roomName}</p><p className="mt-3 text-xs uppercase tracking-wider text-slate-500">{breakdown.confirmationCode}</p><div className="mt-5 flex justify-between border-t pt-4 text-lg font-bold"><span>Total</span><span>${breakdown.total.toFixed(2)}</span></div></aside>
   </div>;

@@ -12,7 +12,7 @@ describe("approved booking wallet checkout", () => {
     expect(checkout).toContain('googlePay: "always"');
     expect(checkout).toContain("availablePaymentMethods?.applePay");
     expect(checkout).toContain("paymentMethods?.googlePay?.available");
-    expect(checkout).toContain("<PaymentElement />");
+    expect(checkout).toContain("<PaymentElement");
   });
 
   it("keeps wallet authorization on the existing approved-booking finalization path", () => {
@@ -34,5 +34,15 @@ describe("approved booking wallet checkout", () => {
     expect(checkout).toContain('stripeLoadState !== "ready"');
     expect(checkout).toContain("Secure payment could not load");
     expect(checkout).toContain("No payment was submitted.");
+  });
+
+  it("keeps payment disabled until the Payment Element is mounted and handles load failures", () => {
+    expect(checkout).toContain("paymentElementReady");
+    expect(checkout).toContain("paymentElementFailed");
+    expect(checkout).toContain("onReady={() =>");
+    expect(checkout).toContain("onLoadError={() =>");
+    expect(checkout).toContain("!stripe || !elements || !paymentElementReady || paymentElementFailed || busy");
+    expect(checkout).toContain("Secure payment form could not load");
+    expect(checkout).toContain("Secure payment could not start");
   });
 });
