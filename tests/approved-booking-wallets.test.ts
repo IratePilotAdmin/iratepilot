@@ -44,5 +44,6 @@ describe("approved booking wallet checkout", () => {
     expect(checkout).toContain("!stripe || !elements || !paymentElementReady || paymentElementFailed || busy");
     expect(checkout).toContain("Secure payment form could not load");
     expect(checkout).toContain("Secure payment could not start");
+    expect(checkout).toMatch(/if \(!stripe \|\| !elements \|\| !paymentElementReady \|\| paymentElementFailed\) \{\s+setBusy\(false\);/);
   });
 });

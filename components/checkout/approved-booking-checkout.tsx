@@ -27,6 +27,7 @@ function ApprovedPaymentForm({ bookingId, breakdown, paymentMode }: { bookingId:
 
   async function completePayment() {
     if (!stripe || !elements || !paymentElementReady || paymentElementFailed) {
+      setBusy(false);
       setMessage("Secure payment is still loading. No payment was submitted.");
       return;
     }
