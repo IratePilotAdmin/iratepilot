@@ -142,7 +142,8 @@ describe("inventory supplier readiness", () => {
     expect(adminSettings).toContain("/api/admin/integrations/inventory/ratehawk/prebook");
     expect(adminSettings).toContain("/api/admin/integrations/inventory/expedia-rapid/validate");
     expect(adminSettings).toContain("Run one read-only RateHawk sandbox search now?");
-    expect(adminSettings).toContain("Run one read-only Expedia Rapid sandbox availability search now?");
+    expect(adminSettings).toContain("Run one read-only Expedia Rapid sandbox family-occupancy search now?");
+    expect(adminSettings).toContain("This sends two adults and two synthetic child ages to Expedia");
     expect(adminSettings).toContain("Run one controlled RateHawk sandbox search and prebook now?");
     expect(adminSettings).toContain("No booking or payment was created.");
     expect(adminSettings).toContain("Last saved search:");

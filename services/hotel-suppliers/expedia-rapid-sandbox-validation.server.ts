@@ -1,5 +1,6 @@
 import "server-only";
 
+import { buildExpediaRapidOccupancy } from "./expedia-rapid-booking.server";
 import { buildExpediaRapidSandboxAvailabilityRequest } from "./inventory-sandbox-request.server";
 import {
   executeInventorySandboxRequest,
@@ -8,6 +9,8 @@ import {
 import type { InventoryJsonValue } from "./inventory-response.server";
 
 const sandboxPropertyId = "19248";
+const sandboxAdults = 2;
+const sandboxChildAges = [4, 9] as const;
 
 export type ExpediaRapidSandboxValidationResult = {
   testedAt: string;
@@ -15,6 +18,8 @@ export type ExpediaRapidSandboxValidationResult = {
   checkout: string;
   hotelCount: number;
   rateCount: number;
+  adultCount: number;
+  childAgeCount: number;
 };
 
 export class ExpediaRapidSandboxValidationError extends Error {
@@ -100,7 +105,7 @@ export async function runExpediaRapidSandboxValidation(options: {
       currency: "USD",
       country_code: "US",
       language: "en-US",
-      occupancy: 2,
+      occupancy: buildExpediaRapidOccupancy(sandboxAdults, [...sandboxChildAges]),
       rate_plan_count: 1,
       sales_channel: "website",
       sales_environment: "hotel_only",
@@ -116,6 +121,8 @@ export async function runExpediaRapidSandboxValidation(options: {
     testedAt: testedAt.toISOString(),
     checkin,
     checkout,
+    adultCount: sandboxAdults,
+    childAgeCount: sandboxChildAges.length,
     ...summarizeResponse(response),
   };
 }
