@@ -259,6 +259,19 @@ export function AdminSettings() {
     }
   }
 
+  async function refreshExpediaRapidProductionReadiness() {
+    try {
+      const response = await fetch("/api/admin/integrations/inventory/expedia-rapid/readiness", {
+        cache: "no-store",
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error);
+      setExpediaRapidProductionReadiness(body.readiness ?? null);
+    } catch {
+      setExpediaRapidProductionReadiness(null);
+    }
+  }
+
   async function validateRatehawkSandbox() {
     if (!window.confirm("Run one read-only RateHawk sandbox search now? This sends the sandbox credentials to RateHawk but cannot create a booking or payment.")) return;
     setInventoryValidationBusy("ratehawk");
@@ -325,6 +338,7 @@ export function AdminSettings() {
           (siteReviewBody.receipts ?? []).map((receipt: ExpediaSiteReviewReceipt) => [receipt.requirement_code, receipt]),
         ));
       }
+      await refreshExpediaRapidProductionReadiness();
     } catch (error) {
       setInventoryValidationMessages((current) => ({
         ...current,
@@ -383,6 +397,7 @@ export function AdminSettings() {
       if (!response.ok) throw new Error(body.error || "Expedia site-review evidence could not be recorded.");
       setExpediaSiteReviewReceipts((current) => ({ ...current, [requirementCode]: body.receipt }));
       setExpediaSiteReviewMessage(`${requirementCode} evidence receipt recorded.`);
+      await refreshExpediaRapidProductionReadiness();
     } catch (error) {
       setExpediaSiteReviewMessage(error instanceof Error ? error.message : "Expedia site-review evidence could not be recorded.");
     } finally {
