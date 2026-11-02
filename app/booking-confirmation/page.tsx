@@ -17,7 +17,7 @@ type BookingRow = {
   check_in: string;
   check_out: string;
   guests: number;
-  child_ages: number[];
+  child_ages?: number[];
   subtotal: number;
   taxes: number;
   fees: number;
@@ -52,7 +52,7 @@ export default async function ConfirmationPage({ searchParams }: { searchParams:
   if (!user) redirect(`/login?next=${encodeURIComponent(returnPath)}`);
 
   const { data, error } = await supabase.from("bookings")
-    .select("id,confirmation_code,status,check_in,check_out,guests,child_ages,subtotal,taxes,fees,due_at_property,total,supplier_itinerary_id,bed_type,refundable,cancellation_policy,checkin_begin_time,checkin_end_time,checkin_instructions,special_checkin_instructions,stripe_payment_intent_id,stripe_payment_mode,properties(name,city,country),rooms(name)")
+    .select("id,confirmation_code,status,check_in,check_out,guests,subtotal,taxes,fees,due_at_property,total,supplier_itinerary_id,bed_type,refundable,cancellation_policy,checkin_begin_time,checkin_end_time,checkin_instructions,special_checkin_instructions,stripe_payment_intent_id,stripe_payment_mode,properties(name,city,country),rooms(name)")
     .eq("customer_id", user.id)
     .eq("confirmation_code", code)
     .maybeSingle();

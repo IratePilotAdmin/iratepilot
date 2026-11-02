@@ -38,4 +38,11 @@ describe("customer booking itineraries", () => {
     expect(confirmation).toContain('booking.status === "confirmed" && <TripCalendarButton');
     expect(confirmation).toContain("propertyName: booking.properties?.name");
   });
+
+  it("keeps confirmation rendering compatible before the child-ages migration is deployed", () => {
+    const confirmationSelect = confirmation.match(/\.select\("([^"]+)"\)/)?.[1] || "";
+
+    expect(confirmationSelect).not.toContain("child_ages");
+    expect(confirmation).toContain("child_ages?: number[]");
+  });
 });
