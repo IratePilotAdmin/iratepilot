@@ -97,7 +97,7 @@ function ApprovedPaymentForm({ bookingId, breakdown, paymentMode }: { bookingId:
       applePay: "check-out" as const,
       googlePay: "checkout" as const,
     },
-    layout: { maxColumns: 1, maxRows: 2, overflow: "never" as const },
+    layout: { maxColumns: 1, maxRows: 2, overflow: "auto" as const },
     paymentMethods: {
       applePay: "auto" as const,
       googlePay: "always" as const,
