@@ -368,11 +368,28 @@ export function buildExpediaRapidSandboxAvailabilityRequest(input: {
   apiKey: string;
   sharedSecret: string;
   timestampSeconds: number;
+  travelerCountryCode: string;
   query: Readonly<Record<string, QueryValue>>;
 }): InventorySandboxRequest {
+  const travelerCountryCode = input.travelerCountryCode.trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(travelerCountryCode)) {
+    throw new Error("Expedia Rapid traveler country code must be a two-letter country code.");
+  }
+  if (Object.prototype.hasOwnProperty.call(input.query, "country_code")) {
+    throw new Error(
+      "Expedia Rapid country_code must be supplied through travelerCountryCode.",
+    );
+  }
+  if (Object.keys(input.query).length === 0) {
+    throw new Error("Supplier sandbox query parameters are required.");
+  }
+
   return {
     supplierId: "expedia-rapid",
-    url: buildQueryUrl("https://test.ean.com/v3/properties/availability", input.query),
+    url: buildQueryUrl("https://test.ean.com/v3/properties/availability", {
+      ...input.query,
+      country_code: travelerCountryCode,
+    }),
     method: "GET",
     headers: {
       Authorization: buildExpediaRapidAuthorization(input),

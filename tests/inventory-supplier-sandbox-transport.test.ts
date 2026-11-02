@@ -118,6 +118,7 @@ describe("inventory supplier sandbox transport", () => {
       apiKey: "expedia-api-key",
       sharedSecret: "expedia-shared-secret",
       timestampSeconds: 1_700_000_000,
+      travelerCountryCode: "US",
       query: { property_id: "123", occupancy: 2 },
     }),
     buildStubaSandboxHotelSearchRequest({

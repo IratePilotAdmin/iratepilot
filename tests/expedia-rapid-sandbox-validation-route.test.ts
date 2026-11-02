@@ -28,7 +28,7 @@ import { GET, POST } from "../app/api/admin/integrations/inventory/expedia-rapid
 
 const validationResult = {
   testedAt: "2026-10-30T12:00:00.000Z", checkin: "2026-11-29", checkout: "2026-12-01",
-  hotelCount: 1, rateCount: 2, adultCount: 2, childAgeCount: 2,
+  hotelCount: 1, rateCount: 2, adultCount: 2, childAgeCount: 2, travelerCountryCode: "US",
 };
 
 describe("Expedia Rapid sandbox validation route", () => {
@@ -65,23 +65,34 @@ describe("Expedia Rapid sandbox validation route", () => {
       tested_by: "admin-1", tested_at: "2026-10-30T12:00:00.000Z",
       deployment_revision: "43ac267b1c3f74e2f90b3231a89106c81e523ec0",
     });
-    expect(mocks.insert).toHaveBeenNthCalledWith(2, {
-      requirement_code: "SP1",
-      decision: "verified",
-      evidence_reference: "Expedia Rapid sandbox family-occupancy search 2026-10-30",
-      verification_notes: "A successful read-only Expedia Rapid sandbox availability response was returned for 2 adults and 2 synthetic child ages. The request encoded and transmitted every supplied child age. No booking or payment was created.",
-      reviewed_by: "admin-1",
-      reviewed_at: "2026-10-30T12:00:00.000Z",
-      deployment_revision: "43ac267b1c3f74e2f90b3231a89106c81e523ec0",
-    });
+    expect(mocks.insert).toHaveBeenNthCalledWith(2, [
+      {
+        requirement_code: "SP1",
+        decision: "verified",
+        evidence_reference: "Expedia Rapid sandbox family-occupancy search 2026-10-30",
+        verification_notes: "A successful read-only Expedia Rapid sandbox availability response was returned for 2 adults and 2 synthetic child ages. The request encoded and transmitted every supplied child age. No booking or payment was created.",
+        reviewed_by: "admin-1",
+        reviewed_at: "2026-10-30T12:00:00.000Z",
+        deployment_revision: "43ac267b1c3f74e2f90b3231a89106c81e523ec0",
+      },
+      {
+        requirement_code: "TR2",
+        decision: "verified",
+        evidence_reference: "Expedia Rapid sandbox traveler-country search 2026-10-30",
+        verification_notes: "A successful read-only Expedia Rapid sandbox availability response was returned after the request builder validated and transmitted traveler country_code=US. No booking or payment was created.",
+        reviewed_by: "admin-1",
+        reviewed_at: "2026-10-30T12:00:00.000Z",
+        deployment_revision: "43ac267b1c3f74e2f90b3231a89106c81e523ec0",
+      },
+    ]);
     expect(await response.json()).toEqual({
       ...validationResult, validationPassed: true, evidenceRecorded: true,
       siteReviewEvidenceRecorded: true,
-      message: "Expedia Rapid sandbox family search passed, and its search and SP1 evidence were saved. No booking or payment was created.",
+      message: "Expedia Rapid sandbox family search passed, and its search, SP1, and TR2 evidence were saved. No booking or payment was created.",
     });
   });
 
-  it("reports a separate failure when the SP1 receipt cannot be saved", async () => {
+  it("reports a separate failure when the SP1 and TR2 receipts cannot be saved", async () => {
     mocks.insert.mockResolvedValueOnce({ error: null }).mockResolvedValueOnce({ error: { message: "unavailable" } });
     const response = await POST();
     expect(response.status).toBe(503);
@@ -90,7 +101,7 @@ describe("Expedia Rapid sandbox validation route", () => {
       validationPassed: true,
       evidenceRecorded: true,
       siteReviewEvidenceRecorded: false,
-      error: "Expedia Rapid sandbox family search passed, but its SP1 evidence could not be saved.",
+      error: "Expedia Rapid sandbox family search passed, but its SP1 and TR2 evidence could not be saved.",
     });
   });
 

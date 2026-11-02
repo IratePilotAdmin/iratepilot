@@ -36,6 +36,7 @@ describe("Expedia Rapid sandbox validation", () => {
       rateCount: 2,
       adultCount: 2,
       childAgeCount: 2,
+      travelerCountryCode: "US",
     });
     const [urlValue, init] = fetcher.mock.calls[0] as [string, RequestInit];
     const url = new URL(urlValue);

@@ -77,22 +77,33 @@ export async function POST() {
 
     const { error: siteReviewError } = await createAdminClient()
       .from("expedia_b2c_site_review_receipts")
-      .insert({
-        requirement_code: "SP1",
-        decision: "verified",
-        evidence_reference: `Expedia Rapid sandbox family-occupancy search ${result.testedAt.slice(0, 10)}`,
-        verification_notes: `A successful read-only Expedia Rapid sandbox availability response was returned for ${result.adultCount} adults and ${result.childAgeCount} synthetic child ages. The request encoded and transmitted every supplied child age. No booking or payment was created.`,
-        reviewed_by: auth.user.id,
-        reviewed_at: result.testedAt,
-        deployment_revision: deploymentRevision(),
-      });
+      .insert([
+        {
+          requirement_code: "SP1",
+          decision: "verified",
+          evidence_reference: `Expedia Rapid sandbox family-occupancy search ${result.testedAt.slice(0, 10)}`,
+          verification_notes: `A successful read-only Expedia Rapid sandbox availability response was returned for ${result.adultCount} adults and ${result.childAgeCount} synthetic child ages. The request encoded and transmitted every supplied child age. No booking or payment was created.`,
+          reviewed_by: auth.user.id,
+          reviewed_at: result.testedAt,
+          deployment_revision: deploymentRevision(),
+        },
+        {
+          requirement_code: "TR2",
+          decision: "verified",
+          evidence_reference: `Expedia Rapid sandbox traveler-country search ${result.testedAt.slice(0, 10)}`,
+          verification_notes: `A successful read-only Expedia Rapid sandbox availability response was returned after the request builder validated and transmitted traveler country_code=${result.travelerCountryCode}. No booking or payment was created.`,
+          reviewed_by: auth.user.id,
+          reviewed_at: result.testedAt,
+          deployment_revision: deploymentRevision(),
+        },
+      ]);
     if (siteReviewError) {
       return NextResponse.json({
         ...result,
         validationPassed: true,
         evidenceRecorded: true,
         siteReviewEvidenceRecorded: false,
-        error: "Expedia Rapid sandbox family search passed, but its SP1 evidence could not be saved.",
+        error: "Expedia Rapid sandbox family search passed, but its SP1 and TR2 evidence could not be saved.",
       }, { status: 503, headers: noStoreHeaders });
     }
     return NextResponse.json({
@@ -100,7 +111,7 @@ export async function POST() {
       validationPassed: true,
       evidenceRecorded: true,
       siteReviewEvidenceRecorded: true,
-      message: "Expedia Rapid sandbox family search passed, and its search and SP1 evidence were saved. No booking or payment was created.",
+      message: "Expedia Rapid sandbox family search passed, and its search, SP1, and TR2 evidence were saved. No booking or payment was created.",
     }, { headers: noStoreHeaders });
   } catch (error) {
     const configurationError = (error instanceof ExpediaRapidSandboxValidationError
