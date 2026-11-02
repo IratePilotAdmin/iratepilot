@@ -14,6 +14,10 @@ describe("legacy hotel payment finalization barrier", () => {
     expect(migration).toContain("new.stripe_payment_mode is distinct from 'test'");
     expect(migration).toContain("new.status = 'eligible' and v_booking_payment_mode = 'test'");
     expect(migration).toContain("not coalesce(v_payment_enabled, false)");
+    expect(migration).toContain("new.stripe_payment_mode is distinct from old.stripe_payment_mode");
+    expect(migration).toContain(
+      "before insert or update of status, stripe_payment_intent_id, stripe_payment_mode",
+    );
   });
 
   it("keeps booking approval and partner payout authority fail-closed", () => {

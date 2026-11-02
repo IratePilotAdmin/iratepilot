@@ -41,7 +41,10 @@ begin
       using errcode = '55000';
   end if;
   if new.stripe_payment_intent_id is not null
-    and new.stripe_payment_intent_id is distinct from old.stripe_payment_intent_id
+    and (
+      new.stripe_payment_intent_id is distinct from old.stripe_payment_intent_id
+      or new.stripe_payment_mode is distinct from old.stripe_payment_mode
+    )
     and new.stripe_payment_mode is distinct from 'test'
     and not coalesce(v_payment_enabled, false)
   then
@@ -54,6 +57,11 @@ $$;
 
 revoke all on function public.enforce_legacy_hotel_booking_barrier()
   from public, anon, authenticated;
+drop trigger if exists enforce_legacy_hotel_booking_barrier on public.bookings;
+create trigger enforce_legacy_hotel_booking_barrier
+before insert or update of status, stripe_payment_intent_id, stripe_payment_mode
+on public.bookings
+for each row execute function public.enforce_legacy_hotel_booking_barrier();
 
 create or replace function public.enforce_legacy_hotel_financial_barrier()
 returns trigger
