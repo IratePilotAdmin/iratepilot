@@ -22007,6 +22007,7 @@ begin
         using errcode = '55000';
     end if;
     if new.stripe_payment_intent_id is not null
+      and new.stripe_payment_mode is distinct from 'test'
       and not coalesce(v_payment_enabled, false)
     then
       raise exception 'Legacy hotel payment finalization is disabled'
@@ -22023,7 +22024,11 @@ begin
       using errcode = '55000';
   end if;
   if new.stripe_payment_intent_id is not null
-    and new.stripe_payment_intent_id is distinct from old.stripe_payment_intent_id
+    and (
+      new.stripe_payment_intent_id is distinct from old.stripe_payment_intent_id
+      or new.stripe_payment_mode is distinct from old.stripe_payment_mode
+    )
+    and new.stripe_payment_mode is distinct from 'test'
     and not coalesce(v_payment_enabled, false)
   then
     raise exception 'Legacy hotel payment finalization is disabled'
@@ -22037,7 +22042,8 @@ revoke all on function public.enforce_legacy_hotel_booking_barrier()
   from public, anon, authenticated;
 drop trigger if exists enforce_legacy_hotel_booking_barrier on public.bookings;
 create trigger enforce_legacy_hotel_booking_barrier
-before insert or update of status, stripe_payment_intent_id on public.bookings
+before insert or update of status, stripe_payment_intent_id, stripe_payment_mode
+on public.bookings
 for each row execute function public.enforce_legacy_hotel_booking_barrier();
 
 create or replace function public.enforce_legacy_hotel_financial_barrier()
@@ -22050,6 +22056,7 @@ declare
   v_approval_enabled boolean := false;
   v_payment_enabled boolean := false;
   v_payout_enabled boolean := false;
+  v_booking_payment_mode text;
 begin
   select booking_approval_enabled, payment_finalization_enabled, partner_payout_enabled
   into v_approval_enabled, v_payment_enabled, v_payout_enabled
@@ -22062,10 +22069,18 @@ begin
   end if;
   if new.status in ('eligible', 'paid')
     and (tg_op = 'INSERT' or new.status is distinct from old.status)
-    and not coalesce(v_payment_enabled, false)
   then
-    raise exception 'Legacy hotel payment finalization is disabled'
-      using errcode = '55000';
+    select stripe_payment_mode
+    into v_booking_payment_mode
+    from public.bookings
+    where id = new.booking_id;
+
+    if not coalesce(v_payment_enabled, false)
+      and not (new.status = 'eligible' and v_booking_payment_mode = 'test')
+    then
+      raise exception 'Legacy hotel payment finalization is disabled'
+        using errcode = '55000';
+    end if;
   end if;
   if new.status = 'paid'
     and (tg_op = 'INSERT' or new.status is distinct from old.status)
@@ -22087,6 +22102,11 @@ drop trigger if exists enforce_legacy_hotel_financial_barrier
 create trigger enforce_legacy_hotel_financial_barrier
 before insert or update of status on public.booking_financials
 for each row execute function public.enforce_legacy_hotel_financial_barrier();
+
+comment on function public.enforce_legacy_hotel_booking_barrier() is
+  'Fail-closed legacy hotel booking barrier. Stripe test-mode settlement is allowed without granting live payment authority.';
+comment on function public.enforce_legacy_hotel_financial_barrier() is
+  'Fail-closed legacy hotel financial barrier. Test-mode bookings may become eligible; paid/live payout states remain gated.';
 
 create or replace function public.enforce_legacy_hotel_reward_barrier()
 returns trigger
