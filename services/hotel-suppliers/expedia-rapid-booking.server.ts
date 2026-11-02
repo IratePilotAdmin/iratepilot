@@ -387,8 +387,38 @@ export type ExpediaRapidBookingEvidence = {
     paymentCard: boolean;
     billingContact: boolean;
     billingAddress: boolean;
+    payorName: boolean;
+    billingCountry: boolean;
+    billingPostalCode: boolean;
   };
 };
+
+export type ExpediaRapidBookingRequirementCoverage = Record<
+  "TR1" | "TR3" | "TR3a" | "TR3b" | "TR3c" | "TR4" | "TR5" | "TR5a" | "TR5b",
+  boolean
+>;
+
+/** Maps sanitized request evidence to Expedia's booking-transmission checklist without retaining PII. */
+export function mapExpediaRapidBookingRequirementCoverage(
+  evidence: ExpediaRapidBookingEvidence,
+): ExpediaRapidBookingRequirementCoverage {
+  const coverage = evidence.requestCoverage;
+  return {
+    TR1: coverage.affiliateReferenceId,
+    TR3: coverage.billingContact
+      && coverage.billingAddress
+      && coverage.payorName
+      && coverage.billingCountry
+      && coverage.billingPostalCode,
+    TR3a: coverage.payorName,
+    TR3b: coverage.billingCountry,
+    TR3c: coverage.billingPostalCode,
+    TR4: coverage.travelerEmail,
+    TR5: coverage.travelerEmail && coverage.travelerPhone && coverage.roomGuestNames,
+    TR5a: coverage.roomGuestNames,
+    TR5b: coverage.travelerPhone,
+  };
+}
 
 /** Produces allowlisted evidence without traveler, payment, credential, or supplier identifiers. */
 export function sanitizeExpediaRapidBookingEvidence(
@@ -403,8 +433,14 @@ export function sanitizeExpediaRapidBookingEvidence(
     ? payments[0] as ExpediaRapidJsonObject
     : null;
   const billingContact = firstPayment?.billing_contact;
-  const billingAddress = billingContact && typeof billingContact === "object" && !Array.isArray(billingContact)
-    ? (billingContact as ExpediaRapidJsonObject).address
+  const billingContactObject = billingContact && typeof billingContact === "object" && !Array.isArray(billingContact)
+    ? billingContact as ExpediaRapidJsonObject
+    : null;
+  const billingAddress = billingContactObject
+    ? billingContactObject.address
+    : null;
+  const billingAddressObject = billingAddress && typeof billingAddress === "object" && !Array.isArray(billingAddress)
+    ? billingAddress as ExpediaRapidJsonObject
     : null;
 
   return {
@@ -418,7 +454,10 @@ export function sanitizeExpediaRapidBookingEvidence(
     requestCoverage: {
       affiliateReferenceId: typeof body?.affiliate_reference_id === "string",
       travelerEmail: typeof body?.email === "string",
-      travelerPhone: Boolean(phone && typeof phone === "object" && !Array.isArray(phone)),
+      travelerPhone: Boolean(phone && typeof phone === "object" && !Array.isArray(phone)
+        && typeof (phone as ExpediaRapidJsonObject).country_code === "string"
+        && typeof (phone as ExpediaRapidJsonObject).area_code === "string"
+        && typeof (phone as ExpediaRapidJsonObject).number === "string"),
       roomGuestNames: Array.isArray(rooms) && rooms.length > 0 && rooms.every((room) => {
         if (!room || typeof room !== "object" || Array.isArray(room)) return false;
         const value = room as ExpediaRapidJsonObject;
@@ -426,8 +465,17 @@ export function sanitizeExpediaRapidBookingEvidence(
       }),
       paymentCard: Boolean(firstPayment && typeof firstPayment.number === "string"
         && typeof firstPayment.security_code === "string"),
-      billingContact: Boolean(billingContact && typeof billingContact === "object" && !Array.isArray(billingContact)),
-      billingAddress: Boolean(billingAddress && typeof billingAddress === "object" && !Array.isArray(billingAddress)),
+      billingContact: Boolean(billingContactObject),
+      billingAddress: Boolean(billingAddressObject),
+      payorName: Boolean(billingContactObject
+        && typeof billingContactObject.given_name === "string"
+        && typeof billingContactObject.family_name === "string"),
+      billingCountry: Boolean(billingAddressObject
+        && typeof billingAddressObject.country_code === "string"
+        && /^[A-Z]{2}$/.test(billingAddressObject.country_code)),
+      billingPostalCode: Boolean(billingAddressObject
+        && typeof billingAddressObject.postal_code === "string"
+        && billingAddressObject.postal_code.length > 0),
     },
   };
 }

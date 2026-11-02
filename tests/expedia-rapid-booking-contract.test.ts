@@ -8,6 +8,7 @@ import {
   buildExpediaRapidOccupancy,
   classifyExpediaRapidBookingFailure,
   executeExpediaRapidBookingRequest,
+  mapExpediaRapidBookingRequirementCoverage,
   sanitizeExpediaRapidBookingEvidence,
 } from "../services/hotel-suppliers/expedia-rapid-booking.server";
 
@@ -173,7 +174,21 @@ describe("Expedia Rapid booking contract", () => {
         paymentCard: true,
         billingContact: true,
         billingAddress: true,
+        payorName: true,
+        billingCountry: true,
+        billingPostalCode: true,
       },
+    });
+    expect(mapExpediaRapidBookingRequirementCoverage(evidence)).toEqual({
+      TR1: true,
+      TR3: true,
+      TR3a: true,
+      TR3b: true,
+      TR3c: true,
+      TR4: true,
+      TR5: true,
+      TR5a: true,
+      TR5b: true,
     });
     expect(JSON.stringify(evidence)).not.toContain("supplier-itinerary-123");
     expect(JSON.stringify(evidence)).not.toContain(validInput.email);

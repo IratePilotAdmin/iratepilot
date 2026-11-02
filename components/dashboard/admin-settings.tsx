@@ -183,6 +183,7 @@ export function AdminSettings() {
   const [inventoryValidationMessages, setInventoryValidationMessages] = useState<Record<string, string>>({});
   const [ratehawkValidationEvidence, setRatehawkValidationEvidence] = useState<InventoryValidationEvidence | null>(null);
   const [expediaRapidValidationEvidence, setExpediaRapidValidationEvidence] = useState<InventoryValidationEvidence | null>(null);
+  const [expediaBookingContractMessage, setExpediaBookingContractMessage] = useState("");
   const [expediaSiteReviewReceipts, setExpediaSiteReviewReceipts] = useState<Record<string, ExpediaSiteReviewReceipt>>({});
   const [expediaSiteReviewBusy, setExpediaSiteReviewBusy] = useState("");
   const [expediaSiteReviewMessage, setExpediaSiteReviewMessage] = useState("");
@@ -320,6 +321,27 @@ export function AdminSettings() {
         ...current,
         expediaRapid: error instanceof Error ? error.message : "Expedia Rapid sandbox validation could not be completed.",
       }));
+    } finally {
+      setInventoryValidationBusy("");
+    }
+  }
+
+  async function validateExpediaRapidBookingContract() {
+    setInventoryValidationBusy("expedia-booking-contract");
+    setExpediaBookingContractMessage("");
+    try {
+      const response = await fetch("/api/admin/integrations/inventory/expedia-rapid/booking-contract", {
+        method: "POST",
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Expedia Rapid booking contract validation failed.");
+      const covered = Object.values(body.requirementCoverage ?? {}).filter(Boolean).length;
+      const total = Object.keys(body.requirementCoverage ?? {}).length;
+      setExpediaBookingContractMessage(
+        `Booking payload software contract passed ${covered}/${total} transmission checks. No supplier request, booking, payment, or checklist receipt was created.`,
+      );
+    } catch (error) {
+      setExpediaBookingContractMessage(error instanceof Error ? error.message : "Expedia Rapid booking contract validation failed.");
     } finally {
       setInventoryValidationBusy("");
     }
@@ -967,15 +989,26 @@ export function AdminSettings() {
               </p>}
             </div>}
             {supplier.id === "expedia-rapid" && <div className="mt-3">
-              <button
-                className="btn-secondary text-xs"
-                disabled={supplier.sandboxRuntime.status !== "authorized" || Boolean(inventoryValidationBusy)}
-                onClick={validateExpediaRapidSandbox}
-                type="button"
-              >
-                {inventoryValidationBusy === "expedia-rapid" ? "RUNNING SEARCH…" : "RUN SANDBOX SEARCH"}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  className="btn-secondary text-xs"
+                  disabled={supplier.sandboxRuntime.status !== "authorized" || Boolean(inventoryValidationBusy)}
+                  onClick={validateExpediaRapidSandbox}
+                  type="button"
+                >
+                  {inventoryValidationBusy === "expedia-rapid" ? "RUNNING SEARCH…" : "RUN SANDBOX SEARCH"}
+                </button>
+                <button
+                  className="btn-secondary text-xs"
+                  disabled={Boolean(inventoryValidationBusy)}
+                  onClick={validateExpediaRapidBookingContract}
+                  type="button"
+                >
+                  {inventoryValidationBusy === "expedia-booking-contract" ? "CHECKING PAYLOAD…" : "VERIFY BOOKING PAYLOAD"}
+                </button>
+              </div>
               {inventoryValidationMessages.expediaRapid && <p className="mt-2 text-xs text-slate-600" role="status">{inventoryValidationMessages.expediaRapid}</p>}
+              {expediaBookingContractMessage && <p className="mt-2 text-xs text-slate-600" role="status">{expediaBookingContractMessage}</p>}
               {expediaRapidValidationEvidence && <p className="mt-2 text-xs text-slate-600">
                 Last saved search: {new Date(expediaRapidValidationEvidence.tested_at).toLocaleString()} — {expediaRapidValidationEvidence.hotel_count} test hotel(s), {expediaRapidValidationEvidence.rate_count} rate(s).
               </p>}
