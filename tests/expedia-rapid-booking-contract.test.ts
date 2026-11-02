@@ -8,6 +8,8 @@ import {
   buildExpediaRapidOccupancy,
   classifyExpediaRapidBookingFailure,
   executeExpediaRapidBookingRequest,
+  getExpediaRapidBookingRecoveryGuidance,
+  logExpediaRapidBookingExecutionResult,
   mapExpediaRapidBookingRequirementCoverage,
   sanitizeExpediaRapidBookingEvidence,
 } from "../services/hotel-suppliers/expedia-rapid-booking.server";
@@ -46,6 +48,56 @@ const validInput = {
 };
 
 describe("Expedia Rapid booking contract", () => {
+  it("provides safe, non-retrying customer and operator guidance for every recovery", () => {
+    const recoveries = [
+      "do_not_retry",
+      "reconcile_by_affiliate_reference",
+      "refresh_price_check",
+      "re_shop",
+    ] as const;
+
+    for (const recovery of recoveries) {
+      expect(getExpediaRapidBookingRecoveryGuidance(recovery)).toMatchObject({
+        version: "expedia-rapid-booking-recovery-v1",
+        recovery,
+        retryOriginalBooking: false,
+      });
+      expect(getExpediaRapidBookingRecoveryGuidance(recovery).customerMessage).not.toContain("Expedia");
+      expect(getExpediaRapidBookingRecoveryGuidance(recovery).operatorAction.length).toBeGreaterThan(20);
+    }
+  });
+
+  it("logs only allowlisted operational booking fields", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    logExpediaRapidBookingExecutionResult({
+      outcome: "action_required",
+      status: 503,
+      recovery: "reconcile_by_affiliate_reference",
+      transactionIdPresent: true,
+    });
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    const payload = JSON.parse(String(warn.mock.calls[0]?.[0]));
+    expect(payload).toMatchObject({
+      level: "warning",
+      event: "expedia_rapid_booking_action_required",
+      outcome: "action_required",
+      status: 503,
+      recovery: "reconcile_by_affiliate_reference",
+      transactionIdPresent: true,
+    });
+    expect(Object.keys(payload).sort()).toEqual([
+      "event",
+      "level",
+      "outcome",
+      "recovery",
+      "status",
+      "timestamp",
+      "transactionIdPresent",
+    ]);
+    warn.mockRestore();
+  });
+
   it("derives a stable, environment-bound affiliate reference for every booking", () => {
     const first = buildExpediaRapidAffiliateReferenceId({
       environment: "sandbox",

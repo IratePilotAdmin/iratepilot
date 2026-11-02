@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/require-role";
 import {
   buildExpediaRapidBookingRequest,
+  getExpediaRapidBookingRecoveryGuidance,
   mapExpediaRapidBookingRequirementCoverage,
   sanitizeExpediaRapidBookingEvidence,
 } from "@/services/hotel-suppliers/expedia-rapid-booking.server";
@@ -54,6 +55,13 @@ export async function POST() {
     recovery: "do_not_retry",
     transactionIdPresent: false,
   });
+  const recoveryScenarios = [
+    "do_not_retry",
+    "reconcile_by_affiliate_reference",
+    "refresh_price_check",
+    "re_shop",
+  ] as const;
+  const recoveryGuidance = recoveryScenarios.map(getExpediaRapidBookingRecoveryGuidance);
 
   return NextResponse.json({
     softwareContractOnly: true,
@@ -61,5 +69,16 @@ export async function POST() {
     bookingCreated: false,
     paymentCreated: false,
     requirementCoverage: mapExpediaRapidBookingRequirementCoverage(evidence),
+    errorHandlingCoverage: {
+      TR7: recoveryGuidance.every((item) => item.customerMessage
+        && item.operatorAction
+        && item.retryOriginalBooking === false),
+    },
+    recoveryGuidance,
+    operationalLogging: {
+      events: ["expedia_rapid_booking_confirmed", "expedia_rapid_booking_action_required"],
+      fields: ["outcome", "status", "recovery", "transactionIdPresent"],
+      piiIncluded: false,
+    },
   }, { headers: noStoreHeaders });
 }
