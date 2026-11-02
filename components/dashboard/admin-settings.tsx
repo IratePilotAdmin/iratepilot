@@ -162,6 +162,14 @@ type RatehawkProductionReadiness = {
   gates: Record<string, boolean>;
 };
 
+type ExpediaRapidProductionReadiness = {
+  nextGate: string;
+  readyForLiveBooking: boolean;
+  sandboxCredentialsReady: boolean;
+  productionCredentialsReady: boolean;
+  gates: Record<string, boolean>;
+};
+
 const ratehawkCertificationScenarios = [
   { id: "children", label: "Children", expectedOutcome: "Confirmed, then cancelled" },
   { id: "citizenship", label: "Guest citizenship", expectedOutcome: "Confirmed, then cancelled" },
@@ -183,6 +191,7 @@ export function AdminSettings() {
   const [inventoryValidationMessages, setInventoryValidationMessages] = useState<Record<string, string>>({});
   const [ratehawkValidationEvidence, setRatehawkValidationEvidence] = useState<InventoryValidationEvidence | null>(null);
   const [expediaRapidValidationEvidence, setExpediaRapidValidationEvidence] = useState<InventoryValidationEvidence | null>(null);
+  const [expediaRapidProductionReadiness, setExpediaRapidProductionReadiness] = useState<ExpediaRapidProductionReadiness | null>(null);
   const [expediaBookingContractMessage, setExpediaBookingContractMessage] = useState("");
   const [expediaSiteReviewReceipts, setExpediaSiteReviewReceipts] = useState<Record<string, ExpediaSiteReviewReceipt>>({});
   const [expediaSiteReviewBusy, setExpediaSiteReviewBusy] = useState("");
@@ -247,6 +256,19 @@ export function AdminSettings() {
       setRatehawkProductionReadiness(body.readiness ?? null);
     } catch {
       setRatehawkProductionReadiness(null);
+    }
+  }
+
+  async function refreshExpediaRapidProductionReadiness() {
+    try {
+      const response = await fetch("/api/admin/integrations/inventory/expedia-rapid/readiness", {
+        cache: "no-store",
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error);
+      setExpediaRapidProductionReadiness(body.readiness ?? null);
+    } catch {
+      setExpediaRapidProductionReadiness(null);
     }
   }
 
@@ -316,6 +338,7 @@ export function AdminSettings() {
           (siteReviewBody.receipts ?? []).map((receipt: ExpediaSiteReviewReceipt) => [receipt.requirement_code, receipt]),
         ));
       }
+      await refreshExpediaRapidProductionReadiness();
     } catch (error) {
       setInventoryValidationMessages((current) => ({
         ...current,
@@ -374,6 +397,7 @@ export function AdminSettings() {
       if (!response.ok) throw new Error(body.error || "Expedia site-review evidence could not be recorded.");
       setExpediaSiteReviewReceipts((current) => ({ ...current, [requirementCode]: body.receipt }));
       setExpediaSiteReviewMessage(`${requirementCode} evidence receipt recorded.`);
+      await refreshExpediaRapidProductionReadiness();
     } catch (error) {
       setExpediaSiteReviewMessage(error instanceof Error ? error.message : "Expedia site-review evidence could not be recorded.");
     } finally {
@@ -548,6 +572,14 @@ export function AdminSettings() {
         ));
       })
       .catch(() => setExpediaSiteReviewReceipts({}));
+
+    fetch("/api/admin/integrations/inventory/expedia-rapid/readiness", { cache: "no-store" })
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error);
+        setExpediaRapidProductionReadiness(body.readiness ?? null);
+      })
+      .catch(() => setExpediaRapidProductionReadiness(null));
 
     fetch("/api/admin/integrations/inventory/ratehawk/prebook", { cache: "no-store" })
       .then(async (response) => {
@@ -1009,6 +1041,24 @@ export function AdminSettings() {
               </div>
               {inventoryValidationMessages.expediaRapid && <p className="mt-2 text-xs text-slate-600" role="status">{inventoryValidationMessages.expediaRapid}</p>}
               {expediaBookingContractMessage && <p className="mt-2 text-xs text-slate-600" role="status">{expediaBookingContractMessage}</p>}
+              <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <strong className="text-xs text-slate-800">Expedia Rapid production readiness</strong>
+                  <span className={expediaRapidProductionReadiness?.readyForLiveBooking ? "text-xs font-semibold text-emerald-700" : "text-xs font-semibold text-amber-700"}>
+                    {expediaRapidProductionReadiness
+                      ? expediaRapidProductionReadiness.readyForLiveBooking
+                        ? "Ready for controlled live activation"
+                        : `Next: ${expediaRapidProductionReadiness.nextGate.replaceAll("_", " ")}`
+                      : "Readiness unavailable"}
+                  </span>
+                </div>
+                <p className="mt-2 text-xs leading-5 text-slate-600">Software, site-review, partner approval, distinct production credentials, production payment authorization, production smoke testing, and live activation are independent fail-closed gates.</p>
+                {expediaRapidProductionReadiness && <ul className="mt-3 grid gap-1 text-xs sm:grid-cols-2">
+                  {Object.entries(expediaRapidProductionReadiness.gates).map(([gate, passed]) => <li className={passed ? "text-emerald-700" : "text-amber-700"} key={gate}>
+                    {passed ? "✓" : "○"} {gate.replaceAll("_", " ")}
+                  </li>)}
+                </ul>}
+              </div>
               {expediaRapidValidationEvidence && <p className="mt-2 text-xs text-slate-600">
                 Last saved search: {new Date(expediaRapidValidationEvidence.tested_at).toLocaleString()} — {expediaRapidValidationEvidence.hotel_count} test hotel(s), {expediaRapidValidationEvidence.rate_count} rate(s).
               </p>}
