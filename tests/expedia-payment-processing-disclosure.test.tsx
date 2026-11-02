@@ -64,6 +64,18 @@ describe("Expedia payment processing location disclosure", () => {
     expect(html).toContain("This payment will be processed in United States.");
   });
 
+  it("rejects non-country CLDR region codes", () => {
+    expect(() => formatExpediaPaymentProcessingDisclosure("ZZ"))
+      .toThrow("country is invalid");
+    expect(() => formatExpediaPaymentProcessingDisclosure("EU"))
+      .toThrow("country is invalid");
+    expect(() => readExpediaProcessingCountry({
+      credit_card: {
+        card_options: [{ name: "Visa", processing_country: "ZZ" }],
+      },
+    })).toThrow("missing or ambiguous");
+  });
+
   it("does not show an Expedia disclosure for another merchant of record", () => {
     expect(renderToStaticMarkup(
       <PaymentProcessingDisclosure
