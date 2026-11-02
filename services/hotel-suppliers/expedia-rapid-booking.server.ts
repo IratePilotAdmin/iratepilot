@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createHash } from "node:crypto";
+import { logOperationalEvent } from "@/lib/monitoring/operational";
 import { buildExpediaRapidAuthorization } from "./inventory-auth.server";
 
 type ExpediaPhone = {
@@ -240,6 +241,47 @@ export type ExpediaRapidBookingRecovery =
   | "refresh_price_check"
   | "re_shop";
 
+export type ExpediaRapidBookingRecoveryGuidance = {
+  version: "expedia-rapid-booking-recovery-v1";
+  recovery: ExpediaRapidBookingRecovery;
+  customerMessage: string;
+  operatorAction: string;
+  retryOriginalBooking: false;
+};
+
+const recoveryGuidance: Record<
+  ExpediaRapidBookingRecovery,
+  Omit<ExpediaRapidBookingRecoveryGuidance, "version" | "recovery" | "retryOriginalBooking">
+> = {
+  do_not_retry: {
+    customerMessage: "We could not complete this booking. Please review the details or contact support.",
+    operatorAction: "Review the sanitized supplier response before deciding whether the customer should try again.",
+  },
+  reconcile_by_affiliate_reference: {
+    customerMessage: "Your booking status is being verified. Please do not submit another booking.",
+    operatorAction: "Retrieve the booking by its original affiliate reference and traveler email before any new attempt.",
+  },
+  refresh_price_check: {
+    customerMessage: "The price changed. Please review the updated price before continuing.",
+    operatorAction: "Run Price Check again and require the customer to accept the updated price.",
+  },
+  re_shop: {
+    customerMessage: "This room is no longer available. Please choose another option.",
+    operatorAction: "Return to Shopping and present currently available rooms without retrying the original booking.",
+  },
+};
+
+export function getExpediaRapidBookingRecoveryGuidance(
+  recovery: ExpediaRapidBookingRecovery,
+): ExpediaRapidBookingRecoveryGuidance {
+  return {
+    version: "expedia-rapid-booking-recovery-v1",
+    recovery,
+    ...recoveryGuidance[recovery],
+    retryOriginalBooking: false,
+  };
+}
+
 export function classifyExpediaRapidBookingFailure(status: number, errorType?: string): ExpediaRapidBookingRecovery {
   const normalized = errorType?.trim().toLowerCase();
   if (normalized === "duplicate_itinerary" || status === 429 || status >= 500) {
@@ -264,6 +306,22 @@ export type ExpediaRapidBookingExecutionResult =
       recovery: ExpediaRapidBookingRecovery;
       transactionIdPresent: boolean;
     };
+
+/** Logs only allowlisted operational fields; no traveler, payment, credential, or supplier identifiers. */
+export function logExpediaRapidBookingExecutionResult(result: ExpediaRapidBookingExecutionResult) {
+  logOperationalEvent(
+    result.outcome === "confirmed" ? "info" : "warning",
+    result.outcome === "confirmed"
+      ? "expedia_rapid_booking_confirmed"
+      : "expedia_rapid_booking_action_required",
+    {
+      outcome: result.outcome,
+      status: result.status,
+      recovery: result.outcome === "action_required" ? result.recovery : null,
+      transactionIdPresent: result.transactionIdPresent,
+    },
+  );
+}
 
 type ExpediaRapidJsonObject = Record<string, unknown>;
 
@@ -321,6 +379,10 @@ export async function executeExpediaRapidBookingRequest(
   options: { fetcher?: ExpediaRapidBookingFetch; signal?: AbortSignal } = {},
 ): Promise<ExpediaRapidBookingExecutionResult> {
   const fetcher = options.fetcher ?? fetch;
+  const finish = (result: ExpediaRapidBookingExecutionResult) => {
+    logExpediaRapidBookingExecutionResult(result);
+    return result;
+  };
   try {
     const response = await fetcher(request.url, {
       method: request.method,
@@ -339,35 +401,35 @@ export async function executeExpediaRapidBookingRequest(
         : "";
       const retrieveLink = parsed ? readRetrieveLink(parsed, request.url) : null;
       if (itineraryId && retrieveLink) {
-        return {
+        return finish({
           outcome: "confirmed",
           status: response.status,
           itineraryId,
           retrieveLink,
           transactionIdPresent,
-        };
+        });
       }
-      return {
+      return finish({
         outcome: "action_required",
         status: response.status,
         recovery: "reconcile_by_affiliate_reference",
         transactionIdPresent,
-      };
+      });
     }
 
-    return {
+    return finish({
       outcome: "action_required",
       status: response.status,
       recovery: classifyExpediaRapidBookingFailure(response.status, readErrorType(parsed)),
       transactionIdPresent,
-    };
+    });
   } catch {
-    return {
+    return finish({
       outcome: "action_required",
       status: null,
       recovery: "reconcile_by_affiliate_reference",
       transactionIdPresent: false,
-    };
+    });
   }
 }
 

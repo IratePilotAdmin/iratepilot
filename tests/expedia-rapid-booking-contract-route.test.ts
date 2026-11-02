@@ -32,7 +32,7 @@ describe("Expedia Rapid booking contract route", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body).toEqual({
+    expect(body).toMatchObject({
       softwareContractOnly: true,
       supplierRequestSent: false,
       bookingCreated: false,
@@ -48,7 +48,15 @@ describe("Expedia Rapid booking contract route", () => {
         TR5a: true,
         TR5b: true,
       },
+      errorHandlingCoverage: { TR7: true },
+      operationalLogging: {
+        events: ["expedia_rapid_booking_confirmed", "expedia_rapid_booking_action_required"],
+        fields: ["outcome", "status", "recovery", "transactionIdPresent"],
+        piiIncluded: false,
+      },
     });
+    expect(body.recoveryGuidance).toHaveLength(4);
+    expect(body.recoveryGuidance.every((item: { retryOriginalBooking: boolean }) => !item.retryOriginalBooking)).toBe(true);
     expect(JSON.stringify(body)).not.toMatch(/synthetic|411111|43215|example\.com/i);
   });
 });
