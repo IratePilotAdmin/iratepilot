@@ -48,7 +48,7 @@ describe("Expedia Rapid sandbox validation", () => {
       currency: "USD",
       country_code: "US",
       language: "en-US",
-      occupancy: "2-4-9",
+      occupancy: "2-4,9",
       rate_plan_count: "1",
       sales_channel: "website",
       sales_environment: "hotel_only",

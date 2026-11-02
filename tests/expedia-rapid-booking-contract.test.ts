@@ -45,7 +45,9 @@ const validInput = {
 
 describe("Expedia Rapid booking contract", () => {
   it("encodes adults and every child age for Shopping occupancy", () => {
-    expect(buildExpediaRapidOccupancy(2, [4, 9])).toBe("2-4-9");
+    expect(buildExpediaRapidOccupancy(2, [])).toBe("2");
+    expect(buildExpediaRapidOccupancy(2, [4])).toBe("2-4");
+    expect(buildExpediaRapidOccupancy(2, [4, 9])).toBe("2-4,9");
     expect(() => buildExpediaRapidOccupancy(2, [18])).toThrow("occupancy is invalid");
   });
 

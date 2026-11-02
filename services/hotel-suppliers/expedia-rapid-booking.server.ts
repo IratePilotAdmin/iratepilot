@@ -107,7 +107,9 @@ export function buildExpediaRapidOccupancy(adults: number, childAges: number[]) 
     || childAges.some((age) => !Number.isInteger(age) || age < 0 || age > 17)) {
     throw new Error("Expedia Rapid occupancy is invalid.");
   }
-  return [adults, ...childAges].join("-");
+  return childAges.length > 0
+    ? `${adults}-${childAges.join(",")}`
+    : String(adults);
 }
 
 export function buildExpediaRapidBookingRequest(input: {
