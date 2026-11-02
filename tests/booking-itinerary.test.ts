@@ -40,9 +40,10 @@ describe("customer booking itineraries", () => {
   });
 
   it("keeps confirmation rendering compatible before the child-ages migration is deployed", () => {
-    const confirmationSelect = confirmation.match(/\.select\("([^"]+)"\)/)?.[1] || "";
-
-    expect(confirmationSelect).not.toContain("child_ages");
+    expect(confirmation).toContain('bookingConfirmationSelect = "id,confirmation_code,status,check_in,check_out,guests,child_ages,');
+    expect(confirmation).toContain('error?.code === "42703"');
+    expect(confirmation).toContain('error.message?.includes("child_ages")');
+    expect(confirmation).toContain("select(bookingConfirmationFallbackSelect)");
     expect(confirmation).toContain("child_ages?: number[]");
   });
 });
