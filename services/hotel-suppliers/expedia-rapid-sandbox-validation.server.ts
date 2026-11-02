@@ -11,6 +11,7 @@ import type { InventoryJsonValue } from "./inventory-response.server";
 const sandboxPropertyId = "19248";
 const sandboxAdults = 2;
 const sandboxChildAges = [4, 9] as const;
+const sandboxTravelerCountryCode = "US";
 
 export type ExpediaRapidSandboxValidationResult = {
   testedAt: string;
@@ -20,6 +21,7 @@ export type ExpediaRapidSandboxValidationResult = {
   rateCount: number;
   adultCount: number;
   childAgeCount: number;
+  travelerCountryCode: string;
 };
 
 export class ExpediaRapidSandboxValidationError extends Error {
@@ -98,12 +100,12 @@ export async function runExpediaRapidSandboxValidation(options: {
     apiKey,
     sharedSecret,
     timestampSeconds: Math.floor(testedAt.getTime() / 1000),
+    travelerCountryCode: sandboxTravelerCountryCode,
     query: {
       property_id: sandboxPropertyId,
       checkin,
       checkout,
       currency: "USD",
-      country_code: "US",
       language: "en-US",
       occupancy: buildExpediaRapidOccupancy(sandboxAdults, [...sandboxChildAges]),
       rate_plan_count: 1,
@@ -123,6 +125,7 @@ export async function runExpediaRapidSandboxValidation(options: {
     checkout,
     adultCount: sandboxAdults,
     childAgeCount: sandboxChildAges.length,
+    travelerCountryCode: sandboxTravelerCountryCode,
     ...summarizeResponse(response),
   };
 }

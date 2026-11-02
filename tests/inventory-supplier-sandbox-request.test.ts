@@ -78,6 +78,7 @@ describe("inventory supplier sandbox request builders", () => {
       apiKey: "expedia-api-key",
       sharedSecret: "expedia-shared-secret",
       timestampSeconds: 1_700_000_000,
+      travelerCountryCode: "us",
       query: {
         property_id: ["123", "456"],
         checkin: "2026-10-22",
@@ -92,6 +93,7 @@ describe("inventory supplier sandbox request builders", () => {
     expect(url.origin).toBe("https://test.ean.com");
     expect(url.pathname).toBe("/v3/properties/availability");
     expect(url.searchParams.getAll("property_id")).toEqual(["123", "456"]);
+    expect(url.searchParams.get("country_code")).toBe("US");
     expect(request.headers.Authorization).toMatch(
       /^EAN APIKey=expedia-api-key,Signature=[a-f0-9]{128},timestamp=1700000000$/,
     );
@@ -146,8 +148,25 @@ describe("inventory supplier sandbox request builders", () => {
       apiKey: "expedia-api-key",
       sharedSecret: "expedia-shared-secret",
       timestampSeconds: 1,
+      travelerCountryCode: "US",
       query: {},
     })).toThrow("query parameters are required");
+
+    expect(() => buildExpediaRapidSandboxAvailabilityRequest({
+      apiKey: "expedia-api-key",
+      sharedSecret: "expedia-shared-secret",
+      timestampSeconds: 1,
+      travelerCountryCode: "USA",
+      query: { property_id: "123" },
+    })).toThrow("two-letter country code");
+
+    expect(() => buildExpediaRapidSandboxAvailabilityRequest({
+      apiKey: "expedia-api-key",
+      sharedSecret: "expedia-shared-secret",
+      timestampSeconds: 1,
+      travelerCountryCode: "US",
+      query: { property_id: "123", country_code: "CA" },
+    })).toThrow("must be supplied through travelerCountryCode");
 
     expect(() => buildStubaSandboxHotelSearchRequest({
       authApiKey: "bad\nInjected: yes",
