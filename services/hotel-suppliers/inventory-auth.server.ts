@@ -68,3 +68,18 @@ export function buildExpediaRapidAuthorization(input: TimestampedCredentials & {
 
   return `EAN APIKey=${apiKey},Signature=${signature},timestamp=${timestamp}`;
 }
+
+export function buildBookingComAuthHeaders(input: {
+  apiKey: string;
+  affiliateId: string;
+}) {
+  const apiKey = requireCredential(input.apiKey);
+  const affiliateId = requireCredential(input.affiliateId);
+  if (!/^\d{1,20}$/.test(affiliateId)) {
+    throw new Error("Supplier authentication configuration is invalid.");
+  }
+  return {
+    Authorization: `Bearer ${apiKey}`,
+    "X-Affiliate-Id": affiliateId,
+  } as const;
+}

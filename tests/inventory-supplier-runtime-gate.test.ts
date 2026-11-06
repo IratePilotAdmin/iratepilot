@@ -13,6 +13,21 @@ describe("inventory supplier sandbox runtime gate", () => {
     });
     expect(evaluateInventorySandboxRuntimeGate("ratehawk", {}).status).toBe("disabled");
     expect(evaluateInventorySandboxRuntimeGate("expedia-rapid", {}).status).toBe("disabled");
+    expect(evaluateInventorySandboxRuntimeGate("booking-com", {})).toMatchObject({
+      status: "disabled",
+      enablementKey: "HOTEL_INVENTORY_BOOKING_COM_SANDBOX_ENABLED",
+    });
+  });
+
+  it("authorizes Booking.com only with credentials and an explicit sandbox flag", () => {
+    expect(evaluateInventorySandboxRuntimeGate("booking-com", {
+      HOTEL_INVENTORY_BOOKING_COM_SANDBOX_ENABLED: "true",
+      HOTEL_INVENTORY_BOOKING_COM_API_KEY: "issued-booking-com-api-token",
+      HOTEL_INVENTORY_BOOKING_COM_AFFILIATE_ID: "123456",
+    })).toMatchObject({
+      status: "authorized",
+      credentialStatus: "ready_for_sandbox_validation",
+    });
   });
 
   it("rejects an ambiguous enablement value", () => {

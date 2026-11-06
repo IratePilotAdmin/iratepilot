@@ -72,11 +72,16 @@ function validateRequest(request: InventorySandboxRequest) {
         ? request.method === "POST"
           && url.href === "https://testapijson.stuba.com/HotelSearch"
           && Boolean(request.headers.AuthApiKey)
-        : request.method === "GET"
-          && url.origin === "https://test.ean.com"
-          && url.pathname === "/v3/properties/availability"
-          && Boolean(url.search)
-          && request.headers.Authorization?.startsWith("EAN ");
+        : request.supplierId === "booking-com"
+          ? request.method === "POST"
+            && url.href === "https://demandapi-sandbox.booking.com/3.2/accommodations/search"
+            && request.headers.Authorization?.startsWith("Bearer ")
+            && Boolean(request.headers["X-Affiliate-Id"])
+          : request.method === "GET"
+            && url.origin === "https://test.ean.com"
+            && url.pathname === "/v3/properties/availability"
+            && Boolean(url.search)
+            && request.headers.Authorization?.startsWith("EAN ");
   if (!validEndpoint) invalidRequest(request.supplierId);
 
   for (const value of Object.values(request.headers)) {

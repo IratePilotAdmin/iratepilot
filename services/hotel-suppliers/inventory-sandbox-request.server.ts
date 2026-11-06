@@ -2,6 +2,7 @@ import "server-only";
 import { isIP } from "node:net";
 
 import {
+  buildBookingComAuthHeaders,
   buildExpediaRapidAuthorization,
   buildHotelbedsAuthHeaders,
   buildRatehawkAuthorization,
@@ -397,6 +398,24 @@ export function buildExpediaRapidSandboxAvailabilityRequest(input: {
       "Accept-Encoding": "gzip",
       "User-Agent": "iRatePilot/1.0",
     },
+  };
+}
+
+export function buildBookingComSandboxAccommodationSearchRequest(input: {
+  apiKey: string;
+  affiliateId: string;
+  payload: JsonObject;
+}): InventorySandboxRequest {
+  return {
+    supplierId: "booking-com",
+    url: "https://demandapi-sandbox.booking.com/3.2/accommodations/search",
+    method: "POST",
+    headers: {
+      ...buildBookingComAuthHeaders(input),
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: serializeJsonObject(input.payload),
   };
 }
 

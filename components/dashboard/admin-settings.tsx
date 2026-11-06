@@ -900,7 +900,7 @@ export function AdminSettings() {
         <div className="border-b p-6">
           <span className="text-xs uppercase tracking-wider text-slate-500">Aggregator inventory</span>
           <h2 className="mt-2 text-xl font-semibold">Hotel inventory supplier readiness</h2>
-          <p className="mt-2 text-sm text-slate-600">This panel tracks credential prerequisites. RateHawk and Expedia Rapid tests can send read-only sandbox availability searches; neither can create a booking, payment, partnership approval, or live traffic.</p>
+          <p className="mt-2 text-sm text-slate-600">This panel tracks credential prerequisites. RateHawk and Expedia Rapid tests can send read-only sandbox availability searches. Booking.com Demand API access remains fail-closed until Managed Affiliate Partner credentials are issued. This panel cannot create a booking, payment, partnership approval, or live traffic.</p>
           {inventorySuppliers ? <div className="mt-4 flex flex-wrap gap-5 text-sm">
             <span><strong>{inventorySuppliers.length}</strong> suppliers tracked</span>
             <span><strong>{inventorySuppliers.filter((supplier) => supplier.status === "ready_for_sandbox_validation").length}</strong> ready for sandbox validation</span>

@@ -6,6 +6,7 @@ import {
   InventorySandboxTransportError,
 } from "../services/hotel-suppliers/inventory-sandbox-transport.server";
 import {
+  buildBookingComSandboxAccommodationSearchRequest,
   buildExpediaRapidSandboxAvailabilityRequest,
   buildHotelbedsSandboxAvailabilityRequest,
   buildRatehawkSandboxBookingCancelRequest,
@@ -52,6 +53,13 @@ function enabledEnvironment(supplierId: InventorySandboxRequest["supplierId"]) {
     return {
       HOTEL_INVENTORY_STUBA_SANDBOX_ENABLED: "true",
       HOTEL_INVENTORY_STUBA_AUTH_API_KEY: "issued-stuba-sandbox-key",
+    };
+  }
+  if (supplierId === "booking-com") {
+    return {
+      HOTEL_INVENTORY_BOOKING_COM_SANDBOX_ENABLED: "true",
+      HOTEL_INVENTORY_BOOKING_COM_API_KEY: "booking-com-api-token",
+      HOTEL_INVENTORY_BOOKING_COM_AFFILIATE_ID: "123456",
     };
   }
   return {
@@ -120,6 +128,17 @@ describe("inventory supplier sandbox transport", () => {
       timestampSeconds: 1_700_000_000,
       travelerCountryCode: "US",
       query: { property_id: "123", occupancy: 2 },
+    }),
+    buildBookingComSandboxAccommodationSearchRequest({
+      apiKey: "booking-com-api-token",
+      affiliateId: "123456",
+      payload: {
+        city: -2140479,
+        booker: { country: "us", platform: "desktop" },
+        checkin: "2026-11-10",
+        checkout: "2026-11-12",
+        guests: { number_of_rooms: 1, number_of_adults: 2 },
+      },
     }),
     buildStubaSandboxHotelSearchRequest({
       authApiKey: "issued-stuba-sandbox-key",
