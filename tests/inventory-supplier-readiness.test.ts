@@ -19,9 +19,27 @@ describe("inventory supplier readiness", () => {
       "hotelbeds",
       "ratehawk",
       "expedia-rapid",
+      "booking-com",
       "stuba",
     ]);
     expect(readiness.every(({ status }) => status === "not_configured")).toBe(true);
+  });
+
+  it("requires Booking.com Managed Affiliate credentials", () => {
+    const incomplete = buildInventorySupplierReadiness({
+      HOTEL_INVENTORY_BOOKING_COM_API_KEY: "issued-booking-com-api-token",
+    }).find(({ id }) => id === "booking-com");
+    const ready = buildInventorySupplierReadiness({
+      HOTEL_INVENTORY_BOOKING_COM_API_KEY: "issued-booking-com-api-token",
+      HOTEL_INVENTORY_BOOKING_COM_AFFILIATE_ID: "123456",
+    }).find(({ id }) => id === "booking-com");
+
+    expect(incomplete?.status).toBe("credentials_required");
+    expect(incomplete?.missingEnvironmentKeys).toEqual([
+      "HOTEL_INVENTORY_BOOKING_COM_AFFILIATE_ID",
+    ]);
+    expect(ready?.status).toBe("ready_for_sandbox_validation");
+    expect(JSON.stringify(ready)).not.toContain("issued-booking-com-api-token");
   });
 
   it("requires an issued Stuba API key before sandbox validation", () => {

@@ -1,4 +1,9 @@
-export type InventorySupplierId = "hotelbeds" | "ratehawk" | "expedia-rapid" | "stuba";
+export type InventorySupplierId =
+  | "hotelbeds"
+  | "ratehawk"
+  | "expedia-rapid"
+  | "booking-com"
+  | "stuba";
 
 export type InventorySupplierStatus =
   | "not_configured"
@@ -46,6 +51,7 @@ function isValidConfiguredValue(key: string, value: string) {
     return Boolean(boundary) && pem.endsWith(`-----END ${boundary?.[1]}-----`);
   }
   if (key.endsWith("_KEY_ID")) return normalized.length >= 3;
+  if (key.endsWith("_AFFILIATE_ID")) return /^\d{1,20}$/.test(normalized);
   return normalized.length >= 8;
 }
 
@@ -81,6 +87,16 @@ const inventorySupplierManifests = [
     ],
     documentationUrl: "https://developers.expediagroup.com/rapid/lodging/reference/signature-authentication",
     approvalNote: "Requires Rapid partner approval and issued credentials; production access remains restricted until launch review.",
+  },
+  {
+    id: "booking-com",
+    name: "Booking.com Demand API",
+    requiredEnvironmentKeys: [
+      "HOTEL_INVENTORY_BOOKING_COM_API_KEY",
+      "HOTEL_INVENTORY_BOOKING_COM_AFFILIATE_ID",
+    ],
+    documentationUrl: "https://developers.booking.com/demand/docs/getting-started/prerequisites",
+    approvalNote: "Requires a Managed Affiliate Partner contract, Partner Centre access, an API key token, and an affiliate ID. Sandbox and production use the same issued credentials.",
   },
   {
     id: "stuba",

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 import {
+  buildBookingComSandboxAccommodationSearchRequest,
   buildExpediaRapidSandboxAvailabilityRequest,
   buildHotelbedsSandboxAvailabilityRequest,
   buildRatehawkSandboxHotelPrebookRequest,
@@ -125,6 +126,33 @@ describe("inventory supplier sandbox request builders", () => {
         "Content-Type": "application/json",
       },
       body: '{"checkIn":"2026-10-22","checkOut":"2026-10-25","hotelIds":[55492]}',
+    });
+  });
+
+  it("builds a Booking.com Demand API sandbox accommodation search", () => {
+    const request = buildBookingComSandboxAccommodationSearchRequest({
+      apiKey: "booking-com-api-token",
+      affiliateId: "123456",
+      payload: {
+        city: -2140479,
+        booker: { country: "us", platform: "desktop" },
+        checkin: "2026-11-10",
+        checkout: "2026-11-12",
+        guests: { number_of_rooms: 1, number_of_adults: 2 },
+      },
+    });
+
+    expect(request).toEqual({
+      supplierId: "booking-com",
+      url: "https://demandapi-sandbox.booking.com/3.2/accommodations/search",
+      method: "POST",
+      headers: {
+        Authorization: "Bearer booking-com-api-token",
+        "X-Affiliate-Id": "123456",
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: '{"city":-2140479,"booker":{"country":"us","platform":"desktop"},"checkin":"2026-11-10","checkout":"2026-11-12","guests":{"number_of_rooms":1,"number_of_adults":2}}',
     });
   });
 

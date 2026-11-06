@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 import {
+  buildBookingComAuthHeaders,
   buildExpediaRapidAuthorization,
   buildHotelbedsAuthHeaders,
   buildRatehawkAuthorization,
@@ -34,11 +35,22 @@ describe("inventory supplier authentication", () => {
     })).toBe("EAN APIKey=123,Signature=15fab65e201f6f4ee693f0b4d5de909d0e88fc96cdc3a222493b9edcfee0a0f1507c1e9ba129472d21b1e467e7ee05b02b6cb99dbde85cf60a88207de309ce53,timestamp=1700000000");
   });
 
+  it("builds the documented Booking.com bearer and affiliate headers", () => {
+    expect(buildBookingComAuthHeaders({
+      apiKey: "booking-com-api-token",
+      affiliateId: "123456",
+    })).toEqual({
+      Authorization: "Bearer booking-com-api-token",
+      "X-Affiliate-Id": "123456",
+    });
+  });
+
   it.each([
     () => buildHotelbedsAuthHeaders({ apiKey: "key\r\nInjected: yes", secret: "secret", timestampSeconds: 1 }),
     () => buildRatehawkAuthorization({ keyId: "bad:id", apiKey: "secret" }),
     () => buildExpediaRapidAuthorization({ apiKey: "key", sharedSecret: "", timestampSeconds: 1 }),
     () => buildExpediaRapidAuthorization({ apiKey: "key", sharedSecret: "secret", timestampSeconds: 0 }),
+    () => buildBookingComAuthHeaders({ apiKey: "key", affiliateId: "not-numeric" }),
   ])("rejects invalid authentication input without echoing credentials", (build) => {
     expect(build).toThrow("Supplier authentication");
     try {
