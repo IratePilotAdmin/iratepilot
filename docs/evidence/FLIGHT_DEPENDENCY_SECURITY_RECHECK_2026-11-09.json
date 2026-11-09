@@ -7,7 +7,7 @@
     "source": {
       "repository": "IratePilotAdmin/iratepilot",
       "branch": "agent/flight-live-foundation-20260823",
-      "commit": "4e17636db2640e56adb95fa403fd65b594fdae4b"
+      "commit": "988f3a3cb359bce9865ffc8449fcad783bf7d435"
     },
     "patchedPackages": {
       "next": "16.4.5",
