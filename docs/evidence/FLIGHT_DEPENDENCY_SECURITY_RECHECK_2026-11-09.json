@@ -1,13 +1,13 @@
 {
   "evidence": {
     "version": "flight-dependency-security-recheck-v1",
-    "checkedAt": "2026-11-09T11:04:57-06:00",
+    "checkedAt": "2026-11-09T11:50:00-06:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "source": {
       "repository": "IratePilotAdmin/iratepilot",
       "branch": "agent/flight-live-foundation-20260823",
-      "commit": "988f3a3cb359bce9865ffc8449fcad783bf7d435"
+      "commit": "d89ddf292155b6d9d477a83d01cf5a68d516c2d8"
     },
     "patchedPackages": {
       "next": "16.4.5",
