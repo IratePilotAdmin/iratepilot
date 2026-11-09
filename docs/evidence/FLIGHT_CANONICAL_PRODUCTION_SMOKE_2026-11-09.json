@@ -1,7 +1,7 @@
 {
   "evidence": {
-    "version": "flight-canonical-production-smoke-v1",
-    "checkedAt": "2026-11-09T11:25:00-06:00",
+    "version": "flight-canonical-production-smoke-v2",
+    "checkedAt": "2026-11-09T11:46:55-06:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "surface": {
@@ -17,6 +17,17 @@
       "message": "No airline API request or payment is made",
       "consoleWarningsAndErrors": []
     },
+    "liveHttpRecheck": {
+      "url": "https://www.iratepilot.com/flights",
+      "status": 200,
+      "server": "Vercel",
+      "xVercelId": "iad1::iad1::pnmz8-1794246415401-cdf6971330ca",
+      "htmlSha256": "cf321dc7700243f794af960900b79da7e508ae851c3a1d4988ccdbb073605be3",
+      "supplierOfflineMarkerPresent": true,
+      "multiCityMarkerPresent": true,
+      "duffelMarkerPresent": false,
+      "flightApiMarkerPresent": false
+    },
     "authorityBoundary": {
       "consumerReleaseAuthorized": false,
       "productionProviderTrafficEnabled": false,
@@ -24,6 +35,6 @@
       "paymentEnabled": false,
       "ticketingEnabled": false
     },
-    "disposition": "The canonical public flight surface remains a supplier-offline planning preview. This read-only smoke did not contact an airline, create an order, create a payment, or issue a ticket."
+    "disposition": "The canonical public flight surface remains a supplier-offline planning preview. The fresh read-only live HTTP recheck returned 200 with the expected supplier-offline and Multi-city markers and no Duffel or flight-API markers. No airline, order, payment, or ticket action occurred."
   }
 }
