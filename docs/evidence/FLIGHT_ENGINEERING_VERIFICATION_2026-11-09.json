@@ -1,16 +1,16 @@
 {
   "evidence": {
     "version": "flight-engineering-verification-v3",
-    "checkedAt": "2026-11-09T11:04:57-06:00",
+    "checkedAt": "2026-11-09T11:42:00-06:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "source": {
       "repository": "IratePilotAdmin/iratepilot",
       "branch": "agent/flight-live-foundation-20260823",
-      "commit": "988f3a3cb359bce9865ffc8449fcad783bf7d435",
-      "commitMessage": "chore(flights): remediate dependency security gate",
+      "commit": "ffe900aaff3ca52542e9bd146bd9bf052ead913c",
+      "commitMessage": "fix(ci): sync optional emnapi lock entries",
       "workingTreeChangeForThisReceipt": true,
-      "workingTreeChangeDescription": "Receipt refreshed after dependency remediation and verification; pre-existing untracked pnpm and Supabase temp files were not included."
+      "workingTreeChangeDescription": "Receipt refreshed after the green CI run for ffe900a; the pre-existing untracked pnpm and Supabase temp files were not included."
     },
     "checks": {
       "launchEvidenceAudit": {

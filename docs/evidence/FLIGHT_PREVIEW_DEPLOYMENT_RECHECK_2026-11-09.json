@@ -1,25 +1,25 @@
 {
   "evidence": {
     "version": "flight-preview-deployment-recheck-v4",
-    "checkedAt": "2026-11-09T11:24:30-06:00",
+    "checkedAt": "2026-11-09T11:42:00-06:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "source": {
       "repository": "IratePilotAdmin/iratepilot",
       "branch": "agent/flight-live-foundation-20260823",
-      "commit": "e2977c869b77dd1d2cde25132b1b725f3c947ba6"
+      "commit": "ffe900aaff3ca52542e9bd146bd9bf052ead913c"
     },
     "deployment": {
-      "deploymentId": "61EvcGAYmQ81hPcUGNiyafEYtVQv",
-      "url": "https://iratepilotadmin-fyonhv1wm-irate-pilot.vercel.app",
+      "deploymentId": "3KC4LQqeCfAF5FLowkcT6rApuQc5",
+      "url": "https://iratepilotadmin-mxe6x613w-irate-pilot.vercel.app",
       "branchAlias": "https://iratepilotadmin-git-agent-flight-live-founda-0333c5-irate-pilot.vercel.app",
       "state": "READY",
       "target": "preview",
       "sourceBranch": "agent/flight-live-foundation-20260823",
-      "sourceCommit": "e2977c869b77dd1d2cde25132b1b725f3c947ba6"
+      "sourceCommit": "ffe900aaff3ca52542e9bd146bd9bf052ead913c"
     },
     "browserSmoke": {
-      "url": "https://iratepilotadmin-fyonhv1wm-irate-pilot.vercel.app/flights",
+      "url": "https://iratepilotadmin-mxe6x613w-irate-pilot.vercel.app/flights",
       "pageTitle": "Flight planning preview | iRatePilot",
       "surface": "supplier_offline_planning_preview",
       "liveInventoryDisplayed": false,
@@ -47,6 +47,6 @@
       "paymentEnabled": false,
       "ticketingEnabled": false
     },
-    "disposition": "The current flight branch commit e2977c8 has a READY Preview deployment and authenticated boundary checks pass. The public route remains supplier-offline and all provider, booking, payment, and ticketing authority remains closed."
+    "disposition": "The current flight branch commit ffe900a has a READY Preview deployment and authenticated boundary checks pass. The public route remains supplier-offline and all provider, booking, payment, and ticketing authority remains closed."
   }
 }
