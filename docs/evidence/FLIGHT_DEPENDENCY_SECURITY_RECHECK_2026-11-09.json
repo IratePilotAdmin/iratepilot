@@ -14,11 +14,29 @@
       "eslintConfigNext": "16.4.5",
       "zod": "4.6.7",
       "sharp": "0.35.5",
-      "sourceMapJs": "1.2.2"
+      "sourceMapJs": "1.2.2",
+      "vitest": "5.1.0",
+      "vite": "8.3.7",
+      "jsYaml": "4.3.2",
+      "postcssSelectorParser": "6.1.6",
+      "minimatch": "11.0.5 / 3.1.5",
+      "braceExpansion": "5.0.12 / 1.1.21"
     },
     "checks": {
       "productionDependencyAudit": {
         "command": "npm audit --omit=dev --audit-level=high",
+        "status": "passed",
+        "vulnerabilities": {
+          "info": 0,
+          "low": 0,
+          "moderate": 0,
+          "high": 0,
+          "critical": 0,
+          "total": 0
+        }
+      },
+      "fullDependencyAudit": {
+        "command": "npm audit --audit-level=high",
         "status": "passed",
         "vulnerabilities": {
           "info": 0,

@@ -49,8 +49,9 @@
         "state": "complete",
         "evidence": [
           "docs/evidence/FLIGHT_DEPENDENCY_SECURITY_RECHECK_2026-11-09.json",
-          "Production dependency audit: 0 vulnerabilities",
+          "Full dependency audit: 0 vulnerabilities",
           "Next.js 16.4.5, Zod 4.6.7, Sharp 0.35.5, source-map-js 1.2.2",
+          "Vitest 5.1.0, Vite 8.3.7, js-yaml 4.3.2, and patched lint transitive tree",
           "Full Vitest, ESLint, TypeScript, and production build passed"
         ],
         "authorityEnabled": false
