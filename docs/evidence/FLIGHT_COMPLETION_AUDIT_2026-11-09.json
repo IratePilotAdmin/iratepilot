@@ -1,13 +1,13 @@
 {
   "evidence": {
     "version": "flight-completion-audit-v4",
-    "checkedAt": "2026-11-09T11:25:00-06:00",
+    "checkedAt": "2026-11-09T11:24:30-06:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "source": {
       "repository": "IratePilotAdmin/iratepilot",
       "branch": "agent/flight-live-foundation-20260823",
-      "commit": "988f3a3cb359bce9865ffc8449fcad783bf7d435"
+      "commit": "e2977c869b77dd1d2cde25132b1b725f3c947ba6"
     },
     "requirements": [
       {
@@ -28,7 +28,7 @@
         "state": "complete",
         "evidence": [
           "docs/evidence/FLIGHT_PREVIEW_DEPLOYMENT_RECHECK_2026-11-09.json",
-          "READY Preview deployment ArLFJXxWy2Dr3uzH6xKN325hakmt",
+          "READY Preview deployment 61EvcGAYmQ81hPcUGNiyafEYtVQv",
           "public supplier-offline smoke passed",
           "admin route redirected to sign-in boundary"
         ],
