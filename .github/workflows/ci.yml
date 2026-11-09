@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - agent/flight-live-foundation-20260823
 
 permissions:
   contents: read
@@ -46,6 +47,12 @@ jobs:
 
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
+
+      - name: Audit all dependencies
+        run: npm audit --audit-level=high
+
+      - name: Verify flight launch evidence
+        run: npm run flight:audit-launch-evidence
 
       - name: Run repository checks
         run: npm run check
