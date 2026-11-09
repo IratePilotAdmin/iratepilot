@@ -1,0 +1,81 @@
+{
+  "evidence": {
+    "version": "flight-engineering-verification-v2",
+    "checkedAt": "2026-11-09T10:47:00-06:00",
+    "sanitized": true,
+    "secretValuesIncluded": false,
+    "source": {
+      "repository": "IratePilotAdmin/iratepilot",
+      "branch": "agent/flight-live-foundation-20260823",
+      "commit": "808562e4ca2592098a91374543cca0fb6d49b8e7",
+      "commitMessage": "feat(flights): add validated multi-city planning",
+      "workingTreeChangeForThisReceipt": true,
+      "workingTreeChangeDescription": "Evidence receipt added after verification; pre-existing untracked pnpm and Supabase temp files were not included."
+    },
+    "checks": {
+      "launchEvidenceAudit": {
+        "command": "node scripts/audit-flight-launch-evidence.mjs",
+        "status": "passed",
+        "candidateConnectors": 9,
+        "routePackets": 2,
+        "consumerReleaseAuthorized": false,
+        "providerTrafficEnabled": false,
+        "bookingEnabled": false,
+        "paymentEnabled": false,
+        "duffelResponseReceived": false
+      },
+      "focusedFlightSafety": {
+        "command": "vitest run [23 focused flight safety, connector, preview, production, payment, and operations files] --reporter=dot",
+        "status": "passed",
+        "testFilesPassed": 23,
+        "testsPassed": 298,
+        "providerRequestsPerformed": false,
+        "ordersPerformed": false,
+        "paymentsPerformed": false,
+        "ticketsIssued": false
+      },
+      "fullVitestSuite": {
+        "command": "vitest run --reporter=dot",
+        "status": "passed",
+        "testFilesPassed": 463,
+        "testsPassed": 2979,
+        "providerRequestsPerformed": false,
+        "ordersPerformed": false,
+        "paymentsPerformed": false,
+        "ticketsIssued": false
+      },
+      "eslint": {
+        "command": "eslint .",
+        "status": "passed"
+      },
+      "typescript": {
+        "command": "tsc --noEmit",
+        "status": "passed"
+      },
+      "productionBuild": {
+        "command": "next build --webpack",
+        "status": "passed",
+        "staticPagesGenerated": 121,
+        "providerRequestsPerformed": false,
+        "ordersPerformed": false,
+        "paymentsPerformed": false,
+        "ticketsIssued": false
+      }
+    },
+    "authorityBoundary": {
+      "consumerReleaseAuthorized": false,
+      "productionProviderTrafficEnabled": false,
+      "bookingEnabled": false,
+      "paymentEnabled": false,
+      "ticketingEnabled": false
+    },
+    "remainingExternalGates": [
+      "Duffel contract, content, ticketing, settlement, security, support, and sandbox approval/evidence",
+      "Flight-specific Stripe, settlement, reconciliation, fraud/refund, legal, and compliance approval",
+      "Named support/on-call ownership, alert delivery, monitoring, and incident-drill evidence",
+      "Current DNS/email sender-authentication and registrar operational evidence",
+      "Separate consumer Production release decision"
+    ],
+    "disposition": "Engineering verification is current and green. No live provider request, order, payment, ticket, DNS change, legal/KYC action, or consumer release occurred."
+  }
+}
