@@ -1,0 +1,51 @@
+{
+  "evidence": {
+    "version": "flight-preview-deployment-recheck-v2",
+    "checkedAt": "2026-11-09T10:54:00-06:00",
+    "sanitized": true,
+    "secretValuesIncluded": false,
+    "source": {
+      "repository": "IratePilotAdmin/iratepilot",
+      "branch": "agent/flight-live-foundation-20260823",
+      "commit": "2d1f13409b0598c6e380c892c16d4899e23c7be7"
+    },
+    "deployment": {
+      "deploymentId": "ArLFJXxWy2Dr3uzH6xKN325hakmt",
+      "url": "https://iratepilotadmin-o2kwlf9ig-irate-pilot.vercel.app",
+      "branchAlias": "https://iratepilotadmin-git-agent-flight-live-founda-0333c5-irate-pilot.vercel.app",
+      "state": "READY",
+      "target": "preview",
+      "sourceBranch": "agent/flight-live-foundation-20260823",
+      "sourceCommit": "2d1f13409b0598c6e380c892c16d4899e23c7be7"
+    },
+    "browserSmoke": {
+      "url": "https://iratepilotadmin-o2kwlf9ig-irate-pilot.vercel.app/flights",
+      "pageTitle": "Flight planning preview | iRatePilot",
+      "surface": "supplier_offline_planning_preview",
+      "liveInventoryDisplayed": false,
+      "providerRequestDispatched": false,
+      "paymentCreated": false,
+      "bookingCreated": false,
+      "ticketIssued": false,
+      "multiCityOptionVisible": true,
+      "message": "No airline API request or payment is made"
+    },
+    "adminAuthBoundary": {
+      "requestedPath": "/admin/flights",
+      "finalPath": "/login?next=%2Fadmin%2Fflights",
+      "loginSurfaceObserved": true,
+      "providerRequestsPerformed": false,
+      "ordersPerformed": false,
+      "paymentsPerformed": false,
+      "ticketsIssued": false
+    },
+    "authorityBoundary": {
+      "consumerReleaseAuthorized": false,
+      "productionProviderTrafficEnabled": false,
+      "bookingEnabled": false,
+      "paymentEnabled": false,
+      "ticketingEnabled": false
+    },
+    "disposition": "The current flight branch has a READY Preview deployment and authenticated boundary checks pass. The public route remains supplier-offline and all provider, booking, payment, and ticketing authority remains closed."
+  }
+}

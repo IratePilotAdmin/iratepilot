@@ -1,0 +1,103 @@
+{
+  "evidence": {
+    "version": "flight-completion-audit-v2",
+    "checkedAt": "2026-11-09T10:54:00-06:00",
+    "sanitized": true,
+    "secretValuesIncluded": false,
+    "source": {
+      "repository": "IratePilotAdmin/iratepilot",
+      "branch": "agent/flight-live-foundation-20260823",
+      "commit": "2d1f13409b0598c6e380c892c16d4899e23c7be7"
+    },
+    "requirements": [
+      {
+        "id": "engineering_foundation",
+        "state": "complete",
+        "evidence": [
+          "docs/evidence/FLIGHT_ENGINEERING_VERIFICATION_2026-11-09.json",
+          "463 passing files / 2,979 passing tests",
+          "ESLint passed",
+          "TypeScript passed",
+          "121-page production build passed",
+          "launch-evidence audit passed"
+        ],
+        "authorityEnabled": false
+      },
+      {
+        "id": "preview_verification",
+        "state": "complete",
+        "evidence": [
+          "docs/evidence/FLIGHT_PREVIEW_DEPLOYMENT_RECHECK_2026-11-09.json",
+          "READY Preview deployment ArLFJXxWy2Dr3uzH6xKN325hakmt",
+          "public supplier-offline smoke passed",
+          "admin route redirected to sign-in boundary"
+        ],
+        "authorityEnabled": false
+      },
+      {
+        "id": "offline_operational_controls",
+        "state": "complete",
+        "evidence": [
+          "flight operations runbook and collector tests",
+          "focused flight operations tests passed",
+          "provider, order, payment, and ticketing effects remained false"
+        ],
+        "authorityEnabled": false
+      },
+      {
+        "id": "production_deployment_verification",
+        "state": "complete_prior_recheck",
+        "evidence": [
+          "prior reviewed Production deployment remains the last verified public release",
+          "current branch Preview is verified separately; no Production promotion was performed in this receipt"
+        ],
+        "authorityEnabled": false
+      },
+      {
+        "id": "duffel_contract_authority_and_sandbox",
+        "state": "pending_external",
+        "authorityEnabled": false
+      },
+      {
+        "id": "payment_settlement_legal_compliance",
+        "state": "pending_external",
+        "authorityEnabled": false
+      },
+      {
+        "id": "support_on_call_monitoring_release",
+        "state": "pending_external",
+        "authorityEnabled": false
+      },
+      {
+        "id": "dns_email_sender_authentication",
+        "state": "pending_external",
+        "authorityEnabled": false
+      },
+      {
+        "id": "consumer_release_activation",
+        "state": "blocked_by_prerequisites",
+        "authorityEnabled": false
+      }
+    ],
+    "summary": {
+      "internalRequirementsComplete": 3,
+      "internalRequirementsPreviouslyVerified": 1,
+      "externalGateGroupsRemaining": 5,
+      "consumerReleaseAuthorized": false,
+      "productionProviderTrafficEnabled": false,
+      "bookingEnabled": false,
+      "paymentEnabled": false,
+      "ticketingEnabled": false
+    },
+    "duffelSupport": {
+      "latestAction": "support request submitted after email verification",
+      "responseReceived": false,
+      "requestScope": "customer-card/3DS approval, prepaid-balance requirements, activation requirements, and fees",
+      "credentialsIncluded": false,
+      "passengerDataIncluded": false,
+      "bookingRequested": false,
+      "paymentRequested": false
+    },
+    "disposition": "All safely implementable engineering and Preview gates are current and verified. The package is not consumer-Production launch ready because provider approval, payment/legal/compliance, operational release, DNS/email, and the separate release decision remain external prerequisites."
+  }
+}
