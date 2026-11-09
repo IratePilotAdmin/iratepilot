@@ -1,13 +1,13 @@
 {
   "evidence": {
-    "version": "flight-completion-audit-v3",
-    "checkedAt": "2026-11-09T11:04:57-06:00",
+    "version": "flight-completion-audit-v4",
+    "checkedAt": "2026-11-09T11:25:00-06:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "source": {
       "repository": "IratePilotAdmin/iratepilot",
       "branch": "agent/flight-live-foundation-20260823",
-      "commit": "4e17636db2640e56adb95fa403fd65b594fdae4b"
+      "commit": "pending-current-commit"
     },
     "requirements": [
       {
@@ -60,6 +60,8 @@
         "id": "production_deployment_verification",
         "state": "complete_prior_recheck",
         "evidence": [
+          "docs/evidence/FLIGHT_CANONICAL_PRODUCTION_SMOKE_2026-11-09.json",
+          "canonical public flight surface smoke remained supplier-offline with zero browser warnings/errors",
           "prior reviewed Production deployment remains the last verified public release",
           "current branch Preview is verified separately; no Production promotion was performed in this receipt"
         ],

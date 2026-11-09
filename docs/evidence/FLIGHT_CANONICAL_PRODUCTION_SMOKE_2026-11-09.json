@@ -1,0 +1,29 @@
+{
+  "evidence": {
+    "version": "flight-canonical-production-smoke-v1",
+    "checkedAt": "2026-11-09T11:25:00-06:00",
+    "sanitized": true,
+    "secretValuesIncluded": false,
+    "surface": {
+      "url": "https://www.iratepilot.com/flights",
+      "title": "Flight planning preview | iRatePilot",
+      "surface": "supplier_offline_planning_preview",
+      "liveInventoryDisplayed": false,
+      "providerRequestDispatched": false,
+      "paymentCreated": false,
+      "bookingCreated": false,
+      "ticketIssued": false,
+      "multiCityOptionVisible": true,
+      "message": "No airline API request or payment is made",
+      "consoleWarningsAndErrors": []
+    },
+    "authorityBoundary": {
+      "consumerReleaseAuthorized": false,
+      "productionProviderTrafficEnabled": false,
+      "bookingEnabled": false,
+      "paymentEnabled": false,
+      "ticketingEnabled": false
+    },
+    "disposition": "The canonical public flight surface remains a supplier-offline planning preview. This read-only smoke did not contact an airline, create an order, create a payment, or issue a ticket."
+  }
+}
