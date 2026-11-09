@@ -1,13 +1,13 @@
 {
   "evidence": {
-    "version": "flight-completion-audit-v2",
-    "checkedAt": "2026-11-09T10:54:00-06:00",
+    "version": "flight-completion-audit-v3",
+    "checkedAt": "2026-11-09T11:04:57-06:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "source": {
       "repository": "IratePilotAdmin/iratepilot",
       "branch": "agent/flight-live-foundation-20260823",
-      "commit": "2d1f13409b0598c6e380c892c16d4899e23c7be7"
+      "commit": "pending-current-commit"
     },
     "requirements": [
       {
@@ -41,6 +41,17 @@
           "flight operations runbook and collector tests",
           "focused flight operations tests passed",
           "provider, order, payment, and ticketing effects remained false"
+        ],
+        "authorityEnabled": false
+      },
+      {
+        "id": "dependency_security",
+        "state": "complete",
+        "evidence": [
+          "docs/evidence/FLIGHT_DEPENDENCY_SECURITY_RECHECK_2026-11-09.json",
+          "Production dependency audit: 0 vulnerabilities",
+          "Next.js 16.4.5, Zod 4.6.7, Sharp 0.35.5, source-map-js 1.2.2",
+          "Full Vitest, ESLint, TypeScript, and production build passed"
         ],
         "authorityEnabled": false
       },
@@ -80,7 +91,7 @@
       }
     ],
     "summary": {
-      "internalRequirementsComplete": 3,
+      "internalRequirementsComplete": 4,
       "internalRequirementsPreviouslyVerified": 1,
       "externalGateGroupsRemaining": 5,
       "consumerReleaseAuthorized": false,

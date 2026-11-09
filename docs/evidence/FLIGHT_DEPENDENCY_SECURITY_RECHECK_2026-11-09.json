@@ -1,0 +1,79 @@
+{
+  "evidence": {
+    "version": "flight-dependency-security-recheck-v1",
+    "checkedAt": "2026-11-09T11:04:57-06:00",
+    "sanitized": true,
+    "secretValuesIncluded": false,
+    "source": {
+      "repository": "IratePilotAdmin/iratepilot",
+      "branch": "agent/flight-live-foundation-20260823",
+      "commit": "pending-current-commit"
+    },
+    "patchedPackages": {
+      "next": "16.4.5",
+      "eslintConfigNext": "16.4.5",
+      "zod": "4.6.7",
+      "sharp": "0.35.5",
+      "sourceMapJs": "1.2.2"
+    },
+    "checks": {
+      "productionDependencyAudit": {
+        "command": "npm audit --omit=dev --audit-level=high",
+        "status": "passed",
+        "vulnerabilities": {
+          "info": 0,
+          "low": 0,
+          "moderate": 0,
+          "high": 0,
+          "critical": 0,
+          "total": 0
+        }
+      },
+      "fullVitestSuite": {
+        "command": "vitest run --reporter=dot",
+        "status": "passed",
+        "testFilesPassed": 463,
+        "testsPassed": 2979,
+        "providerRequestsPerformed": false,
+        "ordersPerformed": false,
+        "paymentsPerformed": false,
+        "ticketsIssued": false
+      },
+      "eslint": {
+        "command": "eslint .",
+        "status": "passed"
+      },
+      "typescript": {
+        "command": "tsc --noEmit",
+        "status": "passed"
+      },
+      "productionBuild": {
+        "command": "next build --webpack",
+        "status": "passed",
+        "frameworkVersion": "16.4.5",
+        "staticPagesGenerated": 121,
+        "providerRequestsPerformed": false,
+        "ordersPerformed": false,
+        "paymentsPerformed": false,
+        "ticketsIssued": false
+      },
+      "launchEvidenceAudit": {
+        "command": "node scripts/audit-flight-launch-evidence.mjs",
+        "status": "passed",
+        "consumerReleaseAuthorized": false,
+        "providerTrafficEnabled": false,
+        "bookingEnabled": false,
+        "paymentEnabled": false,
+        "duffelResponseReceived": false
+      }
+    },
+    "authorityBoundary": {
+      "consumerReleaseAuthorized": false,
+      "productionProviderTrafficEnabled": false,
+      "bookingEnabled": false,
+      "paymentEnabled": false,
+      "ticketingEnabled": false
+    },
+    "disposition": "Production dependency vulnerabilities are remediated and all local verification gates are green. External provider, payment/compliance, operational release, DNS/email, and consumer-production approval gates remain closed."
+  }
+}

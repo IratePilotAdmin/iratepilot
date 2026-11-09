@@ -10,6 +10,7 @@ import {
   sha256FlightEvidence,
   type FlightProductionActionAuthorization,
   type FlightProductionAuthorizationVerifier,
+  type FlightCanonicalJsonValue,
   type FlightRuntimePolicy,
   type FlightRuntimeProviderBinding,
 } from "../runtime-safety";
@@ -99,7 +100,7 @@ const stripePaymentIntentSchema = z.object({
   capture_method: z.literal("manual"),
   confirmation_method: z.literal("automatic"),
   payment_method_types: z.tuple([z.literal("card")]),
-  metadata: z.record(z.string().min(1).max(500)),
+  metadata: z.record(z.string(), z.string().min(1).max(500)),
   client_secret: z.string().min(16).max(512).regex(
     /^pi_[A-Za-z0-9]{8,128}_secret_[A-Za-z0-9_]{8,384}$/,
   ),
@@ -821,7 +822,7 @@ export function createFlightConsumerLiveStripePaymentIntentCreateOrchestrator(
         || canonicalFlightJson(providerResult.payment_method_types)
           !== canonicalFlightJson(["card"])
         || canonicalFlightJson(providerResult.metadata)
-          !== canonicalFlightJson(artifacts.request.metadata)
+          !== canonicalFlightJson(artifacts.request.metadata as unknown as FlightCanonicalJsonValue)
       ) {
         return terminalizeAmbiguous("stripe_create_binding_mismatch");
       }

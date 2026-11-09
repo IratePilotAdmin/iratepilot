@@ -1,16 +1,16 @@
 {
   "evidence": {
-    "version": "flight-engineering-verification-v2",
-    "checkedAt": "2026-11-09T10:47:00-06:00",
+    "version": "flight-engineering-verification-v3",
+    "checkedAt": "2026-11-09T11:04:57-06:00",
     "sanitized": true,
     "secretValuesIncluded": false,
     "source": {
       "repository": "IratePilotAdmin/iratepilot",
       "branch": "agent/flight-live-foundation-20260823",
-      "commit": "808562e4ca2592098a91374543cca0fb6d49b8e7",
-      "commitMessage": "feat(flights): add validated multi-city planning",
+      "commit": "pending-current-commit",
+      "commitMessage": "chore(flights): remediate dependency security gate",
       "workingTreeChangeForThisReceipt": true,
-      "workingTreeChangeDescription": "Evidence receipt added after verification; pre-existing untracked pnpm and Supabase temp files were not included."
+      "workingTreeChangeDescription": "Receipt refreshed after dependency remediation and verification; pre-existing untracked pnpm and Supabase temp files were not included."
     },
     "checks": {
       "launchEvidenceAudit": {
@@ -60,6 +60,11 @@
         "ordersPerformed": false,
         "paymentsPerformed": false,
         "ticketsIssued": false
+      },
+      "dependencySecurity": {
+        "evidence": "docs/evidence/FLIGHT_DEPENDENCY_SECURITY_RECHECK_2026-11-09.json",
+        "status": "passed",
+        "productionAuditVulnerabilities": 0
       }
     },
     "authorityBoundary": {
