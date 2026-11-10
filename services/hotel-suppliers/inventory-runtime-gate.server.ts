@@ -12,6 +12,7 @@ export type InventorySandboxGateStatus =
   | "disabled"
   | "invalid_enablement"
   | "credentials_not_ready"
+  | "unsupported_transport"
   | "authorized";
 
 export type InventorySandboxRuntimeGate = {
@@ -26,6 +27,7 @@ const enablementKeys: Record<InventorySupplierId, string> = {
   ratehawk: "HOTEL_INVENTORY_RATEHAWK_SANDBOX_ENABLED",
   "expedia-rapid": "HOTEL_INVENTORY_EXPEDIA_RAPID_SANDBOX_ENABLED",
   "booking-com": "HOTEL_INVENTORY_BOOKING_COM_SANDBOX_ENABLED",
+  airbnb: "HOTEL_INVENTORY_AIRBNB_SANDBOX_ENABLED",
   stuba: "HOTEL_INVENTORY_STUBA_SANDBOX_ENABLED",
 };
 
@@ -45,7 +47,9 @@ export function evaluateInventorySandboxRuntimeGate(
       ? "invalid_enablement"
       : readiness.status !== "ready_for_sandbox_validation"
         ? "credentials_not_ready"
-        : "authorized";
+        : supplierId === "airbnb"
+          ? "unsupported_transport"
+          : "authorized";
 
   return {
     supplierId,

@@ -9,10 +9,48 @@ import {
   priorityPmsProviderIds,
   areVerifiedActivationDetails,
 } from "@/services/hotel-suppliers";
-import type { PriorityPmsLaunchEvidence, PriorityPmsProviderId } from "@/services/hotel-suppliers";
+import type {
+  PmsProviderId,
+  PriorityPmsLaunchEvidence,
+  PriorityPmsProviderId,
+} from "@/services/hotel-suppliers";
 import { evaluateInventorySandboxRuntimeGate } from "@/services/hotel-suppliers/inventory-runtime-gate.server";
+import { buildAirbnbTechnologyReadiness } from "@/services/hotel-suppliers/airbnb-technology-readiness";
+import { buildAirbnbSupportReadiness } from "@/services/hotel-suppliers/airbnb-support-readiness";
+import { isValidEmailSender } from "@/services/hotel-suppliers/readiness-value-validation";
 
 export const dynamic = "force-dynamic";
+
+const SUPABASE_PAGE_SIZE = 1_000;
+
+type PmsConnectionRow = {
+  id: string;
+  property_id: string;
+  provider_id: PmsProviderId;
+  external_property_code: string | null;
+  vendor_account_reference: string | null;
+  connection_status: string;
+  last_validated_at: string | null;
+};
+
+type PropertyRow = { id: string; name: string };
+type PmsCredentialRow = { connection_id: string; updated_at: string };
+
+async function fetchAllRows<T>(
+  fetchPage: (from: number, to: number) => PromiseLike<{
+    data: T[] | null;
+    error: { message: string } | null;
+  }>,
+) {
+  const rows: T[] = [];
+  for (let from = 0; ; from += SUPABASE_PAGE_SIZE) {
+    const { data, error } = await fetchPage(from, from + SUPABASE_PAGE_SIZE - 1);
+    if (error) throw error;
+    const page = data ?? [];
+    rows.push(...page);
+    if (page.length < SUPABASE_PAGE_SIZE) return rows;
+  }
+}
 
 export async function GET() {
   try {
@@ -22,15 +60,24 @@ export async function GET() {
     }
 
     const admin = createAdminClient();
-    const [connectionsResult, propertiesResult, credentialsResult, evidenceResult] = await Promise.all([
-      admin.from("property_pms_connections").select("id,property_id,provider_id,external_property_code,vendor_account_reference,connection_status,last_validated_at").order("updated_at", { ascending: false }),
-      admin.from("properties").select("id,name"),
-      admin.from("property_pms_credentials").select("connection_id,updated_at"),
+    const [connections, properties, propertyCountResult, credentials, evidenceResult] = await Promise.all([
+      fetchAllRows<PmsConnectionRow>((from, to) => admin.from("property_pms_connections")
+        .select("id,property_id,provider_id,external_property_code,vendor_account_reference,connection_status,last_validated_at")
+        .order("updated_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, to)),
+      fetchAllRows<PropertyRow>((from, to) => admin.from("properties")
+        .select("id,name")
+        .order("id", { ascending: true })
+        .range(from, to)),
+      admin.from("properties").select("id", { count: "exact", head: true }),
+      fetchAllRows<PmsCredentialRow>((from, to) => admin.from("property_pms_credentials")
+        .select("connection_id,updated_at")
+        .order("connection_id", { ascending: true })
+        .range(from, to)),
       admin.from("priority_pms_launch_evidence").select("provider_id,vendor_approved,property_mapped,sandbox_validated,webhook_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact,verification_notes,updated_at"),
     ]);
-    if (connectionsResult.error) throw connectionsResult.error;
-    if (propertiesResult.error) throw propertiesResult.error;
-    if (credentialsResult.error) throw credentialsResult.error;
+    if (propertyCountResult.error) throw propertyCountResult.error;
     const evidenceTrackingAvailable = !evidenceResult.error;
     let evidenceRows = evidenceResult.data ?? [];
     if (evidenceResult.error?.code === "42703") {
@@ -67,8 +114,8 @@ export async function GET() {
       throw evidenceResult.error;
     }
 
-    const propertyNames = new Map((propertiesResult.data ?? []).map((property) => [property.id, property.name]));
-    const configured = new Map((credentialsResult.data ?? []).map((credential) => [credential.connection_id, credential.updated_at]));
+    const propertyNames = new Map(properties.map((property) => [property.id, property.name]));
+    const configured = new Map(credentials.map((credential) => [credential.connection_id, credential.updated_at]));
     const manifests = new Map(pmsProviders.map((provider) => [provider.id, provider]));
     const evidence = Object.fromEntries(evidenceRows.map((item) => [item.provider_id, {
       vendorApproved: item.vendor_approved,
@@ -84,6 +131,12 @@ export async function GET() {
       verificationNotes: item.verification_notes ?? "",
     }])) as Partial<Record<PriorityPmsProviderId, PriorityPmsLaunchEvidence>>;
     const inventorySuppliers = buildInventorySupplierReadiness(process.env);
+    const verifiedConnectionStatuses = new Set(["sandbox", "validated", "active"]);
+    const declaredPmsPropertyIds = new Set(connections.map((connection) => connection.property_id));
+    const verifiedPmsPropertyIds = new Set(connections
+      .filter((connection) => connection.last_validated_at
+        && verifiedConnectionStatuses.has(connection.connection_status))
+      .map((connection) => connection.property_id));
 
     return NextResponse.json(
       {
@@ -92,9 +145,19 @@ export async function GET() {
           ...supplier,
           sandboxRuntime: evaluateInventorySandboxRuntimeGate(supplier.id, process.env),
         })),
+        airbnbSelectionEvidence: {
+          intakeStatus: "closed",
+          propertyCount: propertyCountResult.count ?? properties.length,
+          declaredPmsPropertyCount: declaredPmsPropertyIds.size,
+          verifiedPmsPropertyCount: verifiedPmsPropertyIds.size,
+          supportChannelConfigured: isValidEmailSender(process.env.EMAIL_REPLY_TO),
+          eligibilityDetermined: false,
+        },
+        airbnbTechnologyReadiness: buildAirbnbTechnologyReadiness(process.env),
+        airbnbSupportReadiness: buildAirbnbSupportReadiness(process.env),
         priorityProductionReadiness: auditPriorityPmsProductionReadiness(process.env, evidence),
         evidenceTrackingAvailable,
-        connections: (connectionsResult.data ?? []).map((connection) => ({
+        connections: connections.map((connection) => ({
           ...connection,
           property_name: propertyNames.get(connection.property_id) ?? "Unknown property",
           credential_keys: manifests.get(connection.provider_id)?.requiredConfiguration ?? [],

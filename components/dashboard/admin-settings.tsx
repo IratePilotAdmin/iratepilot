@@ -108,18 +108,43 @@ const inventorySandboxStatusCopy: Record<InventorySandboxGateStatus, string> = {
   disabled: "Disabled",
   invalid_enablement: "Invalid enablement value",
   credentials_not_ready: "Blocked by credentials",
+  unsupported_transport: "Transport not implemented",
   authorized: "Authorized for sandbox only",
 };
 const inventorySandboxStatusStyle: Record<InventorySandboxGateStatus, string> = {
   disabled: "text-slate-600",
   invalid_enablement: "text-red-700",
   credentials_not_ready: "text-amber-700",
+  unsupported_transport: "text-amber-700",
   authorized: "text-emerald-700",
 };
 
 type InventorySupplierAdminReadiness = InventorySupplierReadiness & {
   sandboxRuntime: InventorySandboxRuntimeGate;
 };
+
+type AirbnbSelectionEvidence = {
+  intakeStatus: "closed";
+  propertyCount: number;
+  declaredPmsPropertyCount: number;
+  verifiedPmsPropertyCount: number;
+  supportChannelConfigured: boolean;
+  eligibilityDetermined: false;
+};
+
+type AirbnbTechnologyReadiness = {
+  status: "evidence_only";
+  eligibilityDetermined: false;
+  controls: Array<{
+    id: string;
+    label: string;
+    implemented: boolean;
+    configured: boolean;
+    evidence: string;
+  }>;
+};
+
+type AirbnbSupportReadiness = AirbnbTechnologyReadiness;
 
 type InventoryValidationEvidence = {
   tested_at: string;
@@ -187,6 +212,9 @@ export function AdminSettings() {
   const [emailTestMessage, setEmailTestMessage] = useState("");
   const [pmsProviders, setPmsProviders] = useState<PmsProviderReadiness[]>([]);
   const [inventorySuppliers, setInventorySuppliers] = useState<InventorySupplierAdminReadiness[] | null>(null);
+  const [airbnbSelectionEvidence, setAirbnbSelectionEvidence] = useState<AirbnbSelectionEvidence | null>(null);
+  const [airbnbTechnologyReadiness, setAirbnbTechnologyReadiness] = useState<AirbnbTechnologyReadiness | null>(null);
+  const [airbnbSupportReadiness, setAirbnbSupportReadiness] = useState<AirbnbSupportReadiness | null>(null);
   const [inventoryValidationBusy, setInventoryValidationBusy] = useState("");
   const [inventoryValidationMessages, setInventoryValidationMessages] = useState<Record<string, string>>({});
   const [ratehawkValidationEvidence, setRatehawkValidationEvidence] = useState<InventoryValidationEvidence | null>(null);
@@ -539,6 +567,9 @@ export function AdminSettings() {
         if (!response.ok) throw new Error(body.error);
         setPmsProviders(body.providers);
         setInventorySuppliers(body.inventorySuppliers ?? []);
+        setAirbnbSelectionEvidence(body.airbnbSelectionEvidence ?? null);
+        setAirbnbTechnologyReadiness(body.airbnbTechnologyReadiness ?? null);
+        setAirbnbSupportReadiness(body.airbnbSupportReadiness ?? null);
         setPriorityPmsReadiness(body.priorityProductionReadiness ?? []);
         setEvidenceTrackingAvailable(body.evidenceTrackingAvailable === true);
         setPmsConnections(body.connections ?? []);
@@ -900,7 +931,7 @@ export function AdminSettings() {
         <div className="border-b p-6">
           <span className="text-xs uppercase tracking-wider text-slate-500">Aggregator inventory</span>
           <h2 className="mt-2 text-xl font-semibold">Hotel inventory supplier readiness</h2>
-          <p className="mt-2 text-sm text-slate-600">This panel tracks credential prerequisites. RateHawk and Expedia Rapid tests can send read-only sandbox availability searches. Booking.com Demand API access remains fail-closed until Managed Affiliate Partner credentials are issued. This panel cannot create a booking, payment, partnership approval, or live traffic.</p>
+          <p className="mt-2 text-sm text-slate-600">This panel tracks credential prerequisites. RateHawk and Expedia Rapid tests can send read-only sandbox availability searches. Booking.com Demand API remains fail-closed until Managed Affiliate Partner credentials are issued. Airbnb currently accepts no new API access requests and remains fail-closed unless its partner team directly invites and approves iRatePilot. This panel cannot create a booking, payment, partnership approval, or live traffic.</p>
           {inventorySuppliers ? <div className="mt-4 flex flex-wrap gap-5 text-sm">
             <span><strong>{inventorySuppliers.length}</strong> suppliers tracked</span>
             <span><strong>{inventorySuppliers.filter((supplier) => supplier.status === "ready_for_sandbox_validation").length}</strong> ready for sandbox validation</span>
@@ -914,6 +945,49 @@ export function AdminSettings() {
               <span className={supplier.status === "ready_for_sandbox_validation" ? "text-sm font-semibold text-emerald-700" : supplier.status === "invalid_configuration" ? "text-sm font-semibold text-red-700" : "text-sm font-semibold text-amber-700"}>{supplier.status.replaceAll("_", " ")}</span>
             </div>
             <p className="mt-2 text-xs text-slate-600">{supplier.approvalNote}</p>
+            {supplier.id === "airbnb" && supplier.selectionCriteria && <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs">
+              <strong className="text-amber-900">Airbnb selection-readiness checklist</strong>
+              <ol className="mt-2 list-decimal space-y-1 pl-4 text-amber-900">
+                {supplier.selectionCriteria.map((criterion) => <li key={criterion}>{criterion}</li>)}
+              </ol>
+              <p className="mt-2 font-semibold text-amber-900">External intake: closed. No application can be submitted from this panel.</p>
+            </div>}
+            {supplier.id === "airbnb" && airbnbSelectionEvidence && <div className="mt-3 rounded-lg bg-slate-50 p-3 text-xs">
+              <strong className="text-slate-800">Current supply evidence</strong>
+              <dl className="mt-2 grid grid-cols-2 gap-2">
+                <div><dt className="text-slate-500">Properties</dt><dd className="font-semibold">{airbnbSelectionEvidence.propertyCount}</dd></div>
+                <div><dt className="text-slate-500">PMS declared</dt><dd className="font-semibold">{airbnbSelectionEvidence.declaredPmsPropertyCount}</dd></div>
+                <div><dt className="text-slate-500">PMS verified</dt><dd className="font-semibold">{airbnbSelectionEvidence.verifiedPmsPropertyCount}</dd></div>
+                <div><dt className="text-slate-500">Support channel</dt><dd className="font-semibold">{airbnbSelectionEvidence.supportChannelConfigured ? "Configured" : "Not configured"}</dd></div>
+              </dl>
+              <p className="mt-2 text-slate-600">Read-only operational evidence only. It does not establish Airbnb eligibility or partner approval.</p>
+            </div>}
+            {supplier.id === "airbnb" && airbnbTechnologyReadiness && <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3 text-xs">
+              <strong className="text-slate-800">Technology-strength evidence</strong>
+              <ul className="mt-2 space-y-2">
+                {airbnbTechnologyReadiness.controls.map((control) => <li className="rounded-md bg-slate-50 p-2" key={control.id}>
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-semibold text-slate-800">{control.label}</span>
+                    <span className={control.configured ? "font-semibold text-emerald-700" : "font-semibold text-amber-700"}>{control.configured ? "Verified" : "Configuration needed"}</span>
+                  </div>
+                  <p className="mt-1 text-slate-600">{control.evidence}</p>
+                </li>)}
+              </ul>
+              <p className="mt-2 text-slate-600">Repository and runtime evidence only. Airbnb must independently review and accept every control.</p>
+            </div>}
+            {supplier.id === "airbnb" && airbnbSupportReadiness && <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3 text-xs">
+              <strong className="text-slate-800">Shared-customer support evidence</strong>
+              <ul className="mt-2 space-y-2">
+                {airbnbSupportReadiness.controls.map((control) => <li className="rounded-md bg-slate-50 p-2" key={control.id}>
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-semibold text-slate-800">{control.label}</span>
+                    <span className={control.configured ? "font-semibold text-emerald-700" : "font-semibold text-amber-700"}>{control.configured ? "Verified" : "Configuration needed"}</span>
+                  </div>
+                  <p className="mt-1 text-slate-600">{control.evidence}</p>
+                </li>)}
+              </ul>
+              <p className="mt-2 text-slate-600">Capability evidence only. It does not claim service levels, staffing coverage, or Airbnb acceptance.</p>
+            </div>}
             {supplier.missingEnvironmentKeys.length > 0 && <p className="mt-3 break-words text-xs text-amber-700">Missing: {supplier.missingEnvironmentKeys.join(", ")}</p>}
             {supplier.invalidEnvironmentKeys.length > 0 && <p className="mt-3 break-words text-xs text-red-700">Invalid: {supplier.invalidEnvironmentKeys.join(", ")}</p>}
             <div className="mt-3 rounded-lg bg-slate-50 p-3 text-xs">
