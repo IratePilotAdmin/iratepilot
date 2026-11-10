@@ -34,6 +34,7 @@ type PmsConnectionRow = {
 };
 
 type PropertyRow = { id: string; name: string };
+type PmsCredentialRow = { connection_id: string; updated_at: string };
 
 async function fetchAllRows<T>(
   fetchPage: (from: number, to: number) => PromiseLike<{
@@ -59,7 +60,7 @@ export async function GET() {
     }
 
     const admin = createAdminClient();
-    const [connections, properties, propertyCountResult, credentialsResult, evidenceResult] = await Promise.all([
+    const [connections, properties, propertyCountResult, credentials, evidenceResult] = await Promise.all([
       fetchAllRows<PmsConnectionRow>((from, to) => admin.from("property_pms_connections")
         .select("id,property_id,provider_id,external_property_code,vendor_account_reference,connection_status,last_validated_at")
         .order("updated_at", { ascending: false })
@@ -70,11 +71,13 @@ export async function GET() {
         .order("id", { ascending: true })
         .range(from, to)),
       admin.from("properties").select("id", { count: "exact", head: true }),
-      admin.from("property_pms_credentials").select("connection_id,updated_at"),
+      fetchAllRows<PmsCredentialRow>((from, to) => admin.from("property_pms_credentials")
+        .select("connection_id,updated_at")
+        .order("connection_id", { ascending: true })
+        .range(from, to)),
       admin.from("priority_pms_launch_evidence").select("provider_id,vendor_approved,property_mapped,sandbox_validated,webhook_validated,production_smoke_validated,live_enabled,vendor_approval_reference,approved_environment,property_code,support_contact,verification_notes,updated_at"),
     ]);
     if (propertyCountResult.error) throw propertyCountResult.error;
-    if (credentialsResult.error) throw credentialsResult.error;
     const evidenceTrackingAvailable = !evidenceResult.error;
     let evidenceRows = evidenceResult.data ?? [];
     if (evidenceResult.error?.code === "42703") {
@@ -112,7 +115,7 @@ export async function GET() {
     }
 
     const propertyNames = new Map(properties.map((property) => [property.id, property.name]));
-    const configured = new Map((credentialsResult.data ?? []).map((credential) => [credential.connection_id, credential.updated_at]));
+    const configured = new Map(credentials.map((credential) => [credential.connection_id, credential.updated_at]));
     const manifests = new Map(pmsProviders.map((provider) => [provider.id, provider]));
     const evidence = Object.fromEntries(evidenceRows.map((item) => [item.provider_id, {
       vendorApproved: item.vendor_approved,
