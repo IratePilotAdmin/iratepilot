@@ -183,6 +183,8 @@ describe("inventory supplier readiness", () => {
     expect(route).toContain("buildAirbnbSupportReadiness(process.env)");
     expect(route).toContain("verifiedPmsPropertyCount");
     expect(route).toContain("supportChannelConfigured");
+    expect(route).toContain('{ count: "exact", head: true }');
+    expect(route).toContain(".range(from, to)");
     expect(route).toContain('requireRole(["admin"])');
     expect(route).toContain('"Cache-Control": "no-store"');
     expect(adminSettings).toContain("Hotel inventory supplier readiness");
