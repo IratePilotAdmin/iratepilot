@@ -26,6 +26,7 @@ describe("Airbnb shared-customer support evidence", () => {
       RESEND_API_KEY: secret,
       RESEND_FROM_EMAIL: "bookings@example.test",
       EMAIL_WORKER_ENABLED: "true",
+      CRON_SECRET: "sensitive-cron-secret",
       EMAIL_REPLY_TO: "support@example.test",
       ERROR_WEBHOOK_URL: "https://alerts.example.test/iratepilot",
     });
@@ -44,6 +45,17 @@ describe("Airbnb shared-customer support evidence", () => {
       RESEND_API_KEY: "sensitive-resend-key",
       RESEND_FROM_EMAIL: "bookings@example.test",
       EMAIL_WORKER_ENABLED: "false",
+      CRON_SECRET: "sensitive-cron-secret",
+    });
+
+    expect(readiness.controls.find(({ id }) => id === "transactional_customer_updates")?.configured).toBe(false);
+  });
+
+  it("does not verify transactional delivery without worker authorization", () => {
+    const readiness = buildAirbnbSupportReadiness({
+      RESEND_API_KEY: "sensitive-resend-key",
+      RESEND_FROM_EMAIL: "bookings@example.test",
+      EMAIL_WORKER_ENABLED: "true",
     });
 
     expect(readiness.controls.find(({ id }) => id === "transactional_customer_updates")?.configured).toBe(false);
@@ -54,10 +66,13 @@ describe("Airbnb shared-customer support evidence", () => {
       RESEND_API_KEY: "sensitive-resend-key",
       RESEND_FROM_EMAIL: "not-an-email-address",
       EMAIL_WORKER_ENABLED: "true",
+      CRON_SECRET: "sensitive-cron-secret",
+      EMAIL_REPLY_TO: "not-an-email-address",
       ERROR_WEBHOOK_URL: "file:///tmp/alerts",
     });
 
     expect(readiness.controls.find(({ id }) => id === "transactional_customer_updates")?.configured).toBe(false);
+    expect(readiness.controls.find(({ id }) => id === "support_reply_address")?.configured).toBe(false);
     expect(readiness.controls.find(({ id }) => id === "operational_escalation")?.configured).toBe(false);
   });
 
@@ -66,6 +81,7 @@ describe("Airbnb shared-customer support evidence", () => {
       RESEND_API_KEY: "sensitive-resend-key",
       RESEND_FROM_EMAIL: "iRatePilot <bookings@example.test>",
       EMAIL_WORKER_ENABLED: "true",
+      CRON_SECRET: "sensitive-cron-secret",
     });
 
     expect(readiness.controls.find(({ id }) => id === "transactional_customer_updates")?.configured).toBe(true);

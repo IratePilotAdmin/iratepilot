@@ -26,7 +26,8 @@ export function buildAirbnbSupportReadiness(
 ): AirbnbSupportReadiness {
   const transactionalEmailConfigured = present(environment.RESEND_API_KEY)
     && isValidEmailSender(environment.RESEND_FROM_EMAIL || environment.EMAIL_FROM)
-    && environment.EMAIL_WORKER_ENABLED === "true";
+    && environment.EMAIL_WORKER_ENABLED === "true"
+    && present(environment.CRON_SECRET);
 
   return {
     status: "evidence_only",
@@ -64,7 +65,7 @@ export function buildAirbnbSupportReadiness(
         id: "support_reply_address",
         label: "Monitored support reply address",
         implemented: true,
-        configured: present(environment.EMAIL_REPLY_TO),
+        configured: isValidEmailSender(environment.EMAIL_REPLY_TO),
         evidence: "Booking notices can expose a dedicated reply address alongside the authenticated reservation support page.",
       },
       {
