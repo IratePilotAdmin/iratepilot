@@ -13,6 +13,7 @@ export type InventorySandboxTransportErrorCode =
   | "disabled"
   | "invalid_enablement"
   | "credentials_not_ready"
+  | "unsupported_transport"
   | "invalid_request"
   | "invalid_timeout"
   | "timeout"
@@ -77,11 +78,13 @@ function validateRequest(request: InventorySandboxRequest) {
             && url.href === "https://demandapi-sandbox.booking.com/3.2/accommodations/search"
             && request.headers.Authorization?.startsWith("Bearer ")
             && Boolean(request.headers["X-Affiliate-Id"])
-          : request.method === "GET"
-            && url.origin === "https://test.ean.com"
-            && url.pathname === "/v3/properties/availability"
-            && Boolean(url.search)
-            && request.headers.Authorization?.startsWith("EAN ");
+          : request.supplierId === "expedia-rapid"
+            ? request.method === "GET"
+              && url.origin === "https://test.ean.com"
+              && url.pathname === "/v3/properties/availability"
+              && Boolean(url.search)
+              && request.headers.Authorization?.startsWith("EAN ")
+            : false;
   if (!validEndpoint) invalidRequest(request.supplierId);
 
   for (const value of Object.values(request.headers)) {

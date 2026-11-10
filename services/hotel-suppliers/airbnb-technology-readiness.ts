@@ -14,6 +14,11 @@ export type AirbnbTechnologyReadiness = {
 
 type Environment = Record<string, string | undefined>;
 
+function validCredentialEncryptionKey(value: string | undefined) {
+  if (!value) return false;
+  return Buffer.from(value, "base64").length === 32;
+}
+
 export function buildAirbnbTechnologyReadiness(
   environment: Environment,
 ): AirbnbTechnologyReadiness {
@@ -32,7 +37,7 @@ export function buildAirbnbTechnologyReadiness(
         id: "credential_encryption",
         label: "PMS credential encryption",
         implemented: true,
-        configured: Boolean(environment.PMS_CREDENTIAL_ENCRYPTION_KEY?.trim()),
+        configured: validCredentialEncryptionKey(environment.PMS_CREDENTIAL_ENCRYPTION_KEY),
         evidence: "The credential vault implements authenticated AES-256-GCM encryption with a server-only 32-byte key.",
       },
       {

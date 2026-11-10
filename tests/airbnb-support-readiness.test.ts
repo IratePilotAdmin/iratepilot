@@ -25,6 +25,7 @@ describe("Airbnb shared-customer support evidence", () => {
     const readiness = buildAirbnbSupportReadiness({
       RESEND_API_KEY: secret,
       RESEND_FROM_EMAIL: "bookings@example.test",
+      EMAIL_WORKER_ENABLED: "true",
       EMAIL_REPLY_TO: "support@example.test",
       ERROR_WEBHOOK_URL: "https://alerts.example.test/iratepilot",
     });
@@ -36,5 +37,15 @@ describe("Airbnb shared-customer support evidence", () => {
     expect(JSON.stringify(readiness)).not.toContain("bookings@example.test");
     expect(JSON.stringify(readiness)).not.toContain("support@example.test");
     expect(JSON.stringify(readiness)).not.toContain("alerts.example.test");
+  });
+
+  it("does not verify transactional delivery while the worker is disabled", () => {
+    const readiness = buildAirbnbSupportReadiness({
+      RESEND_API_KEY: "sensitive-resend-key",
+      RESEND_FROM_EMAIL: "bookings@example.test",
+      EMAIL_WORKER_ENABLED: "false",
+    });
+
+    expect(readiness.controls.find(({ id }) => id === "transactional_customer_updates")?.configured).toBe(false);
   });
 });

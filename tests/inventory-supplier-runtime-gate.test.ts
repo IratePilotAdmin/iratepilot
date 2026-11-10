@@ -35,6 +35,18 @@ describe("inventory supplier sandbox runtime gate", () => {
     });
   });
 
+  it("keeps Airbnb blocked until a dedicated transport is implemented", () => {
+    expect(evaluateInventorySandboxRuntimeGate("airbnb", {
+      HOTEL_INVENTORY_AIRBNB_SANDBOX_ENABLED: "true",
+      HOTEL_INVENTORY_AIRBNB_PARTNER_APPROVED: "true",
+      HOTEL_INVENTORY_AIRBNB_API_CLIENT_ID: "issued-airbnb-client-id",
+      HOTEL_INVENTORY_AIRBNB_API_CLIENT_SECRET: "issued-airbnb-client-secret",
+    })).toMatchObject({
+      status: "unsupported_transport",
+      credentialStatus: "ready_for_sandbox_validation",
+    });
+  });
+
   it("rejects an ambiguous enablement value", () => {
     expect(evaluateInventorySandboxRuntimeGate("ratehawk", {
       HOTEL_INVENTORY_RATEHAWK_SANDBOX_ENABLED: "yes",

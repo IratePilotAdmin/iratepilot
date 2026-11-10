@@ -108,12 +108,14 @@ const inventorySandboxStatusCopy: Record<InventorySandboxGateStatus, string> = {
   disabled: "Disabled",
   invalid_enablement: "Invalid enablement value",
   credentials_not_ready: "Blocked by credentials",
+  unsupported_transport: "Transport not implemented",
   authorized: "Authorized for sandbox only",
 };
 const inventorySandboxStatusStyle: Record<InventorySandboxGateStatus, string> = {
   disabled: "text-slate-600",
   invalid_enablement: "text-red-700",
   credentials_not_ready: "text-amber-700",
+  unsupported_transport: "text-amber-700",
   authorized: "text-emerald-700",
 };
 

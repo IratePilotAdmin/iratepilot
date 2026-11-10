@@ -21,7 +21,7 @@ describe("Airbnb technology-strength evidence", () => {
   });
 
   it("reports configured runtime controls without returning secret values", () => {
-    const secret = "sensitive-encryption-key-material";
+    const secret = Buffer.alloc(32, 7).toString("base64");
     const readiness = buildAirbnbTechnologyReadiness({
       PMS_CREDENTIAL_ENCRYPTION_KEY: secret,
       ERROR_WEBHOOK_URL: "https://alerts.example.test/iratepilot",
@@ -31,5 +31,13 @@ describe("Airbnb technology-strength evidence", () => {
     expect(readiness.controls.find(({ id }) => id === "operational_alerting")?.configured).toBe(true);
     expect(JSON.stringify(readiness)).not.toContain(secret);
     expect(JSON.stringify(readiness)).not.toContain("alerts.example.test");
+  });
+
+  it("rejects encryption keys the credential vault cannot use", () => {
+    const readiness = buildAirbnbTechnologyReadiness({
+      PMS_CREDENTIAL_ENCRYPTION_KEY: "sensitive-encryption-key-material",
+    });
+
+    expect(readiness.controls.find(({ id }) => id === "credential_encryption")?.configured).toBe(false);
   });
 });

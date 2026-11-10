@@ -12,6 +12,7 @@ export type InventorySandboxGateStatus =
   | "disabled"
   | "invalid_enablement"
   | "credentials_not_ready"
+  | "unsupported_transport"
   | "authorized";
 
 export type InventorySandboxRuntimeGate = {
@@ -46,7 +47,9 @@ export function evaluateInventorySandboxRuntimeGate(
       ? "invalid_enablement"
       : readiness.status !== "ready_for_sandbox_validation"
         ? "credentials_not_ready"
-        : "authorized";
+        : supplierId === "airbnb"
+          ? "unsupported_transport"
+          : "authorized";
 
   return {
     supplierId,
