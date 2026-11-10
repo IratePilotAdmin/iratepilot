@@ -1,3 +1,5 @@
+import { isValidHttpsWebhook } from "./readiness-value-validation";
+
 export type AirbnbTechnologyControl = {
   id: string;
   label: string;
@@ -72,7 +74,7 @@ export function buildAirbnbTechnologyReadiness(
         id: "operational_alerting",
         label: "Operational alert delivery",
         implemented: true,
-        configured: Boolean(environment.ERROR_WEBHOOK_URL?.trim()),
+        configured: isValidHttpsWebhook(environment.ERROR_WEBHOOK_URL),
         evidence: "Operational reporting redacts sensitive context and supports a bounded external alert webhook.",
       },
     ],

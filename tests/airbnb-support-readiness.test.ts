@@ -48,4 +48,26 @@ describe("Airbnb shared-customer support evidence", () => {
 
     expect(readiness.controls.find(({ id }) => id === "transactional_customer_updates")?.configured).toBe(false);
   });
+
+  it("rejects invalid sender addresses and alert webhook URLs", () => {
+    const readiness = buildAirbnbSupportReadiness({
+      RESEND_API_KEY: "sensitive-resend-key",
+      RESEND_FROM_EMAIL: "not-an-email-address",
+      EMAIL_WORKER_ENABLED: "true",
+      ERROR_WEBHOOK_URL: "file:///tmp/alerts",
+    });
+
+    expect(readiness.controls.find(({ id }) => id === "transactional_customer_updates")?.configured).toBe(false);
+    expect(readiness.controls.find(({ id }) => id === "operational_escalation")?.configured).toBe(false);
+  });
+
+  it("accepts a named sender address", () => {
+    const readiness = buildAirbnbSupportReadiness({
+      RESEND_API_KEY: "sensitive-resend-key",
+      RESEND_FROM_EMAIL: "iRatePilot <bookings@example.test>",
+      EMAIL_WORKER_ENABLED: "true",
+    });
+
+    expect(readiness.controls.find(({ id }) => id === "transactional_customer_updates")?.configured).toBe(true);
+  });
 });

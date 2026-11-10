@@ -40,4 +40,12 @@ describe("Airbnb technology-strength evidence", () => {
 
     expect(readiness.controls.find(({ id }) => id === "credential_encryption")?.configured).toBe(false);
   });
+
+  it("rejects unusable operational alert webhook URLs", () => {
+    const readiness = buildAirbnbTechnologyReadiness({
+      ERROR_WEBHOOK_URL: "javascript:alert(1)",
+    });
+
+    expect(readiness.controls.find(({ id }) => id === "operational_alerting")?.configured).toBe(false);
+  });
 });

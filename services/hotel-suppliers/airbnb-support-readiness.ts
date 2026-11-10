@@ -1,3 +1,8 @@
+import {
+  isValidEmailSender,
+  isValidHttpsWebhook,
+} from "./readiness-value-validation";
+
 export type AirbnbSupportControl = {
   id: string;
   label: string;
@@ -20,7 +25,7 @@ export function buildAirbnbSupportReadiness(
   environment: Environment,
 ): AirbnbSupportReadiness {
   const transactionalEmailConfigured = present(environment.RESEND_API_KEY)
-    && present(environment.RESEND_FROM_EMAIL || environment.EMAIL_FROM)
+    && isValidEmailSender(environment.RESEND_FROM_EMAIL || environment.EMAIL_FROM)
     && environment.EMAIL_WORKER_ENABLED === "true";
 
   return {
@@ -66,7 +71,7 @@ export function buildAirbnbSupportReadiness(
         id: "operational_escalation",
         label: "Operational error escalation",
         implemented: true,
-        configured: present(environment.ERROR_WEBHOOK_URL),
+        configured: isValidHttpsWebhook(environment.ERROR_WEBHOOK_URL),
         evidence: "Operational failures are logged with sensitive context redacted and can be delivered to a bounded alert webhook.",
       },
     ],
