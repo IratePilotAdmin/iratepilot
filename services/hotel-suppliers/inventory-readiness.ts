@@ -3,10 +3,12 @@ export type InventorySupplierId =
   | "ratehawk"
   | "expedia-rapid"
   | "booking-com"
+  | "airbnb"
   | "stuba";
 
 export type InventorySupplierStatus =
   | "not_configured"
+  | "access_requests_closed"
   | "credentials_required"
   | "invalid_configuration"
   | "ready_for_sandbox_validation";
@@ -20,6 +22,7 @@ export type InventorySupplierReadiness = {
   invalidEnvironmentKeys: string[];
   documentationUrl: string;
   approvalNote: string;
+  selectionCriteria?: readonly string[];
 };
 
 type Environment = Record<string, string | undefined>;
@@ -27,7 +30,7 @@ type Environment = Record<string, string | undefined>;
 type InventorySupplierManifest = Omit<
   InventorySupplierReadiness,
   "status" | "missingEnvironmentKeys" | "invalidEnvironmentKeys"
->;
+> & { approvalEnvironmentKey?: string };
 
 const exactPlaceholderPattern = /^(?:changeme|example|placeholder|test|todo|unknown)$/i;
 const decoratedPlaceholderPattern = /(?:^|[-_.\s])(?:changeme|example|placeholder|todo|unknown)(?:$|[-_.\s])|^test(?:[-_.\s])(?:api[-_.\s]?key|secret|token|credential|certificate|private[-_.\s]?key)(?:$|[-_.\s])/i;
@@ -38,6 +41,9 @@ function normalizePem(value: string) {
 
 function isValidConfiguredValue(key: string, value: string) {
   const normalized = value.trim();
+  if (key.endsWith("_PARTNER_APPROVED")) {
+    return normalized === "true" || normalized === "false";
+  }
   if (!normalized || exactPlaceholderPattern.test(normalized)
     || decoratedPlaceholderPattern.test(normalized)) return false;
   if (key.endsWith("_MTLS_CERTIFICATE")) {
@@ -99,6 +105,24 @@ const inventorySupplierManifests = [
     approvalNote: "Requires a Managed Affiliate Partner contract, Partner Centre access, an API key token, and an affiliate ID. Sandbox and production use the same issued credentials.",
   },
   {
+    id: "airbnb",
+    name: "Airbnb Connectivity API",
+    requiredEnvironmentKeys: [
+      "HOTEL_INVENTORY_AIRBNB_PARTNER_APPROVED",
+      "HOTEL_INVENTORY_AIRBNB_API_CLIENT_ID",
+      "HOTEL_INVENTORY_AIRBNB_API_CLIENT_SECRET",
+    ],
+    approvalEnvironmentKey: "HOTEL_INVENTORY_AIRBNB_PARTNER_APPROVED",
+    documentationUrl: "https://www.airbnb.com/help/article/3418",
+    approvalNote: "Airbnb currently does not accept new API access requests. Its partner managers initiate outreach based on supply opportunity, technology strength, and support capability. Any invited integration still requires approval, an NDA and partner terms, a data-security review, assigned scopes, and issued credentials.",
+    selectionCriteria: [
+      "Document a meaningful property-supply opportunity.",
+      "Demonstrate secure, reliable connectivity technology.",
+      "Demonstrate the ability to support shared customers.",
+      "Wait for direct outreach from an Airbnb partner manager.",
+    ],
+  },
+  {
     id: "stuba",
     name: "Stuba",
     requiredEnvironmentKeys: [
@@ -123,8 +147,16 @@ export function buildInventorySupplierReadiness(
       const value = environment[key];
       return Boolean(value?.trim()) && !isValidConfiguredValue(key, value ?? "");
     });
-    const status = configuredCount === 0
-      ? "not_configured"
+    const approvalEnvironmentKey = "approvalEnvironmentKey" in supplier
+      ? supplier.approvalEnvironmentKey
+      : undefined;
+    const approvalGranted = approvalEnvironmentKey
+      ? environment[approvalEnvironmentKey]?.trim().toLowerCase() === "true"
+      : true;
+    const status = !approvalGranted
+      ? "access_requests_closed"
+      : configuredCount === 0
+        ? "not_configured"
       : missingEnvironmentKeys.length > 0
         ? "credentials_required"
         : invalidEnvironmentKeys.length > 0

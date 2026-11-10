@@ -20,9 +20,36 @@ describe("inventory supplier readiness", () => {
       "ratehawk",
       "expedia-rapid",
       "booking-com",
+      "airbnb",
       "stuba",
     ]);
-    expect(readiness.every(({ status }) => status === "not_configured")).toBe(true);
+    expect(readiness.find(({ id }) => id === "airbnb")?.status).toBe("access_requests_closed");
+    expect(readiness.filter(({ id }) => id !== "airbnb").every(({ status }) => status === "not_configured")).toBe(true);
+  });
+
+  it("keeps Airbnb fail-closed until partner approval and credentials are verified", () => {
+    const pending = buildInventorySupplierReadiness({
+      HOTEL_INVENTORY_AIRBNB_PARTNER_APPROVED: "false",
+    }).find(({ id }) => id === "airbnb");
+    const approvedWithoutCredentials = buildInventorySupplierReadiness({
+      HOTEL_INVENTORY_AIRBNB_PARTNER_APPROVED: "true",
+    }).find(({ id }) => id === "airbnb");
+    const ready = buildInventorySupplierReadiness({
+      HOTEL_INVENTORY_AIRBNB_PARTNER_APPROVED: "true",
+      HOTEL_INVENTORY_AIRBNB_API_CLIENT_ID: "issued-airbnb-client-id",
+      HOTEL_INVENTORY_AIRBNB_API_CLIENT_SECRET: "issued-airbnb-client-secret",
+    }).find(({ id }) => id === "airbnb");
+
+    expect(pending?.status).toBe("access_requests_closed");
+    expect(pending?.selectionCriteria).toEqual([
+      "Document a meaningful property-supply opportunity.",
+      "Demonstrate secure, reliable connectivity technology.",
+      "Demonstrate the ability to support shared customers.",
+      "Wait for direct outreach from an Airbnb partner manager.",
+    ]);
+    expect(approvedWithoutCredentials?.status).toBe("credentials_required");
+    expect(ready?.status).toBe("ready_for_sandbox_validation");
+    expect(JSON.stringify(ready)).not.toContain("issued-airbnb-client-secret");
   });
 
   it("requires Booking.com Managed Affiliate credentials", () => {
@@ -151,9 +178,20 @@ describe("inventory supplier readiness", () => {
     expect(route).toContain("buildInventorySupplierReadiness(process.env)");
     expect(route).toContain("evaluateInventorySandboxRuntimeGate(supplier.id, process.env)");
     expect(route).toContain("inventorySuppliers");
+    expect(route).toContain("airbnbSelectionEvidence");
+    expect(route).toContain("buildAirbnbTechnologyReadiness(process.env)");
+    expect(route).toContain("buildAirbnbSupportReadiness(process.env)");
+    expect(route).toContain("verifiedPmsPropertyCount");
+    expect(route).toContain("supportChannelConfigured");
     expect(route).toContain('requireRole(["admin"])');
     expect(route).toContain('"Cache-Control": "no-store"');
     expect(adminSettings).toContain("Hotel inventory supplier readiness");
+    expect(adminSettings).toContain("Current supply evidence");
+    expect(adminSettings).toContain("Technology-strength evidence");
+    expect(adminSettings).toContain("Shared-customer support evidence");
+    expect(adminSettings).toContain("It does not claim service levels, staffing coverage, or Airbnb acceptance.");
+    expect(adminSettings).toContain("Airbnb must independently review and accept every control.");
+    expect(adminSettings).toContain("It does not establish Airbnb eligibility or partner approval.");
     expect(adminSettings).toContain("RUN SANDBOX SEARCH");
     expect(adminSettings).toContain("RUN PREBOOK TEST");
     expect(adminSettings).toContain("/api/admin/integrations/inventory/ratehawk/validate");

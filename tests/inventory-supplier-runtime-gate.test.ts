@@ -17,6 +17,11 @@ describe("inventory supplier sandbox runtime gate", () => {
       status: "disabled",
       enablementKey: "HOTEL_INVENTORY_BOOKING_COM_SANDBOX_ENABLED",
     });
+    expect(evaluateInventorySandboxRuntimeGate("airbnb", {})).toMatchObject({
+      status: "disabled",
+      credentialStatus: "access_requests_closed",
+      enablementKey: "HOTEL_INVENTORY_AIRBNB_SANDBOX_ENABLED",
+    });
   });
 
   it("authorizes Booking.com only with credentials and an explicit sandbox flag", () => {

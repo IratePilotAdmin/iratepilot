@@ -11,6 +11,8 @@ import {
 } from "@/services/hotel-suppliers";
 import type { PriorityPmsLaunchEvidence, PriorityPmsProviderId } from "@/services/hotel-suppliers";
 import { evaluateInventorySandboxRuntimeGate } from "@/services/hotel-suppliers/inventory-runtime-gate.server";
+import { buildAirbnbTechnologyReadiness } from "@/services/hotel-suppliers/airbnb-technology-readiness";
+import { buildAirbnbSupportReadiness } from "@/services/hotel-suppliers/airbnb-support-readiness";
 
 export const dynamic = "force-dynamic";
 
@@ -84,6 +86,13 @@ export async function GET() {
       verificationNotes: item.verification_notes ?? "",
     }])) as Partial<Record<PriorityPmsProviderId, PriorityPmsLaunchEvidence>>;
     const inventorySuppliers = buildInventorySupplierReadiness(process.env);
+    const connections = connectionsResult.data ?? [];
+    const verifiedConnectionStatuses = new Set(["sandbox", "validated", "active"]);
+    const declaredPmsPropertyIds = new Set(connections.map((connection) => connection.property_id));
+    const verifiedPmsPropertyIds = new Set(connections
+      .filter((connection) => connection.last_validated_at
+        && verifiedConnectionStatuses.has(connection.connection_status))
+      .map((connection) => connection.property_id));
 
     return NextResponse.json(
       {
@@ -92,9 +101,19 @@ export async function GET() {
           ...supplier,
           sandboxRuntime: evaluateInventorySandboxRuntimeGate(supplier.id, process.env),
         })),
+        airbnbSelectionEvidence: {
+          intakeStatus: "closed",
+          propertyCount: (propertiesResult.data ?? []).length,
+          declaredPmsPropertyCount: declaredPmsPropertyIds.size,
+          verifiedPmsPropertyCount: verifiedPmsPropertyIds.size,
+          supportChannelConfigured: Boolean(process.env.EMAIL_REPLY_TO?.trim()),
+          eligibilityDetermined: false,
+        },
+        airbnbTechnologyReadiness: buildAirbnbTechnologyReadiness(process.env),
+        airbnbSupportReadiness: buildAirbnbSupportReadiness(process.env),
         priorityProductionReadiness: auditPriorityPmsProductionReadiness(process.env, evidence),
         evidenceTrackingAvailable,
-        connections: (connectionsResult.data ?? []).map((connection) => ({
+        connections: connections.map((connection) => ({
           ...connection,
           property_name: propertyNames.get(connection.property_id) ?? "Unknown property",
           credential_keys: manifests.get(connection.provider_id)?.requiredConfiguration ?? [],
