@@ -76,6 +76,19 @@ describe("Airbnb shared-customer support evidence", () => {
     expect(readiness.controls.find(({ id }) => id === "operational_escalation")?.configured).toBe(false);
   });
 
+  it("does not verify transactional delivery with an invalid optional reply address", () => {
+    const readiness = buildAirbnbSupportReadiness({
+      RESEND_API_KEY: "sensitive-resend-key",
+      RESEND_FROM_EMAIL: "bookings@example.test",
+      EMAIL_WORKER_ENABLED: "true",
+      CRON_SECRET: "sensitive-cron-secret",
+      EMAIL_REPLY_TO: "not-an-email-address",
+    });
+
+    expect(readiness.controls.find(({ id }) => id === "transactional_customer_updates")?.configured).toBe(false);
+    expect(readiness.controls.find(({ id }) => id === "support_reply_address")?.configured).toBe(false);
+  });
+
   it("accepts a named sender address", () => {
     const readiness = buildAirbnbSupportReadiness({
       RESEND_API_KEY: "sensitive-resend-key",

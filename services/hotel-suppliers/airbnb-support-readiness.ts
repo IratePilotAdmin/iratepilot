@@ -27,7 +27,9 @@ export function buildAirbnbSupportReadiness(
   const transactionalEmailConfigured = present(environment.RESEND_API_KEY)
     && isValidEmailSender(environment.RESEND_FROM_EMAIL || environment.EMAIL_FROM)
     && environment.EMAIL_WORKER_ENABLED === "true"
-    && present(environment.CRON_SECRET);
+    && present(environment.CRON_SECRET)
+    && (!present(environment.EMAIL_REPLY_TO)
+      || isValidEmailSender(environment.EMAIL_REPLY_TO));
 
   return {
     status: "evidence_only",

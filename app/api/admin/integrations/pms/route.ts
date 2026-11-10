@@ -13,6 +13,7 @@ import type { PriorityPmsLaunchEvidence, PriorityPmsProviderId } from "@/service
 import { evaluateInventorySandboxRuntimeGate } from "@/services/hotel-suppliers/inventory-runtime-gate.server";
 import { buildAirbnbTechnologyReadiness } from "@/services/hotel-suppliers/airbnb-technology-readiness";
 import { buildAirbnbSupportReadiness } from "@/services/hotel-suppliers/airbnb-support-readiness";
+import { isValidEmailSender } from "@/services/hotel-suppliers/readiness-value-validation";
 
 export const dynamic = "force-dynamic";
 
@@ -106,7 +107,7 @@ export async function GET() {
           propertyCount: (propertiesResult.data ?? []).length,
           declaredPmsPropertyCount: declaredPmsPropertyIds.size,
           verifiedPmsPropertyCount: verifiedPmsPropertyIds.size,
-          supportChannelConfigured: Boolean(process.env.EMAIL_REPLY_TO?.trim()),
+          supportChannelConfigured: isValidEmailSender(process.env.EMAIL_REPLY_TO),
           eligibilityDetermined: false,
         },
         airbnbTechnologyReadiness: buildAirbnbTechnologyReadiness(process.env),
