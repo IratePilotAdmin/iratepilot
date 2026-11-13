@@ -8,7 +8,7 @@ import {
   ApaleoConnectionTestError,
   ApaleoHttpTransport,
   ApaleoTransportError,
-  getApaleoAccessToken,
+  listApaleoProperties,
 } from "@/services/hotel-suppliers/apaleo";
 
 export const dynamic = "force-dynamic";
@@ -86,6 +86,7 @@ export async function POST(request: Request) {
     if (!connection.data.external_property_code) {
       return NextResponse.json({ error: "Select an authorized Apaleo property first." }, { status: 409 });
     }
+    const selectedPropertyCode = connection.data.external_property_code;
     if (!stored.data) {
       return NextResponse.json({ error: "Store the Apaleo credentials first." }, { status: 409 });
     }
@@ -102,16 +103,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Apaleo client credentials are incomplete." }, { status: 409 });
     }
 
-    const token = await getApaleoAccessToken({
+    const authorization = await listApaleoProperties({
       baseUrl: credentials.PMS_APALEO_BASE_URL,
       clientId,
       clientSecret,
       refreshToken: credentials.PMS_APALEO_REFRESH_TOKEN,
     });
-    if (token.refreshToken && token.refreshToken !== credentials.PMS_APALEO_REFRESH_TOKEN) {
+    if (!authorization.properties.some((property) => property.id === selectedPropertyCode)) {
+      return NextResponse.json({
+        error: "The selected property is no longer authorized for this Apaleo account.",
+      }, { status: 409 });
+    }
+    if (authorization.refreshToken && authorization.refreshToken !== credentials.PMS_APALEO_REFRESH_TOKEN) {
       const encrypted = encryptPmsCredentials({
         ...credentials,
-        PMS_APALEO_REFRESH_TOKEN: token.refreshToken,
+        PMS_APALEO_REFRESH_TOKEN: authorization.refreshToken,
       });
       const updated = await admin.from("property_pms_credentials").update({
         ciphertext: encrypted.ciphertext,
@@ -127,12 +133,12 @@ export async function POST(request: Request) {
     const adapter = new ApaleoAdapter(
       new ApaleoHttpTransport({
         baseUrl: credentials.PMS_APALEO_BASE_URL,
-        accessToken: token.accessToken,
+        accessToken: authorization.accessToken,
       }),
       new ApaleoBookingMapper(),
     );
     const offers = await adapter.availability({
-      propertyCode: connection.data.external_property_code,
+      propertyCode: selectedPropertyCode,
       arrivalDate: input.arrivalDate,
       departureDate: input.departureDate,
       adults: input.adults,
@@ -140,7 +146,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({
-      propertyCode: connection.data.external_property_code,
+      propertyCode: selectedPropertyCode,
       arrivalDate: input.arrivalDate,
       departureDate: input.departureDate,
       offerCount: offers.length,

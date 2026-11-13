@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({
   createAdminClient: vi.fn(),
   decryptPmsCredentials: vi.fn(),
   encryptPmsCredentials: vi.fn(),
-  getApaleoAccessToken: vi.fn(),
+  listApaleoProperties: vi.fn(),
   availability: vi.fn(),
   from: vi.fn(),
   credentialUpdate: vi.fn(),
@@ -29,7 +29,7 @@ vi.mock("@/services/hotel-suppliers/apaleo", () => ({
   ApaleoAdapter: class ApaleoAdapter {
     availability = mocks.availability;
   },
-  getApaleoAccessToken: mocks.getApaleoAccessToken,
+  listApaleoProperties: mocks.listApaleoProperties,
 }));
 
 import { POST } from "../app/api/admin/integrations/pms/apaleo/offers/route";
@@ -83,7 +83,10 @@ describe("Apaleo admin sandbox offer search", () => {
       PMS_APALEO_CLIENT_SECRET: "client-secret",
       PMS_APALEO_REFRESH_TOKEN: "saved-refresh-token",
     });
-    mocks.getApaleoAccessToken.mockResolvedValue({ accessToken: "access-token" });
+    mocks.listApaleoProperties.mockResolvedValue({
+      accessToken: "access-token",
+      properties: [{ id: "BER", name: "Berlin Test Hotel" }],
+    });
     mocks.availability.mockResolvedValue([{
       offerId: "private-offer-id",
       propertyCode: "BER",
@@ -116,7 +119,7 @@ describe("Apaleo admin sandbox offer search", () => {
   it("rejects invalid stay input without contacting Apaleo", async () => {
     const response = await POST(request({ ...validBody(), departureDate: "2026-01-01" }));
     expect(response.status).toBe(400);
-    expect(mocks.getApaleoAccessToken).not.toHaveBeenCalled();
+    expect(mocks.listApaleoProperties).not.toHaveBeenCalled();
   });
 
   it("returns sanitized read-only offer evidence for the selected property", async () => {
@@ -125,7 +128,7 @@ describe("Apaleo admin sandbox offer search", () => {
     const payload = await response.json();
 
     expect(response.status).toBe(200);
-    expect(mocks.getApaleoAccessToken).toHaveBeenCalledWith({
+    expect(mocks.listApaleoProperties).toHaveBeenCalledWith({
       baseUrl: "https://api.apaleo.com",
       clientId: "client-id",
       clientSecret: "client-secret",
@@ -148,10 +151,24 @@ describe("Apaleo admin sandbox offer search", () => {
     expect(payload.message).toContain("No booking or payment was created");
   });
 
+  it("refuses a property code that is not authorized for the current Apaleo account", async () => {
+    mocks.listApaleoProperties.mockResolvedValueOnce({
+      accessToken: "access-token",
+      properties: [{ id: "MUC", name: "Munich Test Hotel" }],
+    });
+    const response = await POST(request(validBody()));
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error: "The selected property is no longer authorized for this Apaleo account.",
+    });
+    expect(mocks.availability).not.toHaveBeenCalled();
+  });
+
   it("stores a rotated refresh token without exposing it", async () => {
-    mocks.getApaleoAccessToken.mockResolvedValueOnce({
+    mocks.listApaleoProperties.mockResolvedValueOnce({
       accessToken: "access-token",
       refreshToken: "rotated-refresh-token",
+      properties: [{ id: "BER", name: "Berlin Test Hotel" }],
     });
     mocks.encryptPmsCredentials.mockReturnValueOnce({
       ciphertext: "rotated-ciphertext",
