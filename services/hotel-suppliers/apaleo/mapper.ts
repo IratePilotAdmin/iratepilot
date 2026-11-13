@@ -160,7 +160,14 @@ export class ApaleoBookingMapper implements ApaleoMapper {
 
   createReservationResponse(payload: unknown, input: ApaleoCreateReservationRequest): ApaleoReservation {
     const booking = record(payload, "booking");
-    const reservations = Array.isArray(booking.reservations) ? booking.reservations : [];
+    // Apaleo's Booking V1 create endpoint returns `reservationIds`. Keep the
+    // older `reservations` shape as a defensive fallback for compatible mocks
+    // and proxies, but prefer the documented response contract.
+    const reservations = Array.isArray(booking.reservationIds)
+      ? booking.reservationIds
+      : Array.isArray(booking.reservations)
+        ? booking.reservations
+        : [];
     const source = record(reservations[0], "reservation");
     const reservationId = text(source.id);
     if (!reservationId) throw new Error("Apaleo booking response is missing a reservation ID");
