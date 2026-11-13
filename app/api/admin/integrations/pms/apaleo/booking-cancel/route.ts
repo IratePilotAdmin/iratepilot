@@ -45,6 +45,25 @@ function validation(body: TestBody | null) {
   };
 }
 
+type ApaleoLaunchEvidence = {
+  vendor_approved?: boolean | null;
+  approved_environment?: string | null;
+  property_code?: string | null;
+  verification_notes?: string | null;
+};
+
+function isApprovedApaleoTestProperty(evidence: ApaleoLaunchEvidence | null, propertyCode: string) {
+  if (!evidence?.vendor_approved) return false;
+  const environment = evidence.approved_environment?.trim().toLowerCase() ?? "";
+  const recordedProperty = evidence.property_code?.trim() ?? "";
+  const notes = evidence.verification_notes?.trim().toLowerCase() ?? "";
+  const recordedCode = recordedProperty.split(/[\s(]/, 1)[0]?.toUpperCase();
+  const testMarker = /\b(sandbox|test|developer)\b/;
+  return testMarker.test(environment)
+    && recordedCode === propertyCode.trim().toUpperCase()
+    && testMarker.test(`${recordedProperty.toLowerCase()} ${notes}`);
+}
+
 function handledError(error: unknown) {
   if (error instanceof ApaleoConnectionTestError || error instanceof ApaleoTransportError) {
     return NextResponse.json({ error: error.message }, { status: error.status });
@@ -68,7 +87,7 @@ export async function POST(request: Request) {
 
   try {
     const admin = createAdminClient();
-    const [connection, stored] = await Promise.all([
+    const [connection, stored, evidence] = await Promise.all([
       admin.from("property_pms_connections")
         .select("id,provider_id,external_property_code")
         .eq("id", input.connectionId)
@@ -77,9 +96,14 @@ export async function POST(request: Request) {
         .select("ciphertext,initialization_vector,authentication_tag,key_version")
         .eq("connection_id", input.connectionId)
         .maybeSingle(),
+      admin.from("priority_pms_launch_evidence")
+        .select("vendor_approved,approved_environment,property_code,verification_notes")
+        .eq("provider_id", "apaleo")
+        .maybeSingle(),
     ]);
     if (connection.error) throw connection.error;
     if (stored.error) throw stored.error;
+    if (evidence.error) throw evidence.error;
     if (!connection.data || connection.data.provider_id !== "apaleo") {
       return NextResponse.json({ error: "Apaleo connection not found." }, { status: 404 });
     }
@@ -89,6 +113,11 @@ export async function POST(request: Request) {
     }
     if (!stored.data) {
       return NextResponse.json({ error: "Store the Apaleo credentials first." }, { status: 409 });
+    }
+    if (!isApprovedApaleoTestProperty(evidence.data, propertyCode)) {
+      return NextResponse.json({
+        error: "Record the vendor-approved Apaleo test environment and this exact sandbox property before running a booking test.",
+      }, { status: 409 });
     }
 
     const credentials = decryptPmsCredentials({
@@ -150,16 +179,31 @@ export async function POST(request: Request) {
     }
 
     const externalReference = `IRP-CERT-${crypto.randomUUID()}`;
-    const reservation = await adapter.createReservation({
-      propertyCode,
-      arrivalDate: input.arrivalDate,
-      departureDate: input.departureDate,
-      adults: input.adults,
-      rooms: 1,
-      offerId: offer.offerId,
-      externalReference,
-      guest: { firstName: "iRatePilot", lastName: "Certification" },
-    });
+    let reservation;
+    try {
+      reservation = await adapter.createReservation({
+        propertyCode,
+        arrivalDate: input.arrivalDate,
+        departureDate: input.departureDate,
+        adults: input.adults,
+        rooms: 1,
+        offerId: offer.offerId,
+        externalReference,
+        guest: { firstName: "iRatePilot", lastName: "Certification" },
+      });
+    } catch (error) {
+      console.error("Apaleo sandbox reservation creation outcome is ambiguous", {
+        externalReference,
+        propertyCode,
+        name: error instanceof Error ? error.name : "UnknownError",
+      });
+      return NextResponse.json({
+        error: "Apaleo may have created the reservation but did not return a conclusive response. Search Apaleo using the external reference before retrying.",
+        propertyCode,
+        externalReference,
+        actionRequired: true,
+      }, { status: 502, headers: { "Cache-Control": "no-store" } });
+    }
 
     try {
       const cancellation = await adapter.cancelReservation({

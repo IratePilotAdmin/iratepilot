@@ -931,7 +931,11 @@ export function AdminSettings() {
         }),
       });
       const body = await response.json();
-      if (!response.ok) throw new Error(body.error || "The Apaleo sandbox booking test could not be completed.");
+      if (!response.ok) {
+        const cleanupReference = body.reservationId || body.externalReference;
+        const message = body.error || "The Apaleo sandbox booking test could not be completed.";
+        throw new Error(cleanupReference ? `${message} Cleanup reference: ${cleanupReference}.` : message);
+      }
       setCredentialMessage(
         `Apaleo booking test passed for ${body.propertyCode}: reservation ${body.reservationId} was created and cancelled. No payment was created.`,
       );

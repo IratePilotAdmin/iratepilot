@@ -45,6 +45,13 @@ const stored = {
   key_version: "v1",
 };
 
+const approvedTestEvidence = {
+  vendor_approved: true,
+  approved_environment: "Apaleo developer account / sandbox certification",
+  property_code: "BER (sandbox only; not a production hotel mapping)",
+  verification_notes: "BER is Apaleo's developer test property.",
+};
+
 function selectionResult(data: unknown) {
   return {
     select: vi.fn(() => ({
@@ -120,6 +127,9 @@ describe("Apaleo admin sandbox booking/cancellation test", () => {
       if (table === "property_pms_credentials") {
         return { ...selectionResult(stored), update: mocks.credentialUpdate };
       }
+      if (table === "priority_pms_launch_evidence") {
+        return selectionResult(approvedTestEvidence);
+      }
       throw new Error(`Unexpected table ${table}`);
     });
   });
@@ -139,6 +149,30 @@ describe("Apaleo admin sandbox booking/cancellation test", () => {
     const response = await POST(request(validBody()));
     expect(response.status).toBe(409);
     expect(mocks.availability).not.toHaveBeenCalled();
+  });
+
+  it("refuses an authorized property without explicit matching test-environment evidence", async () => {
+    mocks.from.mockImplementation((table: string) => {
+      if (table === "property_pms_connections") {
+        return selectionResult({ id: "connection-1", provider_id: "apaleo", external_property_code: "BER" });
+      }
+      if (table === "property_pms_credentials") {
+        return { ...selectionResult(stored), update: mocks.credentialUpdate };
+      }
+      if (table === "priority_pms_launch_evidence") {
+        return selectionResult({
+          vendor_approved: true,
+          approved_environment: "Production",
+          property_code: "BER",
+          verification_notes: "Authorized hotel",
+        });
+      }
+      throw new Error(`Unexpected table ${table}`);
+    });
+    const response = await POST(request(validBody()));
+    expect(response.status).toBe(409);
+    expect(mocks.listApaleoProperties).not.toHaveBeenCalled();
+    expect(mocks.createReservation).not.toHaveBeenCalled();
   });
 
   it("creates and cancels one sandbox reservation without exposing raw payloads", async () => {
@@ -179,6 +213,20 @@ describe("Apaleo admin sandbox booking/cancellation test", () => {
     const response = await POST(request(validBody()));
     expect(response.status).toBe(409);
     expect(mocks.createReservation).not.toHaveBeenCalled();
+  });
+
+  it("returns the external reference when reservation creation has an ambiguous outcome", async () => {
+    mocks.createReservation.mockRejectedValueOnce(new Error("response timeout"));
+    const response = await POST(request(validBody()));
+    const payload = await response.json();
+    expect(response.status).toBe(502);
+    expect(payload).toMatchObject({
+      actionRequired: true,
+      propertyCode: "BER",
+    });
+    expect(payload.externalReference).toMatch(/^IRP-CERT-/);
+    expect(payload.error).toContain("Search Apaleo using the external reference");
+    expect(mocks.cancelReservation).not.toHaveBeenCalled();
   });
 
   it("returns an action-required receipt when automatic cancellation fails", async () => {
