@@ -245,6 +245,7 @@ export function AdminSettings() {
   const [apaleoWebhookBusy, setApaleoWebhookBusy] = useState(false);
   const [apaleoReconciliationBusy, setApaleoReconciliationBusy] = useState(false);
   const [apaleoOfferSearchBusy, setApaleoOfferSearchBusy] = useState(false);
+  const [apaleoBookingTestBusy, setApaleoBookingTestBusy] = useState(false);
   const [apaleoArrivalDate, setApaleoArrivalDate] = useState("");
   const [apaleoDepartureDate, setApaleoDepartureDate] = useState("");
   const [apaleoAdults, setApaleoAdults] = useState(2);
@@ -914,6 +915,33 @@ export function AdminSettings() {
     }
   }
 
+  async function runApaleoBookingCancelTest() {
+    if (!selectedConnection || selectedConnection.provider_id !== "apaleo") return;
+    setApaleoBookingTestBusy(true);
+    setCredentialMessage("");
+    try {
+      const response = await fetch("/api/admin/integrations/pms/apaleo/booking-cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          connectionId: selectedConnection.id,
+          arrivalDate: apaleoArrivalDate,
+          departureDate: apaleoDepartureDate,
+          adults: apaleoAdults,
+        }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "The Apaleo sandbox booking test could not be completed.");
+      setCredentialMessage(
+        `Apaleo booking test passed for ${body.propertyCode}: reservation ${body.reservationId} was created and cancelled. No payment was created.`,
+      );
+    } catch (error) {
+      setCredentialMessage(error instanceof Error ? error.message : "The Apaleo sandbox booking test could not be completed.");
+    } finally {
+      setApaleoBookingTestBusy(false);
+    }
+  }
+
   return <>
     {message && <p role="status" className="card mt-8 p-6 text-sm text-slate-600">{message}</p>}
     {data && <>
@@ -1436,7 +1464,11 @@ export function AdminSettings() {
                   <button className="btn-primary" disabled={apaleoOfferSearchBusy || !apaleoArrivalDate || !apaleoDepartureDate} onClick={runApaleoOfferSearch} type="button">
                     {apaleoOfferSearchBusy ? "Searching…" : "Run sandbox search"}
                   </button>
+                  <button className="btn-secondary" disabled={apaleoBookingTestBusy || !apaleoArrivalDate || !apaleoDepartureDate} onClick={runApaleoBookingCancelTest} type="button">
+                    {apaleoBookingTestBusy ? "Creating and cancelling…" : "Run booking/cancel test"}
+                  </button>
                 </div>
+                <p className="mt-2 text-xs text-amber-700">This creates one sandbox reservation and immediately cancels it. It does not create a payment.</p>
               </div>
               <div className="mt-4 border-t pt-4">
                 <h3 className="text-sm font-semibold">Property-scoped reservation webhook</h3>
