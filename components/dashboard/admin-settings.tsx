@@ -244,6 +244,10 @@ export function AdminSettings() {
   const [apaleoWebhookPropertyCode, setApaleoWebhookPropertyCode] = useState("");
   const [apaleoWebhookBusy, setApaleoWebhookBusy] = useState(false);
   const [apaleoReconciliationBusy, setApaleoReconciliationBusy] = useState(false);
+  const [apaleoOfferSearchBusy, setApaleoOfferSearchBusy] = useState(false);
+  const [apaleoArrivalDate, setApaleoArrivalDate] = useState("");
+  const [apaleoDepartureDate, setApaleoDepartureDate] = useState("");
+  const [apaleoAdults, setApaleoAdults] = useState(2);
   const selectedConnection = useMemo(
     () => pmsConnections.find((connection) => connection.id === selectedConnectionId),
     [pmsConnections, selectedConnectionId],
@@ -879,6 +883,37 @@ export function AdminSettings() {
     }
   }
 
+  async function runApaleoOfferSearch() {
+    if (!selectedConnection || selectedConnection.provider_id !== "apaleo") return;
+    setApaleoOfferSearchBusy(true);
+    setCredentialMessage("");
+    try {
+      const response = await fetch("/api/admin/integrations/pms/apaleo/offers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          connectionId: selectedConnection.id,
+          arrivalDate: apaleoArrivalDate,
+          departureDate: apaleoDepartureDate,
+          adults: apaleoAdults,
+        }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Apaleo sandbox offers could not be loaded.");
+      const first = Array.isArray(body.offers) ? body.offers[0] : null;
+      const firstRate = first
+        ? ` First rate: ${first.currency} ${Number(first.totalAmount).toFixed(2)} (${first.roomTypeCode}/${first.ratePlanCode}).`
+        : "";
+      setCredentialMessage(
+        `Apaleo sandbox search passed for ${body.propertyCode}: ${Number(body.offerCount || 0)} offer(s) returned.${firstRate} No booking or payment was created.`,
+      );
+    } catch (error) {
+      setCredentialMessage(error instanceof Error ? error.message : "Apaleo sandbox offers could not be loaded.");
+    } finally {
+      setApaleoOfferSearchBusy(false);
+    }
+  }
+
   return <>
     {message && <p role="status" className="card mt-8 p-6 text-sm text-slate-600">{message}</p>}
     {data && <>
@@ -1384,6 +1419,24 @@ export function AdminSettings() {
                   </label>
                   <button className="btn-primary" disabled={apaleoPropertyBusy || !apaleoPropertyCode} onClick={saveApaleoProperty} type="button">Save property selection</button>
                 </>}
+              </div>
+              <div className="mt-4 border-t pt-4">
+                <h3 className="text-sm font-semibold">Sandbox offer search</h3>
+                <p className="mt-1 text-xs text-slate-500">Read availability and rates for the selected property. This cannot create a booking, charge a payment, or enable live traffic.</p>
+                <div className="mt-3 flex flex-wrap items-end gap-3">
+                  <label className="text-sm font-medium">Arrival
+                    <input className="input mt-2" type="date" value={apaleoArrivalDate} onChange={(event) => setApaleoArrivalDate(event.target.value)} />
+                  </label>
+                  <label className="text-sm font-medium">Departure
+                    <input className="input mt-2" type="date" value={apaleoDepartureDate} onChange={(event) => setApaleoDepartureDate(event.target.value)} />
+                  </label>
+                  <label className="w-28 text-sm font-medium">Adults
+                    <input className="input mt-2" type="number" min={1} max={8} value={apaleoAdults} onChange={(event) => setApaleoAdults(Number(event.target.value))} />
+                  </label>
+                  <button className="btn-primary" disabled={apaleoOfferSearchBusy || !apaleoArrivalDate || !apaleoDepartureDate} onClick={runApaleoOfferSearch} type="button">
+                    {apaleoOfferSearchBusy ? "Searching…" : "Run sandbox search"}
+                  </button>
+                </div>
               </div>
               <div className="mt-4 border-t pt-4">
                 <h3 className="text-sm font-semibold">Property-scoped reservation webhook</h3>
