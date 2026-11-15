@@ -13,6 +13,7 @@ export const runtime = "nodejs";
 
 type Connection = {
   id: string;
+  property_id: string;
   external_property_code: string;
 };
 
@@ -85,11 +86,23 @@ export async function GET(request: Request) {
     const admin = createAdminClient();
     const { data, error } = await admin
       .from("property_pms_connections")
-      .select("id,external_property_code")
+      .select("id,property_id,external_property_code,properties!inner(partner_id,partners!inner(status))")
       .eq("provider_id", "cloudbeds")
+      .eq("hotel_authorized", true)
+      .eq("properties.partners.status", "approved")
       .in("external_property_code", propertyIds);
     if (error) throw new Error("Cloudbeds property mappings could not be read");
-    const connections = (data ?? []) as Connection[];
+    const candidates = (data ?? []) as unknown as Connection[];
+    const grouped = new Map<string, Connection[]>();
+    candidates.forEach((connection) => {
+      const group = grouped.get(connection.external_property_code) ?? [];
+      group.push(connection);
+      grouped.set(connection.external_property_code, group);
+    });
+    if ([...grouped.values()].some((group) => group.length !== 1)) {
+      throw new Error("Cloudbeds property ownership is ambiguous");
+    }
+    const connections = [...grouped.values()].map(([connection]) => connection!);
     if (connections.length === 0) return supportRedirect("unmatched");
 
     const prepared = await Promise.all(connections.map(async (connection) => {
@@ -103,33 +116,19 @@ export async function GET(request: Request) {
     }));
     const validatedAt = new Date().toISOString();
 
-    for (const { connection, encrypted } of prepared) {
-      const credentialResult = await admin.from("property_pms_credentials").upsert({
+    const deliveryResult = await admin.rpc("complete_cloudbeds_api_key_delivery", {
+      p_authorized_property_ids: propertyIds,
+      p_deliveries: prepared.map(({ connection, encrypted }) => ({
         connection_id: connection.id,
         ciphertext: encrypted.ciphertext,
         initialization_vector: encrypted.initializationVector,
         authentication_tag: encrypted.authenticationTag,
         key_version: encrypted.keyVersion,
-        configured_by: null,
-        updated_at: validatedAt,
-      }, { onConflict: "connection_id" });
-      if (credentialResult.error) throw new Error("Cloudbeds credentials could not be stored");
-
-      const connectionResult = await admin
-        .from("property_pms_connections")
-        .update({ connection_status: "sandbox", last_validated_at: validatedAt })
-        .eq("id", connection.id)
-        .eq("provider_id", "cloudbeds");
-      if (connectionResult.error) throw new Error("Cloudbeds connection could not be updated");
-
-      const eventResult = await admin.from("pms_connection_test_events").insert({
-        connection_id: connection.id,
-        validation_mode: "vendor_sandbox",
-        result: "passed",
-        detail_code: "cloudbeds_api_key_delivery_succeeded",
-        tested_by: null,
-      });
-      if (eventResult.error) throw new Error("Cloudbeds validation event could not be stored");
+      })),
+      p_validated_at: validatedAt,
+    });
+    if (deliveryResult.error || deliveryResult.data !== prepared.length) {
+      throw new Error("Cloudbeds credentials could not be stored atomically");
     }
 
     return supportRedirect("connected");

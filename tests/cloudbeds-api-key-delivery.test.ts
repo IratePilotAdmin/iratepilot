@@ -57,6 +57,18 @@ describe("Cloudbeds automatic API-key delivery", () => {
     expect(new Headers(init?.headers).get("authorization")).toBe("Bearer cbat_key");
   });
 
+  it("reads every authorized hotel page", async () => {
+    const firstPage = Array.from({ length: 100 }, (_, index) => ({ propertyID: `hotel-${index}` }));
+    const fetcher = vi.fn<CloudbedsFetch>(async (url) => {
+      const page = new URL(String(url)).searchParams.get("pageNumber");
+      return new Response(JSON.stringify({ data: page === "1" ? firstPage : [{ propertyID: "hotel-100" }] }));
+    });
+    const propertyIds = await getCloudbedsAuthorizedPropertyIds({ apiKey: "cbat_key" }, fetcher);
+    expect(propertyIds).toHaveLength(101);
+    expect(propertyIds.at(-1)).toBe("hotel-100");
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
   it("requires HTTPS for all callback endpoints", async () => {
     await expect(exchangeCloudbedsAuthorizationCode({
       ...config,

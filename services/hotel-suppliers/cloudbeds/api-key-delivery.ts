@@ -132,42 +132,50 @@ export async function getCloudbedsAuthorizedPropertyIds(
 ) {
   const apiKey = required(config.apiKey, "Cloudbeds API key");
   const baseUrl = httpsUrl(config.apiBaseUrl ?? DEFAULT_API_BASE_URL, "Cloudbeds API base URL");
-  const endpoint = new URL("/api/v1.3/getHotels", baseUrl);
-  if (endpoint.origin !== baseUrl.origin) {
-    throw new Error("Cloudbeds hotels request must remain on the configured origin");
-  }
-  endpoint.searchParams.set("pageNumber", "1");
-  endpoint.searchParams.set("pageSize", "100");
-
   return withTimeout(config.timeoutMs ?? 15_000, async (signal) => {
-    const response = await fetcher(endpoint, {
-      method: "GET",
-      headers: { authorization: `Bearer ${apiKey}`, "x-api-key": apiKey },
-      redirect: "error",
-      signal,
-    });
-    const payload = await json(response);
-    if (!response.ok) {
-      throw new CloudbedsApiKeyDeliveryError(
-        vendorMessage(payload) || `Cloudbeds hotels request returned status ${response.status}`,
-        response.status,
-        "cloudbeds_hotels_rejected",
-      );
+    const propertyIds = new Set<string>();
+    const pageSize = 100;
+    for (let pageNumber = 1; pageNumber <= 1_000; pageNumber += 1) {
+      const endpoint = new URL("/api/v1.3/getHotels", baseUrl);
+      if (endpoint.origin !== baseUrl.origin) {
+        throw new Error("Cloudbeds hotels request must remain on the configured origin");
+      }
+      endpoint.searchParams.set("pageNumber", String(pageNumber));
+      endpoint.searchParams.set("pageSize", String(pageSize));
+      const response = await fetcher(endpoint, {
+        method: "GET",
+        headers: { authorization: `Bearer ${apiKey}`, "x-api-key": apiKey },
+        redirect: "error",
+        signal,
+      });
+      const payload = await json(response);
+      if (!response.ok) {
+        throw new CloudbedsApiKeyDeliveryError(
+          vendorMessage(payload) || `Cloudbeds hotels request returned status ${response.status}`,
+          response.status,
+          "cloudbeds_hotels_rejected",
+        );
+      }
+      const hotels = hotelArray(payload);
+      if (!hotels) {
+        throw new CloudbedsApiKeyDeliveryError(
+          "Cloudbeds returned an invalid hotels response",
+          502,
+          "cloudbeds_invalid_hotels_response",
+        );
+      }
+      hotels.forEach((hotel) => {
+        if (!hotel || typeof hotel !== "object" || Array.isArray(hotel)) return;
+        const source = hotel as Record<string, unknown>;
+        const value = source.propertyID ?? source.propertyId;
+        if (typeof value === "string" || typeof value === "number") propertyIds.add(String(value));
+      });
+      if (hotels.length < pageSize) return [...propertyIds];
     }
-    const hotels = hotelArray(payload);
-    if (!hotels) {
-      throw new CloudbedsApiKeyDeliveryError(
-        "Cloudbeds returned an invalid hotels response",
-        502,
-        "cloudbeds_invalid_hotels_response",
-      );
-    }
-    const propertyIds = hotels.flatMap((hotel) => {
-      if (!hotel || typeof hotel !== "object" || Array.isArray(hotel)) return [];
-      const source = hotel as Record<string, unknown>;
-      const value = source.propertyID ?? source.propertyId;
-      return typeof value === "string" || typeof value === "number" ? [String(value)] : [];
-    });
-    return [...new Set(propertyIds)];
+    throw new CloudbedsApiKeyDeliveryError(
+      "Cloudbeds returned too many hotel pages",
+      502,
+      "cloudbeds_hotels_pagination_limit",
+    );
   });
 }
