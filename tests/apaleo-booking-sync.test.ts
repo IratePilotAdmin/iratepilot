@@ -88,12 +88,12 @@ describe("Apaleo complete booking synchronization", () => {
     };
     expect(mapper.createReservationResponse({
       id: "BOOKING-1",
-      reservations: [{ id: "RES-1", propertyId: "MUC", status: "Confirmed" }],
+      reservationIds: [{ id: "RES-1" }],
     }, createInput)).toMatchObject({
       reservationId: "RES-1",
       confirmationNumber: "BOOKING-1",
       externalReference: "IRP-AP-100",
-      status: "Confirmed",
+      status: "confirmed",
     });
     expect(mapper.cancelReservationResponse(undefined, {
       propertyCode: "MUC",
@@ -112,7 +112,7 @@ describe("Apaleo complete booking synchronization", () => {
       if (url.includes("/offers?")) return Response.json(offerResponse);
       if (url.endsWith("/bookings")) {
         expect(init?.headers).toEqual(expect.objectContaining({ "idempotency-key": "IRP-AP-100" }));
-        return Response.json({ id: "BOOKING-1", reservations: [{ id: "RES-1", propertyId: "MUC" }] });
+        return Response.json({ id: "BOOKING-1", reservationIds: [{ id: "RES-1" }] }, { status: 201 });
       }
       if (url.endsWith("/reservation-actions/RES-1/cancel")) return new Response(undefined, { status: 204 });
       return Response.json({ message: "unexpected" }, { status: 500 });
