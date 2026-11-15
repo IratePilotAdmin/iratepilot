@@ -13,6 +13,12 @@ export {
   testCloudbedsSandboxConnection,
 } from "./connection-test";
 export type { CloudbedsConnectionTestResult } from "./connection-test";
+export {
+  CloudbedsApiKeyDeliveryError,
+  exchangeCloudbedsAuthorizationCode,
+  getCloudbedsAuthorizedPropertyIds,
+} from "./api-key-delivery";
+export type { CloudbedsApiKeyDeliveryConfig } from "./api-key-delivery";
 export type {
   CloudbedsAvailabilityRequest,
   CloudbedsCancellation,
