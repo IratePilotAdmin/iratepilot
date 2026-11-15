@@ -54,7 +54,12 @@ export type { MewsConnectionTestResult } from "./mews";
 export { CloudbedsAdapter } from "./cloudbeds";
 export { CloudbedsBookingMapper, createCloudbedsSyncAdapter, loadCloudbedsSyncConfig } from "./cloudbeds";
 export { CloudbedsConnectionTestError, testCloudbedsSandboxConnection } from "./cloudbeds";
-export type { CloudbedsConnectionTestResult } from "./cloudbeds";
+export {
+  CloudbedsApiKeyDeliveryError,
+  exchangeCloudbedsAuthorizationCode,
+  getCloudbedsAuthorizedPropertyIds,
+} from "./cloudbeds";
+export type { CloudbedsApiKeyDeliveryConfig, CloudbedsConnectionTestResult } from "./cloudbeds";
 export { ApaleoAdapter } from "./apaleo";
 export { ApaleoBookingMapper, createApaleoSyncAdapter, loadApaleoSyncConfig } from "./apaleo";
 export {

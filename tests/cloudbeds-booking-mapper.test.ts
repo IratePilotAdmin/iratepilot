@@ -85,14 +85,29 @@ describe("CloudbedsBookingMapper", () => {
       .toMatchObject({ reservationId: "CB-900", status: "canceled" });
   });
 
-  it("requires the API key and property source mapping for live sync", () => {
+  it("requires the API key while allowing Cloudbeds' default booking source", () => {
     expect(() => loadCloudbedsSyncConfig({})).toThrow("PMS_CLOUDBEDS_API_KEY");
-    expect(() => loadCloudbedsSyncConfig({ PMS_CLOUDBEDS_API_KEY: "secret" }))
-      .toThrow("PMS_CLOUDBEDS_SOURCE_ID");
+    expect(loadCloudbedsSyncConfig({ PMS_CLOUDBEDS_API_KEY: "secret" }))
+      .toMatchObject({ mapper: { sourceId: undefined, paymentMethod: "cash" } });
     expect(loadCloudbedsSyncConfig({
       PMS_CLOUDBEDS_API_KEY: "secret",
       PMS_CLOUDBEDS_SOURCE_ID: "s-123",
     })).toMatchObject({ mapper: { sourceId: "s-123", paymentMethod: "cash" } });
+  });
+
+  it("omits sourceID when a custom Cloudbeds source is not configured", () => {
+    const defaultSourceMapper = new CloudbedsBookingMapper({});
+    const [offer] = defaultSourceMapper.availabilityResponse({ data: [{
+      propertyID: "12345",
+      propertyRooms: [{ roomTypeID: "KING", roomRateID: "BAR-KING", roomsAvailable: 1, totalRate: 420 }],
+    }] }, stay);
+    const payload = defaultSourceMapper.createReservationPayload({
+      ...stay,
+      offerId: offer!.offerId,
+      externalReference: "IRP-201",
+      guest: { firstName: "Grace", lastName: "Hopper" },
+    });
+    expect(payload).not.toHaveProperty("sourceID");
   });
 
   it("rejects malformed offers before a booking can be created", () => {

@@ -180,8 +180,8 @@ export const priorityPmsProductionManifest: readonly PriorityPmsProductionManife
   {
     id: "cloudbeds",
     name: "Cloudbeds",
-    requiredEnvironmentKeys: ["PMS_CLOUDBEDS_API_KEY", "PMS_CLOUDBEDS_SOURCE_ID"],
-    optionalEnvironmentKeys: ["PMS_CLOUDBEDS_BASE_URL", "PMS_CLOUDBEDS_TIMEOUT_MS", "PMS_CLOUDBEDS_PAYMENT_METHOD"],
+    requiredEnvironmentKeys: ["PMS_CLOUDBEDS_API_KEY"],
+    optionalEnvironmentKeys: ["PMS_CLOUDBEDS_BASE_URL", "PMS_CLOUDBEDS_SOURCE_ID", "PMS_CLOUDBEDS_TIMEOUT_MS", "PMS_CLOUDBEDS_PAYMENT_METHOD"],
   },
   {
     id: "sihot",

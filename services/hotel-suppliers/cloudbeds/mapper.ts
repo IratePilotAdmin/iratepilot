@@ -67,14 +67,12 @@ function reservation(payload: unknown, input: CloudbedsCreateReservationRequest)
 }
 
 export type CloudbedsBookingMapperConfig = {
-  sourceId: string;
+  sourceId?: string;
   paymentMethod?: "cash" | "credit" | "ebanking" | "pay_pal";
 };
 
 export class CloudbedsBookingMapper implements CloudbedsMapper {
-  constructor(private readonly config: CloudbedsBookingMapperConfig) {
-    if (!config.sourceId.trim()) throw new Error("Cloudbeds source ID is required");
-  }
+  constructor(private readonly config: CloudbedsBookingMapperConfig) {}
 
   availabilityPayload(input: CloudbedsAvailabilityRequest) {
     return {
@@ -128,7 +126,7 @@ export class CloudbedsBookingMapper implements CloudbedsMapper {
     const offer = decodeOffer(input.offerId);
     return {
       propertyID: input.propertyCode,
-      sourceID: this.config.sourceId,
+      ...(this.config.sourceId?.trim() ? { sourceID: this.config.sourceId.trim() } : {}),
       thirdPartyIdentifier: input.externalReference,
       startDate: input.arrivalDate,
       endDate: input.departureDate,

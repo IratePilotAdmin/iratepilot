@@ -19,7 +19,7 @@ export function loadCloudbedsSyncConfig(env: CloudbedsSyncEnvironment) {
   return {
     transport,
     mapper: {
-      sourceId: required(env, "PMS_CLOUDBEDS_SOURCE_ID"),
+      sourceId: env.PMS_CLOUDBEDS_SOURCE_ID?.trim() || undefined,
       paymentMethod: (env.PMS_CLOUDBEDS_PAYMENT_METHOD?.trim() || "cash") as
         "cash" | "credit" | "ebanking" | "pay_pal",
     },
