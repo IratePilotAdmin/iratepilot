@@ -17,11 +17,11 @@ const connectionSteps = [
   },
   {
     title: "Authorize the property connection",
-    text: "A Cloudbeds administrator authorizes iRatePilot for the intended property and provides the property-scoped credentials requested during onboarding.",
+    text: "A Cloudbeds administrator authorizes iRatePilot for the intended property. In the partner workspace, declare Cloudbeds, enter the non-secret property identifier and mappings, and confirm the hotel owner's approval.",
   },
   {
-    title: "Validate the connection",
-    text: "In the iRatePilot partner workspace, open the PMS connection settings, choose Cloudbeds, enter the authorized credentials, and run the connection test.",
+    title: "Coordinate secure credential setup",
+    text: "After Cloudbeds approves the integration, iRatePilot staff coordinate the property-scoped credential exchange through the approved secure channel and run the connection test. Never enter credentials in the partner workspace or send them by email.",
   },
   {
     title: "Complete activation review",
@@ -32,7 +32,7 @@ const connectionSteps = [
 const troubleshooting = [
   [
     "The connection test is rejected",
-    "Confirm that the API credential belongs to the intended Cloudbeds property, has not been replaced, and includes the approved permission scopes.",
+    "Contact iRatePilot support so an administrator can confirm that the stored credential belongs to the intended Cloudbeds property, has not been replaced, and includes the approved permission scopes.",
   ],
   [
     "The property does not match",
@@ -93,8 +93,9 @@ export default function CloudbedsSupportPage() {
                 reservation data.
               </p>
               <p className="mt-4 text-sm leading-7 text-neutral-300">
-                Credentials are property-scoped and should only be shared through the secure iRatePilot connection
-                settings. Never send an API key through ordinary email or a support message.
+                Credentials are property-scoped and are exchanged only through an approved secure channel after
+                vendor approval. Partners enter non-secret identifiers and mappings in the workspace; iRatePilot
+                administrators store and test credentials. Never send an API key through email or a support message.
               </p>
             </div>
             <div>
