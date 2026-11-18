@@ -28,6 +28,18 @@ function isCertificationRuntime(environment: Environment) {
   return environment.NODE_ENV?.trim().toLocaleLowerCase() !== "production";
 }
 
+function isSandboxEnabled(environment: Environment) {
+  return environment.HOTEL_INVENTORY_RATEHAWK_SANDBOX_ENABLED?.trim().toLocaleLowerCase() === "true";
+}
+
+function isWithinRatehawkSearchHorizon(checkIn: string, now = new Date()) {
+  const checkInDate = new Date(`${checkIn}T00:00:00Z`);
+  if (!Number.isFinite(checkInDate.getTime())) return false;
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const daysUntilCheckIn = Math.floor((checkInDate.getTime() - today) / 86_400_000);
+  return daysUntilCheckIn >= 0 && daysUntilCheckIn <= 730;
+}
+
 function rateNightlyPrice(rate: InventoryJsonValue, nights: number) {
   const source = objectValue(rate);
   if (!source) return null;
@@ -53,7 +65,10 @@ function parseHotels(response: InventoryJsonValue, nights: number): Hotel[] {
   if (root?.status !== "ok" || !Array.isArray(data?.hotels)) return [];
   return data.hotels.slice(0, 20).flatMap((hotelValue): Hotel[] => {
     const hotel = objectValue(hotelValue);
-    const id = typeof hotel?.id === "string" || typeof hotel?.id === "number" ? String(hotel.id) : "";
+    const hotelIdentifier = hotel?.id ?? hotel?.hid;
+    const id = typeof hotelIdentifier === "string" || typeof hotelIdentifier === "number"
+      ? String(hotelIdentifier)
+      : "";
     const rates = Array.isArray(hotel?.rates) ? hotel.rates : [];
     const prices = rates.flatMap((rate) => {
       const price = rateNightlyPrice(rate, nights);
@@ -81,7 +96,12 @@ export async function getRatehawkCertificationHotels(
   options: { environment?: Environment; fetcher?: InventorySandboxFetch } = {},
 ): Promise<Hotel[] | null> {
   const environment = options.environment ?? process.env;
-  if (!isLosAngeles(criteria.destination) || !isCertificationRuntime(environment)) return null;
+  if (
+    !isLosAngeles(criteria.destination)
+    || !isCertificationRuntime(environment)
+    || !isSandboxEnabled(environment)
+    || !isWithinRatehawkSearchHorizon(criteria.checkIn)
+  ) return null;
   const adults = criteria.guests - criteria.childAges.length;
   if (criteria.guests > 10 || adults > 6 || criteria.childAges.length > 4) return null;
   const keyId = environment.HOTEL_INVENTORY_RATEHAWK_KEY_ID?.trim();

@@ -58,6 +58,27 @@ describe("RateHawk certification marketplace search", () => {
     });
   });
 
+  it("maps newer hid-only RateHawk records", async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      status: "ok",
+      data: {
+        hotels: [{
+          hid: 10004834,
+          rates: [{ daily_prices: ["180.00", "220.00"] }],
+        }],
+      },
+    }), { headers: { "content-type": "application/json" } }));
+    const { getRatehawkCertificationHotels } = await import(
+      "../services/hotel-suppliers/ratehawk-certification-search.server"
+    );
+
+    await expect(getRatehawkCertificationHotels(criteria, { environment, fetcher }))
+      .resolves.toEqual([expect.objectContaining({
+        slug: "ratehawk-sandbox-10004834",
+        price: 200,
+      })]);
+  });
+
   it("never calls sandbox from production", async () => {
     const fetcher = vi.fn();
     const { getRatehawkCertificationHotels } = await import(
@@ -81,6 +102,35 @@ describe("RateHawk certification marketplace search", () => {
       environment,
       fetcher,
     })).resolves.toBeNull();
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("does not intercept when the RateHawk sandbox flag is disabled", async () => {
+    const fetcher = vi.fn();
+    const { getRatehawkCertificationHotels } = await import(
+      "../services/hotel-suppliers/ratehawk-certification-search.server"
+    );
+
+    await expect(getRatehawkCertificationHotels(criteria, {
+      environment: { ...environment, HOTEL_INVENTORY_RATEHAWK_SANDBOX_ENABLED: "false" },
+      fetcher,
+    })).resolves.toBeNull();
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("does not intercept searches beyond RateHawk's 730-day horizon", async () => {
+    const fetcher = vi.fn();
+    const { getRatehawkCertificationHotels } = await import(
+      "../services/hotel-suppliers/ratehawk-certification-search.server"
+    );
+    const farFuture = new Date();
+    farFuture.setUTCDate(farFuture.getUTCDate() + 731);
+
+    await expect(getRatehawkCertificationHotels({
+      ...criteria,
+      checkIn: farFuture.toISOString().slice(0, 10),
+      checkOut: new Date(farFuture.getTime() + 86_400_000).toISOString().slice(0, 10),
+    }, { environment, fetcher })).resolves.toBeNull();
     expect(fetcher).not.toHaveBeenCalled();
   });
 
