@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ShieldCheck, SlidersHorizontal, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Hotel } from "@/data/hotels";
+import type { MarketplaceSource } from "@/lib/marketplace-presentation";
 import { HotelCard } from "@/components/hotels/hotel-card";
 import { FilterPanel } from "@/components/search/filter-panel";
 import {
@@ -13,7 +14,7 @@ import {
 
 type SearchResultsProps = {
   hotels: Hotel[];
-  source: "database" | "demo";
+  source: MarketplaceSource;
   availabilitySearch: boolean;
   hotelHrefs: Record<string, string>;
 };
@@ -51,7 +52,9 @@ export function SearchResults({
     setFiveStar(true);
   };
   const filtersChanged = maxPrice < highestPrice || !fourStar || !fiveStar;
-  const sourceLabel = source === "database"
+  const sourceLabel = source === "ratehawk_sandbox"
+    ? "sandbox-available"
+    : source === "database"
     ? availabilitySearch
       ? "available"
       : "approved"
@@ -65,7 +68,9 @@ export function SearchResults({
             {visibleHotels.length} {sourceLabel} {visibleHotels.length === 1 ? "stay" : "stays"}
           </strong>
           <span className="ml-2 text-sm text-slate-500">
-            {source === "database"
+            {source === "ratehawk_sandbox"
+              ? "RateHawk geographic SERP · certification preview · booking disabled"
+              : source === "database"
               ? availabilitySearch
                 ? "Verified for every selected night"
                 : "Approved marketplace inventory"
@@ -128,14 +133,18 @@ export function SearchResults({
             {source === "database" ? <ShieldCheck /> : <Sparkles />}
             <div>
               <strong>
-                {source === "database"
+                {source === "ratehawk_sandbox"
+                  ? "RateHawk availability returned"
+                  : source === "database"
                   ? availabilitySearch
                     ? "Availability verified"
                     : "Approved partner inventory"
                   : "Private demo preview"}
               </strong>
               <p>
-                {source === "database"
+                {source === "ratehawk_sandbox"
+                  ? "These results came from the required RateHawk sandbox geographic SERP call. Booking remains disabled during certification."
+                  : source === "database"
                   ? availabilitySearch
                     ? "Every result has an active room for your dates and guest count."
                     : "Add dates to verify room availability and nightly rates."

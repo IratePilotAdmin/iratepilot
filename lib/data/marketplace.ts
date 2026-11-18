@@ -15,6 +15,7 @@ import {
   type SearchableRoom,
   type StayCriteria,
 } from "@/lib/marketplace-search";
+export type MarketplaceSource = "database" | "demo" | "ratehawk_sandbox";
 
 type PropertyRow = {
   slug: string;
@@ -34,7 +35,16 @@ const fallbackImage = "https://images.unsplash.com/photo-1566073771259-6a8506099
 
 export async function getMarketplaceHotels(
   criteria: MarketplaceSearchCriteria | null = null,
-): Promise<{ hotels: Hotel[]; source: "database" | "demo" }> {
+): Promise<{ hotels: Hotel[]; source: MarketplaceSource }> {
+  if (hasStayCriteria(criteria)) {
+    const { getRatehawkCertificationHotels } = await import(
+      "@/services/hotel-suppliers/ratehawk-certification-search.server"
+    );
+    const certificationHotels = await getRatehawkCertificationHotels(criteria);
+    if (certificationHotels !== null) {
+      return { hotels: certificationHotels, source: "ratehawk_sandbox" };
+    }
+  }
   if (!isHotelPublicationEnabled() || !await isHotelMarketplaceLaunchAuthorized()) {
     const hotels = criteria
       ? demoHotels.filter((hotel) => matchesMarketplaceDestination(hotel, criteria.destination))

@@ -3,9 +3,10 @@ import Link from "next/link";
 import { Check, Heart, Sparkles, Star } from "lucide-react";
 import { Hotel } from "@/data/hotels";
 import { getReviewPresentation } from "@/lib/marketplace-presentation";
+import type { MarketplaceSource } from "@/lib/marketplace-presentation";
 import { formatCurrency } from "@/lib/utils";
 
-export function HotelCard({ hotel, variant = "list", rank, source = "demo", hotelHref }: { hotel: Hotel; variant?: "list" | "grid"; rank?: number; source?: "database" | "demo"; hotelHref?: string }) {
+export function HotelCard({ hotel, variant = "list", rank, source = "demo", hotelHref }: { hotel: Hotel; variant?: "list" | "grid"; rank?: number; source?: MarketplaceSource; hotelHref?: string }) {
   const review = getReviewPresentation(hotel.rating, hotel.reviews, source);
   const href = hotelHref || `/hotels/${hotel.slug}`;
   if (variant === "grid") return (
@@ -31,7 +32,7 @@ export function HotelCard({ hotel, variant = "list", rank, source = "demo", hote
       <div className="grid md:grid-cols-[280px_1fr_210px]">
         <div className="relative min-h-64 overflow-hidden">
           <Image src={hotel.image} alt={hotel.name} fill loading={rank === 1 ? "eager" : "lazy"} unoptimized sizes="(max-width: 768px) 100vw, 280px" className="object-cover" />
-          {rank ? <span className="absolute left-4 top-4 rounded-full bg-slate-950/80 px-3 py-1.5 text-xs font-bold text-white backdrop-blur">#{rank} {source === "database" ? "Marketplace result" : "Demo order"}</span> : null}
+          {rank ? <span className="absolute left-4 top-4 rounded-full bg-slate-950/80 px-3 py-1.5 text-xs font-bold text-white backdrop-blur">#{rank} {source === "ratehawk_sandbox" ? "RateHawk sandbox" : source === "database" ? "Marketplace result" : "Demo order"}</span> : null}
           <button aria-label={`Save ${hotel.name}`} className="absolute right-4 top-4 rounded-full bg-white/95 p-2.5 text-slate-700 shadow"><Heart className="h-4 w-4" /></button>
         </div>
         <div className="p-6">
@@ -44,7 +45,7 @@ export function HotelCard({ hotel, variant = "list", rank, source = "demo", hote
           <div className="mt-4 flex flex-wrap gap-2">
             {hotel.amenities.slice(0, 3).map((item) => <span key={item} className="mini-chip">{item}</span>)}
           </div>
-          <p className="mt-4 flex items-center gap-2 text-sm font-semibold text-emerald-700"><Check className="h-4 w-4" /> {source === "database" ? "Approved partner room inventory" : "Private demonstration listing"}</p>
+          <p className="mt-4 flex items-center gap-2 text-sm font-semibold text-emerald-700"><Check className="h-4 w-4" /> {source === "ratehawk_sandbox" ? "RateHawk sandbox availability" : source === "database" ? "Approved partner room inventory" : "Private demonstration listing"}</p>
         </div>
         <div className="flex min-w-48 flex-col justify-between border-t border-slate-200 bg-slate-50/70 p-6 md:border-l md:border-t-0">
           <div>
@@ -52,11 +53,13 @@ export function HotelCard({ hotel, variant = "list", rank, source = "demo", hote
             <div className="text-xs text-slate-500">{review.detail}</div>
           </div>
           <div className="mt-6">
-            <div className="text-sm text-slate-500">{source === "database" ? "From" : "Sample from"}</div>
+            <div className="text-sm text-slate-500">{source === "ratehawk_sandbox" ? "Sandbox from" : source === "database" ? "From" : "Sample from"}</div>
             <div className="text-2xl font-bold">{formatCurrency(hotel.price)}</div>
-            <div className="text-xs text-slate-500">{source === "database" ? "per night" : "illustrative nightly rate"}</div>
+            <div className="text-xs text-slate-500">{source === "ratehawk_sandbox" ? "average sandbox nightly rate" : source === "database" ? "per night" : "illustrative nightly rate"}</div>
             <div className="mt-3 flex items-center gap-1 text-xs font-bold text-violet-700"><Sparkles className="h-3.5 w-3.5" /> {source === "database" ? "Member value available" : "Sample member value"}</div>
-            <Link href={href} className="btn-primary mt-4 w-full">{source === "database" ? "View rooms" : "Preview rooms"}</Link>
+            {source === "ratehawk_sandbox"
+              ? <span className="btn-secondary mt-4 w-full cursor-not-allowed" aria-disabled="true">Certification preview</span>
+              : <Link href={href} className="btn-primary mt-4 w-full">{source === "database" ? "View rooms" : "Preview rooms"}</Link>}
           </div>
         </div>
       </div>

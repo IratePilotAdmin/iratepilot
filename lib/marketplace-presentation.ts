@@ -17,6 +17,8 @@ export type MarketplaceRoom = {
   cancellationPolicy?: string | null;
 };
 
+export type MarketplaceSource = "database" | "demo" | "ratehawk_sandbox";
+
 export type PresentedRoom = {
   id: string;
   name: string;
@@ -26,7 +28,7 @@ export type PresentedRoom = {
 };
 
 export function getPresentedRooms(
-  source: "database" | "demo",
+  source: MarketplaceSource,
   rooms: MarketplaceRoom[],
   fallbackPrice: number
 ): PresentedRoom[] {
@@ -69,9 +71,9 @@ export function getPresentedRooms(
 export function getReviewPresentation(
   rating: number,
   reviews: number,
-  source: "database" | "demo" = "database",
+  source: MarketplaceSource = "database",
 ) {
-  if (source === "demo") {
+  if (source !== "database") {
     return {
       score: rating > 0 ? rating.toFixed(1) : "Demo",
       label: "Illustrative score",

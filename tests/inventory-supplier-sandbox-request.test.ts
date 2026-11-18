@@ -6,6 +6,7 @@ import {
   buildExpediaRapidSandboxAvailabilityRequest,
   buildHotelbedsSandboxAvailabilityRequest,
   buildRatehawkSandboxHotelPrebookRequest,
+  buildRatehawkSandboxGeoSearchRequest,
   buildRatehawkSandboxHotelSearchRequest,
   buildStubaSandboxHotelSearchRequest,
 } from "../services/hotel-suppliers/inventory-sandbox-request.server";
@@ -50,6 +51,26 @@ describe("inventory supplier sandbox request builders", () => {
         "Content-Type": "application/json",
       },
       body: '{"hids":[10004873],"checkin":"2026-10-22","checkout":"2026-10-25"}',
+    });
+  });
+
+  it("builds a RateHawk sandbox geographic SERP request", () => {
+    const request = buildRatehawkSandboxGeoSearchRequest({
+      keyId: "partner-id",
+      apiKey: "ratehawk-api-key",
+      payload: { latitude: 34.077194, longitude: -118.36068, radius: 20_000 },
+    });
+
+    expect(request).toEqual({
+      supplierId: "ratehawk",
+      url: "https://api-sandbox.ratehawk.com/api/b2b/v3/search/serp/geo/",
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${Buffer.from("partner-id:ratehawk-api-key").toString("base64")}`,
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: '{"latitude":34.077194,"longitude":-118.36068,"radius":20000}',
     });
   });
 
