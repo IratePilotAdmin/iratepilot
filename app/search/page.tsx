@@ -31,7 +31,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
                 <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">Find a stay worth remembering.</h1>
                 <p className="mt-3 text-slate-600">Curated hotels, resorts, and premium vacation homes. Approved partner inventory and private demo listings are clearly identified.</p>
               </div>
-              <div className="ai-match-note"><ShieldCheck /><span><strong>{source === "database" ? "Approved partner inventory" : "Private demo inventory"}</strong><small>{source === "database" ? "Publication-reviewed marketplace listings" : "Sample properties · booking disabled"}</small></span></div>
+              <div className="ai-match-note"><ShieldCheck /><span><strong>{source === "ratehawk_sandbox" ? "RateHawk certification inventory" : source === "database" ? "Approved partner inventory" : "Private demo inventory"}</strong><small>{source === "ratehawk_sandbox" ? "Sandbox SERP results · booking disabled" : source === "database" ? "Publication-reviewed marketplace listings" : "Sample properties · booking disabled"}</small></span></div>
             </div>
             <div className="mt-8"><SearchForm key={searchKey} initialValues={search.values} /></div>
           </div>
