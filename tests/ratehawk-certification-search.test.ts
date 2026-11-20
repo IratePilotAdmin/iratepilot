@@ -27,10 +27,12 @@ describe("RateHawk certification marketplace search", () => {
       data: {
         hotels: [
           {
+            id: "conrad_los_angeles",
             hid: 10004834,
             rates: [{ daily_prices: ["200.00", "240.00"] }],
           },
           {
+            id: "rosa_bell_motel",
             hid: 8819557,
             rates: [{ daily_prices: ["160.00", "180.00"] }],
           },

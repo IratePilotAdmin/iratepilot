@@ -68,7 +68,7 @@ function parseHotels(response: InventoryJsonValue, nights: number): Hotel[] {
   if (root?.status !== "ok" || !Array.isArray(data?.hotels)) return [];
   return data.hotels.slice(0, 20).flatMap((hotelValue): Hotel[] => {
     const hotel = objectValue(hotelValue);
-    const hotelIdentifier = hotel?.id ?? hotel?.hid;
+    const hotelIdentifier = hotel?.hid ?? hotel?.id;
     const id = typeof hotelIdentifier === "string" || typeof hotelIdentifier === "number"
       ? String(hotelIdentifier)
       : "";
