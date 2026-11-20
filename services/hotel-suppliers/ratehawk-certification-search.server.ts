@@ -2,7 +2,7 @@ import "server-only";
 
 import type { Hotel } from "@/data/hotels";
 import type { MarketplaceStayCriteria } from "@/lib/marketplace-search";
-import { buildRatehawkSandboxGeoSearchRequest } from "./inventory-sandbox-request.server";
+import { buildRatehawkSandboxHotelSearchRequest } from "./inventory-sandbox-request.server";
 import {
   executeInventorySandboxRequest,
   type InventorySandboxFetch,
@@ -11,7 +11,10 @@ import type { InventoryJsonValue } from "./inventory-response.server";
 
 type Environment = Record<string, string | undefined>;
 
-const losAngeles = { latitude: 34.077194, longitude: -118.36068, radius: 20_000 };
+const certificationHotels = new Map([
+  ["10004834", { name: "Conrad Los Angeles", city: "Los Angeles" }],
+  ["8819557", { name: "Rosa Bell Motel", city: "Los Angeles" }],
+]);
 const fallbackImage = "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80";
 
 function objectValue(value: InventoryJsonValue | undefined) {
@@ -65,10 +68,12 @@ function parseHotels(response: InventoryJsonValue, nights: number): Hotel[] {
   if (root?.status !== "ok" || !Array.isArray(data?.hotels)) return [];
   return data.hotels.slice(0, 20).flatMap((hotelValue): Hotel[] => {
     const hotel = objectValue(hotelValue);
-    const hotelIdentifier = hotel?.id ?? hotel?.hid;
+    const hotelIdentifier = hotel?.hid ?? hotel?.id;
     const id = typeof hotelIdentifier === "string" || typeof hotelIdentifier === "number"
       ? String(hotelIdentifier)
       : "";
+    const certificationHotel = certificationHotels.get(id);
+    if (!certificationHotel) return [];
     const rates = Array.isArray(hotel?.rates) ? hotel.rates : [];
     const prices = rates.flatMap((rate) => {
       const price = rateNightlyPrice(rate, nights);
@@ -77,8 +82,8 @@ function parseHotels(response: InventoryJsonValue, nights: number): Hotel[] {
     if (!id || prices.length === 0) return [];
     return [{
       slug: `ratehawk-sandbox-${encodeURIComponent(id)}`,
-      name: `RateHawk sandbox hotel ${id}`,
-      city: "Los Angeles",
+      name: certificationHotel.name,
+      city: certificationHotel.city,
       country: "United States",
       stars: 4,
       rating: 0,
@@ -107,7 +112,7 @@ export async function getRatehawkCertificationHotels(
   const keyId = environment.HOTEL_INVENTORY_RATEHAWK_KEY_ID?.trim();
   const apiKey = environment.HOTEL_INVENTORY_RATEHAWK_API_KEY?.trim();
   if (!keyId || !apiKey) return null;
-  const request = buildRatehawkSandboxGeoSearchRequest({
+  const request = buildRatehawkSandboxHotelSearchRequest({
     keyId,
     apiKey,
     payload: {
@@ -116,10 +121,7 @@ export async function getRatehawkCertificationHotels(
       residency: "us",
       language: "en",
       guests: [{ adults, children: criteria.childAges }],
-      latitude: losAngeles.latitude,
-      longitude: losAngeles.longitude,
-      radius: losAngeles.radius,
-      hotels_limit: 20,
+      hids: [...certificationHotels.keys()].map(Number),
       currency: "USD",
       timeout: 8,
     },

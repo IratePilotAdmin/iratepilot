@@ -21,14 +21,22 @@ describe("RateHawk certification marketplace search", () => {
     HOTEL_INVENTORY_RATEHAWK_SANDBOX_ENABLED: "true",
   };
 
-  it("calls the geographic SERP method for Los Angeles and maps available rates", async () => {
+  it("calls the hotel SERP method for Los Angeles and maps both certification hotels", async () => {
     const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       status: "ok",
       data: {
-        hotels: [{
-          id: "la-test-hotel",
-          rates: [{ daily_prices: ["200.00", "240.00"] }],
-        }],
+        hotels: [
+          {
+            id: "conrad_los_angeles",
+            hid: 10004834,
+            rates: [{ daily_prices: ["200.00", "240.00"] }],
+          },
+          {
+            id: "rosa_bell_motel",
+            hid: 8819557,
+            rates: [{ daily_prices: ["160.00", "180.00"] }],
+          },
+        ],
       },
     }), { headers: { "content-type": "application/json" } }));
     const { getRatehawkCertificationHotels } = await import(
@@ -37,13 +45,22 @@ describe("RateHawk certification marketplace search", () => {
 
     const result = await getRatehawkCertificationHotels(criteria, { environment, fetcher });
 
-    expect(result).toEqual([expect.objectContaining({
-      slug: "ratehawk-sandbox-la-test-hotel",
-      city: "Los Angeles",
-      price: 220,
-    })]);
+    expect(result).toEqual([
+      expect.objectContaining({
+        slug: "ratehawk-sandbox-10004834",
+        name: "Conrad Los Angeles",
+        city: "Los Angeles",
+        price: 220,
+      }),
+      expect.objectContaining({
+        slug: "ratehawk-sandbox-8819557",
+        name: "Rosa Bell Motel",
+        city: "Los Angeles",
+        price: 170,
+      }),
+    ]);
     expect(fetcher).toHaveBeenCalledWith(
-      "https://api-sandbox.ratehawk.com/api/b2b/v3/search/serp/geo/",
+      "https://api-sandbox.ratehawk.com/api/b2b/v3/search/serp/hotels/",
       expect.objectContaining({ method: "POST", cache: "no-store", redirect: "error" }),
     );
     const init = fetcher.mock.calls[0][1] as RequestInit;
@@ -51,19 +68,16 @@ describe("RateHawk certification marketplace search", () => {
       checkin: "2026-12-10",
       checkout: "2026-12-12",
       guests: [{ adults: 2, children: [8] }],
-      latitude: 34.077194,
-      longitude: -118.36068,
-      radius: 20_000,
-      hotels_limit: 20,
+      hids: [10004834, 8819557],
     });
   });
 
-  it("maps newer hid-only RateHawk records", async () => {
+  it("ignores unrelated hotel records returned by the supplier", async () => {
     const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       status: "ok",
       data: {
         hotels: [{
-          hid: 10004834,
+          hid: 12345678,
           rates: [{ daily_prices: ["180.00", "220.00"] }],
         }],
       },
@@ -73,10 +87,7 @@ describe("RateHawk certification marketplace search", () => {
     );
 
     await expect(getRatehawkCertificationHotels(criteria, { environment, fetcher }))
-      .resolves.toEqual([expect.objectContaining({
-        slug: "ratehawk-sandbox-10004834",
-        price: 200,
-      })]);
+      .resolves.toEqual([]);
   });
 
   it("never calls sandbox from production", async () => {
