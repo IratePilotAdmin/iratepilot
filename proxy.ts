@@ -8,7 +8,8 @@ export async function proxy(request: NextRequest) {
   const protectedRoute = pathname.startsWith("/account")
     || pathname.startsWith("/partner/")
     || pathname.startsWith("/admin")
-    || pathname.startsWith("/flights/preview");
+    || pathname.startsWith("/flights/preview")
+    || pathname.startsWith("/certification/ratehawk");
   if (!protectedRoute) return NextResponse.next();
 
   const { url, key } = getSupabasePublicConfig();

@@ -80,6 +80,26 @@ Before any commercial activation, run the separately approved Stripe sandbox sce
 
 Record only non-secret Stripe object IDs, timestamps, expected/actual outcomes, and the operator. Never record keys, signatures, card data, bank information, or Connect credentials.
 
+## RateHawk certification reviewer flow
+
+The authenticated `/certification/ratehawk` page is a Vercel Preview-only
+review surface for RateHawk certification. It is separate from the customer
+booking tables and Production marketplace launch gates. The route opens only
+when all of the following are true:
+
+- `ENABLE_RATEHAWK_CERTIFICATION_REVIEW=true`.
+- `HOTEL_INVENTORY_RATEHAWK_SANDBOX_ENABLED=true`.
+- active Stripe keys are a matching test pair.
+- `VERCEL_ENV=preview`.
+- the signed-in email is listed in `RATEHAWK_CERTIFICATION_REVIEW_EMAILS`.
+
+The page creates a $1 Stripe test PaymentIntent, runs the documented RateHawk
+sandbox citizenship scenario, waits for confirmation, cancels the sandbox
+reservation, and refunds the Stripe test payment. It rejects live Stripe
+objects and cannot run in a Vercel Production environment. For local QA only,
+`RATEHAWK_CERTIFICATION_REVIEW_ALLOW_LOCAL=true` may replace the Preview check
+when `NODE_ENV` is not `production`.
+
 ## Production stop conditions
 
 Keep production payments and payouts disabled when any of the following is true:
