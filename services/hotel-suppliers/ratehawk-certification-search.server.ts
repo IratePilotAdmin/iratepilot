@@ -5,9 +5,13 @@ import type { MarketplaceStayCriteria } from "@/lib/marketplace-search";
 import { buildRatehawkSandboxHotelSearchRequest } from "./inventory-sandbox-request.server";
 import {
   executeInventorySandboxRequest,
+  InventorySandboxTransportError,
   type InventorySandboxFetch,
 } from "./inventory-sandbox-transport.server";
-import type { InventoryJsonValue } from "./inventory-response.server";
+import {
+  InventorySupplierResponseError,
+  type InventoryJsonValue,
+} from "./inventory-response.server";
 
 type Environment = Record<string, string | undefined>;
 
@@ -16,6 +20,26 @@ const certificationHotels = new Map([
   ["8819557", { name: "Rosa Bell Motel", city: "Los Angeles" }],
 ]);
 const fallbackImage = "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80";
+
+type CertificationSearchDiagnostic = {
+  event: "ratehawk_certification_search";
+  outcome:
+    | "mapped"
+    | "no_hotels"
+    | "no_certification_hotels"
+    | "no_usable_rates"
+    | "invalid_supplier_response"
+    | "transport_error"
+    | "supplier_response_error"
+    | "unexpected_error";
+  hotelCount?: number;
+  certificationHotelCount?: number;
+  mappedHotelCount?: number;
+  errorCode?: string;
+  httpStatus?: number;
+};
+
+type CertificationSearchLogger = (diagnostic: CertificationSearchDiagnostic) => void;
 
 function objectValue(value: InventoryJsonValue | undefined) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : null;
@@ -62,11 +86,21 @@ function rateNightlyPrice(rate: InventoryJsonValue, nights: number) {
   return totals.length > 0 ? Math.round((Math.min(...totals) / nights) * 100) / 100 : null;
 }
 
-function parseHotels(response: InventoryJsonValue, nights: number): Hotel[] {
+function parseHotels(response: InventoryJsonValue, nights: number): {
+  hotels: Hotel[];
+  diagnostic: CertificationSearchDiagnostic;
+} {
   const root = objectValue(response);
   const data = objectValue(root?.data);
-  if (root?.status !== "ok" || !Array.isArray(data?.hotels)) return [];
-  return data.hotels.slice(0, 20).flatMap((hotelValue): Hotel[] => {
+  if (root?.status !== "ok" || !Array.isArray(data?.hotels)) {
+    return {
+      hotels: [],
+      diagnostic: { event: "ratehawk_certification_search", outcome: "invalid_supplier_response" },
+    };
+  }
+  const supplierHotels = data.hotels.slice(0, 20);
+  let certificationHotelCount = 0;
+  const hotels = supplierHotels.flatMap((hotelValue): Hotel[] => {
     const hotel = objectValue(hotelValue);
     const hotelIdentifier = hotel?.hid ?? hotel?.id;
     const id = typeof hotelIdentifier === "string" || typeof hotelIdentifier === "number"
@@ -74,6 +108,7 @@ function parseHotels(response: InventoryJsonValue, nights: number): Hotel[] {
       : "";
     const certificationHotel = certificationHotels.get(id);
     if (!certificationHotel) return [];
+    certificationHotelCount += 1;
     const rates = Array.isArray(hotel?.rates) ? hotel.rates : [];
     const prices = rates.flatMap((rate) => {
       const price = rateNightlyPrice(rate, nights);
@@ -94,11 +129,32 @@ function parseHotels(response: InventoryJsonValue, nights: number): Hotel[] {
       description: "Availability returned by RateHawk's sandbox geographic hotel search for certification review. Booking is disabled in this preview.",
     }];
   });
+  const outcome = hotels.length > 0
+    ? "mapped"
+    : supplierHotels.length === 0
+      ? "no_hotels"
+      : certificationHotelCount === 0
+        ? "no_certification_hotels"
+        : "no_usable_rates";
+  return {
+    hotels,
+    diagnostic: {
+      event: "ratehawk_certification_search",
+      outcome,
+      hotelCount: supplierHotels.length,
+      certificationHotelCount,
+      mappedHotelCount: hotels.length,
+    },
+  };
 }
 
 export async function getRatehawkCertificationHotels(
   criteria: MarketplaceStayCriteria,
-  options: { environment?: Environment; fetcher?: InventorySandboxFetch } = {},
+  options: {
+    environment?: Environment;
+    fetcher?: InventorySandboxFetch;
+    logger?: CertificationSearchLogger;
+  } = {},
 ): Promise<Hotel[] | null> {
   const environment = options.environment ?? process.env;
   if (
@@ -131,8 +187,25 @@ export async function getRatehawkCertificationHotels(
     const checkin = new Date(`${criteria.checkIn}T00:00:00Z`);
     const checkout = new Date(`${criteria.checkOut}T00:00:00Z`);
     const nights = Math.max(1, Math.round((checkout.getTime() - checkin.getTime()) / 86_400_000));
-    return parseHotels(response, nights);
-  } catch {
+    const parsed = parseHotels(response, nights);
+    (options.logger ?? console.info)(parsed.diagnostic);
+    return parsed.hotels;
+  } catch (error) {
+    const diagnostic: CertificationSearchDiagnostic = error instanceof InventorySandboxTransportError
+      ? {
+          event: "ratehawk_certification_search",
+          outcome: "transport_error",
+          errorCode: error.code,
+        }
+      : error instanceof InventorySupplierResponseError
+        ? {
+            event: "ratehawk_certification_search",
+            outcome: "supplier_response_error",
+            errorCode: error.code,
+            ...(error.status === undefined ? {} : { httpStatus: error.status }),
+          }
+        : { event: "ratehawk_certification_search", outcome: "unexpected_error" };
+    (options.logger ?? console.warn)(diagnostic);
     return [];
   }
 }

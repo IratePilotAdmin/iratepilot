@@ -22,6 +22,7 @@ describe("RateHawk certification marketplace search", () => {
   };
 
   it("calls the hotel SERP method for Los Angeles and maps both certification hotels", async () => {
+    const logger = vi.fn();
     const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       status: "ok",
       data: {
@@ -43,7 +44,7 @@ describe("RateHawk certification marketplace search", () => {
       "../services/hotel-suppliers/ratehawk-certification-search.server"
     );
 
-    const result = await getRatehawkCertificationHotels(criteria, { environment, fetcher });
+    const result = await getRatehawkCertificationHotels(criteria, { environment, fetcher, logger });
 
     expect(result).toEqual([
       expect.objectContaining({
@@ -70,9 +71,17 @@ describe("RateHawk certification marketplace search", () => {
       guests: [{ adults: 2, children: [8] }],
       hids: [10004834, 8819557],
     });
+    expect(logger).toHaveBeenCalledWith({
+      event: "ratehawk_certification_search",
+      outcome: "mapped",
+      hotelCount: 2,
+      certificationHotelCount: 2,
+      mappedHotelCount: 2,
+    });
   });
 
   it("ignores unrelated hotel records returned by the supplier", async () => {
+    const logger = vi.fn();
     const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       status: "ok",
       data: {
@@ -86,8 +95,34 @@ describe("RateHawk certification marketplace search", () => {
       "../services/hotel-suppliers/ratehawk-certification-search.server"
     );
 
-    await expect(getRatehawkCertificationHotels(criteria, { environment, fetcher }))
+    await expect(getRatehawkCertificationHotels(criteria, { environment, fetcher, logger }))
       .resolves.toEqual([]);
+    expect(logger).toHaveBeenCalledWith(expect.objectContaining({
+      outcome: "no_certification_hotels",
+      hotelCount: 1,
+      certificationHotelCount: 0,
+      mappedHotelCount: 0,
+    }));
+  });
+
+  it("distinguishes certification hotels returned without usable rates", async () => {
+    const logger = vi.fn();
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      status: "ok",
+      data: { hotels: [{ hid: 10004834, rates: [] }] },
+    }), { headers: { "content-type": "application/json" } }));
+    const { getRatehawkCertificationHotels } = await import(
+      "../services/hotel-suppliers/ratehawk-certification-search.server"
+    );
+
+    await expect(getRatehawkCertificationHotels(criteria, { environment, fetcher, logger }))
+      .resolves.toEqual([]);
+    expect(logger).toHaveBeenCalledWith(expect.objectContaining({
+      outcome: "no_usable_rates",
+      hotelCount: 1,
+      certificationHotelCount: 1,
+      mappedHotelCount: 0,
+    }));
   });
 
   it("never calls sandbox from production", async () => {
@@ -146,12 +181,19 @@ describe("RateHawk certification marketplace search", () => {
   });
 
   it("fails closed without leaking supplier errors into the page", async () => {
+    const logger = vi.fn();
     const fetcher = vi.fn().mockRejectedValue(new Error("credential details"));
     const { getRatehawkCertificationHotels } = await import(
       "../services/hotel-suppliers/ratehawk-certification-search.server"
     );
 
-    await expect(getRatehawkCertificationHotels(criteria, { environment, fetcher }))
+    await expect(getRatehawkCertificationHotels(criteria, { environment, fetcher, logger }))
       .resolves.toEqual([]);
+    expect(logger).toHaveBeenCalledWith({
+      event: "ratehawk_certification_search",
+      outcome: "transport_error",
+      errorCode: "network_error",
+    });
+    expect(JSON.stringify(logger.mock.calls)).not.toContain("credential details");
   });
 });
