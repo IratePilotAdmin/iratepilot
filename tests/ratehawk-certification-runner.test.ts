@@ -196,6 +196,55 @@ describe("RateHawk certification runner", () => {
     ]);
   });
 
+  it("uses a stable supplier order ID for overlapping retries of one operation", async () => {
+    const firstFetcher = createFetcher("ok");
+    const secondFetcher = createFetcher("ok");
+    const first = await runRatehawkCertificationScenario({
+      environment,
+      scenarioId: "citizenship",
+      operationId: "pi_test_retry_safe",
+      fetcher: firstFetcher,
+      now: new Date("2026-10-27T12:00:00.000Z"),
+    });
+    const second = await runRatehawkCertificationScenario({
+      environment,
+      scenarioId: "citizenship",
+      operationId: "pi_test_retry_safe",
+      fetcher: secondFetcher,
+      now: new Date("2026-10-27T12:00:00.000Z"),
+    });
+
+    expect(first.partnerOrderId).toBe(second.partnerOrderId);
+    expect(first.partnerOrderId).toMatch(/^[0-9a-f-]{36}$/i);
+  });
+
+  it("records and cancels an allocated order when a later supplier step fails", async () => {
+    const allocated = vi.fn(async () => {});
+    const baseFetcher = createFetcher("ok");
+    const fetcher = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      if (String(input).endsWith("/booking/finish/status/")) {
+        throw new InventorySupplierResponseError("ratehawk", "supplier_error", 400);
+      }
+      return baseFetcher(input, init);
+    });
+
+    await expect(runRatehawkCertificationScenario({
+      environment,
+      scenarioId: "citizenship",
+      operationId: "pi_test_partial_failure",
+      onPartnerOrderId: allocated,
+      fetcher,
+      now: new Date("2026-10-27T12:00:00.000Z"),
+    })).rejects.toMatchObject({
+      name: "RatehawkCertificationPartialFailure",
+      cancelled: true,
+    });
+
+    expect(allocated).toHaveBeenCalledOnce();
+    expect(fetcher.mock.calls.some(([url]) => String(url).endsWith("/order/cancel/")))
+      .toBe(true);
+  });
+
   it("preserves the documented async suffix and does not cancel a failed booking", async () => {
     const fetcher = createFetcher("error");
 
