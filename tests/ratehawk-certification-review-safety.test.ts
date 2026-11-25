@@ -13,6 +13,9 @@ describe("RateHawk certification reviewer safety boundary", () => {
     expect(paymentRoute).toContain("if (intent.livemode");
     expect(completeRoute).toContain("paymentIntent.livemode");
     expect(completeRoute).toContain('scenarioId: "citizenship"');
+    expect(completeRoute).toContain("operationId: paymentIntent.id");
+    expect(completeRoute).toContain("ratehawkWorkflowState");
+    expect(completeRoute).toContain("RatehawkCertificationPartialFailure");
     expect(completeRoute).toContain("stripe.refunds.create");
   });
 });

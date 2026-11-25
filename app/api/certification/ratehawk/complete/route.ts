@@ -5,6 +5,7 @@ import { isRatehawkCertificationReviewer } from "@/lib/ratehawk/certification-re
 import { getStripe } from "@/lib/stripe";
 import {
   classifyRatehawkCertificationFailure,
+  RatehawkCertificationPartialFailure,
   runRatehawkCertificationScenario,
 } from "@/services/hotel-suppliers/ratehawk-certification-runner.server";
 
@@ -54,6 +55,17 @@ export async function POST(request: Request) {
     const result = await runRatehawkCertificationScenario({
       environment: process.env,
       scenarioId: "citizenship",
+      operationId: paymentIntent.id,
+      onPartnerOrderId: async (partnerOrderId) => {
+        await stripe.paymentIntents.update(paymentIntent.id, {
+          metadata: {
+            ...paymentIntent.metadata,
+            ratehawkOrderId: partnerOrderId,
+            ratehawkCancelled: "false",
+            ratehawkWorkflowState: "supplier_order_allocated",
+          },
+        });
+      },
     });
     if (result.finalStatus !== "confirmed" || !result.cancelled) {
       return NextResponse.json({ error: "The sandbox booking did not complete its cancellation." }, { status: 502 });
@@ -74,6 +86,7 @@ export async function POST(request: Request) {
         ...paymentIntent.metadata,
         ratehawkOrderId: result.partnerOrderId,
         ratehawkCancelled: "true",
+        ratehawkWorkflowState: "completed",
         testPaymentRefunded: String(refunded),
       },
     });
@@ -92,6 +105,34 @@ export async function POST(request: Request) {
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("RateHawk certification reviewer workflow failed", classifyRatehawkCertificationFailure(error));
+    if (error instanceof RatehawkCertificationPartialFailure) {
+      let refunded = false;
+      try {
+        const refund = await stripe.refunds.create({
+          payment_intent: paymentIntent.id,
+          reason: "requested_by_customer",
+          metadata: {
+            mode: "ratehawk_certification_review_compensation",
+            ratehawkOrderId: error.partnerOrderId,
+          },
+        }, { idempotencyKey: `ratehawk-certification-review-refund-${paymentIntent.id}` });
+        refunded = refund.status === "succeeded" || refund.status === "pending";
+      } catch {
+        console.error("RateHawk certification test-payment compensation failed");
+      } finally {
+        await stripe.paymentIntents.update(paymentIntent.id, {
+          metadata: {
+            ...paymentIntent.metadata,
+            ratehawkOrderId: error.partnerOrderId,
+            ratehawkCancelled: String(error.cancelled),
+            ratehawkWorkflowState: error.cancelled
+              ? "failed_supplier_order_cancelled"
+              : "failed_supplier_order_requires_follow_up",
+            testPaymentRefunded: String(refunded),
+          },
+        });
+      }
+    }
     return NextResponse.json({
       error: "The RateHawk sandbox booking workflow could not be completed. No production booking or live charge was created.",
     }, { status: 502 });

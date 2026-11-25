@@ -1,6 +1,6 @@
 import "server-only";
 
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
 import type { InventoryJsonValue } from "./inventory-response.server";
 import {
@@ -80,6 +80,24 @@ export class RatehawkCertificationRunnerError extends Error {
   }
 }
 
+export class RatehawkCertificationPartialFailure extends Error {
+  readonly code?: RatehawkCertificationRunnerError["code"];
+  readonly outcome?: RatehawkCertificationRunnerError["outcome"];
+
+  constructor(
+    readonly partnerOrderId: string,
+    readonly cancelled: boolean,
+    readonly originalError: unknown,
+  ) {
+    super("RateHawk certification failed after a supplier order was allocated.");
+    this.name = "RatehawkCertificationPartialFailure";
+    if (originalError instanceof RatehawkCertificationRunnerError) {
+      this.code = originalError.code;
+      this.outcome = originalError.outcome;
+    }
+  }
+}
+
 export type RatehawkCertificationFailure = {
   code: string;
   status: number | null;
@@ -130,6 +148,9 @@ function safeOutcomeError(value: string | null) {
 export function classifyRatehawkCertificationFailure(
   error: unknown,
 ): RatehawkCertificationFailure {
+  if (error instanceof RatehawkCertificationPartialFailure) {
+    return classifyRatehawkCertificationFailure(error.originalError);
+  }
   if (error instanceof RatehawkCertificationRunnerError) {
     return {
       code: `runner_${error.code}`,
@@ -349,8 +370,18 @@ function addDays(date: Date, days: number) {
   return result;
 }
 
-function partnerOrderId(scenario: Scenario) {
-  const id = randomUUID();
+function deterministicUuid(value: string) {
+  const bytes = Buffer.from(createHash("sha256").update(value).digest().subarray(0, 16));
+  bytes[6] = (bytes[6]! & 0x0f) | 0x50;
+  bytes[8] = (bytes[8]! & 0x3f) | 0x80;
+  const hex = bytes.toString("hex");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+function partnerOrderId(scenario: Scenario, operationId?: string, attempt?: number) {
+  const id = operationId
+    ? deterministicUuid(`ratehawk-certification:${operationId}:${scenario.id}:${attempt ?? 1}`)
+    : randomUUID();
   return scenario.orderSuffix ? `${id}_${scenario.orderSuffix}` : id;
 }
 
@@ -385,6 +416,8 @@ const retryableCancellationErrors = new Set(["lock", "order_not_found", "unknown
 export async function runRatehawkCertificationScenario(options: {
   environment: Record<string, string | undefined>;
   scenarioId: RatehawkCertificationScenarioId;
+  operationId?: string;
+  onPartnerOrderId?: (partnerOrderId: string) => Promise<void>;
   fetcher?: InventorySandboxFetch;
   now?: Date;
   executionNow?: () => number;
@@ -429,8 +462,12 @@ export async function runRatehawkCertificationScenario(options: {
   const bookHash = firstHash(prebook, "book_hash");
 
   let acceptedPayment: ReturnType<typeof paymentType> | null = null;
+  let partnerOrderAttempt = 0;
   const bookingForm = await createRatehawkBookingFormWithRetry({
-    createPartnerOrderId: () => partnerOrderId(scenario),
+    createPartnerOrderId: () => {
+      partnerOrderAttempt += 1;
+      return partnerOrderId(scenario, options.operationId, partnerOrderAttempt);
+    },
     isRetryableTransportFailure: retryableTransportFailure,
     requestBookingForm: async (currentPartnerOrderId) => {
       const response = await request(buildRatehawkSandboxBookingFormRequest({
@@ -447,66 +484,19 @@ export async function runRatehawkCertificationScenario(options: {
   if (bookingForm.status !== "accepted" || !acceptedPayment) {
     throw new RatehawkCertificationRunnerError("booking_form_failed");
   }
+  const acceptedPartnerOrderId = bookingForm.partnerOrderId;
+  const ratehawkKeyId = keyId;
+  const ratehawkApiKey = apiKey;
 
-  try {
-    await request(buildRatehawkSandboxBookingFinishRequest({
-      keyId,
-      apiKey,
-      partnerOrderId: bookingForm.partnerOrderId,
-      user: { email: "certification@iratepilot.com", phone: "+15555550100" },
-      supplier: {
-        firstName: "IRatePilot",
-        lastName: "Certification",
-        email: "certification@iratepilot.com",
-        phone: "+15555550100",
-      },
-      rooms: scenario.rooms,
-      paymentType: acceptedPayment,
-    }), { environment: options.environment, fetcher: options.fetcher, timeoutMs: 5_000 });
-  } catch (error) {
-    // ETG's documented unknown_* sandbox cases deliberately return HTTP 500
-    // from Booking Finish before the status endpoint resolves the final result.
-    // Continue only for those explicit certification suffixes; every other
-    // supplier error remains fail-closed.
-    const expectedUnknownFinish = scenario.orderSuffix !== undefined
-      && error instanceof InventorySupplierResponseError
-      && error.code === "supplier_error"
-      && typeof error.status === "number"
-      && error.status >= 500
-      && error.status < 600;
-    if (!expectedUnknownFinish) throw error;
-  }
-
-  const elapsedBeforePollingMs = Math.max(0, executionNow() - executionStartedAt);
-  const remainingPollingMs = certificationExecutionBudgetMs
-    - certificationPostPollingReserveMs
-    - elapsedBeforePollingMs;
-  if (remainingPollingMs < minimumStatusPollingTimeoutMs) {
-    throw new RatehawkCertificationRunnerError("execution_budget_exhausted");
-  }
-
-  const final = await pollRatehawkBookingUntilFinal({
-    partnerOrderId: bookingForm.partnerOrderId,
-    isRetryableTransportFailure: retryableTransportFailure,
-    checkStatus: (currentPartnerOrderId) => request(buildRatehawkSandboxBookingStatusRequest({
-      keyId,
-      apiKey,
-      partnerOrderId: currentPartnerOrderId,
-    }), { environment: options.environment, fetcher: options.fetcher, timeoutMs: 5_000 }),
-    timeoutMs: Math.min(certificationStatusPollingTimeoutMs, remainingPollingMs),
-    now: executionNow,
-    sleep,
-  });
-
-  let cancellation: ReturnType<typeof parseRatehawkCancellationResponse> | null = null;
-  if (final.status === "confirmed") {
+  async function cancelAllocatedOrder() {
+    let cancellation: ReturnType<typeof parseRatehawkCancellationResponse> | null = null;
     for (let attempt = 1; attempt <= cancellationMaximumAttempts; attempt += 1) {
       try {
         cancellation = parseRatehawkCancellationResponse(await request(
           buildRatehawkSandboxBookingCancelRequest({
-            keyId,
-            apiKey,
-            partnerOrderId: bookingForm.partnerOrderId,
+            keyId: ratehawkKeyId,
+            apiKey: ratehawkApiKey,
+            partnerOrderId: acceptedPartnerOrderId,
           }),
           { environment: options.environment, fetcher: options.fetcher, timeoutMs: 5_000 },
         ));
@@ -524,18 +514,90 @@ export async function runRatehawkCertificationScenario(options: {
         await sleep(cancellationRetryIntervalMs);
       }
     }
+    return cancellation;
   }
-  assertExpectedOutcome(scenario, final, prebook);
 
-  return {
-    scenario: scenario.id,
-    partnerOrderId: bookingForm.partnerOrderId,
-    finalStatus: final.status,
-    finalError: final.status === "failed" ? final.error : null,
-    bookingFormAttempts: bookingForm.attempts,
-    statusAttempts: final.attempts,
-    cancelled: cancellation?.cancelled === true,
-    cancellationAmount: cancellation?.amountPayable ?? null,
-    cancellationCurrency: cancellation?.currencyCode ?? null,
-  };
+  let completedCancellation: ReturnType<typeof parseRatehawkCancellationResponse> | null = null;
+  try {
+    await options.onPartnerOrderId?.(acceptedPartnerOrderId);
+    try {
+      await request(buildRatehawkSandboxBookingFinishRequest({
+        keyId,
+        apiKey,
+        partnerOrderId: acceptedPartnerOrderId,
+        user: { email: "certification@iratepilot.com", phone: "+15555550100" },
+        supplier: {
+          firstName: "IRatePilot",
+          lastName: "Certification",
+          email: "certification@iratepilot.com",
+          phone: "+15555550100",
+        },
+        rooms: scenario.rooms,
+        paymentType: acceptedPayment,
+      }), { environment: options.environment, fetcher: options.fetcher, timeoutMs: 5_000 });
+    } catch (error) {
+      // ETG's documented unknown_* sandbox cases deliberately return HTTP 500
+      // from Booking Finish before the status endpoint resolves the final result.
+      // Continue only for those explicit certification suffixes; every other
+      // supplier error remains fail-closed.
+      const expectedUnknownFinish = scenario.orderSuffix !== undefined
+        && error instanceof InventorySupplierResponseError
+        && error.code === "supplier_error"
+        && typeof error.status === "number"
+        && error.status >= 500
+        && error.status < 600;
+      if (!expectedUnknownFinish) throw error;
+    }
+
+    const elapsedBeforePollingMs = Math.max(0, executionNow() - executionStartedAt);
+    const remainingPollingMs = certificationExecutionBudgetMs
+      - certificationPostPollingReserveMs
+      - elapsedBeforePollingMs;
+    if (remainingPollingMs < minimumStatusPollingTimeoutMs) {
+      throw new RatehawkCertificationRunnerError("execution_budget_exhausted");
+    }
+
+    const final = await pollRatehawkBookingUntilFinal({
+      partnerOrderId: acceptedPartnerOrderId,
+      isRetryableTransportFailure: retryableTransportFailure,
+      checkStatus: (currentPartnerOrderId) => request(buildRatehawkSandboxBookingStatusRequest({
+        keyId,
+        apiKey,
+        partnerOrderId: currentPartnerOrderId,
+      }), { environment: options.environment, fetcher: options.fetcher, timeoutMs: 5_000 }),
+      timeoutMs: Math.min(certificationStatusPollingTimeoutMs, remainingPollingMs),
+      now: executionNow,
+      sleep,
+    });
+
+    completedCancellation = final.status === "confirmed" ? await cancelAllocatedOrder() : null;
+    assertExpectedOutcome(scenario, final, prebook);
+
+    return {
+      scenario: scenario.id,
+      partnerOrderId: acceptedPartnerOrderId,
+      finalStatus: final.status,
+      finalError: final.status === "failed" ? final.error : null,
+      bookingFormAttempts: bookingForm.attempts,
+      statusAttempts: final.attempts,
+      cancelled: completedCancellation?.cancelled === true,
+      cancellationAmount: completedCancellation?.amountPayable ?? null,
+      cancellationCurrency: completedCancellation?.currencyCode ?? null,
+    };
+  } catch (error) {
+    let cancelled = completedCancellation?.cancelled === true;
+    if (!cancelled) {
+      try {
+        cancelled = (await cancelAllocatedOrder())?.cancelled === true;
+      } catch {
+        // The caller receives the partial order ID and records it for manual
+        // follow-up when immediate compensation cannot be confirmed.
+      }
+    }
+    throw new RatehawkCertificationPartialFailure(
+      acceptedPartnerOrderId,
+      cancelled,
+      error,
+    );
+  }
 }
